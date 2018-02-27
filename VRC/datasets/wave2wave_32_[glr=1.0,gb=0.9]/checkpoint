@@ -1,3 +1,0 @@
-model_checkpoint_path: "wave2wave.model-10"
-all_model_checkpoint_paths: "wave2wave.model-0"
-all_model_checkpoint_paths: "wave2wave.model-10"
