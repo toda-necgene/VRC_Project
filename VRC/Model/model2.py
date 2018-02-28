@@ -18,11 +18,11 @@ class Model:
         self.gauth=GoogleAuth()
         self.gauth.LocalWebserverAuth()
         self.drive=GoogleDrive(self.gauth)
-        self.experiment=Experiment("Wave2Wave_train_test_ver_0.4")
+        self.experiment=Experiment("Wave2Wave_train_test_ver_0.6")
         self.gf_dim=64
         self.depth=4
         self.batch_size=32
-        self.dataset_name="wave2wave_ver0.5"
+        self.dataset_name="wave2wave_ver0.6"
         #in=25
         self.out_put_size=[self.batch_size,1,512]
         a=self.out_put_size[2]
