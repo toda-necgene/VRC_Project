@@ -1,4 +1,4 @@
 *.bin
 *.class
-logs/*
-datasets/*
+VRC/logs/*
+VRC/datasets/*

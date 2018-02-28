@@ -12,11 +12,11 @@ from tensorflow.python.debug.lib.debug_data import has_inf_or_nan
 from hyperdash import Experiment
 class Model:
     def __init__(self,debug):
-        self.experiment=Experiment("Wave2Wave_train_test_ver_0.3")
+        self.experiment=Experiment("Wave2Wave_train_test_ver_0.4")
         self.gf_dim=64
-        self.depth=3
+        self.depth=4
         self.batch_size=32
-        self.dataset_name="wave2wave ver0.3"
+        self.dataset_name="wave2wave_ver0.5"
         #in=25
         self.out_put_size=[self.batch_size,1,512]
         a=self.out_put_size[2]
@@ -31,10 +31,10 @@ class Model:
             self.dilations.append(a)
         self.dilations.append(1)
         self.skp_out_size=1024
+        self.rate=0.4
 
-
-        self.down=256
-        self.up=128
+        self.down=128
+        self.up=64
         self.input_ch=256
         self.out_channels=self.down
         self.width=2
@@ -90,7 +90,7 @@ class Model:
                 w=tf.get_variable('w1p', [1,self.down,127],initializer=tf.contrib.layers.xavier_initializer())
                 l2ls.append(w)
                 current['postprocess1'] =w
-                w= tf.get_variable('w2p', [1,127,256],initializer=tf.contrib.layers.xavier_initializer())
+                w= tf.get_variable('w2p', [1,127,512],initializer=tf.contrib.layers.xavier_initializer())
                 l2ls.append(w)
                 current['postprocess2'] =w
                 bias = tf.get_variable("bias", [self.out_put_size[2]],initializer=tf.constant_initializer(0.0))
@@ -110,20 +110,23 @@ class Model:
         self.ans= tf.placeholder(tf.float32,
                                         [self.in_put_size[0], 1, self.out_put_size[2]],
                                         name='target_b')
+        self.is_train= tf.placeholder(tf.bool,
+                                        [1],
+                                        name='is_training')
         self.real_A_same = tf.reshape( self.encode(tf.slice(self.real_data,[0,0,self.in_put_size[2]-self.out_put_size[2]],[-1,-1,-1])),[self.batch_size,1,-1])
         self.real_B = tf.reshape( self.encode(self.ans),[self.batch_size,1,-1])
         self.real_A = tf.reshape( self.encode(self.real_data),[self.batch_size,1,-1])
         self.cursa  = tf.reshape( self.encode(self.curs),[self.batch_size,1,-1])
-        self.fake_B ,self.fake_B_logit= self.generator(self.one_hot((self.real_A+1.0)/2.*255.0),self.one_hot((self.cursa+1.0)/2.*255.0),False)
-        self.fake_B_decoded=tf.stop_gradient(self.decode(self.un_oh(self.fake_B)+self.real_A_same),"asnyan")
+        self.fake_B ,self.fake_B_logit= self.generator(self.one_hot((self.real_A+1.0)/2.*256.0),self.one_hot((self.cursa+1.0)/2.*256.0),False)
+        self.fake_B_decoded=tf.stop_gradient(self.decode(tf.clip_by_value(self.un_oh(self.fake_B)+self.real_A_same,-1.0,1.0)),"asnyan")
         self.res_B=self.decode(self.real_B)
         self.g_vars=l2ls
 
 
-        target=tf.cast(tf.reshape((self.real_B+1.)/2.*127,[self.batch_size,-1]),dtype=tf.int32)
+        target=tf.cast(tf.reshape((self.real_B+1.)/2.*256,[self.batch_size,-1]),dtype=tf.int32)
 
-        target_res=target-tf.cast(tf.reshape((self.real_A_same+1.)/2.*127,[self.batch_size,-1]),dtype=tf.int32)+127
-        logit=tf.reshape(self.fake_B_logit,[self.batch_size,256,-1])
+        target_res=target-tf.cast(tf.reshape((self.real_A_same+1.)/2.*256,[self.batch_size,-1]),dtype=tf.int32)+256
+        logit=tf.reshape(self.fake_B_logit,[self.batch_size,512,-1])
         logit=tf.transpose(logit, perm=[0,2,1])
 #         lo=-tf.reduce_sum(target*tf.log(logit+eps))/self.batch_size
         lo=tf.nn.sparse_softmax_cross_entropy_with_logits(labels=target_res, logits=logit)
@@ -162,12 +165,13 @@ class Model:
             print(" [*] Load SUCCESS")
         else:
             print(" [!] Load failed...")
-        for epoch in range(1,100):
+        for epoch in range(0,100):
             data = glob('./Model/datasets/train/*')
             np.random.shuffle(data)
             batch_idxs = min(len(data), args.train_size) // self.batch_size
-            flag=True
             cur_res2=None
+            gps=0
+            counter=0
             for idx in xrange(0, batch_idxs):
                 cur_res=np.zeros((self.batch_size,1,self.in_put_size[2]),dtype=np.int16)
                 cur_res2=np.zeros((self.batch_size,1,80000),dtype=np.int16)
@@ -177,8 +181,11 @@ class Model:
                 self.real_ds=batch_images[:,:1,:]
                 self.exp= np.zeros((self.batch_size,1,80000),dtype=np.int16)
                 times=5*16000//self.out_put_size[2]+1
+                times_added=0
                 if (5*16000)%self.out_put_size[2]==0:
                     times-=1
+                ti=(batch_idxs*times)//100+1
+                g_score=0
                 for t in range(times):
                     start_pos=self.out_put_size[2]*t+((5*16000)%self.out_put_size[2])
                     target=np.reshape(batch_images[:,0,max(0,start_pos-self.out_put_size[2]):start_pos],(self.batch_size,1,-1))
@@ -194,35 +201,32 @@ class Model:
                     # Update G network
                     _,hg=self.sess.run([g_optim,self.g_sum],feed_dict={ self.real_data:resorce, self.curs:cur_res,self.ans:target })
                     if counter % 100==0:
-                        self.writer.add_summary(hg, counter//100)
-                    res,res2=self.sess.run([self.fake_B_decoded,self.res_B],feed_dict={ self.real_data:resorce ,self.curs:cur_res, self.ans:target  })
+                        self.writer.add_summary(hg, counter//100+ti*epoch)
+                    res,res2=self.sess.run([self.fake_B_decoded,self.res_B],feed_dict={ self.real_data:resorce ,self.curs:cur_res, self.ans:target ,self.is_train:True })
                     cur_res=np.append(cur_res,res, axis=2)
                     cur_res2=np.append(cur_res2,res2, axis=2)
 
                     cur_res=cur_res[:,:,self.out_put_size[2]-1:-1]
                     self.exp=np.append(self.exp,res, axis=2)
-
                     if counter % 100==0:
-                        errG = self.g_loss.eval({ self.real_data:resorce, self.curs:cur_res,self.ans:target })
-                        print("\nEpoch: [%2d] [%5d - %4d/%4d] time: %4.4f, G-LOSS: %f \n" \
-                              % (epoch, counter,idx, batch_idxs,
-                                 time.time() - start_time,np.mean(errG)))
-                        self.experiment.metric("errG", (np.mean(errG)))
-
+                        errG = self.g_loss.eval({ self.real_data:resorce, self.curs:cur_res,self.ans:target ,self.is_train:False})
+                        g_score += (np.mean(errG))
+                        times_added+=1
                     counter += 1
-                    if idx == 2 and flag:
-                        self.save(args.checkpoint_dir, epoch)
-                        f=open('Z:/Data.txt','a')
-                        f.write("\nEpoch: [%2d] [%4d/%4d] time: %4.4f, G-LOSS: %f \n" % (epoch, idx, batch_idxs,time.time() - start_time,np.mean(errG)))
-                        self.experiment.metric("errG", (np.mean(errG)))
-                        f.close()
-                        flag=False
-                        start_time = time.time()
-                cur_res2=cur_res2[:self.batch_size,:,80000:160000]
-                self.exp=self.exp[:self.batch_size,:,80000:160000]
-                rs=self.sess.run(self.rrs,feed_dict={ self.exps:self.exp.reshape([self.batch_size,80000,1]) ,self.realdss:cur_res2.reshape([self.batch_size,80000,1])  })
-                self.writer.add_summary(rs, epoch)
-                start_time = time.time()
+                gps+=(g_score/times_added)
+                self.writer.add_summary(hg, counter//100+ti*epoch)
+            self.save(args.checkpoint_dir, epoch+1)
+            f=open('Z:/Data.txt','a')
+            f.write("\nEpoch: [%2d]  time: %4.4f, G-LOSS: %f \n" % (epoch+1,time.time() - start_time,(gps/batch_idxs)))
+            print("\nEpoch: [%2d]  time: %4.4f, G-LOSS: %f \n" % (epoch+1, time.time() - start_time,(gps/batch_idxs)))
+            self.experiment.metric("errG",gps/batch_idxs)
+            f.close()
+            start_time = time.time()
+            cur_res2=cur_res2[:self.batch_size,:,80000:160000]
+            self.exp=self.exp[:self.batch_size,:,80000:160000]
+            rs=self.sess.run(self.rrs,feed_dict={ self.exps:self.exp.reshape([self.batch_size,80000,1]) ,self.realdss:cur_res2.reshape([self.batch_size,80000,1])  })
+            self.writer.add_summary(rs, epoch+1)
+            start_time = time.time()
         self.experiment.end()
 
     def encode(self,in_puts):
@@ -231,18 +235,18 @@ class Model:
         inputs = tf.sign(ten,"sign2")*(tf.log(1+mu*tf.abs(ten),name="encode_log_up")/(tf.log(1+mu,name="encode_log_down")))
         return tf.to_float(inputs)
     def one_hot(self,inp):
-        inp=tf.to_int32(inp)
+        inp=tf.cast(inp,tf.int32)
         ten=tf.one_hot(inp, 256, axis=-1)
         ten=tf.reshape(ten, [self.batch_size,-1,256])
         ten=tf.transpose(ten, perm=[0,2,1])
-        return tf.to_float(ten)
+        return tf.cast(ten,tf.float32)
     def un_oh(self,in_puts):
-        inputs=tf.reshape(in_puts, [self.batch_size,256,-1])
+        inputs=tf.reshape(in_puts, [self.batch_size,512,-1])
         ten=tf.transpose(inputs, perm=[0,2,1])
         ten=tf.argmax(ten, axis=2,output_type=tf.int32)
         ten=tf.to_float(ten)
         ten=tf.reshape(ten, [self.batch_size,1,-1])
-        ten=(ten/256.0-0.5)*2.0
+        ten=(ten/512.0-0.5)*2.0
         return ten
     def decode(self,in_puts):
         ten=in_puts
@@ -276,9 +280,11 @@ class Model:
                 assert tf.get_variable_scope().reuse == False
             w=self.var['postprocessing']['postprocess1']
             w2=self.var['postprocessing']['postprocess2']
+            transformed=tf.layers.batch_normalization(transformed,training=self.is_train)
             conv = tf.nn.conv1d(transformed,w,stride=1,data_format="NCHW",padding='VALID',name="post_01")
             conv = tf.nn.bias_add(conv,self.var['postprocessing']['bias'])
             transformed=tf.nn.leaky_relu(conv)
+            transformed=tf.layers.batch_normalization(transformed,training=self.is_train)
             conv = tf.nn.conv1d(transformed,w2,stride=1,data_format="NCHW",padding='VALID',name="post_02")
             conv = tf.nn.bias_add(conv,self.var['postprocessing']['bias2'])
         sm=tf.transpose(conv, perm=[0,2,1])
@@ -301,19 +307,23 @@ class Model:
             else:
                 assert tf.get_variable_scope().reuse == False
             #前処理
+            etan=tf.layers.batch_normalization(in_put,training=self.is_train)
             w=self.var['dilated_stack'][depth]['w'+str(depth)+'-1']
-            etan = tf.nn.conv1d(in_put, w, stride=2,data_format="NCHW", padding='VALID',name="conv1d_"+str(depth)+"-"+str(1))
+            etan = tf.nn.conv1d(etan, w, stride=2,data_format="NCHW", padding='VALID',name="conv1d_"+str(depth)+"-"+str(1))
             w=self.var['dilated_stack'][depth]['w'+str(depth)+'-1i']
             etan=etan + tf.nn.conv1d(global_cond, w, stride=2**(depth+2),data_format="NCHW", padding='VALID',name="conv1d_"+str(depth)+"-"+str(1.5))
             etan=tf.nn.tanh(etan)
             w=self.var['dilated_stack'][depth]['w'+str(depth)+'-2']
-            esig = tf.nn.conv1d(in_put, w, stride=2,data_format="NCHW", padding='VALID',name="conv1d_"+str(depth)+"-"+str(2))
+            esig=tf.layers.batch_normalization(in_put,training=self.is_train)
+            esig = tf.nn.conv1d(esig, w, stride=2,data_format="NCHW", padding='VALID',name="conv1d_"+str(depth)+"-"+str(2))
             w=self.var['dilated_stack'][depth]['w'+str(depth)+'-2i']
             esig=esig + tf.nn.conv1d(global_cond, w, stride=2**(depth+2),data_format="NCHW", padding='VALID',name="conv1d_"+str(depth)+"-"+str(2.5))
             esig=tf.nn.sigmoid(esig)
             d8=tf.multiply(etan,esig)
+            d8=tf.layers.batch_normalization(d8,training=self.is_train)
             w=self.var['dilated_stack'][depth]['w'+str(depth)+'-3']
-            otp=tf.nn.conv1d(d8, w, stride=1, padding="SAME",data_format="NCHW", name="dense")
+            d9=tf.layers.dropout(d8, rate=self.rate,training=self.is_train)
+            otp=tf.nn.conv1d(d9, w, stride=1, padding="SAME",data_format="NCHW", name="dense")
             obs=tf.shape(in_put)[2]-tf.shape(otp)[2]
             w=self.var['dilated_stack'][depth]['w'+str(depth)+'-4']
             skp=tf.nn.conv1d(d8, w, stride=1, padding="VALID",data_format="NCHW", name="skip")
@@ -321,7 +331,7 @@ class Model:
 
     def save(self, checkpoint_dir, step):
         model_name = "wave2wave.model"
-        model_dir = "%s_%s_%s" % (self.dataset_name, self.batch_size,self.lod)
+        model_dir = "%s_%s_%s_%s layers" % (self.dataset_name, self.batch_size,self.lod,self.depth)
         checkpoint_dir = os.path.join(checkpoint_dir, model_dir)
 
         if not os.path.exists(checkpoint_dir):
@@ -333,18 +343,19 @@ class Model:
     def load(self, checkpoint_dir):
         print(" [*] Reading checkpoint...")
 
-        model_dir = "%s_%s_%s" % (self.dataset_name, self.batch_size,self.lod)
+        model_dir = "%s_%s_%s_%s layers" % (self.dataset_name, self.batch_size,self.lod,self.depth)
         checkpoint_dir = os.path.join(checkpoint_dir, model_dir)
 
         ckpt = tf.train.get_checkpoint_state(checkpoint_dir)
         if ckpt and ckpt.model_checkpoint_path:
             ckpt_name = os.path.basename(ckpt.model_checkpoint_path)
             self.saver.restore(self.sess, os.path.join(checkpoint_dir, ckpt_name))
+            self.epoch=self.saver
             return True
         else:
             return False
 
-def load_data(image_path,  num_images=2, flip=True, is_test=False):
+def load_data(image_path):
     images = imread(image_path)
     images = images
     # img_AB shape: (fine_size, fine_size, input_c_dim + output_c_dim)
