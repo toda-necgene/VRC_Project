@@ -122,15 +122,15 @@ class Model:
         self.real_B = tf.reshape( self.encode(self.ans),[self.batch_size,1,-1])
         self.real_A = tf.reshape( self.encode(self.real_data),[self.batch_size,1,-1])
         self.cursa  = tf.reshape( self.encode(self.curs),[self.batch_size,1,-1])
-        self.fake_B ,self.fake_B_logit= self.generator(self.one_hot((self.real_A+1.0)/2.*256.0),self.one_hot((self.cursa+1.0)/2.*256.0),False)
+        self.fake_B ,self.fake_B_logit= self.generator(self.one_hot((self.real_A+1.0)/2.*255.0),self.one_hot((self.cursa+1.0)/2.*255.0),False)
         self.fake_B_decoded=tf.stop_gradient(self.decode(tf.clip_by_value(self.un_oh(self.fake_B)+self.real_A_same,-1.0,1.0)),"asnyan")
         self.res_B=self.decode(self.real_B)
         self.g_vars=l2ls
 
 
-        target=tf.cast(tf.reshape((self.real_B+1.)/2.*256,[self.batch_size,-1]),dtype=tf.int32)
+        target=tf.cast(tf.reshape((self.real_B+1.)/2.*255,[self.batch_size,-1]),dtype=tf.int32)
 
-        target_res=target-tf.cast(tf.reshape((self.real_A_same+1.)/2.*256,[self.batch_size,-1]),dtype=tf.int32)+256
+        target_res=target-tf.cast(tf.reshape((self.real_A_same+1.)/2.*255,[self.batch_size,-1]),dtype=tf.int32)+256.
         logit=tf.reshape(self.fake_B_logit,[self.batch_size,512,-1])
         logit=tf.transpose(logit, perm=[0,2,1])
 #         lo=-tf.reduce_sum(target*tf.log(logit+eps))/self.batch_size
@@ -165,7 +165,8 @@ class Model:
                     red=np.append(red,np.zeros((1,self.in_put_size[1],self.in_put_size[2])),axis=0)
             red=red.reshape((self.in_put_size[0],self.in_put_size[1],self.in_put_size[2]))
             res=self.sess.run(self.fake_B_decoded,feed_dict={ self.real_data:red ,self.curs:cur_res ,self.is_train:False })
-            otp=np.append(otp,res*32767)
+            res=res*32767
+            otp=np.append(otp,res)
             cur_res=np.append(cur_res,res, axis=2)
             cur_res=cur_res[:,:,self.out_put_size[2]-1:-1]
         st =max(0,otp.shape[0]-in_put.shape[2]-1)
@@ -237,6 +238,7 @@ class Model:
                     if counter % 100==0:
                         self.writer.add_summary(hg, counter//100+ti*epoch)
                     res=self.sess.run(self.fake_B_decoded,feed_dict={ self.real_data:resorce ,self.curs:cur_res, self.ans:target ,self.is_train:False })
+                    res=res*32767
                     cur_res=np.append(cur_res,res, axis=2)
 
                     cur_res=cur_res[:,:,self.out_put_size[2]-1:-1]
@@ -280,7 +282,7 @@ class Model:
         ten=tf.argmax(ten, axis=2,output_type=tf.int32)
         ten=tf.to_float(ten)
         ten=tf.reshape(ten, [self.batch_size,1,-1])
-        ten=(ten/512.0-0.5)*2.0
+        ten=(ten/511.0-0.5)*2.0
         return ten
     def decode(self,in_puts):
         ten=in_puts
