@@ -18,7 +18,7 @@ class Model:
         self.gauth=GoogleAuth()
         self.gauth.LocalWebserverAuth()
         self.drive=GoogleDrive(self.gauth)
-        self.experiment=Experiment("Wave2Wave_train_test_ver_0.6")
+
         self.gf_dim=64
         self.depth=4
         self.batch_size=32
@@ -117,7 +117,6 @@ class Model:
                                         [self.in_put_size[0], 1, self.out_put_size[2]],
                                         name='target_b')
         self.is_train= tf.placeholder(tf.bool,
-                                        [1],
                                         name='is_training')
         self.real_A_same = tf.reshape( self.encode(tf.slice(self.real_data,[0,0,self.in_put_size[2]-self.out_put_size[2]],[-1,-1,-1])),[self.batch_size,1,-1])
         self.real_B = tf.reshape( self.encode(self.ans),[self.batch_size,1,-1])
@@ -146,31 +145,37 @@ class Model:
         self.saver = tf.train.Saver()
 
     def convert(self,in_put):
-        times=5*16000//in_put.shape+1
-        if (5*16000)%in_put.shape==0:
+        times=in_put.shape[2]//(self.out_put_size[2]*self.batch_size)+1
+        if in_put.shape[2]%(self.out_put_size[2]*self.batch_size)==0:
             times-=1
-        cur_res=np.zeros((self.batch_size,1,self.in_put_size[2]),dtype=np.int16)
-        otp=np.zeros((self.batch_size,1,self.in_put_size[2]),dtype=np.int16)
+        cur_res=np.zeros((self.in_put_size[0],self.in_put_size[1],self.in_put_size[2]),dtype=np.int16)
+        otp=np.array([],dtype=np.int16)
         for t in range(times):
-            start_pos=self.out_put_size[2]*t+((5*16000)%self.out_put_size[2])
-            resorce=np.reshape(input[max(0,start_pos-self.in_put_size[2]):start_pos],(self.batch_size,1,-1))
-            r=max(0,self.in_put_size[2]-resorce.shape[2])
-            if r>0:
-                resorce=np.pad(resorce,((0,0),(0,0),(r,0)),'constant')
-            # Update G network
-            res=self.sess.run([self.fake_B_decoded],feed_dict={ self.real_data:resorce ,self.curs:cur_res ,self.is_train:False })
+            red=np.array([])
+            for l in range(self.batch_size):
+                start_pos=self.out_put_size[2]*(l+self.batch_size*t)+((in_put.shape[2])%self.out_put_size[2])
+                if start_pos<in_put.shape[2]:
+                    resorce=np.reshape(in_put[-1,-1,max(1,start_pos-self.in_put_size[2]):min(start_pos,in_put.shape[2])],(1,1,-1))
+                    r=max(0,self.in_put_size[2]-resorce.shape[2])
+                    if r>0:
+                        resorce=np.pad(resorce,((0,0),(0,0),(r,0)),'constant')
+                    red=np.append(red,resorce)
+                else:
+                    red=red.reshape(l,self.in_put_size[1],-1)
+                    red=np.append(red,np.zeros((1,self.in_put_size[1],self.in_put_size[2])),axis=0)
+            red=red.reshape((self.in_put_size[0],self.in_put_size[1],self.in_put_size[2]))
+            res=self.sess.run(self.fake_B_decoded,feed_dict={ self.real_data:red ,self.curs:cur_res ,self.is_train:False })
+            otp=np.append(otp,res*32767)
             cur_res=np.append(cur_res,res, axis=2)
             cur_res=cur_res[:,:,self.out_put_size[2]-1:-1]
-            self.exp=np.append(self.exp,res, axis=2)
-            otp=np.append(self.exp,res*32767, axis=2)
-        return otp
+        st =max(0,otp.shape[0]-in_put.shape[2]-1)
+        otp=otp[st:-1]
+        return otp.reshape(1,1,in_put.shape[2])
     def train(self,args):
         """Train pix2pix"""
         self.checkpoint_dir=args.checkpoint_dir
         lr_g_opt=0.001
         beta_g_opt=0.9
-        self.experiment.param("lr_g_opt", lr_g_opt)
-        self.experiment.param("beta_g_opt", beta_g_opt)
         self.lod="[glr="+str(lr_g_opt)+",gb="+str(beta_g_opt)+"]"
         g_optim = eve.EveOptimizer(lr_g_opt,beta_g_opt).minimize(self.g_loss, var_list=self.g_vars)
 
@@ -187,13 +192,21 @@ class Model:
             print(" [*] Load SUCCESS")
         else:
             print(" [!] Load failed...")
+        self.experiment=Experiment("Wave2Wave_train_test_ver_0.6")
+        self.experiment.param("lr_g_opt", lr_g_opt)
+        self.experiment.param("beta_g_opt", beta_g_opt)
         for epoch in range(0,100):
             data = glob('./Model/datasets/train/*')
             np.random.shuffle(data)
             batch_idxs = min(len(data), args.train_size) // self.batch_size
-            test=load_data('./Model/datasets/test/test.wav')
+            test=load_data('./Model/datasets/test/test.wav').reshape(1,1,160000)
+            # test
+            out_puts=self.convert(test)
+            upload(out_puts,self.drive)
+            #test end
             gps=0
             counter=0
+            print("Epoch %3d start" % (epoch))
             for idx in xrange(0, batch_idxs):
                 cur_res=np.zeros((self.batch_size,1,self.in_put_size[2]),dtype=np.int16)
                 batch_files = data[idx*self.batch_size:(idx+1)*self.batch_size]
@@ -220,10 +233,10 @@ class Model:
                         target=np.pad(target,((0,0),(0,0),(r,0)),'constant')
 
                     # Update G network
-                    _,hg=self.sess.run([g_optim,self.g_sum],feed_dict={ self.real_data:resorce, self.curs:cur_res,self.ans:target })
+                    _,hg=self.sess.run([g_optim,self.g_sum],feed_dict={ self.real_data:resorce, self.curs:cur_res,self.ans:target ,self.is_train:True })
                     if counter % 100==0:
                         self.writer.add_summary(hg, counter//100+ti*epoch)
-                    res=self.sess.run([self.fake_B_decoded],feed_dict={ self.real_data:resorce ,self.curs:cur_res, self.ans:target ,self.is_train:True })
+                    res=self.sess.run(self.fake_B_decoded,feed_dict={ self.real_data:resorce ,self.curs:cur_res, self.ans:target ,self.is_train:False })
                     cur_res=np.append(cur_res,res, axis=2)
 
                     cur_res=cur_res[:,:,self.out_put_size[2]-1:-1]
@@ -328,22 +341,22 @@ class Model:
             else:
                 assert tf.get_variable_scope().reuse == False
             #前処理
-            etan=tf.layers.batch_normalization(in_put,training=self.is_train)
+            etan=tf.layers.batch_normalization(in_put,training=self.is_train,name="bn_"+str(depth)+"-"+str(1))
             w=self.var['dilated_stack'][depth]['w'+str(depth)+'-1']
             etan = tf.nn.conv1d(etan, w, stride=2,data_format="NCHW", padding='VALID',name="conv1d_"+str(depth)+"-"+str(1))
             w=self.var['dilated_stack'][depth]['w'+str(depth)+'-1i']
             etan=etan + tf.nn.conv1d(global_cond, w, stride=2**(depth+2),data_format="NCHW", padding='VALID',name="conv1d_"+str(depth)+"-"+str(1.5))
             etan=tf.nn.tanh(etan)
             w=self.var['dilated_stack'][depth]['w'+str(depth)+'-2']
-            esig=tf.layers.batch_normalization(in_put,training=self.is_train)
+            esig=tf.layers.batch_normalization(in_put,training=self.is_train,name="bn_"+str(depth)+"-"+str(2))
             esig = tf.nn.conv1d(esig, w, stride=2,data_format="NCHW", padding='VALID',name="conv1d_"+str(depth)+"-"+str(2))
             w=self.var['dilated_stack'][depth]['w'+str(depth)+'-2i']
             esig=esig + tf.nn.conv1d(global_cond, w, stride=2**(depth+2),data_format="NCHW", padding='VALID',name="conv1d_"+str(depth)+"-"+str(2.5))
             esig=tf.nn.sigmoid(esig)
             d8=tf.multiply(etan,esig)
-            d8=tf.layers.batch_normalization(d8,training=self.is_train)
+            d8=tf.layers.batch_normalization(d8,training=self.is_train,name="bn_"+str(depth)+"-"+str(3))
             w=self.var['dilated_stack'][depth]['w'+str(depth)+'-3']
-            d9=tf.layers.dropout(d8, rate=self.rate,training=self.is_train)
+            d9=tf.layers.dropout(d8, rate=self.rate,training=self.is_train,name="do_"+str(depth)+"-"+str(1))
             otp=tf.nn.conv1d(d9, w, stride=1, padding="SAME",data_format="NCHW", name="dense")
             obs=tf.shape(in_put)[2]-tf.shape(otp)[2]
             w=self.var['dilated_stack'][depth]['w'+str(depth)+'-4']
@@ -376,13 +389,14 @@ class Model:
         else:
             return False
 def upload(voice,drive):
+    voiced=voice.astype(np.int16)
     p=pyaudio.PyAudio()
-    FORMAT = p.paInt16
+    FORMAT = pyaudio.paInt16
     ww = wave.open("tmp.wav", 'wb')
     ww.setnchannels(1)
     ww.setsampwidth(p.get_sample_size(FORMAT))
     ww.setframerate(16000)
-    ww.writeframes(voice.tobytes())
+    ww.writeframes(voiced.reshape(-1).tobytes())
     ww.close()
     p.terminate()
     f = drive.CreateFile({'id':'1jOONrLOutTRekKM_f23QEcd-FdfC2Pax'})

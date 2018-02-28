@@ -5,16 +5,7 @@ Created on 2018/02/16
 '''
 from collections import namedtuple
 import sys
-from pydrive.auth import GoogleAuth
-from pydrive.drive import GoogleDrive
 debug=False
-# gauth=GoogleAuth()
-# gauth.LocalWebserverAuth()
-# drive=GoogleDrive(gauth)
-# f = drive.CreateFile({'id':'1jOONrLOutTRekKM_f23QEcd-FdfC2Pax'})
-# f.SetContentFile("tmp.wav")
-# f.Upload()
-# print(f['id'])
 if __name__ == '__main__':
     pass
 from Model import model2 as model
