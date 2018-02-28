@@ -1,1 +1,7 @@
 /logs/
+/datasets/
+/OAuth
+/OAuth.yaml
+/tmp.wav
+/setting.yaml
+/credentials.json

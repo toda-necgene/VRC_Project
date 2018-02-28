@@ -5,13 +5,19 @@ import time
 from six.moves import xrange
 import numpy as np
 import wave
-import sys
 from . import eve
 from tensorflow.python import debug as tf_debug
 from tensorflow.python.debug.lib.debug_data import has_inf_or_nan
 from hyperdash import Experiment
+from pydrive.auth import GoogleAuth
+from pydrive.drive import GoogleDrive
+import pyaudio
+from pydrive import drive
 class Model:
     def __init__(self,debug):
+        self.gauth=GoogleAuth()
+        self.gauth.LocalWebserverAuth()
+        self.drive=GoogleDrive(self.gauth)
         self.experiment=Experiment("Wave2Wave_train_test_ver_0.4")
         self.gf_dim=64
         self.depth=4
@@ -135,13 +141,29 @@ class Model:
         self.g_loss_sum = tf.summary.scalar("g_loss", tf.reduce_mean(self.g_loss))
 
         self.exps=tf.placeholder(tf.float32, [32,80000,1], name="FB")
-        self.realdss=tf.placeholder(tf.float32, [32,80000,1], name="RB")
-
         self.fake_B_sum = tf.summary.audio("fake_B", self.exps, 16000, 1)
-        self.real_B_sum = tf.summary.audio("real_B", self.realdss, 16000, 1)
-        self.rrs=tf.summary.merge([self.real_B_sum,self.fake_B_sum])
+        self.rrs=tf.summary.merge([self.fake_B_sum])
         self.saver = tf.train.Saver()
 
+    def convert(self,in_put):
+        times=5*16000//in_put.shape+1
+        if (5*16000)%in_put.shape==0:
+            times-=1
+        cur_res=np.zeros((self.batch_size,1,self.in_put_size[2]),dtype=np.int16)
+        otp=np.zeros((self.batch_size,1,self.in_put_size[2]),dtype=np.int16)
+        for t in range(times):
+            start_pos=self.out_put_size[2]*t+((5*16000)%self.out_put_size[2])
+            resorce=np.reshape(input[max(0,start_pos-self.in_put_size[2]):start_pos],(self.batch_size,1,-1))
+            r=max(0,self.in_put_size[2]-resorce.shape[2])
+            if r>0:
+                resorce=np.pad(resorce,((0,0),(0,0),(r,0)),'constant')
+            # Update G network
+            res=self.sess.run([self.fake_B_decoded],feed_dict={ self.real_data:resorce ,self.curs:cur_res ,self.is_train:False })
+            cur_res=np.append(cur_res,res, axis=2)
+            cur_res=cur_res[:,:,self.out_put_size[2]-1:-1]
+            self.exp=np.append(self.exp,res, axis=2)
+            otp=np.append(self.exp,res*32767, axis=2)
+        return otp
     def train(self,args):
         """Train pix2pix"""
         self.checkpoint_dir=args.checkpoint_dir
@@ -169,12 +191,11 @@ class Model:
             data = glob('./Model/datasets/train/*')
             np.random.shuffle(data)
             batch_idxs = min(len(data), args.train_size) // self.batch_size
-            cur_res2=None
+            test=load_data('./Model/datasets/test/test.wav')
             gps=0
             counter=0
             for idx in xrange(0, batch_idxs):
                 cur_res=np.zeros((self.batch_size,1,self.in_put_size[2]),dtype=np.int16)
-                cur_res2=np.zeros((self.batch_size,1,80000),dtype=np.int16)
                 batch_files = data[idx*self.batch_size:(idx+1)*self.batch_size]
                 batch = [load_data(batch_file) for batch_file in batch_files]
                 batch_images = np.array(batch).astype(np.float32).reshape(self.batch_size,2,80000)
@@ -202,9 +223,8 @@ class Model:
                     _,hg=self.sess.run([g_optim,self.g_sum],feed_dict={ self.real_data:resorce, self.curs:cur_res,self.ans:target })
                     if counter % 100==0:
                         self.writer.add_summary(hg, counter//100+ti*epoch)
-                    res,res2=self.sess.run([self.fake_B_decoded,self.res_B],feed_dict={ self.real_data:resorce ,self.curs:cur_res, self.ans:target ,self.is_train:True })
+                    res=self.sess.run([self.fake_B_decoded],feed_dict={ self.real_data:resorce ,self.curs:cur_res, self.ans:target ,self.is_train:True })
                     cur_res=np.append(cur_res,res, axis=2)
-                    cur_res2=np.append(cur_res2,res2, axis=2)
 
                     cur_res=cur_res[:,:,self.out_put_size[2]-1:-1]
                     self.exp=np.append(self.exp,res, axis=2)
@@ -221,11 +241,12 @@ class Model:
             print("\nEpoch: [%2d]  time: %4.4f, G-LOSS: %f \n" % (epoch+1, time.time() - start_time,(gps/batch_idxs)))
             self.experiment.metric("errG",gps/batch_idxs)
             f.close()
-            start_time = time.time()
-            cur_res2=cur_res2[:self.batch_size,:,80000:160000]
+            out_puts=self.convert(test)
+            out_put=out_puts/32767.0
             self.exp=self.exp[:self.batch_size,:,80000:160000]
-            rs=self.sess.run(self.rrs,feed_dict={ self.exps:self.exp.reshape([self.batch_size,80000,1]) ,self.realdss:cur_res2.reshape([self.batch_size,80000,1])  })
+            rs=self.sess.run(self.rrs,feed_dict={ self.exps:self.exp.reshape([out_put,80000,1])})
             self.writer.add_summary(rs, epoch+1)
+            upload(out_puts,self.drive)
             start_time = time.time()
         self.experiment.end()
 
@@ -354,7 +375,19 @@ class Model:
             return True
         else:
             return False
-
+def upload(voice,drive):
+    p=pyaudio.PyAudio()
+    FORMAT = p.paInt16
+    ww = wave.open("tmp.wav", 'wb')
+    ww.setnchannels(1)
+    ww.setsampwidth(p.get_sample_size(FORMAT))
+    ww.setframerate(16000)
+    ww.writeframes(voice.tobytes())
+    ww.close()
+    p.terminate()
+    f = drive.CreateFile({'id':'1jOONrLOutTRekKM_f23QEcd-FdfC2Pax'})
+    f.SetContentFile("tmp.wav")
+    f.Upload()
 def load_data(image_path):
     images = imread(image_path)
     images = images
