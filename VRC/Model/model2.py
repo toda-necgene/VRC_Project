@@ -13,29 +13,40 @@ from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 import pyaudio
 from pydrive import drive
+from datetime import datetime
 class Model:
     def __init__(self,debug):
+        f=open("Data.txt",'w')
+        f.write("Start:"+nowtime())
+        f.close()
         self.gauth=GoogleAuth()
         self.gauth.LocalWebserverAuth()
         self.drive=GoogleDrive(self.gauth)
-
         self.gf_dim=64
         self.depth=4
         self.batch_size=32
-        self.dataset_name="wave2wave_ver0.6"
+        self.dataset_name="wave2wave_ver0.7"
+        f=self.drive.CreateFile({'title':str(nowtime()+self.dataset_name+'.txt')})
+        f.SetContentFile('Data.txt')
+        f.Upload()
+        self.id_of_result=f['id']
+        self.dilations=[]
+        self.f_dilations=[]
         #in=25
         self.out_put_size=[self.batch_size,1,512]
-        a=self.out_put_size[2]
-        self.dilations=[]
-        for _ in range(self.depth):
-            a = a * 2
-        a*=2
-        self.dilations.append(a)
-        self.in_put_size=[self.batch_size,1,a]
-        for _ in range(self.depth):
-            a = a // 2
-            self.dilations.append(a)
-        self.dilations.append(1)
+        d=1
+        self.dilations.append(d)
+        for _ in range(self.depth+2):
+            d*=2
+            self.dilations.append(d)
+        self.in_put_size=[self.batch_size,1,d+self.out_put_size[2]-1]
+        a=self.in_put_size[2]-self.out_put_size[2]
+
+        for i in range(self.depth):
+            a = a-(2**(i+1))
+            self.f_dilations.append(a)
+        a+=1
+
         self.skp_out_size=1024
         self.rate=0.4
 
@@ -61,7 +72,7 @@ class Model:
         with tf.variable_scope('wavenet'):
             with tf.variable_scope('causal_layer'):
                 layer = dict()
-                w=tf.get_variable('w', [self.width,self.input_ch,self.down],initializer=tf.contrib.layers.xavier_initializer())
+                w=tf.get_variable('w', [self.width,1,self.input_ch,self.down],initializer=tf.contrib.layers.xavier_initializer())
                 l2ls.append(w)
                 layer['filter'] = w
                 self.var['causal_layer'] = layer
@@ -70,39 +81,40 @@ class Model:
             with tf.variable_scope('dilated_stack'):
                 for i in range(self.depth):
                     with tf.variable_scope('layer{}'.format(i)):
+                        hance=(2**(i+2)-1)
                         current = dict()
-                        w= tf.get_variable('w1a', [self.width,self.down,self.up],initializer=tf.contrib.layers.xavier_initializer())
+                        w= tf.get_variable('w1a', [self.width,1,self.down,self.up],initializer=tf.contrib.layers.xavier_initializer())
                         l2ls.append(w)
                         current['w'+str(i)+'-1'] =w
-                        w= tf.get_variable('w1ia', [2**(i+2),self.input_ch,self.up],initializer=tf.contrib.layers.xavier_initializer())
+                        w= tf.get_variable('w1ia', [hance,1,self.down,self.up],initializer=tf.contrib.layers.xavier_initializer())
                         l2ls.append(w)
                         current['w'+str(i)+'-1i'] =w
-                        w= tf.get_variable('w2a', [self.width,self.down,self.up],initializer=tf.contrib.layers.xavier_initializer())
+                        w= tf.get_variable('w2a', [self.width,1,self.down,self.up],initializer=tf.contrib.layers.xavier_initializer())
                         l2ls.append(w)
                         current['w'+str(i)+'-2'] =w
-                        w= tf.get_variable('w2ia', [2**(i+2),self.input_ch,self.up],initializer=tf.contrib.layers.xavier_initializer())
+                        w= tf.get_variable('w2ia', [hance,1,self.down,self.up],initializer=tf.contrib.layers.xavier_initializer())
                         l2ls.append(w)
                         current['w'+str(i)+'-2i'] =w
-                        w = tf.get_variable('w3a', [1,self.up,self.down],initializer=tf.contrib.layers.xavier_initializer())
+                        w = tf.get_variable('w3a', [1,1,self.up,self.down],initializer=tf.contrib.layers.xavier_initializer())
                         l2ls.append(w)
                         current['w'+str(i)+'-3'] =w
-                        w = tf.get_variable('w4a', [self.dilations[i+2],self.up,self.out_channels],initializer=tf.contrib.layers.xavier_initializer())
+                        w = tf.get_variable('w4a', [self.f_dilations[i],1,self.up,self.out_channels],initializer=tf.contrib.layers.xavier_initializer())
                         l2ls.append(w)
                         current['w'+str(i)+'-4'] =w
                         self.var['dilated_stack'].append(current)
 
             with tf.variable_scope('postprocessing'):
                 current = dict()
-                w=tf.get_variable('w1p', [1,self.down,127],initializer=tf.contrib.layers.xavier_initializer())
+                w=tf.get_variable('w1p', [1,1,self.down,127],initializer=tf.contrib.layers.xavier_initializer())
                 l2ls.append(w)
                 current['postprocess1'] =w
-                w= tf.get_variable('w2p', [1,127,512],initializer=tf.contrib.layers.xavier_initializer())
+                w= tf.get_variable('w2p', [1,1,127,512],initializer=tf.contrib.layers.xavier_initializer())
                 l2ls.append(w)
                 current['postprocess2'] =w
-                bias = tf.get_variable("bias", [self.out_put_size[2]],initializer=tf.constant_initializer(0.0))
+                bias = tf.get_variable("bias", [127],initializer=tf.constant_initializer(0.0))
                 current['bias']=bias
                 l2ls.append(bias)
-                bias = tf.get_variable("bias2", [self.out_put_size[2]],initializer=tf.constant_initializer(0.0))
+                bias = tf.get_variable("bias2", [512],initializer=tf.constant_initializer(0.0))
                 l2ls.append(bias)
                 current['bias2']=bias
                 self.var['postprocessing'] = current
@@ -130,7 +142,7 @@ class Model:
 
         target=tf.cast(tf.reshape((self.real_B+1.)/2.*255,[self.batch_size,-1]),dtype=tf.int32)
 
-        target_res=target-tf.cast(tf.reshape((self.real_A_same+1.)/2.*255,[self.batch_size,-1]),dtype=tf.int32)+256.
+        target_res=target-tf.cast(tf.reshape((self.real_A_same+1.)/2.*255,[self.batch_size,-1]),dtype=tf.int32)+tf.fill(target.shape,256)
         logit=tf.reshape(self.fake_B_logit,[self.batch_size,512,-1])
         logit=tf.transpose(logit, perm=[0,2,1])
 #         lo=-tf.reduce_sum(target*tf.log(logit+eps))/self.batch_size
@@ -139,9 +151,12 @@ class Model:
         self.g_loss = lo
         self.g_loss_sum = tf.summary.scalar("g_loss", tf.reduce_mean(self.g_loss))
 
-        self.exps=tf.placeholder(tf.float32, [32,80000,1], name="FB")
-        self.fake_B_sum = tf.summary.audio("fake_B", self.exps, 16000, 1)
-        self.rrs=tf.summary.merge([self.fake_B_sum])
+        self.exps=tf.placeholder(tf.float32, [1,1,160000], name="FB")
+        self.fake_B_sum = tf.summary.audio("fake_B", tf.reshape(self.exps,[1,160000,1]), 16000, 1)
+
+        self.g_loss_epo=tf.placeholder(tf.float32,name="g_l_epo")
+        self.g_loss_epoch = tf.summary.scalar("g_loss_epoch", self.g_loss_epo)
+        self.rrs=tf.summary.merge([self.fake_B_sum,self.g_loss_epoch])
         self.saver = tf.train.Saver()
 
     def convert(self,in_put):
@@ -193,7 +208,7 @@ class Model:
             print(" [*] Load SUCCESS")
         else:
             print(" [!] Load failed...")
-        self.experiment=Experiment("Wave2Wave_train_test_ver_0.6")
+        self.experiment=Experiment(self.dataset_name)
         self.experiment.param("lr_g_opt", lr_g_opt)
         self.experiment.param("beta_g_opt", beta_g_opt)
         for epoch in range(0,100):
@@ -202,8 +217,8 @@ class Model:
             batch_idxs = min(len(data), args.train_size) // self.batch_size
             test=load_data('./Model/datasets/test/test.wav').reshape(1,1,160000)
             # test
-            out_puts=self.convert(test)
-            upload(out_puts,self.drive)
+#             out_puts=self.convert(test)
+#             upload(out_puts,self.drive)
             #test end
             gps=0
             counter=0
@@ -239,29 +254,29 @@ class Model:
                         self.writer.add_summary(hg, counter//100+ti*epoch)
                     res=self.sess.run(self.fake_B_decoded,feed_dict={ self.real_data:resorce ,self.curs:cur_res, self.ans:target ,self.is_train:False })
                     res=res*32767
-                    cur_res=np.append(cur_res,res, axis=2)
-
-                    cur_res=cur_res[:,:,self.out_put_size[2]-1:-1]
-                    self.exp=np.append(self.exp,res, axis=2)
                     if counter % 100==0:
                         errG = self.g_loss.eval({ self.real_data:resorce, self.curs:cur_res,self.ans:target ,self.is_train:False})
                         g_score += (np.mean(errG))
                         times_added+=1
+                    cur_res=np.append(cur_res,res, axis=2)
+                    cur_res=cur_res[:,:,self.out_put_size[2]-1:-1]
+                    self.exp=np.append(self.exp,res, axis=2)
                     counter += 1
                 gps+=(g_score/times_added)
                 self.writer.add_summary(hg, counter//100+ti*epoch)
             self.save(args.checkpoint_dir, epoch+1)
-            f=open('Z:/Data.txt','a')
+            ff='Data.txt'
+            f=open(ff,'a')
+            f.write("TimeStamped:"+nowtime())
             f.write("\nEpoch: [%2d]  time: %4.4f, G-LOSS: %f \n" % (epoch+1,time.time() - start_time,(gps/batch_idxs)))
             print("\nEpoch: [%2d]  time: %4.4f, G-LOSS: %f \n" % (epoch+1, time.time() - start_time,(gps/batch_idxs)))
             self.experiment.metric("errG",gps/batch_idxs)
             f.close()
             out_puts=self.convert(test)
-            out_put=out_puts/32767.0
-            self.exp=self.exp[:self.batch_size,:,80000:160000]
-            rs=self.sess.run(self.rrs,feed_dict={ self.exps:self.exp.reshape([out_put,80000,1])})
+            out_put=(out_puts.astype(np.float32)/32767.0)
+            rs=self.sess.run(self.rrs,feed_dict={ self.exps:out_put,self.g_loss_epo:(gps/batch_idxs)})
             self.writer.add_summary(rs, epoch+1)
-            upload(out_puts,self.drive)
+            upload(out_puts,ff,self.drive,self.id_of_result)
             start_time = time.time()
         self.experiment.end()
 
@@ -296,16 +311,18 @@ class Model:
         else:
             assert tf.get_variable_scope().reuse == False
 
-#         current_output=tf.cast(current_outputs, tf.float32)
+        current_output=tf.reshape(current_outputs, [self.batch_size,256,self.in_put_size[2],1])
+        in_puts=tf.reshape(in_put, [self.batch_size,256,self.in_put_size[2],1])
 #         in_puts=tf.cast(in_put, tf.float32)
         #causual
-        current = self.causal_layer(current_outputs,reuse)
+        current = self.causal_layer(current_output,reuse,"causual_c")
+        in_puts = self.causal_layer(in_puts,reuse,"causual_g")
         #dilation
         outputs=[]
         self.receptive_field = (2 - 1) * sum(self.dilations) + 1
         self.receptive_field += 2 - 1
         for i in range(self.depth):
-            otp,current=self.dilation_layer(reuse,current,in_put,i)
+            otp,current=self.dilation_layer(reuse,current,in_puts,i)
             outputs.append(otp)
         total=sum(outputs)
         transformed=tf.nn.leaky_relu(total)
@@ -317,24 +334,25 @@ class Model:
             w=self.var['postprocessing']['postprocess1']
             w2=self.var['postprocessing']['postprocess2']
             transformed=tf.layers.batch_normalization(transformed,training=self.is_train)
-            conv = tf.nn.conv1d(transformed,w,stride=1,data_format="NCHW",padding='VALID',name="post_01")
-            conv = tf.nn.bias_add(conv,self.var['postprocessing']['bias'])
+            conv = tf.nn.conv2d(transformed, w, [1,1,1,1], padding="VALID",data_format="NCHW",dilations=[1,1,self.dilations[self.depth+1],1] ,name="post_01")
+            conv = tf.nn.bias_add(conv,self.var['postprocessing']['bias'],data_format="NCHW")
             transformed=tf.nn.leaky_relu(conv)
             transformed=tf.layers.batch_normalization(transformed,training=self.is_train)
-            conv = tf.nn.conv1d(transformed,w2,stride=1,data_format="NCHW",padding='VALID',name="post_02")
-            conv = tf.nn.bias_add(conv,self.var['postprocessing']['bias2'])
+            conv = tf.nn.conv2d(transformed, w2, [1,1,1,1], padding="VALID",data_format="NCHW",dilations=[1,1,self.dilations[self.depth+2],1] ,name="post_02")
+            conv = tf.nn.bias_add(conv,self.var['postprocessing']['bias2'],data_format="NCHW")
+            conv=tf.reshape(conv, [self.batch_size,512,-1])
         sm=tf.transpose(conv, perm=[0,2,1])
         sm = tf.nn.softmax(sm,axis=2)
         sm=tf.transpose(sm, perm=[0,2,1])
         return sm , conv
-    def causal_layer(self,current_otp,reuse):
-        with tf.variable_scope("causual",reuse=reuse):
+    def causal_layer(self,current_otp,reuse,name="causual"):
+        with tf.variable_scope(name,reuse=reuse):
             if reuse:
                 tf.get_variable_scope().reuse_variables()
             else:
                 assert tf.get_variable_scope().reuse == False
             w =self.var['causal_layer']['filter']
-            res= tf.nn.conv1d(current_otp,w,stride=2,data_format="NCHW",padding='VALID',name="cursual_layer_conv1d")
+            res=  tf.nn.conv2d(current_otp, w, [1,1,1,1], padding="VALID",data_format="NCHW",dilations=[1,1,self.dilations[0],1] ,name="cur_01")
             return tf.nn.leaky_relu(res)
     def dilation_layer(self,reuse,in_put,global_cond,depth):
         with tf.variable_scope("dil",reuse=reuse):
@@ -345,25 +363,25 @@ class Model:
             #前処理
             etan=tf.layers.batch_normalization(in_put,training=self.is_train,name="bn_"+str(depth)+"-"+str(1))
             w=self.var['dilated_stack'][depth]['w'+str(depth)+'-1']
-            etan = tf.nn.conv1d(etan, w, stride=2,data_format="NCHW", padding='VALID',name="conv1d_"+str(depth)+"-"+str(1))
+            etan = tf.nn.conv2d(etan, w, [1,1,1,1], padding="VALID",data_format="NCHW",dilations=[1,1,self.dilations[depth+1],1] ,name="dil_01")
             w=self.var['dilated_stack'][depth]['w'+str(depth)+'-1i']
-            etan=etan + tf.nn.conv1d(global_cond, w, stride=2**(depth+2),data_format="NCHW", padding='VALID',name="conv1d_"+str(depth)+"-"+str(1.5))
+            etan=etan + tf.nn.conv2d(global_cond, w, strides=[1,1,1,1],data_format="NCHW", padding='VALID',name="conv2d_"+str(depth)+"-"+str(1.5))
             etan=tf.nn.tanh(etan)
             w=self.var['dilated_stack'][depth]['w'+str(depth)+'-2']
             esig=tf.layers.batch_normalization(in_put,training=self.is_train,name="bn_"+str(depth)+"-"+str(2))
-            esig = tf.nn.conv1d(esig, w, stride=2,data_format="NCHW", padding='VALID',name="conv1d_"+str(depth)+"-"+str(2))
+            esig = tf.nn.conv2d(esig, w, [1,1,1,1], padding="VALID",data_format="NCHW",dilations=[1,1,self.dilations[depth+1],1] ,name="dil_02")
             w=self.var['dilated_stack'][depth]['w'+str(depth)+'-2i']
-            esig=esig + tf.nn.conv1d(global_cond, w, stride=2**(depth+2),data_format="NCHW", padding='VALID',name="conv1d_"+str(depth)+"-"+str(2.5))
+            esig=esig + tf.nn.conv2d(global_cond, w, strides=[1,1,1,1],data_format="NCHW", padding='VALID',name="conv2d_"+str(depth)+"-"+str(2.5))
             esig=tf.nn.sigmoid(esig)
             d8=tf.multiply(etan,esig)
             d8=tf.layers.batch_normalization(d8,training=self.is_train,name="bn_"+str(depth)+"-"+str(3))
             w=self.var['dilated_stack'][depth]['w'+str(depth)+'-3']
             d9=tf.layers.dropout(d8, rate=self.rate,training=self.is_train,name="do_"+str(depth)+"-"+str(1))
-            otp=tf.nn.conv1d(d9, w, stride=1, padding="SAME",data_format="NCHW", name="dense")
+            otp=tf.nn.conv2d(d9, w, [1,1,1,1], padding="VALID",data_format="NCHW",dilations=[1,1,1,1] ,name="dil_03")
             obs=tf.shape(in_put)[2]-tf.shape(otp)[2]
             w=self.var['dilated_stack'][depth]['w'+str(depth)+'-4']
-            skp=tf.nn.conv1d(d8, w, stride=1, padding="VALID",data_format="NCHW", name="skip")
-            return skp,otp+tf.slice(in_put, [0,0,obs],[-1,-1,-1])
+            skp=tf.nn.conv2d(d9, w, [1,1,1,1], padding="VALID",data_format="NCHW",dilations=[1,1,1,1] ,name="dil_04")
+            return skp,otp+tf.slice(in_put, [0,0,obs,0],[-1,-1,-1,-1])
 
     def save(self, checkpoint_dir, step):
         model_name = "wave2wave.model"
@@ -390,7 +408,10 @@ class Model:
             return True
         else:
             return False
-def upload(voice,drive):
+
+def nowtime():
+    return datetime.now().strftime("%Y_%m_%d %H_%M_%S")
+def upload(voice,res,drive,id_of_result):
     voiced=voice.astype(np.int16)
     p=pyaudio.PyAudio()
     FORMAT = pyaudio.paInt16
@@ -403,6 +424,9 @@ def upload(voice,drive):
     p.terminate()
     f = drive.CreateFile({'id':'1jOONrLOutTRekKM_f23QEcd-FdfC2Pax'})
     f.SetContentFile("tmp.wav")
+    f.Upload()
+    f = drive.CreateFile({'id':id_of_result})
+    f.SetContentFile(res)
     f.Upload()
 def load_data(image_path):
     images = imread(image_path)
