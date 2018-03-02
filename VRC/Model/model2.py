@@ -5,7 +5,6 @@ import time
 from six.moves import xrange
 import numpy as np
 import wave
-from . import eve
 from tensorflow.python import debug as tf_debug
 from tensorflow.python.debug.lib.debug_data import has_inf_or_nan
 from pydrive.auth import GoogleAuth
@@ -51,12 +50,7 @@ class Model:
         for i in range(self.depth):
             a=a_in-(self.width)*self.dilations[i]+1
             self.f_dilations.append(a)
-        config = tf.ConfigProto(
-            gpu_options=tf.GPUOptions(
-                per_process_gpu_memory_fraction=0.8
-                )
-            )
-        self.sess=tf.InteractiveSession(config=config)
+        self.sess=tf.InteractiveSession()
         if debug:
             self.sess=tf_debug.LocalCLIDebugWrapperSession(self.sess)
             self.sess.add_tensor_filter('has_inf_or_nan', has_inf_or_nan)
@@ -183,14 +177,14 @@ class Model:
         lr_g_opt=0.0001
         beta_g_opt=0.9
         self.lod="[glr="+str(lr_g_opt)+",gb="+str(beta_g_opt)+"]"
-        g_optim = eve.EveOptimizer(lr_g_opt,beta_g_opt).minimize(self.g_loss, var_list=self.g_vars)
+        g_optim = tf.train.AdamOptimizer(lr_g_opt,beta_g_opt).minimize(self.g_loss, var_list=self.g_vars)
 
         init_op = tf.global_variables_initializer()
         self.exp= np.zeros((self.batch_size,1,80000),dtype=np.int16)
         self.real_ds= np.zeros((self.batch_size,1,80000),dtype=np.int16)
         self.sess.run(init_op)
         self.g_sum = tf.summary.merge([ self.g_loss_sum])
-        self.writer = tf.summary.FileWriter("./logs/"+self.lod, self.sess.graph)
+        self.writer = tf.summary.FileWriter("./logs/"+self.lod+self.dataset_name, self.sess.graph)
         counter = 1
         start_time = time.time()
 
@@ -276,7 +270,7 @@ class Model:
         inputs = tf.sign(ten,"sign2")*(tf.log(1+mu*tf.abs(ten),name="encode_log_up")/(tf.log(1+mu,name="encode_log_down")))
         return tf.to_float(inputs)
     def one_hot(self,inp):
-        inp=tf.cast(inp,tf.int32)
+        inp=tf.cast(inp,tf.int32,name="integer")
         ten=tf.one_hot(inp, 256, axis=-1)
         ten=tf.reshape(ten, [self.batch_size,-1,256])
         ten=tf.transpose(ten, perm=[0,2,1])
