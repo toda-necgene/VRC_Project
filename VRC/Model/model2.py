@@ -10,7 +10,12 @@ from tensorflow.python.debug.lib.debug_data import has_inf_or_nan
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 import pyaudio
+from . import eve
 from datetime import datetime
+from tensorflow.python.ops import random_ops
+from tensorflow.python.layers import base
+from tensorflow.python.layers import utils
+from numpy import rate
 class Model:
     def __init__(self,debug):
         self.rate=0.4
@@ -18,7 +23,7 @@ class Model:
         self.up=64
         self.input_ch=256
         self.out_channels=self.down
-        self.width=4
+        self.width=3
         f=open("Data.txt",'w')
         f.write("Start:"+nowtime())
         f.close()
@@ -45,12 +50,12 @@ class Model:
             self.dilations.append(d)
         self.in_put_size=[self.batch_size,1,d+self.out_put_size[2]]
         for i in range(self.depth):
-            self.hance.append((self.width)*self.dilations[i])
+            self.hance.append((self.width)*self.dilations[i]+1)
         a_in= self.in_put_size[2]-self.out_put_size[2]
         for i in range(self.depth):
             a=a_in-(self.width)*self.dilations[i]+1
             self.f_dilations.append(a)
-        self.sess=tf.InteractiveSession()
+        self.sess=tf.InteractiveSession(config=tf.ConfigProto(gpu_options=tf.GPUOptions(per_process_gpu_memory_fraction=0.95)))
         if debug:
             self.sess=tf_debug.LocalCLIDebugWrapperSession(self.sess)
             self.sess.add_tensor_filter('has_inf_or_nan', has_inf_or_nan)
@@ -74,13 +79,13 @@ class Model:
                         w= tf.get_variable('w1a', [self.width,1,self.down,self.up],initializer=tf.contrib.layers.xavier_initializer())
                         l2ls.append(w)
                         current['w'+str(i)+'-1'] =w
-                        w= tf.get_variable('w1ia', [self.hance[i],1,self.down,self.up],initializer=tf.contrib.layers.xavier_initializer())
+                        w= tf.get_variable('w1ia', [self.hance[i],1,self.input_ch,self.up],initializer=tf.contrib.layers.xavier_initializer())
                         l2ls.append(w)
                         current['w'+str(i)+'-1i'] =w
                         w= tf.get_variable('w2a', [self.width,1,self.down,self.up],initializer=tf.contrib.layers.xavier_initializer())
                         l2ls.append(w)
                         current['w'+str(i)+'-2'] =w
-                        w= tf.get_variable('w2ia', [self.hance[i],1,self.down,self.up],initializer=tf.contrib.layers.xavier_initializer())
+                        w= tf.get_variable('w2ia', [self.hance[i],1,self.input_ch,self.up],initializer=tf.contrib.layers.xavier_initializer())
                         l2ls.append(w)
                         current['w'+str(i)+'-2i'] =w
                         w = tf.get_variable('w3a', [1,1,self.up,self.down],initializer=tf.contrib.layers.xavier_initializer())
@@ -177,7 +182,7 @@ class Model:
         lr_g_opt=0.0001
         beta_g_opt=0.9
         self.lod="[glr="+str(lr_g_opt)+",gb="+str(beta_g_opt)+"]"
-        g_optim = tf.train.AdamOptimizer(lr_g_opt,beta_g_opt).minimize(self.g_loss, var_list=self.g_vars)
+        g_optim = eve.EveOptimizer(lr_g_opt,beta_g_opt).minimize(self.g_loss, var_list=self.g_vars)
 
         init_op = tf.global_variables_initializer()
         self.exp= np.zeros((self.batch_size,1,80000),dtype=np.int16)
@@ -300,7 +305,6 @@ class Model:
 #         in_puts=tf.cast(in_put, tf.float32)
         #causual
         current = self.causal_layer(current_output,reuse,"causual_c")
-        in_puts = self.causal_layer(in_puts,reuse,"causual_g")
         #dilation
         outputs=[]
         self.receptive_field = (2 - 1) * sum(self.dilations) + 1
@@ -331,7 +335,7 @@ class Model:
         sm=tf.transpose(sm, perm=[0,2,1])
         return sm , conv
     def causal_layer(self,current_otp,reuse,name="causual"):
-        with tf.variable_scope(name,reuse=reuse):
+        with tf.variable_scope(name):
             if reuse:
                 tf.get_variable_scope().reuse_variables()
             else:
@@ -362,11 +366,12 @@ class Model:
             d8=tf.multiply(etan,esig)
             d8=tf.layers.batch_normalization(d8,training=self.is_train,name="bn_"+str(depth)+"-"+str(3))
             w=self.var['dilated_stack'][depth]['w'+str(depth)+'-3']
-            d9=tf.layers.dropout(d8, rate=self.rate,training=self.is_train,name="do_"+str(depth)+"-"+str(1))
-            otp=tf.nn.conv2d(d9, w, [1,1,1,1], padding="VALID",data_format="NCHW",dilations=[1,1,1,1] ,name="dil_03")
+            otp=tf.nn.conv2d(d8, w, [1,1,1,1], padding="VALID",data_format="NCHW",dilations=[1,1,1,1] ,name="dil_03")
             obs=tf.shape(in_put)[2]-tf.shape(otp)[2]
             w=self.var['dilated_stack'][depth]['w'+str(depth)+'-4']
-            skp=tf.nn.conv2d(d9, w, [1,1,1,1], padding="VALID",data_format="NCHW",dilations=[1,1,1,1] ,name="dil_04")
+            skp=tf.nn.conv2d(d8, w, [1,1,1,1], padding="VALID",data_format="NCHW",dilations=[1,1,1,1] ,name="dil_04")
+            otp=shake_drop(otp, rate=self.rate,training=self.is_train,name="do_"+str(depth)+"-"+str(1))
+
             return skp,otp+tf.slice(in_put, [0,0,obs,0],[-1,-1,-1,-1])
 
     def save(self, checkpoint_dir, step):
@@ -394,6 +399,36 @@ class Model:
             return True
         else:
             return False
+def shake_drop(in_p,rate,training,name):
+    layer=Shake_Dropout(rate,name)
+    return layer.apply(in_p,training=training)
+class Shake_Dropout(base.Layer):
+    def __init__(self,rate,name,**kwargs):
+        super(Shake_Dropout, self).__init__(name=name, **kwargs)
+        self.rate=1-rate
+
+
+    def call(self,inputs,training=False):
+        def dropped_inputs():
+            b=self.rate+random_ops.random_uniform(inputs.shape, name=self.name+"SDR_1")
+            @tf.RegisterGradient(self.name+"Gradient_Ident")
+            def _change_grad(op,grad):
+                b=self.rate+random_ops.random_uniform(inputs.shape,name= self.name)
+                bel=tf.floor(b)
+                return tf.stop_gradient((1-bel)*grad*(random_ops.random_uniform(inputs.shape, name=self.name)*2-1))
+
+            bel=tf.floor(b)
+            ten1=bel*inputs
+
+            ten2=tf.stop_gradient((1-bel)*inputs*(random_ops.random_uniform(inputs.shape,name=self.name)*2-1))
+            g=tf.get_default_graph()
+            with g.gradient_override_map({self.name+"Ident": self.name+"Gradient_Ident"}):
+                ten3=tf.identity(inputs,self.name+"Ident")
+            ten=ten1+ten2+ten3
+            return ten
+        return utils.smart_cond(training,
+                            dropped_inputs,
+                            lambda: tf.identity(inputs))
 
 def nowtime():
     return datetime.now().strftime("%Y_%m_%d %H_%M_%S")
