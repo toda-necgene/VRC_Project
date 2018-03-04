@@ -1,16 +1,16 @@
-from glob import glob
+# from glob import glob
 import tensorflow as tf
 import os
-import time
-from six.moves import xrange
-import numpy as np
-import wave
-from tensorflow.python import debug as tf_debug
-from tensorflow.python.debug.lib.debug_data import has_inf_or_nan
-from datetime import datetime
-from tensorflow.python.ops import random_ops
+# import time
+# from six.moves import xrange
+# import numpy as np
+# import wave
+# from tensorflow.python import debug as tf_debug
+# from tensorflow.python.debug.lib.debug_data import has_inf_or_nan
+# from datetime import datetime
+# from tensorflow.python.ops import random_ops
 from tensorflow.python.layers import base
-from tensorflow.python.layers import utils
+# from tensorflow.python.layers import utils
 class Model:
     def __init__(self,debug):
         self.rate=0.9
@@ -215,10 +215,10 @@ class Model:
         # self.real_A = tf.reshape( self.encode(self.real_data),[self.batch_size,1,-1])
         # self.cursa  = tf.reshape( self.encode(self.curs),[self.batch_size,1,-1])
         with tf.variable_scope("generator_1"):
-            self.fake_B ,self.fake_B_logit= self.generator(self.real_data,True,self.var_pear[0],"1")
+            self.fake_B ,self.fake_B_logit= self.generator(self.real_data,True,self.var_pear[0],"1",False)
             # self.fake_B_decoded=tf.stop_gradient(self.decode(self.un_oh(self.fake_B)),"asnyan")
         with tf.variable_scope("generator_2"):
-            self.fake_B_2 ,self.fake_B_logit_2= self.generator(self.real_data,False,self.var_pear[1],"2")
+            self.fake_B_2 ,self.fake_B_logit_2= self.generator(self.real_data,False,self.var_pear[1],"2",False)
             # self.fake_B_decoded_2=tf.stop_gradient(self.decode(self.un_oh(self.fake_B_2)),"asnyan")
 #         self.res1=tf.concat([self.inputs_result,self.real_data_result], axis=2)
 #         self.res2=tf.concat([self.ans_result,self.real_data_result], axis=2)
@@ -300,11 +300,11 @@ class Model:
     #     otp2=otp2[otp2.shape[0]-in_put.shape[2]-1:-1]
     #     return otp.reshape(1,in_put.shape[1],in_put.shape[2]),otp2.reshape(1,in_put.shape[1],in_put.shape[2]),time.time()-tt
 
-    def generator(self,in_put,sd,var,name):
-        # if reuse:
-        #     tf.get_variable_scope().reuse_variables()
-        # else:
-        #     assert tf.get_variable_scope().reuse == False
+    def generator(self,in_put,sd,var,name,reuse):
+        if reuse:
+            tf.get_variable_scope().reuse_variables()
+        else:
+            assert tf.get_variable_scope().reuse == False
 
         current_output=tf.reshape(in_put, [self.batch_size,256,self.in_put_size[2],1])
         in_puts=tf.reshape(in_put, [self.batch_size,256,self.in_put_size[2],1])
@@ -316,16 +316,16 @@ class Model:
         self.receptive_field = (2 - 1) * sum(self.dilations) + 1
         self.receptive_field += 2 - 1
         for i in range(self.depth):
-            otp,current=self.dilation_layer(current,in_puts,i,var,name,sd)
+            otp,current=self.dilation_layer(current,in_puts,i,var,reuse,name,sd)
             outputs.append(otp)
         outputs.append(current)
         total=sum(outputs)
         transformed=tf.nn.leaky_relu(total)
         with tf.variable_scope("posted"):
-            # if reuse:
-            #     tf.get_variable_scope().reuse_variables()
-            # else:
-            #     assert tf.get_variable_scope().reuse == False
+            if reuse:
+                tf.get_variable_scope().reuse_variables()
+            else:
+                assert tf.get_variable_scope().reuse == False
             w=var['postprocessing']['postprocess1']
             w2=var['postprocessing']['postprocess2']
             conv = tf.nn.conv2d(transformed, w, [1,1,1,1], padding="VALID",data_format="NCHW",dilations=[1,1,1,1] ,name="post_01"+name)
@@ -347,13 +347,13 @@ class Model:
             w =var['causal_layer']['filter']
             res=  tf.nn.conv2d(current_otp, w, [1,1,1,1], padding="VALID",data_format="NCHW",dilations=[1,1,self.dilations[0],1] ,name=name)
             return tf.nn.leaky_relu(res)
-    def dilation_layer(self,in_put,global_cond,depth,var,name,sd):
-        # with tf.variable_scope("dil",reuse=reuse):
-            # if reuse:
-            #     tf.get_variable_scope().reuse_variables()
-            # else:
-            #     assert tf.get_variable_scope().reuse == False
-            #前処理
+    def dilation_layer(self,in_put,global_cond,depth,var,reuse,name,sd):
+        with tf.variable_scope("dil",reuse=reuse):
+            if reuse:
+                tf.get_variable_scope().reuse_variables()
+            else:
+                assert tf.get_variable_scope().reuse == False
+#            前処理
 
             etan=tf.layers.batch_normalization(in_put,training=self.is_train,name="bn_"+str(depth)+"-"+str(1)+name)
             w=var['dilated_stack'][depth]['w'+str(depth)+'-1']

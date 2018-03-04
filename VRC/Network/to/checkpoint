@@ -1,6 +1,2 @@
-model_checkpoint_path: "wave2wave.model-12"
-all_model_checkpoint_paths: "wave2wave.model-8"
-all_model_checkpoint_paths: "wave2wave.model-9"
-all_model_checkpoint_paths: "wave2wave.model-10"
-all_model_checkpoint_paths: "wave2wave.model-11"
-all_model_checkpoint_paths: "wave2wave.model-12"
+model_checkpoint_path: "model-0"
+all_model_checkpoint_paths: "model-0"
