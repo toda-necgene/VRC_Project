@@ -18,12 +18,14 @@ from tensorflow.python.layers import utils
 class Model:
     def __init__(self,debug):
         self.rate=0.9
-        self.punish_scale=0.75
+        self.p_scale_1=0.
+        self.p_scale_2=0.
         self.down=128
         self.up=64
         self.input_ch=256
         self.out_channels=self.down
-        self.width=2
+        self.width=3
+        self.data_format=[1,1,80000]
         f=open("Data.txt",'w')
         f.write("Start:"+nowtime())
         f.close()
@@ -31,9 +33,9 @@ class Model:
         self.gauth.LocalWebserverAuth()
         self.drive=GoogleDrive(self.gauth)
         self.gf_dim=64
-        self.depth=5
-        self.batch_size=32
-        self.dataset_name="wave2wave_ver0.9"
+        self.depth=4
+        self.batch_size=16
+        self.dataset_name="wave2wave_ver0.95"
         f=self.drive.CreateFile({'title':str(nowtime()+self.dataset_name+'.txt')})
         f.SetContentFile('Data.txt')
         f.Upload()
@@ -42,7 +44,7 @@ class Model:
         self.f_dilations=[]
         self.hance=[]
         #in=25
-        self.out_put_size=[self.batch_size,1,512]
+        self.out_put_size=[self.batch_size,1,256]
         d=1
         self.dilations.append(d)
         for i in range(self.depth):
@@ -194,11 +196,21 @@ class Model:
                                         self.in_put_size,
                                         name='current')
         self.inputs_result = tf.placeholder(tf.float32,
-                                        [self.in_put_size[0], 1, self.out_put_size[2]],
-                                        name='inputB')
+                                        [1, 1, self.data_format[2]],
+                                        name='input_D')
+        self.ans_result = tf.placeholder(tf.float32,
+                                        [1, 1, self.data_format[2]],
+                                        name='target_D')
+        self.real_data_result = tf.placeholder(tf.float32,
+                                        [1, 1, self.data_format[2]],
+                                        name='target_D')
         self.ans= tf.placeholder(tf.float32,
                                         [self.in_put_size[0], 1, self.out_put_size[2]],
                                         name='target_b')
+        self.inputs= tf.placeholder(tf.float32,
+                                        [self.in_put_size[0], 1, self.out_put_size[2]],
+                                        name='target_d')
+
         self.is_train= tf.placeholder(tf.bool,
                                         name='is_training')
         self.punish = tf.placeholder(tf.float32,
@@ -208,23 +220,23 @@ class Model:
         self.real_A = tf.reshape( self.encode(self.real_data),[self.batch_size,1,-1])
         self.cursa  = tf.reshape( self.encode(self.curs),[self.batch_size,1,-1])
         with tf.variable_scope("generator_1"):
-            self.fake_B ,self.fake_B_logit= self.generator(self.one_hot((self.real_A+1.0)/2.*255.0),self.one_hot((self.cursa+1.0)/2.*255.0),False,self.var_pear[0],"1")
+            self.fake_B ,self.fake_B_logit= self.generator(self.one_hot((self.real_A+1.0)/2.*255.0),self.one_hot((self.real_A+1.0)/2.*255.0),False,self.var_pear[0],"1",True)
             self.fake_B_decoded=tf.stop_gradient(self.decode(self.un_oh(self.fake_B)),"asnyan")
         with tf.variable_scope("generator_2"):
-            self.fake_B_2 ,self.fake_B_logit_2= self.generator(self.one_hot((self.real_A+1.0)/2.*255.0),self.one_hot((self.cursa+1.0)/2.*255.0),False,self.var_pear[1],"2")
+            self.fake_B_2 ,self.fake_B_logit_2= self.generator(self.one_hot((self.real_A+1.0)/2.*255.0),self.one_hot((self.real_A+1.0)/2.*255.0),False,self.var_pear[1],"2",False)
             self.fake_B_decoded_2=tf.stop_gradient(self.decode(self.un_oh(self.fake_B_2)),"asnyan")
-        self.res1=tf.concat([self.inputs_result,self.real_data], axis=2)
-        self.res2=tf.concat([self.ans,self.real_data], axis=2)
-
+        self.res1=tf.concat([self.inputs_result,self.real_data_result], axis=2)
+        self.res2=tf.concat([self.ans_result,self.real_data_result], axis=2)
+        self.res1_s=tf.concat([tf.pad(self.inputs[0:0,:,:],[[0,0],[0,0],[0,self.data_format[2]-self.out_put_size[2]]]),tf.pad(self.real_data[0:0,:,self.in_put_size[2]-self.out_put_size[2]-1:-1],[[0,0],[0,0],[0,self.data_format[2]-self.out_put_size[2]]])], axis=2)
+        self.res2_s=tf.concat([tf.pad(self.ans[0:0,:,:],[[0,0],[0,0],[0,self.data_format[2]-self.out_put_size[2]]]),tf.pad(self.real_data[0:0,:,self.in_put_size[2]-self.out_put_size[2]-1:-1],[[0,0],[0,0],[0,self.data_format[2]-self.out_put_size[2]]])], axis=2)
         self.d_judge_F1,self.d_judge_F1_logits=self.discriminator(self.res1,self.var_pear[2],False)
         self.d_judge_R,self.d_judge_R_logits=self.discriminator(self.res2,self.var_pear[2],True)
-
-
+        self.d_judge_F1_s,self.d_judge_F1_logits_s=self.discriminator(self.res1_s,self.var_pear[2],True)
+        self.d_judge_R_s,self.d_judge_R_logits_s=self.discriminator(self.res2_s,self.var_pear[2],True)
+        self.d_scale = self.d_judge_R - self.d_judge_F1
         self.g_vars_1=l1ls
         self.g_vars_2=l2ls
         self.d_vars=l3ls
-
-
         target=tf.cast(tf.reshape((self.real_B+1.0)/2.0*255.0,[self.batch_size,-1]),dtype=tf.int32)
 
         logit_1=tf.transpose(self.fake_B_logit, perm=[0,2,1])
@@ -239,20 +251,24 @@ class Model:
         self.d_loss_R = tf.losses.sigmoid_cross_entropy(tf.zeros_like(self.d_judge_R), self.d_judge_R_logits )
         self.d_loss_F = tf.losses.sigmoid_cross_entropy(tf.ones_like(self.d_judge_F1), self.d_judge_F1_logits )
         self.d_loss=tf.reduce_mean([self.d_loss_F,self.d_loss_R])
-
+        self.d_loss_R_s = tf.losses.sigmoid_cross_entropy(tf.zeros_like(self.d_judge_R_s), self.d_judge_R_logits_s )
+        self.d_loss_F_s = tf.losses.sigmoid_cross_entropy(tf.ones_like(self.d_judge_F1_s), self.d_judge_F1_logits_s )
+        self.d_loss_s=tf.reduce_mean([self.d_loss_F_s,self.d_loss_R_s])
         self.g_loss_sum = tf.summary.scalar("g_loss_1", tf.reduce_mean(self.g_loss_1))
         self.g_loss_sum_2 = tf.summary.scalar("g_loss_2", tf.reduce_mean(self.g_loss_2))
         self.d_loss_sum = tf.summary.scalar("d_loss", tf.reduce_mean(self.d_loss))
 
         self.exps=tf.placeholder(tf.float32, [1,1,160000], name="FB")
-        self.fake_B_sum = tf.summary.audio("fake_B", tf.reshape(self.exps,[1,160000,1]), 16000, 1)
+        self.exps_2=tf.placeholder(tf.float32, [1,1,160000], name="FB2")
+        self.fake_B_sum = tf.summary.audio("fake_B_1", tf.reshape(self.exps,[1,160000,1]), 16000, 1)
+        self.fake_B_sum_2 = tf.summary.audio("fake_B_2", tf.reshape(self.exps_2,[1,160000,1]), 16000, 1)
 
         self.g_loss_epo=tf.placeholder(tf.float32,name="g_l_epo")
         self.g_loss_epoch = tf.summary.scalar("g_loss_epoch", self.g_loss_epo)
 
         self.g_loss_epo_2=tf.placeholder(tf.float32,name="g_l_epo_2")
         self.g_loss_epoch_2 = tf.summary.scalar("g_loss_epoch_2", self.g_loss_epo_2)
-        self.rrs=tf.summary.merge([self.fake_B_sum,self.g_loss_epoch,self.g_loss_epoch_2])
+        self.rrs=tf.summary.merge([self.fake_B_sum,self.fake_B_sum_2,self.g_loss_epoch,self.g_loss_epoch_2])
         self.saver = tf.train.Saver()
 
     def convert(self,in_put):
@@ -263,6 +279,7 @@ class Model:
         cur_res=np.zeros((self.in_put_size[0],self.in_put_size[1],self.in_put_size[2]),dtype=np.int16)
         cur_res_2=np.zeros((self.in_put_size[0],self.in_put_size[1],self.in_put_size[2]),dtype=np.int16)
         otp=np.array([],dtype=np.int16)
+        otp2=np.array([],dtype=np.int16)
         for t in range(times):
             red=np.zeros((self.in_put_size[0]-1,self.in_put_size[1],self.in_put_size[2]))
             start_pos=self.out_put_size[2]*(t)+((in_put.shape[2])%self.out_put_size[2])
@@ -276,19 +293,21 @@ class Model:
             res=res*32767
             cur_res=np.append(cur_res,res,axis=2)
             cur_res=cur_res[:,:,self.out_put_size[2]-1:-1]
+            otp=np.append(otp,res[0,0])
             res2=self.sess.run(self.fake_B_decoded_2,feed_dict={ self.real_data:cur_res ,self.curs:cur_res_2 ,self.is_train:False })
             res2=res2*32767
             cur_res_2=np.append(cur_res_2,res2, axis=2)
             cur_res_2=cur_res_2[:,:,self.out_put_size[2]-1:-1]
-            otp=np.append(otp,res2[0,0])
+            otp2=np.append(otp,res2[0,0])
         otp=otp[otp.shape[0]-in_put.shape[2]-1:-1]
-        return otp.reshape(1,in_put.shape[1],in_put.shape[2]),tt-time.time()
+        otp2=otp2[otp2.shape[0]-in_put.shape[2]-1:-1]
+        return otp.reshape(1,in_put.shape[1],in_put.shape[2]),otp2.reshape(1,in_put.shape[1],in_put.shape[2]),time.time()-tt
     def train(self,args):
         """Train pix2pix"""
         self.checkpoint_dir=args.checkpoint_dir
-        lr_g_opt=0.000001
+        lr_g_opt=0.0001
         beta_g_opt=0.9
-        lr_g_opt_2=0.000001
+        lr_g_opt_2=0.0001
         beta_g_opt_2=0.9
         lr_d_opt=0.0001
         beta_d_opt=0.9
@@ -296,6 +315,7 @@ class Model:
         g_optim_1 = eve.EveOptimizer(lr_g_opt,beta_g_opt).minimize(self.g_loss_1, var_list=self.g_vars_1)
         g_optim_2 = eve.EveOptimizer(lr_g_opt_2,beta_g_opt_2).minimize(self.g_loss_2, var_list=self.g_vars_2)
         d_optim = eve.EveOptimizer(lr_d_opt,beta_d_opt).minimize(self.d_loss, var_list=self.d_vars)
+        d_optim_s = eve.EveOptimizer(lr_d_opt,beta_d_opt).minimize(self.d_loss_s, var_list=self.d_vars)
         init_op = tf.global_variables_initializer()
         self.exp= np.zeros((self.batch_size,1,80000),dtype=np.int16)
         self.real_ds= np.zeros((self.batch_size,1,80000),dtype=np.int16)
@@ -303,7 +323,8 @@ class Model:
         self.writer = tf.summary.FileWriter("./logs/"+self.lod+self.dataset_name, self.sess.graph)
         counter = 1
         start_time = time.time()
-
+        cv1=None
+        cv2=None
         if self.load(self.checkpoint_dir):
             print(" [*] Load SUCCESS")
         else:
@@ -314,8 +335,10 @@ class Model:
         p1=0
         p2=0
         for epoch in range(0,100):
-            data = glob('./Model/datasets/train/*')
+            data = glob('./Model/datasets/train/01/*')
+            data2 = glob('./Model/datasets/train/02/*')
             np.random.shuffle(data)
+            np.random.shuffle(data2)
             batch_idxs = min(len(data), args.train_size) // self.batch_size
             test=load_data('./Model/datasets/test/test.wav').reshape(1,1,160000)
             # test
@@ -333,6 +356,8 @@ class Model:
                 batch_files = data[idx*self.batch_size:(idx+1)*self.batch_size]
                 batch = [load_data(batch_file) for batch_file in batch_files]
                 batch_images = np.array(batch).astype(np.float32).reshape(self.batch_size,2,80000)
+                test_train=load_data(data2[idx]).reshape(1,2,80000)
+
                 self.real_ds=batch_images[:,:1,:]
                 times=5*16000//self.out_put_size[2]+1
                 times_added=0
@@ -355,13 +380,13 @@ class Model:
                         target=np.pad(target,((0,0),(0,0),(r,0)),'constant')
 
                     # Update G1 network
-                    _,hg=self.sess.run([g_optim_1,self.g_loss_sum],feed_dict={ self.real_data:resorce, self.curs:cur_res,self.ans:target ,self.is_train:True,self.punish:p1 })
+                    _,hg=self.sess.run([g_optim_1,self.g_loss_sum],feed_dict={ self.real_data:resorce, self.curs:cur_res,self.ans:target ,self.is_train:True,self.punish:p1*self.p_scale_1 })
                     if counter % 100==0:
                         self.writer.add_summary(hg, counter//100+ti*epoch)
                     res=self.sess.run(self.fake_B_decoded,feed_dict={ self.real_data:resorce ,self.curs:cur_res, self.ans:target ,self.is_train:False })
                     res=res*32767
                     if counter % 100==0:
-                        errG = self.g_loss_1.eval({ self.real_data:resorce, self.curs:cur_res,self.ans:target ,self.is_train:False,self.is_train:False,self.punish:p1})
+                        errG = self.g_loss_1.eval({ self.real_data:resorce, self.curs:cur_res,self.ans:target ,self.is_train:False,self.is_train:False,self.punish:p1*self.p_scale_1})
                         g_score += (np.mean(errG))
                         times_added+=1
                     cur_res=np.append(cur_res,res, axis=2)
@@ -369,38 +394,47 @@ class Model:
 
 
                     # Update G2 network
-                    _,hg=self.sess.run([g_optim_2,self.g_loss_sum_2],feed_dict={ self.real_data:cur_res, self.curs:cur_res_2,self.ans:target ,self.is_train:True ,self.punish:p2})
+                    _,hg=self.sess.run([g_optim_2,self.g_loss_sum_2],feed_dict={ self.real_data:cur_res, self.curs:cur_res_2,self.ans:target ,self.is_train:True ,self.punish:p2*self.p_scale_2})
                     if counter % 100==0:
                         self.writer.add_summary(hg, counter//100+ti*epoch)
                     res2=self.sess.run(self.fake_B_decoded_2,feed_dict={ self.real_data:cur_res ,self.curs:cur_res_2, self.ans:target ,self.is_train:False })
                     res2=res2*32767
                     if counter % 100==0:
-                        errG = self.g_loss_2.eval({ self.real_data:cur_res, self.curs:cur_res_2,self.ans:target ,self.is_train:False,self.is_train:False,self.punish:p2})
+                        errG = self.g_loss_2.eval({ self.real_data:cur_res, self.curs:cur_res_2,self.ans:target ,self.is_train:False,self.is_train:False,self.punish:p2*self.p_scale_2})
                         g_score2 += (np.mean(errG))
                         times_added+=1
                     cur_res_2=np.append(cur_res_2,res2, axis=2)
                     cur_res_2=cur_res_2[:,:,self.out_put_size[2]-1:-1]
 
-                    # Update D network
-                    self.sess.run(d_optim,feed_dict={self.real_data:resorce , self.real_data:resorce ,self.inputs_result:res,self.ans:target ,self.is_train:True })
-                    _,hd=self.sess.run([d_optim,self.d_loss_sum],feed_dict={self.real_data:resorce , self.inputs_result:res2,self.ans:target ,self.is_train:True })
-                    if counter % 100==0:
-                        self.writer.add_summary(hd, counter//100+ti*epoch)
-                        errD = self.d_loss.eval({ self.real_data:resorce ,self.inputs_result:res,self.ans:target ,self.is_train:False})
-                        errD_2 = self.d_loss.eval({ self.real_data:resorce ,self.inputs_result:res2,self.ans:target ,self.is_train:False})
-                        d_score += (np.mean(errD))
-                        d_score += (np.mean(errD_2))
-                    p1a=self.sess.run(self.d_judge_F1,feed_dict={ self.real_data:resorce ,self.inputs_result:res ,self.ans:target ,self.is_train:False })
-                    p2a=self.sess.run(self.d_judge_F1,feed_dict={self.real_data:resorce , self.inputs_result:res2 ,self.ans:target ,self.is_train:False })
-                    p1=np.mean(p1a)
-                    p2=min(np.mean(p2a),p1*self.punish_scale)
-                    p1=-(np.log(p1))
-                    p2=-(np.log(p2))
-
                     counter += 1
+                    #Training D Netwok
+                    if not( cv1 is None) and not( cv2 is None):
+                        self.sess.run(d_optim_s,feed_dict={self.real_data:resorce,self.inputs:res,self.ans:target ,self.is_train:True })
+                        self.sess.run(d_optim_s,feed_dict={self.real_data:resorce,self.inputs:res2,self.ans:target ,self.is_train:True })
+
                 gps+=(g_score/times_added)
                 gps2+=(g_score2/times_added)
-                dps+=(d_score/times_added)
+                resorce=test_train[0,1,:].reshape(1,1,-1)
+                cv1,cv2,_=self.convert(resorce)
+                target=test_train[0,0,:].reshape(1,1,-1)
+                #update_Punish_scale
+                p1a,p1s=self.sess.run([self.d_judge_F1,self.d_scale],feed_dict={ self.real_data_result:resorce ,self.inputs_result:cv1 ,self.ans_result:target ,self.is_train:False })
+                p2a,p2s=self.sess.run([self.d_judge_F1,self.d_scale],feed_dict={self.real_data_result:resorce , self.inputs_result:cv2 ,self.ans_result:target ,self.is_train:False })
+                p1=np.mean(p1a)
+                p2=np.mean(p2a)
+                p1=-(np.log(p1+1e-8))
+                p2=-(np.log(p2+1e-8))
+                self.p_scale_1=max([0,np.mean(p1s)*5.])
+                self.p_scale_2=max([0,np.mean(p2s)*5.])
+                # Update D network
+                self.sess.run(d_optim,feed_dict={self.real_data_result:resorce ,self.inputs_result:cv1,self.ans_result:target ,self.is_train:True })
+                _,hd=self.sess.run([d_optim,self.d_loss_sum],feed_dict={self.real_data_result:resorce , self.inputs_result:cv2,self.ans_result:target ,self.is_train:True })
+                self.writer.add_summary(hd, counter//100+ti*epoch)
+                errD = self.d_loss.eval({ self.real_data_result:resorce ,self.inputs_result:cv1,self.ans_result:target ,self.is_train:False})
+                errD_2 = self.d_loss.eval({ self.real_data_result:resorce ,self.inputs_result:cv2,self.ans_result:target ,self.is_train:False})
+                d_score += (np.mean(errD))
+                d_score += (np.mean(errD_2))
+                dps+=(d_score)
             self.save(args.checkpoint_dir, epoch+1)
             ff='Data.txt'
             f=open(ff,'a')
@@ -411,9 +445,9 @@ class Model:
             f.close()
             print("\nEpoch: [%2d]  time: %3.1f, \n G-LOSS_1: %f \n G-LOSS_2: %f \n D-Loss : %f \n" % (epoch+1,time.time() - start_time,(gps/batch_idxs),(gps2/batch_idxs),(dps/batch_idxs)))
 #             self.experiment.metric("errG",gps/batch_idxs)
-            out_puts,taken_time=self.convert(test)
+            out_puts,out_put_2,taken_time=self.convert(test)
             out_put=(out_puts.astype(np.float32)/32767.0)
-            rs=self.sess.run(self.rrs,feed_dict={ self.exps:out_put,self.g_loss_epo:(gps/batch_idxs),self.g_loss_epo_2:(gps2/batch_idxs)})
+            rs=self.sess.run(self.rrs,feed_dict={ self.exps:out_put,self.exps_2:out_put_2,self.g_loss_epo:(gps/batch_idxs),self.g_loss_epo_2:(gps2/batch_idxs)})
             self.writer.add_summary(rs, epoch+1)
             upload(out_puts,ff,self.drive,self.id_of_result)
             print("test taken: %f secs" % (taken_time))
@@ -460,7 +494,7 @@ class Model:
             ot=tf.nn.sigmoid(ten)
             return ot,ten
 
-    def generator(self,in_put,current_outputs,reuse,var,name):
+    def generator(self,in_put,current_outputs,reuse,var,name,sd):
         if reuse:
             tf.get_variable_scope().reuse_variables()
         else:
@@ -476,7 +510,7 @@ class Model:
         self.receptive_field = (2 - 1) * sum(self.dilations) + 1
         self.receptive_field += 2 - 1
         for i in range(self.depth):
-            otp,current=self.dilation_layer(reuse,current,in_puts,i,var,name)
+            otp,current=self.dilation_layer(reuse,current,in_puts,i,var,name,sd)
             outputs.append(otp)
         outputs.append(current)
         total=sum(outputs)
@@ -488,11 +522,9 @@ class Model:
                 assert tf.get_variable_scope().reuse == False
             w=var['postprocessing']['postprocess1']
             w2=var['postprocessing']['postprocess2']
-            transformed=tf.layers.batch_normalization(transformed,training=self.is_train)
             conv = tf.nn.conv2d(transformed, w, [1,1,1,1], padding="VALID",data_format="NCHW",dilations=[1,1,1,1] ,name="post_01"+name)
             conv = tf.nn.bias_add(conv,var['postprocessing']['bias'],data_format="NCHW")
             transformed=tf.nn.leaky_relu(conv)
-            transformed=tf.layers.batch_normalization(transformed,training=self.is_train)
             conv = tf.nn.conv2d(transformed, w2, [1,1,1,1], padding="VALID",data_format="NCHW",dilations=[1,1,1,1] ,name="post_02"+name)
             conv = tf.nn.bias_add(conv,var['postprocessing']['bias2'],data_format="NCHW")
             conv=tf.reshape(conv, [self.batch_size,256,-1])
@@ -509,7 +541,7 @@ class Model:
             w =var['causal_layer']['filter']
             res=  tf.nn.conv2d(current_otp, w, [1,1,1,1], padding="VALID",data_format="NCHW",dilations=[1,1,self.dilations[0],1] ,name=name)
             return tf.nn.leaky_relu(res)
-    def dilation_layer(self,reuse,in_put,global_cond,depth,var,name):
+    def dilation_layer(self,reuse,in_put,global_cond,depth,var,name,sd):
         with tf.variable_scope("dil",reuse=reuse):
             if reuse:
                 tf.get_variable_scope().reuse_variables()
@@ -536,8 +568,8 @@ class Model:
             obs=tf.shape(in_put)[2]-tf.shape(otp)[2]
             w=var['dilated_stack'][depth]['w'+str(depth)+'-4']
             skp=tf.nn.conv2d(d8, w, [1,1,1,1], padding="VALID",data_format="NCHW",dilations=[1,1,1,1] ,name="dil_04"+name)
-            otp=shake_drop(otp, rate=self.rate**depth,training=self.is_train,name="do_"+str(depth)+"-"+str(1)+name)
-
+            if sd:
+                otp=shake_drop(otp, rate=self.rate**depth,training=self.is_train,name="do_"+str(depth)+"-"+str(1)+name)
             return skp,otp+tf.slice(in_put, [0,0,obs,0],[-1,-1,-1,-1])
 
     def save(self, checkpoint_dir, step):

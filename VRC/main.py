@@ -17,5 +17,5 @@ net.build_model()
 print(" [*]Built Model!!")
 args=namedtuple('checkpoint_dir', 'train_size')
 args.checkpoint_dir="./datasets"
-args.train_size=110
+args.train_size=100
 net.train(args)
