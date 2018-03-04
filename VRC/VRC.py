@@ -2,7 +2,12 @@ from mvnc import mvncapi as mvnc
 import numpy as np
 import pyaudio as pa
 import atexit
-
+def encode(inp):
+    mu=255.
+    return np.sign(inp)*np.log(1.+mu*inp)/np.log(1.+mu)
+def decode(inp):
+    mu=255.
+    return np.sign(inp)*(1./mu)*((1.+mu)**np.abs(inp)-1.)
 path_to_networks = './Network'
 graph_filename = 'graph'
 
@@ -41,14 +46,22 @@ stream=p_in.open(format = pa.paInt16,
 		output = True)
 
 while stream.is_active():
-    inputs = stream.read(chunk)
-    input_data=np.asarray(inputs).reshape(1,1,160000)
+    inputs = np.frombuffer(stream.read(chunk),dtype=np.float32).reshape(1,1,160000)
+    inp=inputs/32767.
+    inp=encode(inp).astype(np.int32)
+    inp=(inp+1.0)/2.0
+    input_data=np.eye(256)[inp]
     vc = process(input_data)
-    output = stream.write(vc)
+    vr=vc.argmax(axis = 3)/128.-1.0
+    vs=decode(vr)
+    vs=vs.astype(np.int16).getbuffer()
+    vs=vs*32767.
+    output = stream.write(vs)
+
 def terminate():
     graph.DeallocateGraph()
     device.CloseDevice()
     stream.stop_stream()
     stream.close()
-    pa.terminate()
+    p_in.terminate()
 atexit.register(terminate)
