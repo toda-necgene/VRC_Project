@@ -596,7 +596,7 @@ def dilation_conv(inp,w,name,width,otc):
 
     ten=tf.nn.conv2d(inp, w, [1,1,1,1], padding="VALID",data_format="NCHW" ,name=name)
     in_s=(ten.get_shape())
-    ten=tf.reshape(ten,[in_s[0],otc,width,in_s[2]//width,in_s[3]])
+    ten=tf.reshape(ten,[in_s[0],otc,width,in_s[2]//width,width,in_s[3]])
     ten=tf.transpose(ten, [0,1,3,2,4])
     ten=tf.reshape(ten,[in_s[0],otc,in_s[2]//width,in_s[3]*width])
     return ten
