@@ -20,7 +20,7 @@ class Model:
         self.up=64
         self.input_ch=256
         self.out_channels=self.down
-        self.width=3
+        self.width=4
         self.data_format=[1,1,80000]
         # f=open("Data.txt",'w')
         # f.write("Start:"+nowtime())
@@ -30,8 +30,8 @@ class Model:
         # self.drive=GoogleDrive(self.gauth)
         self.gf_dim=64
         self.depth=4
-        self.batch_size=16
-        self.dataset_name="wave2wave_ver0.95"
+        self.batch_size=1
+        self.dataset_name="wave2wave_ver0.10.0"
         # f=self.drive.CreateFile({'title':str(nowtime()+self.dataset_name+'.txt')})
         # f.SetContentFile('Data.txt')
         # f.Upload()
@@ -46,12 +46,12 @@ class Model:
         for i in range(self.depth):
             d=self.width**(i+1)
             self.dilations.append(d)
-        self.in_put_size=[self.batch_size,256,d+self.out_put_size[2]]
+        self.in_put_size=[self.batch_size,1,d+self.out_put_size[2]]
         for i in range(self.depth):
             self.hance.append((self.width)*self.dilations[i]+1)
         a_in= self.in_put_size[2]-self.out_put_size[2]
         for i in range(self.depth):
-            a=a_in-(self.width)*self.dilations[i]+1
+            a=a_in//(self.dilations[i+1])
             self.f_dilations.append(a)
         # self.sess=tf.InteractiveSession(config=tf.ConfigProto(gpu_options=tf.GPUOptions(per_process_gpu_memory_fraction=0.95)))
         self.sess=tf.Session()
@@ -61,6 +61,7 @@ class Model:
     def build_model(self):
         l1ls=[]
         #変数の予約
+
         self.var_pear=[]
         self.var=dict()
         with tf.variable_scope('wavenet'):
@@ -78,22 +79,16 @@ class Model:
                         current = dict()
                         w= tf.get_variable('w1a', [self.width,1,self.down,self.up],initializer=tf.contrib.layers.xavier_initializer())
                         l1ls.append(w)
-                        current['w'+str(i)+'-1'] =w
-                        w= tf.get_variable('w1ia', [self.hance[i],1,self.input_ch,self.up],initializer=tf.contrib.layers.xavier_initializer())
-                        l1ls.append(w)
-                        current['w'+str(i)+'-1i'] =w
+                        current['w-1'] =w
                         w= tf.get_variable('w2a', [self.width,1,self.down,self.up],initializer=tf.contrib.layers.xavier_initializer())
                         l1ls.append(w)
-                        current['w'+str(i)+'-2'] =w
-                        w= tf.get_variable('w2ia', [self.hance[i],1,self.input_ch,self.up],initializer=tf.contrib.layers.xavier_initializer())
-                        l1ls.append(w)
-                        current['w'+str(i)+'-2i'] =w
+                        current['w-2'] =w
                         w = tf.get_variable('w3a', [1,1,self.up,self.down],initializer=tf.contrib.layers.xavier_initializer())
                         l1ls.append(w)
-                        current['w'+str(i)+'-3'] =w
+                        current['w-3'] =w
                         w = tf.get_variable('w4a', [self.f_dilations[i],1,self.up,self.out_channels],initializer=tf.contrib.layers.xavier_initializer())
                         l1ls.append(w)
-                        current['w'+str(i)+'-4'] =w
+                        current['w-4'] =w
                         self.var['dilated_stack'].append(current)
 
             with tf.variable_scope('postprocessing'):
@@ -129,22 +124,16 @@ class Model:
                         current = dict()
                         w= tf.get_variable('w1a', [self.width,1,self.down,self.up],initializer=tf.contrib.layers.xavier_initializer())
                         l2ls.append(w)
-                        current['w'+str(i)+'-1'] =w
-                        w= tf.get_variable('w1ia', [self.hance[i],1,self.input_ch,self.up],initializer=tf.contrib.layers.xavier_initializer())
-                        l2ls.append(w)
-                        current['w'+str(i)+'-1i'] =w
+                        current['w-1'] =w
                         w= tf.get_variable('w2a', [self.width,1,self.down,self.up],initializer=tf.contrib.layers.xavier_initializer())
                         l2ls.append(w)
-                        current['w'+str(i)+'-2'] =w
-                        w= tf.get_variable('w2ia', [self.hance[i],1,self.input_ch,self.up],initializer=tf.contrib.layers.xavier_initializer())
-                        l2ls.append(w)
-                        current['w'+str(i)+'-2i'] =w
+                        current['w-2'] =w
                         w = tf.get_variable('w3a', [1,1,self.up,self.down],initializer=tf.contrib.layers.xavier_initializer())
                         l2ls.append(w)
-                        current['w'+str(i)+'-3'] =w
+                        current['w-3'] =w
                         w = tf.get_variable('w4a', [self.f_dilations[i],1,self.up,self.out_channels],initializer=tf.contrib.layers.xavier_initializer())
                         l2ls.append(w)
-                        current['w'+str(i)+'-4'] =w
+                        current['w-4'] =w
                         self.var['dilated_stack'].append(current)
 
             with tf.variable_scope('postprocessing'):
@@ -183,7 +172,6 @@ class Model:
             self.var['w-4'] = w
             self.var['causal_layer'] = layer
             self.var_pear.append(self.var)
-
 
         self.real_data = tf.placeholder(tf.float32,
                                         self.in_put_size,
@@ -307,7 +295,6 @@ class Model:
             assert tf.get_variable_scope().reuse == False
 
         current_output=tf.reshape(in_put, [self.batch_size,256,self.in_put_size[2],1])
-        in_puts=tf.reshape(in_put, [self.batch_size,256,self.in_put_size[2],1])
 #         in_puts=tf.cast(in_put, tf.float32)
         #causual
         current = self.causal_layer(current_output,var,"causual_c"+name)
@@ -316,7 +303,7 @@ class Model:
         self.receptive_field = (2 - 1) * sum(self.dilations) + 1
         self.receptive_field += 2 - 1
         for i in range(self.depth):
-            otp,current=self.dilation_layer(current,in_puts,i,var,reuse,name,sd)
+            otp,current=self.dilation_layer(current,i,var,reuse,name,sd)
             outputs.append(otp)
         outputs.append(current)
         total=sum(outputs)
@@ -347,36 +334,39 @@ class Model:
             w =var['causal_layer']['filter']
             res=  tf.nn.conv2d(current_otp, w, [1,1,1,1], padding="VALID",data_format="NCHW",dilations=[1,1,self.dilations[0],1] ,name=name)
             return tf.nn.leaky_relu(res)
-    def dilation_layer(self,in_put,global_cond,depth,var,reuse,name,sd):
+    def dilation_layer(self,reuse,in_put,depth,var,name,sd):
         with tf.variable_scope("dil",reuse=reuse):
             if reuse:
                 tf.get_variable_scope().reuse_variables()
             else:
                 assert tf.get_variable_scope().reuse == False
-#            前処理
+            #前処理
 
             etan=tf.layers.batch_normalization(in_put,training=self.is_train,name="bn_"+str(depth)+"-"+str(1)+name)
-            w=var['dilated_stack'][depth]['w'+str(depth)+'-1']
-            etan = tf.nn.conv2d(etan, w, [1,1,1,1], padding="VALID",data_format="NCHW",dilations=[1,1,self.dilations[depth],1] ,name="dil_01"+name)
-            w=var['dilated_stack'][depth]['w'+str(depth)+'-1i']
-            etan=etan + tf.nn.conv2d(global_cond, w, strides=[1,1,1,1],data_format="NCHW", padding='VALID',name="conv2d_"+str(depth)+"-"+str(1.5)+name)
+            w=var['dilated_stack'][depth]['w-1']
+            etan = dilation_conv(etan, w, "dil_01"+name,self.width,self.up)
             etan=tf.nn.tanh(etan)
-            w=var['dilated_stack'][depth]['w'+str(depth)+'-2']
+            w=var['dilated_stack'][depth]['w-2']
             esig=tf.layers.batch_normalization(in_put,training=self.is_train,name="bn_"+str(depth)+"-"+str(2)+name)
-            esig = tf.nn.conv2d(esig, w, [1,1,1,1], padding="VALID",data_format="NCHW",dilations=[1,1,self.dilations[depth],1] ,name="dil_02"+name)
-            w=var['dilated_stack'][depth]['w'+str(depth)+'-2i']
-            esig=esig + tf.nn.conv2d(global_cond, w, strides=[1,1,1,1],data_format="NCHW", padding='VALID',name="conv2d_"+str(depth)+"-"+str(2.5)+name)
-            esig=tf.nn.sigmoid(esig)
+            esig = dilation_conv(esig, w, "dil_02"+name,self.width,self.up)
             d8=tf.multiply(etan,esig)
             d8=tf.layers.batch_normalization(d8,training=self.is_train,name="bn_"+str(depth)+"-"+str(3)+name)
-            w=var['dilated_stack'][depth]['w'+str(depth)+'-3']
+            w=var['dilated_stack'][depth]['w-3']
             otp=tf.nn.conv2d(d8, w, [1,1,1,1], padding="VALID",data_format="NCHW",dilations=[1,1,1,1] ,name="dil_03"+name)
-            obs=tf.shape(in_put)[2]-tf.shape(otp)[2]
-            w=var['dilated_stack'][depth]['w'+str(depth)+'-4']
+            obs=tf.shape(otp)[2]*tf.shape(otp)[3]
+            in_s=(in_put.get_shape())
+            inp=tf.reshape(in_put,[self.batch_size,self.down,-1])
+            inp=tf.slice(inp,[0,0,0],[-1,-1,obs])
+            ten=tf.reshape(inp,[in_s[0],self.down,self.width,in_s[2]//self.width,in_s[3]])
+            ten=tf.transpose(ten, [0,1,3,2,4])
+            con=tf.reshape(ten,[in_s[0],self.down,in_s[2]//self.width,in_s[3]*self.width])
+
+            w=var['dilated_stack'][depth]['w-4']
             skp=tf.nn.conv2d(d8, w, [1,1,1,1], padding="VALID",data_format="NCHW",dilations=[1,1,1,1] ,name="dil_04"+name)
+            skp=tf.reshape(skp,[self.batch_size,self.down,self.out_put_size[2]])
             if sd:
                 otp=shake_drop(otp, rate=self.rate**depth,training=self.is_train,name="do_"+str(depth)+"-"+str(1)+name)
-            return skp,otp+tf.slice(in_put, [0,0,obs,0],[-1,-1,-1,-1])
+            return skp,otp+con
 
     def save(self, checkpoint_dir, step):
         model_name = "model"
@@ -404,6 +394,13 @@ class Model:
             return True
         else:
             return False
+def dilation_conv(inp,w,name,width,otc):
+    ten=tf.nn.conv2d(inp, w, [1,1,1,1], padding="VALID",data_format="NCHW" ,name=name)
+    in_s=(ten.get_shape())
+    ten=tf.reshape(ten,[in_s[0],otc,width,in_s[2]//width,in_s[3]])
+    ten=tf.transpose(ten, [0,1,3,2,4])
+    ten=tf.reshape(ten,[in_s[0],otc,in_s[2]//width,in_s[3]*width])
+    return ten
 def shake_drop(in_p,rate,training,name):
     layer=Shake_Dropout(rate,name)
     return layer.apply(in_p,training=training)
