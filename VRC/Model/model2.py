@@ -290,7 +290,7 @@ class Model:
             res2=res2*32767
             cur_res_2=np.append(cur_res_2,res2, axis=2)
             cur_res_2=cur_res_2[:,:,self.out_put_size[2]-1:-1]
-            otp2=np.append(otp,res2[0,0])
+            otp2=np.append(otp2,res2[0,0])
         otp=otp[otp.shape[0]-in_put.shape[2]-1:-1]
         otp2=otp2[otp2.shape[0]-in_put.shape[2]-1:-1]
         return otp.reshape(1,in_put.shape[1],in_put.shape[2]),otp2.reshape(1,in_put.shape[1],in_put.shape[2]),time.time()-tt
