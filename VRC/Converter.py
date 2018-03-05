@@ -46,7 +46,8 @@ class Model:
         for i in range(self.depth):
             d=self.width**(i+1)
             self.dilations.append(d)
-        self.in_put_size=[self.batch_size,1,d+self.out_put_size[2]]
+        d = self.width ** (self.depth)
+        self.in_put_size=[self.batch_size,256,d+self.out_put_size[2]]
         for i in range(self.depth):
             self.hance.append((self.width)*self.dilations[i]+1)
         a_in= self.in_put_size[2]-self.out_put_size[2]
@@ -297,17 +298,18 @@ class Model:
         current_output=tf.reshape(in_put, [self.batch_size,256,self.in_put_size[2],1])
 #         in_puts=tf.cast(in_put, tf.float32)
         #causual
-        current = self.causal_layer(current_output,var,"causual_c"+name)
+        current = self.causal_layer(current_output,var,reuse,"causual_c"+name)
         #dilation
         outputs=[]
         self.receptive_field = (2 - 1) * sum(self.dilations) + 1
         self.receptive_field += 2 - 1
         for i in range(self.depth):
-            otp,current=self.dilation_layer(current,i,var,reuse,name,sd)
+            otp,current=self.dilation_layer(reuse,current,i,var,name,sd)
             outputs.append(otp)
+        current=tf.reshape(current,[self.batch_size,self.down,self.out_put_size[2]])
         outputs.append(current)
         total=sum(outputs)
-        transformed=tf.nn.leaky_relu(total)
+        transformed=tf.reshape(tf.nn.leaky_relu(total),[self.batch_size,self.down,1,self.out_put_size[2]])
         with tf.variable_scope("posted"):
             if reuse:
                 tf.get_variable_scope().reuse_variables()
@@ -382,7 +384,7 @@ class Model:
     def load(self, checkpoint_dir):
         print(" [*] Reading checkpoint...")
 
-        model_dir = "to"
+        model_dir = "from"
         checkpoint_dir = os.path.join(checkpoint_dir, model_dir)
 
         ckpt = tf.train.get_checkpoint_state(checkpoint_dir)
@@ -437,4 +439,5 @@ m.build_model()
 chk="./Network"
 m.load(chk)
 m.save(chk,0)
+print(" [*] finished succesfully")
 
