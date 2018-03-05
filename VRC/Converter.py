@@ -206,7 +206,7 @@ class Model:
             self.fake_B ,self.fake_B_logit= self.generator(self.real_data,True,self.var_pear[0],"1",False)
             # self.fake_B_decoded=tf.stop_gradient(self.decode(self.un_oh(self.fake_B)),"asnyan")
         with tf.variable_scope("generator_2"):
-            self.fake_B_2 ,self.fake_B_logit_2= self.generator(self.real_data,False,self.var_pear[1],"2",False)
+            self.fake_B_2 ,self.fake_B_logit_2= self.generator(self.real_data,True,self.var_pear[1],"2",False)
             # self.fake_B_decoded_2=tf.stop_gradient(self.decode(self.un_oh(self.fake_B_2)),"asnyan")
 #         self.res1=tf.concat([self.inputs_result,self.real_data_result], axis=2)
 #         self.res2=tf.concat([self.ans_result,self.real_data_result], axis=2)
