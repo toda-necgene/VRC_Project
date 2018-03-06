@@ -7,14 +7,13 @@ import numpy as np
 import wave
 from tensorflow.python import debug as tf_debug
 from tensorflow.python.debug.lib.debug_data import has_inf_or_nan
-from pydrive.auth import GoogleAuth
-from pydrive.drive import GoogleDrive
 import pyaudio
-from . import eve
+from train.Model.eve import EveOptimizer
 from datetime import datetime
 from tensorflow.python.ops import random_ops
 from tensorflow.python.layers import base
 from tensorflow.python.layers import utils
+import shutil
 class Model:
     def __init__(self,debug):
         self.rate=0.4
@@ -27,21 +26,13 @@ class Model:
         self.width=4
         self.dataset_name="wave2wave_ver0.10.0"
         self.data_format=[1,1,80000]
-        f=open("Data.txt",'w')
+        f=open("'Z://Data.txt'",'w')
         f.write("Start:"+nowtime())
         f.close()
 
         self.gf_dim=64
         self.depth=4
         self.batch_size=16
-
-        self.gauth=GoogleAuth()
-        self.gauth.LocalWebserverAuth()
-        self.drive=GoogleDrive(self.gauth)
-        f=self.drive.CreateFile({'title':str(nowtime()+self.dataset_name+'.txt')})
-        f.SetContentFile('Data.txt')
-        f.Upload()
-        self.id_of_result=f['id']
 
         self.dilations=[]
         self.f_dilations=[]
@@ -303,10 +294,9 @@ class Model:
         lr_d_opt=0.001
         beta_d_opt=0.9
         self.lod="[glr="+str(lr_g_opt)+",gb="+str(beta_g_opt)+"]"
-        g_optim_1 = eve.EveOptimizer(lr_g_opt,beta_g_opt).minimize(self.g_loss_1, var_list=self.g_vars_1)
-        g_optim_2 = eve.EveOptimizer(lr_g_opt_2,beta_g_opt_2).minimize(self.g_loss_2, var_list=self.g_vars_2)
-        d_optim = eve.EveOptimizer(lr_d_opt,beta_d_opt).minimize(self.d_loss, var_list=self.d_vars)
-        d_optim_s = eve.EveOptimizer(lr_d_opt,beta_d_opt).minimize(self.d_loss_s, var_list=self.d_vars)
+        g_optim_1 = EveOptimizer(lr_g_opt,beta_g_opt).minimize(self.g_loss_1, var_list=self.g_vars_1)
+        g_optim_2 = EveOptimizer(lr_g_opt_2,beta_g_opt_2).minimize(self.g_loss_2, var_list=self.g_vars_2)
+        d_optim = EveOptimizer(lr_d_opt,beta_d_opt).minimize(self.d_loss, var_list=self.d_vars)
         init_op = tf.global_variables_initializer()
         self.exp= np.zeros((self.batch_size,1,80000),dtype=np.int16)
         self.real_ds= np.zeros((self.batch_size,1,80000),dtype=np.int16)
@@ -429,7 +419,7 @@ class Model:
                 gps2+=(g_score2/times_added)
 
             self.save(args.checkpoint_dir, epoch+1)
-            ff='Data.txt'
+            ff='Z://Data.txt'
             f=open(ff,'a')
             f.write("-------------------------------\n")
             f.write("TimeStamped:"+nowtime())
@@ -442,8 +432,8 @@ class Model:
             out_put=(out_puts.astype(np.float32)/32767.0)
             rs=self.sess.run(self.rrs,feed_dict={ self.exps:out_put,self.exps_2:out_put_2,self.g_loss_epo:(gps/batch_idxs),self.g_loss_epo_2:(gps2/batch_idxs)})
             self.writer.add_summary(rs, epoch+1)
-            upload(out_puts,ff,self.drive,self.id_of_result)
             print("test taken: %f secs" % (taken_time))
+            shutil.copyfile("tmp.wav", "Z://waves/"+nowtime()+".wav")
             start_time = time.time()
 #         self.experiment.end()
 

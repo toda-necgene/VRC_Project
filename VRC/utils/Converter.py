@@ -43,7 +43,7 @@ class Model:
         self.f_dilations = []
         self.hance = []
         # in=25
-        self.out_put_size = [self.batch_size, 1, 256]
+        self.out_put_size = [self.batch_size, 1, 1024]
         d = 1
         self.dilations.append(d)
         for i in range(self.depth):
