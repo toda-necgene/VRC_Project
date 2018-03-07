@@ -57,16 +57,14 @@ class Model:
             self.sess=tf_debug.LocalCLIDebugWrapperSession(self.sess)
             self.sess.add_tensor_filter('has_inf_or_nan', has_inf_or_nan)
     def build_model(self):
-        l1ls=[]
         #変数の予約
 
         self.var_pear=[]
         self.var=dict()
-        with tf.variable_scope('wavenet'):
+        with tf.variable_scope("generator_1"):
             with tf.variable_scope('causal_layer'):
                 layer = dict()
                 w=tf.get_variable('w', [2,1,self.input_ch,self.down],initializer=tf.contrib.layers.xavier_initializer())
-                l1ls.append(w)
                 layer['filter'] = w
                 self.var['causal_layer'] = layer
 
@@ -76,42 +74,32 @@ class Model:
                     with tf.variable_scope('layer{}'.format(i)):
                         current = dict()
                         w= tf.get_variable('w1a', [self.width,1,self.down,self.up],initializer=tf.contrib.layers.xavier_initializer())
-                        l1ls.append(w)
                         current['w-1'] =w
                         w= tf.get_variable('w2a', [self.width,1,self.down,self.up],initializer=tf.contrib.layers.xavier_initializer())
-                        l1ls.append(w)
                         current['w-2'] =w
                         w = tf.get_variable('w3a', [1,1,self.up,self.down],initializer=tf.contrib.layers.xavier_initializer())
-                        l1ls.append(w)
                         current['w-3'] =w
                         w = tf.get_variable('w4a', [self.f_dilations[i],1,self.up,self.out_channels],initializer=tf.contrib.layers.xavier_initializer())
-                        l1ls.append(w)
                         current['w-4'] =w
                         self.var['dilated_stack'].append(current)
 
             with tf.variable_scope('postprocessing'):
                 current = dict()
                 w=tf.get_variable('w1p', [1,1,self.down,127],initializer=tf.contrib.layers.xavier_initializer())
-                l1ls.append(w)
                 current['postprocess1'] =w
                 w= tf.get_variable('w2p', [1,1,127,256],initializer=tf.contrib.layers.xavier_initializer())
-                l1ls.append(w)
                 current['postprocess2'] =w
                 bias = tf.get_variable("bias", [127],initializer=tf.constant_initializer(0.0))
                 current['bias']=bias
-                l1ls.append(bias)
                 bias = tf.get_variable("bias2", [256],initializer=tf.constant_initializer(0.0))
-                l1ls.append(bias)
                 current['bias2']=bias
                 self.var['postprocessing'] = current
         self.var_pear.append(self.var)
-        l2ls=[]
         self.var=dict()
-        with tf.variable_scope('wavenet2'):
+        with tf.variable_scope("generator_2"):
             with tf.variable_scope('causal_layer'):
                 layer = dict()
                 w=tf.get_variable('w', [2,1,self.input_ch,self.down],initializer=tf.contrib.layers.xavier_initializer())
-                l2ls.append(w)
                 layer['filter'] = w
                 self.var['causal_layer'] = layer
 
@@ -121,52 +109,39 @@ class Model:
                     with tf.variable_scope('layer{}'.format(i)):
                         current = dict()
                         w= tf.get_variable('w1a', [self.width,1,self.down,self.up],initializer=tf.contrib.layers.xavier_initializer())
-                        l2ls.append(w)
                         current['w-1'] =w
                         w= tf.get_variable('w2a', [self.width,1,self.down,self.up],initializer=tf.contrib.layers.xavier_initializer())
-                        l2ls.append(w)
                         current['w-2'] =w
                         w = tf.get_variable('w3a', [1,1,self.up,self.down],initializer=tf.contrib.layers.xavier_initializer())
-                        l2ls.append(w)
                         current['w-3'] =w
                         w = tf.get_variable('w4a', [self.f_dilations[i],1,self.up,self.out_channels],initializer=tf.contrib.layers.xavier_initializer())
-                        l2ls.append(w)
                         current['w-4'] =w
                         self.var['dilated_stack'].append(current)
 
             with tf.variable_scope('postprocessing'):
                 current = dict()
                 w=tf.get_variable('w1p', [1,1,self.down,127],initializer=tf.contrib.layers.xavier_initializer())
-                l2ls.append(w)
                 current['postprocess1'] =w
                 w= tf.get_variable('w2p', [1,1,127,256],initializer=tf.contrib.layers.xavier_initializer())
-                l2ls.append(w)
                 current['postprocess2'] =w
                 bias = tf.get_variable("bias", [127],initializer=tf.constant_initializer(0.0))
                 current['bias']=bias
-                l2ls.append(bias)
                 bias = tf.get_variable("bias2", [256],initializer=tf.constant_initializer(0.0))
-                l2ls.append(bias)
                 current['bias2']=bias
                 self.var['postprocessing'] = current
             self.var_pear.append(self.var)
-        l3ls=[]
         self.var=dict()
-        with tf.variable_scope('dis_layer'):
+        with tf.variable_scope('discrim'):
             layer = dict()
             w=tf.get_variable('w1', [4,1,4],initializer=tf.contrib.layers.xavier_initializer())
-            l3ls.append(w)
             self.var['w-1'] = w
             w=tf.get_variable('w2', [4,4,8],initializer=tf.contrib.layers.xavier_initializer())
-            l3ls.append(w)
             self.var['w-2'] = w
             self.var['causal_layer'] = layer
             w=tf.get_variable('w3', [4,8,4],initializer=tf.contrib.layers.xavier_initializer())
-            l3ls.append(w)
             self.var['w-3'] = w
             self.var['causal_layer'] = layer
             w=tf.get_variable('w4', [4,4,1],initializer=tf.contrib.layers.xavier_initializer())
-            l3ls.append(w)
             self.var['w-4'] = w
             self.var['causal_layer'] = layer
             self.var_pear.append(self.var)
@@ -202,7 +177,7 @@ class Model:
         self.real_B = tf.reshape( self.encode(self.ans),[self.batch_size,1,-1])
         self.real_A = tf.reshape( self.encode(self.real_data),[self.batch_size,1,-1])
         self.cursa  = tf.reshape( self.encode(self.curs),[self.batch_size,1,-1])
-        with tf.variable_scope("generator_1"):
+        with tf.variable_scope("generator_1") as g:
             self.fake_B ,self.fake_B_logit= self.generator(self.one_hot((self.real_A+1.0)/2.*255.0),self.one_hot((self.real_A+1.0)/2.*255.0),False,self.var_pear[0],"1",True)
             self.fake_B_decoded=tf.stop_gradient(self.decode(self.un_oh(self.fake_B)),"asnyan")
         with tf.variable_scope("generator_2"):
@@ -212,14 +187,13 @@ class Model:
         self.res2=tf.concat([self.ans_result,self.real_data_result], axis=2)
         self.res1_s=tf.concat([tf.pad(self.inputs[0:0,:,:],[[0,0],[0,0],[0,self.data_format[2]-self.out_put_size[2]]]),tf.pad(self.real_data[0:0,:,self.in_put_size[2]-self.out_put_size[2]-1:-1],[[0,0],[0,0],[0,self.data_format[2]-self.out_put_size[2]]])], axis=2)
         self.res2_s=tf.concat([tf.pad(self.ans[0:0,:,:],[[0,0],[0,0],[0,self.data_format[2]-self.out_put_size[2]]]),tf.pad(self.real_data[0:0,:,self.in_put_size[2]-self.out_put_size[2]-1:-1],[[0,0],[0,0],[0,self.data_format[2]-self.out_put_size[2]]])], axis=2)
-        self.d_judge_F1,self.d_judge_F1_logits=self.discriminator(self.res1,self.var_pear[2],False)
-        self.d_judge_R,self.d_judge_R_logits=self.discriminator(self.res2,self.var_pear[2],True)
-        self.d_judge_F1_s,self.d_judge_F1_logits_s=self.discriminator(self.res1_s,self.var_pear[2],True)
-        self.d_judge_R_s,self.d_judge_R_logits_s=self.discriminator(self.res2_s,self.var_pear[2],True)
+        with tf.variable_scope("discrim"):
+            self.d_judge_F1,self.d_judge_F1_logits=self.discriminator(self.res1,self.var_pear[2],False)
+            self.d_judge_R,self.d_judge_R_logits=self.discriminator(self.res2,self.var_pear[2],True)
         self.d_scale = self.d_judge_F1 - self.d_judge_R
-        self.g_vars_1=l1ls
-        self.g_vars_2=l2ls
-        self.d_vars=l3ls
+        self.g_vars_1=tf.get_collection(tf.global_variables(),"generator_1")
+        self.g_vars_2=tf.get_collection(tf.global_variables(),"generator_2")
+        self.d_vars=tf.get_collection(tf.global_variables(),"discrim")
         target=tf.cast(tf.reshape((self.real_B+1.0)/2.0*255.0,[self.batch_size,-1]),dtype=tf.int32)
 
         logit_1=tf.transpose(self.fake_B_logit, perm=[0,2,1])
@@ -234,9 +208,6 @@ class Model:
         self.d_loss_R = tf.losses.sigmoid_cross_entropy(tf.zeros_like(self.d_judge_R), self.d_judge_R_logits )
         self.d_loss_F = tf.losses.sigmoid_cross_entropy(tf.ones_like(self.d_judge_F1), self.d_judge_F1_logits )
         self.d_loss=tf.reduce_sum([self.d_loss_F,self.d_loss_R])
-        self.d_loss_R_s = tf.losses.sigmoid_cross_entropy(tf.zeros_like(self.d_judge_R_s), self.d_judge_R_logits_s )
-        self.d_loss_F_s = tf.losses.sigmoid_cross_entropy(tf.ones_like(self.d_judge_F1_s), self.d_judge_F1_logits_s )
-        self.d_loss_s=tf.reduce_mean([self.d_loss_F_s,self.d_loss_R_s])
         self.g_loss_sum = tf.summary.scalar("g_loss_1", tf.reduce_mean(self.g_loss_1))
         self.g_loss_sum_2 = tf.summary.scalar("g_loss_2", tf.reduce_mean(self.g_loss_2))
         self.d_loss_sum = tf.summary.scalar("d_loss", self.d_loss)
