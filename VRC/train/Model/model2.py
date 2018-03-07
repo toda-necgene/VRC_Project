@@ -26,7 +26,7 @@ class Model:
         self.width=4
         self.dataset_name="wave2wave_ver0.10.0"
         self.data_format=[1,1,80000]
-        f=open("'Z://Data.txt'",'w')
+        f=open("Z://Data.txt",'w')
         f.write("Start:"+nowtime())
         f.close()
 
@@ -191,9 +191,10 @@ class Model:
             self.d_judge_F1,self.d_judge_F1_logits=self.discriminator(self.res1,self.var_pear[2],False)
             self.d_judge_R,self.d_judge_R_logits=self.discriminator(self.res2,self.var_pear[2],True)
         self.d_scale = self.d_judge_F1 - self.d_judge_R
-        self.g_vars_1=tf.get_collection(tf.global_variables(),"generator_1")
-        self.g_vars_2=tf.get_collection(tf.global_variables(),"generator_2")
-        self.d_vars=tf.get_collection(tf.global_variables(),"discrim")
+        self.g_vars_1=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"generator_1")
+        self.g_vars_2=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"generator_2")
+        self.d_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"discrim")
+        print(self.g_vars_1)
         target=tf.cast(tf.reshape((self.real_B+1.0)/2.0*255.0,[self.batch_size,-1]),dtype=tf.int32)
 
         logit_1=tf.transpose(self.fake_B_logit, perm=[0,2,1])

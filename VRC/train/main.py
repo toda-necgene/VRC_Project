@@ -8,7 +8,7 @@ import sys
 debug=False
 if __name__ == '__main__':
     pass
-from Model import model2 as model
+from train.Model import model2 as model
 if len(sys.argv)!=0 and sys.argv.__contains__("--debug"):
     debug=True
 net = model.Model(debug)
