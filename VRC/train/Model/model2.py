@@ -24,7 +24,7 @@ class Model:
         self.input_ch=256
         self.out_channels=self.down
         self.width=4
-        self.dataset_name="wave2wave_ver0.10.0"
+        self.dataset_name="wave2wave_ver0.11.0"
         self.data_format=[1,1,80000]
         f=open("Z://Data.txt",'w')
         f.write("Start:"+nowtime())
