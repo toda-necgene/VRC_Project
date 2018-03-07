@@ -2,8 +2,108 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="118ef545-7803-4684-8710-61ccd65f9b8d" name="Default" comment="">
+      <change type="DELETED" beforePath="$PROJECT_DIR$/train/Model/datasets/train/02/10-1-0.wav" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/train/Model/datasets/train/02/10-10-0.wav" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/train/Model/datasets/train/02/10-2-0.wav" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/train/Model/datasets/train/02/10-3-0.wav" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/train/Model/datasets/train/02/10-4-0.wav" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/train/Model/datasets/train/02/10-5-0.wav" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/train/Model/datasets/train/02/10-6-0.wav" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/train/Model/datasets/train/02/10-7-0.wav" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/train/Model/datasets/train/02/10-8-0.wav" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/train/Model/datasets/train/02/10-9-0.wav" afterPath="" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/0-1-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/0-1-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/0-10-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/0-10-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/0-2-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/0-2-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/0-3-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/0-3-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/0-4-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/0-4-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/0-5-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/0-5-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/0-6-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/0-6-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/0-7-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/0-7-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/0-8-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/0-8-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/0-9-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/0-9-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/1-1-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/1-1-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/1-10-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/1-10-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/1-2-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/1-2-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/1-3-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/1-3-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/1-4-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/1-4-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/1-5-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/1-5-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/1-6-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/1-6-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/1-7-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/1-7-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/1-8-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/1-8-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/1-9-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/1-9-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/2-1-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/2-1-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/2-10-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/2-10-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/2-2-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/2-2-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/2-3-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/2-3-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/2-4-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/2-4-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/2-5-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/2-5-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/2-6-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/2-6-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/2-7-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/2-7-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/2-8-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/2-8-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/2-9-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/2-9-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/3-1-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/3-1-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/3-10-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/3-10-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/3-2-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/3-2-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/3-3-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/3-3-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/3-4-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/3-4-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/3-5-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/3-5-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/3-6-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/3-6-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/3-7-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/3-7-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/3-8-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/3-8-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/3-9-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/3-9-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/4-1-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/4-1-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/4-10-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/4-10-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/4-2-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/4-2-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/4-3-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/4-3-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/4-4-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/4-4-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/4-5-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/4-5-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/4-6-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/4-6-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/4-7-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/4-7-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/4-8-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/4-8-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/4-9-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/4-9-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/5-1-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/5-1-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/5-10-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/5-10-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/5-2-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/5-2-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/5-3-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/5-3-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/5-4-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/5-4-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/5-5-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/5-5-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/5-6-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/5-6-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/5-7-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/5-7-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/5-8-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/5-8-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/5-9-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/5-9-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/6-1-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/6-1-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/6-10-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/6-10-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/6-2-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/6-2-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/6-3-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/6-3-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/6-4-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/6-4-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/6-5-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/6-5-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/6-6-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/6-6-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/6-7-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/6-7-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/6-8-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/6-8-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/6-9-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/6-9-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/7-1-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/7-1-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/7-10-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/7-10-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/7-2-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/7-2-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/7-3-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/7-3-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/7-4-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/7-4-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/7-5-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/7-5-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/7-6-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/7-6-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/7-7-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/7-7-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/7-8-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/7-8-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/7-9-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/7-9-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/8-1-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/8-1-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/8-10-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/8-10-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/8-2-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/8-2-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/8-3-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/8-3-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/8-4-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/8-4-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/8-5-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/8-5-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/8-6-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/8-6-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/8-7-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/8-7-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/8-8-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/8-8-0.wav" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/datasets/train/01/8-9-0.wav" afterPath="$PROJECT_DIR$/train/Model/datasets/train/01/8-9-0.wav" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/train/Model/model2.py" afterPath="$PROJECT_DIR$/train/Model/model2.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/utils/voice.py" afterPath="$PROJECT_DIR$/utils/voice.py" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -14,13 +114,13 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="375">
-      <file leaf-file-name="model2.py" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/train/Model/model2.py">
+      <file leaf-file-name="voice.py" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/utils/voice.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="84">
-              <caret line="63" column="43" lean-forward="false" selection-start-line="63" selection-start-column="43" selection-end-line="63" selection-end-column="43" />
+            <state relative-caret-position="332">
+              <caret line="40" column="31" lean-forward="false" selection-start-line="40" selection-start-column="31" selection-end-line="40" selection-end-column="31" />
               <folding>
-                <element signature="e#0#21#0" expanded="true" />
+                <element signature="e#0#14#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -49,11 +149,13 @@
         <option value="$PROJECT_DIR$/VRC_cpu.py" />
         <option value="$PROJECT_DIR$/Converter.py" />
         <option value="$PROJECT_DIR$/train/Model/model2.py" />
+        <option value="$PROJECT_DIR$/utils/voice.py" />
       </list>
     </option>
   </component>
   <component name="ProjectFrameBounds" extendedState="6">
     <option name="x" value="-9" />
+    <option name="y" value="-9" />
     <option name="width" value="976" />
     <option name="height" value="1038" />
   </component>
@@ -100,6 +202,38 @@
               <item name="train" type="462c0819:PsiDirectoryNode" />
               <item name="Model" type="462c0819:PsiDirectoryNode" />
             </path>
+            <path>
+              <item name="VRC" type="b2602c69:ProjectViewProjectNode" />
+              <item name="vrc" type="462c0819:PsiDirectoryNode" />
+              <item name="VRC" type="462c0819:PsiDirectoryNode" />
+              <item name="train" type="462c0819:PsiDirectoryNode" />
+              <item name="Model" type="462c0819:PsiDirectoryNode" />
+              <item name="datasets" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="VRC" type="b2602c69:ProjectViewProjectNode" />
+              <item name="vrc" type="462c0819:PsiDirectoryNode" />
+              <item name="VRC" type="462c0819:PsiDirectoryNode" />
+              <item name="train" type="462c0819:PsiDirectoryNode" />
+              <item name="Model" type="462c0819:PsiDirectoryNode" />
+              <item name="datasets" type="462c0819:PsiDirectoryNode" />
+              <item name="source" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="VRC" type="b2602c69:ProjectViewProjectNode" />
+              <item name="vrc" type="462c0819:PsiDirectoryNode" />
+              <item name="VRC" type="462c0819:PsiDirectoryNode" />
+              <item name="train" type="462c0819:PsiDirectoryNode" />
+              <item name="Model" type="462c0819:PsiDirectoryNode" />
+              <item name="datasets" type="462c0819:PsiDirectoryNode" />
+              <item name="train" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="VRC" type="b2602c69:ProjectViewProjectNode" />
+              <item name="vrc" type="462c0819:PsiDirectoryNode" />
+              <item name="VRC" type="462c0819:PsiDirectoryNode" />
+              <item name="utils" type="462c0819:PsiDirectoryNode" />
+            </path>
           </expand>
           <select />
         </subPane>
@@ -126,7 +260,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.VRC_cpu">
+  <component name="RunManager" selected="Python.voice">
     <configuration name="Converter" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -161,14 +295,33 @@
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
     </configuration>
-    <list size="2">
+    <configuration name="voice" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/utils" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="VRC" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/utils/voice.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+    </configuration>
+    <list size="3">
       <item index="0" class="java.lang.String" itemvalue="Python.Converter" />
       <item index="1" class="java.lang.String" itemvalue="Python.VRC_cpu" />
+      <item index="2" class="java.lang.String" itemvalue="Python.voice" />
     </list>
     <recent_temporary>
-      <list size="2">
-        <item index="0" class="java.lang.String" itemvalue="Python.VRC_cpu" />
-        <item index="1" class="java.lang.String" itemvalue="Python.Converter" />
+      <list size="3">
+        <item index="0" class="java.lang.String" itemvalue="Python.voice" />
+        <item index="1" class="java.lang.String" itemvalue="Python.VRC_cpu" />
+        <item index="2" class="java.lang.String" itemvalue="Python.Converter" />
       </list>
     </recent_temporary>
   </component>
@@ -187,18 +340,17 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="-9" y="-9" width="1938" height="1048" extended-state="6" />
-    <editor active="true" />
     <layout>
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.1234375" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="true" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.1234375" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32952183" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3234649" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
       <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.31907895" sideWeight="0.5" order="9" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3234649" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="10" side_tool="false" content_ui="tabs" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Data View" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
@@ -217,29 +369,29 @@
     <watches-manager />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/VRC_cpu.py">
+    <entry file="file://$PROJECT_DIR$/train/Model/model2.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
           <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
+          <folding>
+            <element signature="e#0#21#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Converter.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="8274">
-          <caret line="404" column="70" lean-forward="false" selection-start-line="404" selection-start-column="70" selection-end-line="404" selection-end-column="70" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/VRC.py">
+    <entry file="file://$PROJECT_DIR$/train/Model/model2.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
-          <caret line="0" column="32" lean-forward="true" selection-start-line="0" selection-start-column="32" selection-end-line="0" selection-end-column="32" />
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#21#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/VRC_cpu.py" />
+    <entry file="file://$PROJECT_DIR$/Converter.py" />
+    <entry file="file://$PROJECT_DIR$/VRC.py" />
     <entry file="file://$USER_HOME$/AppData/Local/Programs/Python/Python35/Lib/site-packages/numpy/lib/function_base.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="437">
@@ -247,35 +399,25 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Model/model2.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="399">
-          <caret line="292" column="31" lean-forward="false" selection-start-line="292" selection-start-column="31" selection-end-line="292" selection-end-column="31" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Converter.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="8274">
-          <caret line="404" column="70" lean-forward="false" selection-start-line="404" selection-start-column="70" selection-end-line="404" selection-end-column="70" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/VRC_cpu.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1827">
-          <caret line="91" column="78" lean-forward="false" selection-start-line="91" selection-start-column="78" selection-end-line="91" selection-end-column="78" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
+    <entry file="file://$PROJECT_DIR$/Model/model2.py" />
+    <entry file="file://$PROJECT_DIR$/Converter.py" />
+    <entry file="file://$PROJECT_DIR$/VRC_cpu.py" />
     <entry file="file://$PROJECT_DIR$/train/Model/model2.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="84">
+        <state relative-caret-position="21">
           <caret line="63" column="43" lean-forward="false" selection-start-line="63" selection-start-column="43" selection-end-line="63" selection-end-column="43" />
           <folding>
             <element signature="e#0#21#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/utils/voice.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="332">
+          <caret line="40" column="31" lean-forward="false" selection-start-line="40" selection-start-column="31" selection-end-line="40" selection-end-column="31" />
+          <folding>
+            <element signature="e#0#14#0" expanded="true" />
           </folding>
         </state>
       </provider>
