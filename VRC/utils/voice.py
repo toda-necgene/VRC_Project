@@ -20,10 +20,49 @@ CHUNK = 1024     #データ点数
 RECORD_SECONDS = 5 #録音する時間の長さ
 WAVE_INPUT_FILENAME = "../train/Model/datasets/source/"
 WAVE_TMP="tmp.wav"
-WAVE_OUTPUT_FILENAME = "../train/Model/datasets/train/03/"
+WAVE_OUTPUT_FILENAME = "../train/Model/datasets/train/01/"
 files=glob.glob(WAVE_INPUT_FILENAME+"/*.wav")
 index=0
-for file in files[1:-1]:
+dms=[]
+
+wf=wave.open(files[0],'rb')
+dds=wf.readframes(CHUNK)
+while dds !=b'':
+    dms.append(dds)
+    dds=wf.readframes(CHUNK)
+dms=b''.join(dms)
+data=np.frombuffer(dms,'int16')[0:160000]
+data2=np.reshape(data, [2,50,1600])
+data_realA=data2[0]
+data_realB=data2[1]
+p=pyaudio.PyAudio()
+datanum=np.append(data_realA,data_realB)
+ww = wave.open("../train/Model/datasets/train/02/tt.wav", 'wb')
+ww.setnchannels(1)
+ww.setsampwidth(p.get_sample_size(FORMAT))
+ww.setframerate(RATE)
+ww.writeframes(datanum.tobytes())
+ww.close()
+wf=wave.open(files[1],'rb')
+dds=wf.readframes(CHUNK)
+dms=[]
+while dds !=b'':
+    dms.append(dds)
+    dds=wf.readframes(CHUNK)
+dms=b''.join(dms)
+data=np.frombuffer(dms,'int16')[0:160000]
+data2=np.reshape(data, [2,50,1600])
+data_realA=data2[0]
+data_realB=data2[1]
+p=pyaudio.PyAudio()
+datanum=np.append(data_realA,data_realB)
+ww = wave.open("../train/Model/datasets/train/02/tt2.wav", 'wb')
+ww.setnchannels(1)
+ww.setsampwidth(p.get_sample_size(FORMAT))
+ww.setframerate(RATE)
+ww.writeframes(datanum.tobytes())
+ww.close()
+for file in files[2:-1]:
     dms=[]
     wf=wave.open(file,'rb')
     dds=wf.readframes(CHUNK)

@@ -1,8 +1,3 @@
-'''
-Created on 2018/02/16
-
-@author: tadop
-'''
 from collections import namedtuple
 import sys
 debug=False
@@ -17,5 +12,5 @@ net.build_model()
 print(" [*]Built Model!!")
 args=namedtuple('checkpoint_dir', 'train_size')
 args.checkpoint_dir="./datasets"
-args.train_size=100
+args.train_size=190
 net.train(args)
