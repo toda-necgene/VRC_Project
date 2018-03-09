@@ -27,7 +27,7 @@ class Model:
         self.input_ch=256
         self.out_channels=self.down
         self.width=2
-        self.dataset_name="wave2wave_ver0.12.0"
+        self.dataset_name="wave2wave_ver0.12.1"
         self.data_format=[1,1,80000]
         f=open("Z://Data.txt",'w')
         f.write("Start:"+nowtime())
@@ -128,7 +128,7 @@ class Model:
                 self.var['postprocessing'] = current
                 self.var_pear.append(self.var)
 
-            self.fake_B ,self.fake_B_logit= self.generator(self.one_hot((self.real_A+1.0)/2.*255.0),self.one_hot((self.real_A+1.0)/2.*255.0),False,self.var_pear[0],"1",False)
+            self.fake_B ,self.fake_B_logit= self.generator(self.one_hot((self.real_A+1.0)/2.*255.0),self.one_hot((self.real_A+1.0)/2.*255.0),False,self.var_pear[0],"1",True)
             self.fake_B_decoded=tf.stop_gradient(self.decode(self.un_oh(self.fake_B)),"asnyan")
 
 
@@ -168,7 +168,7 @@ class Model:
                 current['bias2']=bias
                 self.var['postprocessing'] = current
             self.var_pear.append(self.var)
-            self.fake_B_2 ,self.fake_B_logit_2= self.generator(self.one_hot((self.real_A+1.0)/2.*255.0),self.one_hot((self.real_A+1.0)/2.*255.0),False,self.var_pear[1],"2",False)
+            self.fake_B_2 ,self.fake_B_logit_2= self.generator(self.one_hot((self.real_A+1.0)/2.*255.0),self.one_hot((self.real_A+1.0)/2.*255.0),False,self.var_pear[1],"2",True)
             self.fake_B_decoded_2=tf.stop_gradient(self.decode(self.un_oh(self.fake_B_2)),"asnyan")
 
         self.res1=tf.concat([self.inputs_result,self.real_data_result], axis=2)
@@ -204,7 +204,6 @@ class Model:
 
         logit_1=tf.transpose(self.fake_B_logit, perm=[0,2,1])
         logit_2=tf.transpose(self.fake_B_logit_2, perm=[0,2,1])
-#         lo=-tf.reduce_sum(target*tf.log(logit+eps))/self.batch_size
         lo=tf.nn.sparse_softmax_cross_entropy_with_logits(labels=target, logits=logit_1)
         lo2=tf.nn.sparse_softmax_cross_entropy_with_logits(labels=target, logits=logit_2)
         weightsg1=list(filter(lambda x: (re.search( r"/w",repr(x.name)) is not None ), self.g_vars_1))
@@ -214,10 +213,10 @@ class Model:
         l2g2=1e-4*tf.add_n([tf.nn.l2_loss(w) for w in weightsg2])
         l2d=1e-4*tf.add_n([tf.nn.l2_loss(w) for w in weightsd])
         #l1=tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=self.real_B, logits=self.fake_B))
-        self.g_loss_1 = lo*(1.-self.punish[0])+lo*(tf.fill(lo.get_shape(), self.punish[1]))*(self.punish[0])+l2g1
-        self.g_loss_2 = lo2*(1.-self.punish[0])+lo2*(tf.fill(lo2.get_shape(), self.punish[1]))*(self.punish[0])+l2g2
-        self.d_loss_R = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.zeros_like(self.d_judge_R), logits=self.d_judge_R_logits )
-        self.d_loss_F = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(self.d_judge_F1), logits=self.d_judge_F1_logits )
+        self.g_loss_1 = lo+(tf.fill(lo.get_shape(), self.punish[1]))*(self.punish[0])+l2g1
+        self.g_loss_2 = lo2+(tf.fill(lo2.get_shape(), self.punish[1]))*(self.punish[0])+l2g2
+        self.d_loss_R = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(self.d_judge_R), logits=self.d_judge_R_logits )
+        self.d_loss_F = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.zeros_like(self.d_judge_F1), logits=self.d_judge_F1_logits )
         self.d_loss=tf.reduce_mean([self.d_loss_F,self.d_loss_R])+l2d
         self.g_loss_sum = tf.summary.scalar("g_loss_1", tf.reduce_mean(self.g_loss_1))
         self.g_loss_sum_2 = tf.summary.scalar("g_loss_2", tf.reduce_mean(self.g_loss_2))
@@ -227,13 +226,17 @@ class Model:
         self.exps_2=tf.placeholder(tf.float32, [1,1,160000], name="FB2")
         self.fake_B_sum = tf.summary.audio("fake_B_1", tf.reshape(self.exps,[1,160000,1]), 16000, 1)
         self.fake_B_sum_2 = tf.summary.audio("fake_B_2", tf.reshape(self.exps_2,[1,160000,1]), 16000, 1)
-
+        self.g_test_epo_1=tf.placeholder(tf.float32,name="g_l_epo_1")
+        self.g_test_epoch_1 = tf.summary.scalar("g_test_epoch_1", self.g_test_epo_1)
+        self.g_test_epo_2=tf.placeholder(tf.float32,name="g_t_epo_2")
+        self.g_test_epoch_2 = tf.summary.scalar("g_test_epoch_2", self.g_test_epo_2)
         self.g_loss_epo=tf.placeholder(tf.float32,name="g_l_epo")
-        self.g_loss_epoch = tf.summary.scalar("g_loss_epoch", self.g_loss_epo)
+        self.g_loss_epoch = tf.summary.scalar("g_loss_epoch_1", self.g_loss_epo)
 
         self.g_loss_epo_2=tf.placeholder(tf.float32,name="g_l_epo_2")
         self.g_loss_epoch_2 = tf.summary.scalar("g_loss_epoch_2", self.g_loss_epo_2)
-        self.rrs=tf.summary.merge([self.fake_B_sum,self.fake_B_sum_2,self.g_loss_epoch,self.g_loss_epoch_2])
+        self.rrs=tf.summary.merge([self.fake_B_sum,self.fake_B_sum_2,self.g_loss_epoch,self.g_loss_epoch_2,self.g_test_epoch_1,self.g_test_epoch_2])
+
         self.saver = tf.train.Saver()
 
     def convert(self,in_put):
@@ -273,8 +276,8 @@ class Model:
         beta_g_opt=0.9
         lr_g_opt_2=0.0004
         beta_g_opt_2=0.9
-        lr_d_opt=0.001
-        beta_d_opt=0.5
+        lr_d_opt=0.0004
+        beta_d_opt=0.1
         self.lod="[glr="+str(lr_g_opt)+",gb="+str(beta_g_opt)+"]"
         g_optim_1 = EveOptimizer(lr_g_opt,beta_g_opt).minimize(self.g_loss_1, var_list=self.g_vars_1)
         g_optim_2 = EveOptimizer(lr_g_opt_2,beta_g_opt_2).minimize(self.g_loss_2, var_list=self.g_vars_2)
@@ -310,6 +313,7 @@ class Model:
             np.random.shuffle(data2)
 
             test=load_data('./Model/datasets/test/test.wav')[0:160000]
+            label=load_data('./Model/datasets/test/label.wav')[0:160000]
             # test
 #             out_puts=self.convert(test)
 #             upload(out_puts,self.drive)
@@ -351,21 +355,22 @@ class Model:
                     exp_re_t.pop(0)
                 p1s,score1=self.sess.run([self.d_scale,self.d_judge_F1],feed_dict={ self.real_data_result:resorce_te ,self.inputs_result:cv1 ,self.ans_result:target_te ,self.is_train:False })
                 p2s,score2=self.sess.run([self.d_scale,self.d_judge_F1],feed_dict={self.real_data_result:resorce_te , self.inputs_result:cv2 ,self.ans_result:target_te ,self.is_train:False })
-                p1a.insert(0, p1s)
+                p1a.insert(0, np.abs(p1s))
                 p1a.pop(batch_idxs)
-                p2a.insert(0, p2s)
+                p2a.insert(0, np.abs(p2s))
                 p2a.pop(batch_idxs)
-                p1=np.mean(p1a*2)
-                p2=np.mean(p2a*2)
-                self.p_scale_1=np.append(np.abs(np.mean(p1)),np.mean(score1))
-                self.p_scale_2=np.append(np.abs(np.mean(p2)),np.mean(score2))
+                p1=np.mean(p1a)
+                p2=np.mean(p2a)
+                eps=1e-8
+                self.p_scale_1=np.append((np.mean(p1)),-np.log(np.mean(score1)+eps))
+                self.p_scale_2=np.append((np.mean(p2)),-np.log(np.mean(score2)+eps))
                 # Update D network
 #                 self.sess.run(d_optim,feed_dict={self.real_data_result:resorce_te ,self.inputs_result:cv1,self.ans_result:target_te ,self.is_train:True })
                 _,hd=self.sess.run([d_optim,self.d_loss_sum],feed_dict={self.real_data_result:resorce_te , self.inputs_result:cv2,self.ans_result:target_te ,self.is_train:True })
                 self.writer.add_summary(hd, idx+batch_idxs*epoch)
                 d_score += (np.mean(p1s))
                 d_score += (np.mean(p2s))
-                print("D_score G1:%f G2:%f"%(np.mean(p1s),np.mean(p2s)))
+                print("D_score G1:%f %f G2:%f %f"%(np.mean(p1s),np.mean(score1),np.mean(p2s),np.mean(score2)))
                 dps+=(d_score)
                 for t in range(times):
                     start_pos=self.out_put_size[2]*t+((5*16000)%self.out_put_size[2])
@@ -409,8 +414,6 @@ class Model:
                     #Training D Netwok
                     a=random.randint(0,len(exp_re_1)-1)
                     cv1=exp_re_1[a]
-                    resorce_te_1=exp_re_r[a]
-                    target_te_1=exp_re_t[a]
                     b=random.randint(0,len(exp_re_2)-1)
                     cv2=exp_re_2[b]
                     resorce_te_2=exp_re_r[b]
@@ -426,19 +429,21 @@ class Model:
                 gps2+=(g_score2/times_added)
 
             self.save(args.checkpoint_dir, epoch+1)
-            ff='Z://Data.txt'
-            f=open(ff,'a')
-            f.write("-------------------------------\n")
-            f.write("TimeStamped:"+nowtime())
-            f.write("\nEpoch: [%2d]  time: %3.1f, \n G-LOSS_1: %f \n G-LOSS_2: %f \n D-Actually: %f \n" % (epoch+1,time.time() - start_time,(gps/batch_idxs),(gps2/batch_idxs),(dps/batch_idxs)))
-            f.write("-------------------------------\n")
-            f.close()
-            print("\nEpoch: [%2d]  time: %3.1f, \n G-LOSS_1: %f \n G-LOSS_2: %f \n D-Actually : %f \n" % (epoch+1,time.time() - start_time,(gps/batch_idxs),(gps2/batch_idxs),(dps/batch_idxs)))
 #             self.experiment.metric("errG",gps/batch_idxs)
             out_puts,out_put_2,taken_time=self.convert(test.reshape(1,1,-1))
             out_put=(out_puts.astype(np.float32)/32767.0)
             out_put2=(out_put_2.astype(np.float32)/32767.0)
-            rs=self.sess.run(self.rrs,feed_dict={ self.exps:out_put,self.exps_2:out_put2,self.g_loss_epo:(gps/batch_idxs),self.g_loss_epo_2:(gps2/batch_idxs)})
+            test1=np.mean(np.abs(out_puts-label))
+            test2=np.mean(np.abs(out_put_2-label))
+            ff='Z://Data.txt'
+            f=open(ff,'a')
+            f.write("-------------------------------\n")
+            f.write("TimeStamped:"+nowtime())
+            f.write("\nEpoch: [%2d]  time: %3.1f, \n G-LOSS_1: %f \n G-LOSS_2: %f \n D-Actually: %f \n test-g1 %d \n test-g2 %d \n" % (epoch+1,time.time() - start_time,(gps/batch_idxs),(gps2/batch_idxs),(dps/batch_idxs),(test1),(test2)))
+            f.write("-------------------------------\n")
+            f.close()
+            print("\nEpoch: [%2d]  time: %3.1f, \n G-LOSS_1: %f \n G-LOSS_2: %f \n D-Actually : %f \n" % (epoch+1,time.time() - start_time,(gps/batch_idxs),(gps2/batch_idxs),(dps/batch_idxs)))
+            rs=self.sess.run(self.rrs,feed_dict={ self.exps:out_put,self.exps_2:out_put2,self.g_loss_epo:(gps/batch_idxs),self.g_loss_epo_2:(gps2/batch_idxs),self.g_test_epo_1:(test1),self.g_test_epo_2:(test2)})
             self.writer.add_summary(rs, epoch+1)
             print("test taken: %f secs" % (taken_time))
             upload(out_put_2)
@@ -524,10 +529,10 @@ class Model:
             w2=var['postprocessing']['postprocess2']
             conv = tf.nn.conv2d(transformed, w, [1,1,1,1], padding="VALID",data_format="NCHW",dilations=[1,1,1,1] ,name="post_01"+name)
             conv = tf.nn.bias_add(conv,var['postprocessing']['bias'],data_format="NCHW")
+            x_in=tf.tile(transformed, [1,256//self.down,1,1])
             transformed=tf.nn.leaky_relu(conv)
             conv = tf.nn.conv2d(transformed, w2, [1,1,1,1], padding="VALID",data_format="NCHW",dilations=[1,1,1,1] ,name="post_02"+name)
             conv = tf.nn.bias_add(conv,var['postprocessing']['bias2'],data_format="NCHW")
-            x_in=tf.tile(transformed, [1,256//self.down,1,1])
             conv = tf.add(conv, x_in)
             conv=tf.reshape(conv, [self.batch_size,256,-1])
         sm=tf.transpose(conv, perm=[0,2,1])
@@ -631,14 +636,12 @@ class Shake_Dropout(base.Layer):
             bel=tf.floor(b)
             @tf.RegisterGradient(self.name+"Gradient_Ident")
             def _change_grad(op,grad):
-                tenx=(random_ops.random_uniform([ps0,1,ps2,ps3],name=self.name))
-                tenx=tf.tile(tenx, [1,ps1,1,1])
-                return ((1-bel)*grad*tenx,grad*op.inputs[1])
+                tenx=(random_ops.random_uniform([ps0,ps1,ps2,ps3],name=self.name))
+                return ((1-bel)*grad*tenx,grad*op.inputs[0])
 
             ten1=bel*inputs
             ten2=(1-bel)*inputs
-            ten2_beta=(random_ops.random_uniform([ps0,1,ps2,ps3],name=self.name)*2-1)
-            ten2_beta=tf.tile(ten2_beta, [1,ps1,1,1])
+            ten2_beta=(random_ops.random_uniform([ps0,ps1,ps2,ps3],name=self.name)*2-1)
             g=tf.get_default_graph()
             with g.gradient_override_map({"Mul": self.name+"Gradient_Ident"}):
                 ten3=tf.multiply(ten2,ten2_beta,"Multiply")
