@@ -9,7 +9,6 @@ from tensorflow.python import debug as tf_debug
 from tensorflow.python.debug.lib.debug_data import has_inf_or_nan
 import pyaudio
 import random
-from train.Model.eve import EveOptimizer
 from datetime import datetime
 from tensorflow.python.ops import random_ops
 from tensorflow.python.layers import base
@@ -23,11 +22,12 @@ class Model:
         self.p_scale_1=0.
         self.p_scale_2=0.
         self.down=128
+        self.down_c=self.down-3
         self.up=64
         self.input_ch=256
         self.out_channels=self.down
         self.width=2
-        self.dataset_name="wave2wave_ver0.12.1"
+        self.dataset_name="wave2wave_ver0.13.0"
         self.data_format=[1,1,80000]
         f=open("Z://Data.txt",'w')
         f.write("Start:"+nowtime())
@@ -61,7 +61,7 @@ class Model:
             self.sess.add_tensor_filter('has_inf_or_nan', has_inf_or_nan)
     def build_model(self):
         self.var_pear=[]
-        self.real_data = tf.placeholder(tf.float32,
+        self.real_data = tf.placeholder(tf.int16,
                                         self.in_put_size,
                                         name='inputA')
         self.curs = tf.placeholder(tf.float32,
@@ -105,9 +105,9 @@ class Model:
                 for i in range(self.depth):
                     with tf.variable_scope('layer{}'.format(i)):
                         current = dict()
-                        w= tf.get_variable('w1a', [self.width,1,self.down,self.up],initializer=tf.contrib.layers.xavier_initializer())
+                        w= tf.get_variable('w1a', [self.width,1,self.down_c,self.up],initializer=tf.contrib.layers.xavier_initializer())
                         current['w-1'] =w
-                        w= tf.get_variable('w2a', [self.width,1,self.down,self.up],initializer=tf.contrib.layers.xavier_initializer())
+                        w= tf.get_variable('w2a', [self.width,1,self.down_c,self.up],initializer=tf.contrib.layers.xavier_initializer())
                         current['w-2'] =w
                         w = tf.get_variable('w3a', [1,1,self.up,self.down],initializer=tf.contrib.layers.xavier_initializer())
                         current['w-3'] =w
@@ -145,9 +145,9 @@ class Model:
                 for i in range(self.depth):
                     with tf.variable_scope('layer{}'.format(i)):
                         current = dict()
-                        w= tf.get_variable('w1a', [self.width,1,self.down,self.up],initializer=tf.contrib.layers.xavier_initializer())
+                        w= tf.get_variable('w1a', [self.width,1,self.down_c,self.up],initializer=tf.contrib.layers.xavier_initializer())
                         current['w-1'] =w
-                        w= tf.get_variable('w2a', [self.width,1,self.down,self.up],initializer=tf.contrib.layers.xavier_initializer())
+                        w= tf.get_variable('w2a', [self.width,1,self.down_c,self.up],initializer=tf.contrib.layers.xavier_initializer())
                         current['w-2'] =w
                         w = tf.get_variable('w3a', [1,1,self.up,self.down],initializer=tf.contrib.layers.xavier_initializer())
                         current['w-3'] =w
@@ -272,19 +272,18 @@ class Model:
         return otp.reshape(1,in_put.shape[1],in_put.shape[2]),otp2.reshape(1,in_put.shape[1],in_put.shape[2]),time.time()-tt
     def train(self,args):
         self.checkpoint_dir=args.checkpoint_dir
-        lr_g_opt=0.0002
+        lr_g_opt=0.00002
         beta_g_opt=0.9
-        lr_g_opt_2=0.0004
+        lr_g_opt_2=0.00004
         beta_g_opt_2=0.9
-        lr_d_opt=0.0004
+        lr_d_opt=0.000002
         beta_d_opt=0.1
         self.lod="[glr="+str(lr_g_opt)+",gb="+str(beta_g_opt)+"]"
-        g_optim_1 = EveOptimizer(lr_g_opt,beta_g_opt).minimize(self.g_loss_1, var_list=self.g_vars_1)
-        g_optim_2 = EveOptimizer(lr_g_opt_2,beta_g_opt_2).minimize(self.g_loss_2, var_list=self.g_vars_2)
-        d_optim = EveOptimizer(lr_d_opt,beta_d_opt).minimize(self.d_loss, var_list=self.d_vars)
+        g_optim_1 = tf.train.AdamOptimizer(lr_g_opt,beta_g_opt).minimize(self.g_loss_1, var_list=self.g_vars_1)
+        g_optim_2 = tf.train.AdamOptimizer(lr_g_opt_2,beta_g_opt_2).minimize(self.g_loss_2, var_list=self.g_vars_2)
+        d_optim = tf.train.AdamOptimizer(lr_d_opt,beta_d_opt).minimize(self.d_loss, var_list=self.d_vars)
         init_op = tf.global_variables_initializer()
         self.exp= np.zeros((self.batch_size,1,80000),dtype=np.int16)
-        self.real_ds= np.zeros((self.batch_size,1,80000),dtype=np.int16)
         self.sess.run(init_op)
         self.writer = tf.summary.FileWriter("./logs/"+self.lod+self.dataset_name, self.sess.graph)
         counter = 1
@@ -328,10 +327,9 @@ class Model:
                 cur_res_2=np.zeros((self.batch_size,1,self.in_put_size[2]),dtype=np.int16)
                 batch_files = data[idx*self.batch_size:(idx+1)*self.batch_size]
                 batch = [load_data(batch_file) for batch_file in batch_files]
-                batch_images = np.array(batch).astype(np.float32).reshape(self.batch_size,2,80000)
+                batch_images = np.array(batch).astype(np.int16).reshape(self.batch_size,2,80000)
                 test_train=load_data(data2[idx%2]).reshape(1,2,80000)
 
-                self.real_ds=batch_images[:,:1,:]
                 times=5*16000//self.out_put_size[2]+1
                 times_added=0
                 if (5*16000)%self.out_put_size[2]==0:
@@ -348,7 +346,7 @@ class Model:
                 exp_re_2.append(deepcopy(cv2))
                 exp_re_r.append(deepcopy(resorce_te))
                 exp_re_t.append(deepcopy(target_te))
-                if len(exp_re_1)>20:
+                if len(exp_re_1)>5:
                     exp_re_1.pop(0)
                     exp_re_2.pop(0)
                     exp_re_r.pop(0)
@@ -356,9 +354,9 @@ class Model:
                 p1s,score1=self.sess.run([self.d_scale,self.d_judge_F1],feed_dict={ self.real_data_result:resorce_te ,self.inputs_result:cv1 ,self.ans_result:target_te ,self.is_train:False })
                 p2s,score2=self.sess.run([self.d_scale,self.d_judge_F1],feed_dict={self.real_data_result:resorce_te , self.inputs_result:cv2 ,self.ans_result:target_te ,self.is_train:False })
                 p1a.insert(0, np.abs(p1s))
-                p1a.pop(batch_idxs)
+                p1a.pop(batch_idxs*2)
                 p2a.insert(0, np.abs(p2s))
-                p2a.pop(batch_idxs)
+                p2a.pop(batch_idxs*2)
                 p1=np.mean(p1a)
                 p2=np.mean(p2a)
                 eps=1e-8
@@ -412,8 +410,6 @@ class Model:
 
                     counter += 1
                     #Training D Netwok
-                    a=random.randint(0,len(exp_re_1)-1)
-                    cv1=exp_re_1[a]
                     b=random.randint(0,len(exp_re_2)-1)
                     cv2=exp_re_2[b]
                     resorce_te_2=exp_re_r[b]
@@ -439,7 +435,7 @@ class Model:
             f=open(ff,'a')
             f.write("-------------------------------\n")
             f.write("TimeStamped:"+nowtime())
-            f.write("\nEpoch: [%2d]  time: %3.1f, \n G-LOSS_1: %f \n G-LOSS_2: %f \n D-Actually: %f \n test-g1 %d \n test-g2 %d \n" % (epoch+1,time.time() - start_time,(gps/batch_idxs),(gps2/batch_idxs),(dps/batch_idxs),(test1),(test2)))
+            f.write("\nEpoch: [%2d]  time: %3.1f, \n G-LOSS_1: %f \n G-LOSS_2: %f \n D-Actually: %f \n test-g1 %f \n test-g2 %f \n" % (epoch+1,time.time() - start_time,(gps/batch_idxs),(gps2/batch_idxs),(dps/batch_idxs),(test1),(test2)))
             f.write("-------------------------------\n")
             f.close()
             print("\nEpoch: [%2d]  time: %3.1f, \n G-LOSS_1: %f \n G-LOSS_2: %f \n D-Actually : %f \n" % (epoch+1,time.time() - start_time,(gps/batch_idxs),(gps2/batch_idxs),(dps/batch_idxs)))
@@ -453,7 +449,7 @@ class Model:
 
     def encode(self,in_puts):
         mu=2**8-1.0
-        ten=in_puts/32767.0
+        ten=tf.to_float(in_puts)/32767.0
         inputs = tf.sign(ten,"sign2")*(tf.log(1+mu*tf.abs(ten),name="encode_log_up")/(tf.log(1+mu,name="encode_log_down")))
         return tf.to_float(inputs)
     def one_hot(self,inp):
@@ -558,11 +554,16 @@ class Model:
 
             etan=tf.layers.batch_normalization(in_put,training=self.is_train,name="bn_"+str(depth)+"-"+str(1)+name)
             w=var['dilated_stack'][depth]['w-1']
-            etan = dilation_conv(etan, w, "dil_01"+name,self.width,self.up)
+            chs=etan.shape[2]*etan.shape[3]
+            wc= tf.get_variable('w1ac'+name+"_"+str(depth), [4,chs,chs],initializer=tf.contrib.layers.xavier_initializer())
+            var['w-1C'] =wc
+            etan = dilation_conv(etan, w,wc, "dil_01"+name,self.width,self.up,self.down_c)
             etan=tf.nn.tanh(etan)
             w=var['dilated_stack'][depth]['w-2']
             esig=tf.layers.batch_normalization(in_put,training=self.is_train,name="bn_"+str(depth)+"-"+str(2)+name)
-            esig = dilation_conv(esig, w, "dil_02"+name,self.width,self.up)
+            wc= tf.get_variable('w2ac'+name+"_"+str(depth), [4,chs,chs],initializer=tf.contrib.layers.xavier_initializer())
+            var['w-2C'] =wc
+            esig = dilation_conv(esig, w,wc, "dil_02"+name,self.width,self.up,self.down_c)
             d8=tf.multiply(etan,esig)
             d8=tf.layers.batch_normalization(d8,training=self.is_train,name="bn_"+str(depth)+"-"+str(3)+name)
             w=var['dilated_stack'][depth]['w-3']
@@ -584,7 +585,7 @@ class Model:
 
     def save(self, checkpoint_dir, step):
         model_name = "wave2wave.model"
-        model_dir = "%s_%s_%s_%s layers" % (self.dataset_name, self.batch_size,self.lod,self.depth)
+        model_dir = "%s_%s_%s layers" % (self.dataset_name, self.batch_size,self.depth)
         checkpoint_dir = os.path.join(checkpoint_dir, model_dir)
 
         if not os.path.exists(checkpoint_dir):
@@ -596,7 +597,7 @@ class Model:
     def load(self, checkpoint_dir):
         print(" [*] Reading checkpoint...")
 
-        model_dir = "%s_%s_%s_%s layers" % (self.dataset_name, self.batch_size,self.lod,self.depth)
+        model_dir = "%s_%s_%s layers" % (self.dataset_name, self.batch_size,self.depth)
         checkpoint_dir = os.path.join(checkpoint_dir, model_dir)
 
         ckpt = tf.train.get_checkpoint_state(checkpoint_dir)
@@ -608,9 +609,14 @@ class Model:
         else:
             return False
 
-def dilation_conv(inp,w,name,width,otc):
-
-    ten=tf.nn.conv2d(inp, w, [1,1,1,1], padding="VALID",data_format="NCHW" ,name=name)
+def dilation_conv(inp,w,w2,name,width,otc,s):
+    in_s=(inp.get_shape())
+    ten=tf.reshape(inp,[in_s[0],in_s[1],in_s[2]*in_s[3]])
+    ten=tf.transpose(ten, [0,2,1])
+    ten=tf.nn.conv1d(ten, w2, stride=1, padding="VALID",  data_format="NCW", name=name+"-CH")
+    ten=tf.transpose(ten, [0,2,1])
+    ten=tf.reshape(ten,[in_s[0],s,in_s[2],in_s[3]])
+    ten=tf.nn.conv2d(ten, w, [1,1,1,1], padding="VALID",data_format="NCHW" ,name=name)
     in_s=(ten.get_shape())
     ten=tf.reshape(ten,[in_s[0],otc,width,in_s[2]//width,in_s[3]])
     ten=tf.transpose(ten, [0,1,3,2,4])
