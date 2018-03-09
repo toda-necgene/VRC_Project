@@ -366,7 +366,7 @@ class Model:
                 self.p_scale_2=np.append((np.mean(p2)),-np.log(np.mean(score2)+eps))
                 # Update D network
 #                 self.sess.run(d_optim,feed_dict={self.real_data_result:resorce_te ,self.inputs_result:cv1,self.ans_result:target_te ,self.is_train:True })
-                _,hd=self.sess.run([d_optim,self.d_loss_sum],feed_dict={self.real_data_result:resorce_te , self.inputs_result:cv2,self.ans_result:target_te ,self.is_train:True })
+                hd,_=self.sess.run([self.d_loss_sum,d_optim],feed_dict={self.real_data_result:resorce_te , self.inputs_result:cv2,self.ans_result:target_te ,self.is_train:True })
                 self.writer.add_summary(hd, idx+batch_idxs*epoch)
                 d_score += (np.mean(p1s))
                 d_score += (np.mean(p2s))
