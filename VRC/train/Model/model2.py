@@ -22,7 +22,7 @@ class Model:
         self.p_scale_1=0.
         self.p_scale_2=0.
         self.down=128
-        self.down_c=self.down-3
+        self.down_c=self.down-7
         self.up=64
         self.input_ch=256
         self.out_channels=self.down
@@ -76,7 +76,7 @@ class Model:
         self.real_data_result = tf.placeholder(tf.int16,
                                         [1, 1, self.data_format[2]],
                                         name='target_D2')
-        self.ans= tf.placeholder(tf.float32,
+        self.ans= tf.placeholder(tf.int16,
                                         [self.in_put_size[0], 1, self.out_put_size[2]],
                                         name='target_b')
         self.inputs= tf.placeholder(tf.float32,
@@ -128,7 +128,7 @@ class Model:
                 self.var['postprocessing'] = current
                 self.var_pear.append(self.var)
 
-            self.fake_B ,self.fake_B_logit= self.generator(self.one_hot((self.real_A+1.0)/2.*255.0),self.one_hot((self.real_A+1.0)/2.*255.0),False,self.var_pear[0],"1",True)
+            self.fake_B ,self.fake_B_logit= self.generator(self.one_hot((self.real_A+1.0)/2.*255.0),self.one_hot((self.real_A+1.0)/2.*255.0),False,self.var_pear[0],"1",2)
             self.fake_B_decoded=tf.stop_gradient(self.decode(self.un_oh(self.fake_B)),"asnyan")
 
 
@@ -168,7 +168,7 @@ class Model:
                 current['bias2']=bias
                 self.var['postprocessing'] = current
             self.var_pear.append(self.var)
-            self.fake_B_2 ,self.fake_B_logit_2= self.generator(self.one_hot((self.real_A+1.0)/2.*255.0),self.one_hot((self.real_A+1.0)/2.*255.0),False,self.var_pear[1],"2",True)
+            self.fake_B_2 ,self.fake_B_logit_2= self.generator(self.one_hot((self.real_A+1.0)/2.*255.0),self.one_hot((self.real_A+1.0)/2.*255.0),False,self.var_pear[1],"2",1)
             self.fake_B_decoded_2=tf.stop_gradient(self.decode(self.un_oh(self.fake_B_2)),"asnyan")
 
         self.res1=tf.concat([self.inputs_result,self.real_data_result], axis=2)
@@ -206,12 +206,12 @@ class Model:
         logit_2=tf.transpose(self.fake_B_logit_2, perm=[0,2,1])
         lo=tf.nn.sparse_softmax_cross_entropy_with_logits(labels=target, logits=logit_1)
         lo2=tf.nn.sparse_softmax_cross_entropy_with_logits(labels=target, logits=logit_2)
-        weightsg1=list(filter(lambda x: (re.search( r"/w",repr(x.name)) is not None ), self.g_vars_1))
-        weightsg2=list(filter(lambda x: (re.search( r"/w",repr(x.name))is not None ), self.g_vars_2))
-        weightsd=list(filter(lambda x: (re.search( r"/w",repr(x.name))is not None ), self.d_vars))
-        l2g1=1e-4*tf.add_n([tf.nn.l2_loss(w) for w in weightsg1])
-        l2g2=1e-4*tf.add_n([tf.nn.l2_loss(w) for w in weightsg2])
-        l2d=1e-4*tf.add_n([tf.nn.l2_loss(w) for w in weightsd])
+#         weightsg1=list(filter(lambda x: (re.search( r"/w",repr(x.name)) is not None ), self.g_vars_1))
+#         weightsg2=list(filter(lambda x: (re.search( r"/w",repr(x.name))is not None ), self.g_vars_2))
+#         weightsd=list(filter(lambda x: (re.search( r"/w",repr(x.name))is not None ), self.d_vars))
+        l2g1=0.0
+        l2g2=0.0
+        l2d=0.0
         #l1=tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=self.real_B, logits=self.fake_B))
         self.g_loss_1 = lo+(tf.fill(lo.get_shape(), self.punish[1]))*(self.punish[0])+l2g1
         self.g_loss_2 = lo2+(tf.fill(lo2.get_shape(), self.punish[1]))*(self.punish[0])+l2g2
@@ -272,11 +272,11 @@ class Model:
         return otp.reshape(1,in_put.shape[1],in_put.shape[2]),otp2.reshape(1,in_put.shape[1],in_put.shape[2]),time.time()-tt
     def train(self,args):
         self.checkpoint_dir=args.checkpoint_dir
-        lr_g_opt=0.00002
+        lr_g_opt=0.0001
         beta_g_opt=0.9
-        lr_g_opt_2=0.00004
+        lr_g_opt_2=0.00005
         beta_g_opt_2=0.9
-        lr_d_opt=0.000002
+        lr_d_opt=0.00004
         beta_d_opt=0.1
         self.lod="[glr="+str(lr_g_opt)+",gb="+str(beta_g_opt)+"]"
         g_optim_1 = tf.train.AdamOptimizer(lr_g_opt,beta_g_opt).minimize(self.g_loss_1, var_list=self.g_vars_1)
@@ -414,7 +414,7 @@ class Model:
                     cv2=exp_re_2[b]
                     resorce_te_2=exp_re_r[b]
                     target_te_2=exp_re_t[b]
-                    if counter % 5 == 0:
+                    if counter % 10 == 0:
 #                         self.sess.run(d_optim,feed_dict={self.real_data_result:resorce_te_1 ,self.inputs_result:cv1,self.ans_result:target_te_1 ,self.is_train:True })
                         _,hd=self.sess.run([d_optim,self.d_loss_sum],feed_dict={self.real_data_result:resorce_te_2 , self.inputs_result:cv2,self.ans_result:target_te_2 ,self.is_train:True })
 #                     elif counter % 20 == 2:
@@ -477,16 +477,16 @@ class Model:
         w=var['w-1']
         h1 = tf.nn.leaky_relu(tf.nn.conv1d(inputs, w, stride=2, padding="VALID",data_format="NCW",name="dis_01"))
         w=var['w-2']
-        h2 = tf.nn.leaky_relu(tf.nn.conv1d(tf.layers.batch_normalization(h1,training=self.is_train,name="dis_bn_02",reuse=reuse), w, stride=2, padding="VALID",data_format="NCW",name="dis_02"))
+        h2 = tf.nn.leaky_relu(tf.nn.conv1d((h1), w, stride=2, padding="VALID",data_format="NCW",name="dis_02"))
         w=var['w-3']
-        h3 = tf.nn.leaky_relu(tf.nn.conv1d(tf.layers.batch_normalization(h2,training=self.is_train,name="dis_bn_03",reuse=reuse), w, stride=2, padding="VALID",data_format="NCW",name="dis_03"))
+        h3 = tf.nn.leaky_relu(tf.nn.conv1d((h2), w, stride=2, padding="VALID",data_format="NCW",name="dis_03"))
         h3=h3+tf.pad(tf.slice(h1, [0,0,0], [-1,-1,h3.shape[2]]),[[0,0],[0,h3.shape[1]-h1.shape[1]],[0,0]])
         w=var['w-4']
-        h4 = tf.nn.leaky_relu(tf.nn.conv1d(tf.layers.batch_normalization(h3,training=self.is_train,name="dis_bn_04",reuse=reuse), w, stride=2, padding="VALID",data_format="NCW",name="dis_04"))
+        h4 = tf.nn.leaky_relu(tf.nn.conv1d((h3), w, stride=2, padding="VALID",data_format="NCW",name="dis_04"))
         w=var['w-5']
-        h5 = tf.nn.leaky_relu(tf.nn.conv1d(tf.layers.batch_normalization(h4,training=self.is_train,name="dis_bn_05",reuse=reuse), w, stride=2, padding="VALID",data_format="NCW",name="dis_05"))
+        h5 = tf.nn.leaky_relu(tf.nn.conv1d((h4), w, stride=2, padding="VALID",data_format="NCW",name="dis_05"))
         w=var['w-6']
-        h6 = tf.nn.leaky_relu(tf.nn.conv1d(tf.layers.batch_normalization(h5,training=self.is_train,name="dis_bn_06",reuse=reuse), w, stride=2, padding="VALID",data_format="NCW",name="dis_06"))
+        h6 = tf.nn.leaky_relu(tf.nn.conv1d((h5), w, stride=2, padding="VALID",data_format="NCW",name="dis_06"))
         h6=h6+tf.pad(tf.slice(h3, [0,0,0], [-1,-1,h6.shape[2]]),[[0,0],[0,h6.shape[1]-h3.shape[1]],[0,0]])
         w=var['w-7']
         h7 = (tf.nn.conv1d(tf.layers.batch_normalization(h6,training=self.is_train,name="dis_bn_07",reuse=reuse), w, stride=2, padding="VALID",data_format="NCW",name="dis_07"))
@@ -554,15 +554,13 @@ class Model:
 
             etan=tf.layers.batch_normalization(in_put,training=self.is_train,name="bn_"+str(depth)+"-"+str(1)+name)
             w=var['dilated_stack'][depth]['w-1']
-            chs=etan.shape[2]*etan.shape[3]
-            wc= tf.get_variable('w1ac'+name+"_"+str(depth), [4,chs,chs],initializer=tf.contrib.layers.xavier_initializer())
-            var['w-1C'] =wc
+            chs=etan.shape[2]
+            wc= tf.get_variable('w1ac'+name+"_"+str(depth), [8,1,chs,chs],initializer=tf.contrib.layers.xavier_initializer())
             etan = dilation_conv(etan, w,wc, "dil_01"+name,self.width,self.up,self.down_c)
             etan=tf.nn.tanh(etan)
             w=var['dilated_stack'][depth]['w-2']
             esig=tf.layers.batch_normalization(in_put,training=self.is_train,name="bn_"+str(depth)+"-"+str(2)+name)
-            wc= tf.get_variable('w2ac'+name+"_"+str(depth), [4,chs,chs],initializer=tf.contrib.layers.xavier_initializer())
-            var['w-2C'] =wc
+            wc= tf.get_variable('w2ac'+name+"_"+str(depth), [8,1,chs,chs],initializer=tf.contrib.layers.xavier_initializer())
             esig = dilation_conv(esig, w,wc, "dil_02"+name,self.width,self.up,self.down_c)
             d8=tf.multiply(etan,esig)
             d8=tf.layers.batch_normalization(d8,training=self.is_train,name="bn_"+str(depth)+"-"+str(3)+name)
@@ -579,8 +577,8 @@ class Model:
             w=var['dilated_stack'][depth]['w-4']
             skp=tf.nn.conv2d(d8, w, [1,1,1,1], padding="VALID",data_format="NCHW",dilations=[1,1,1,1] ,name="dil_04"+name)
             skp=tf.reshape(skp,[self.batch_size,self.down,self.out_put_size[2]])
-            if sd and depth%2==0:
-                otp=shake_drop(otp, rate=(depth)/(4*self.depth),training=self.is_train,name="do_"+str(depth)+"-"+str(1)+name)
+            if sd!=0 and depth%2==0:
+                otp=shake_drop(otp, rate=(depth)/(2*sd*self.depth),training=self.is_train,name="do_"+str(depth)+"-"+str(1)+name)
             return skp,otp+con
 
     def save(self, checkpoint_dir, step):
@@ -611,10 +609,10 @@ class Model:
 
 def dilation_conv(inp,w,w2,name,width,otc,s):
     in_s=(inp.get_shape())
-    ten=tf.reshape(inp,[in_s[0],in_s[1],in_s[2]*in_s[3]])
-    ten=tf.transpose(ten, [0,2,1])
-    ten=tf.nn.conv1d(ten, w2, stride=1, padding="VALID",  data_format="NCW", name=name+"-CH")
-    ten=tf.transpose(ten, [0,2,1])
+    ten=tf.reshape(inp,[in_s[0],in_s[1],in_s[2],in_s[3]])
+    ten=tf.transpose(ten, [0,2,1,3])
+    ten=tf.nn.conv2d(ten, w2, strides=[1,1,1,1], padding="VALID",  data_format="NCHW", name=name+"-CH")
+    ten=tf.transpose(ten, [0,2,1,3])
     ten=tf.reshape(ten,[in_s[0],s,in_s[2],in_s[3]])
     ten=tf.nn.conv2d(ten, w, [1,1,1,1], padding="VALID",data_format="NCHW" ,name=name)
     in_s=(ten.get_shape())
