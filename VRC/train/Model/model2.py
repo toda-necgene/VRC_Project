@@ -8,6 +8,7 @@ import wave
 from tensorflow.python import debug as tf_debug
 from tensorflow.python.debug.lib.debug_data import has_inf_or_nan
 import pyaudio
+from hyperdash import Experiment
 import random
 from datetime import datetime
 from tensorflow.python.ops import random_ops
@@ -27,15 +28,15 @@ class Model:
         self.input_ch=1
         self.out_channels=self.down
         self.width=2
-        self.dataset_name="wave2wave_ver0.14.0"
+        self.dataset_name="wave2wave_ver0.15.0"
         self.data_format=[1,1,80000]
         f=open("Z://Data.txt",'w')
-        f.write("Start:"+nowtime())
+        f.write("Start:"+nowtime()+"\n")
         f.close()
 
         self.gf_dim=64
         self.depth=8
-        self.batch_size=16
+        self.batch_size=64
 
         self.dilations=[]
         self.f_dilations=[]
@@ -168,7 +169,7 @@ class Model:
                 current['bias2']=bias
                 self.var['postprocessing'] = current
             self.var_pear.append(self.var)
-            self.fake_B_2 ,self.fake_B_logit_2= self.generator(self.real_A*256.,False,self.var_pear[1],"2",2)
+            self.fake_B_2 ,self.fake_B_logit_2= self.generator(self.real_A*256.,False,self.var_pear[1],"2",0)
             self.fake_B_decoded_2=tf.stop_gradient(self.decode(self.un_oh(self.fake_B_2)),"asnyan")
 
         self.res1=tf.concat([self.inputs_result,self.real_data_result], axis=2)
@@ -201,7 +202,6 @@ class Model:
         self.g_vars_2=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"generator_2")
         self.d_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"discrim")
         target=tf.cast(tf.reshape((self.real_B+1.0)/2.0*255.0,[self.batch_size,-1]),dtype=tf.int32)
-
         logit_1=tf.transpose(self.fake_B_logit, perm=[0,2,1])
         logit_2=tf.transpose(self.fake_B_logit_2, perm=[0,2,1])
         lo=tf.nn.sparse_softmax_cross_entropy_with_logits(labels=target, logits=logit_1)
@@ -209,12 +209,11 @@ class Model:
 #         weightsg1=list(filter(lambda x: (re.search( r"/w",repr(x.name)) is not None ), self.g_vars_1))
 #         weightsg2=list(filter(lambda x: (re.search( r"/w",repr(x.name))is not None ), self.g_vars_2))
 #         weightsd=list(filter(lambda x: (re.search( r"/w",repr(x.name))is not None ), self.d_vars))
-        l2g1=0.0
         l2g2=0.0
         l2d=0.0
         #l1=tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=self.real_B, logits=self.fake_B))
-        self.g_loss_1 = lo+(tf.fill(lo.get_shape(), self.punish[1]))*(self.punish[0])*0.01+l2g1
-        self.g_loss_2 = lo2+(tf.fill(lo2.get_shape(), self.punish[1]))*(self.punish[0])*0.01+l2g2
+        self.g_loss_1 = lo
+        self.g_loss_2 = lo2*0.7+lo2*(self.punish[1])*(self.punish[0])*0.3+l2g2
         self.d_loss_R = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(self.d_judge_R), logits=self.d_judge_R_logits )
         self.d_loss_F = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.zeros_like(self.d_judge_F1), logits=self.d_judge_F1_logits )
         self.d_loss=tf.reduce_mean([self.d_loss_F,self.d_loss_R])+l2d
@@ -272,11 +271,11 @@ class Model:
         return otp.reshape(1,in_put.shape[1],in_put.shape[2]),otp2.reshape(1,in_put.shape[1],in_put.shape[2]),time.time()-tt
     def train(self,args):
         self.checkpoint_dir=args.checkpoint_dir
-        lr_g_opt=0.00004
+        lr_g_opt=0.00002
         beta_g_opt=0.9
         lr_g_opt_2=0.00002
         beta_g_opt_2=0.9
-        lr_d_opt=0.000008
+        lr_d_opt=0.0000008
         beta_d_opt=0.1
         self.lod="[glr="+str(lr_g_opt)+",gb="+str(beta_g_opt)+"]"
         g_optim_1 = tf.train.AdamOptimizer(lr_g_opt,beta_g_opt).minimize(self.g_loss_1, var_list=self.g_vars_1)
@@ -291,15 +290,28 @@ class Model:
         cv1=None
         cv2=None
         if self.load(self.checkpoint_dir):
+#             for  i in self.d_vars:
+#                 if i.value().name.startswith("discrim/w"):
+#                     r=(np.random.rand(int(i.shape[0]),int(i.shape[1]),int(i.shape[2]))*2-1)*0.002
+#                     self.sess.run(i.assign(r))
+#                 elif i.value().name.startswith("discrim/dence/k"):
+#                     print(i.value().name)
+#                     r=(np.random.rand(int(i.shape[0]),1)*2-1)*0.002
+#                     self.sess.run(i.assign(r))
+#                 else:
+#                     print(i.value().name)
+#                     r=(np.zeros(int(i.shape[0])))
+#                     self.sess.run(i.assign(r))
             print(" [*] Load SUCCESS")
         else:
             print(" [!] Load failed...")
+
         data = glob('./Model/datasets/train/01/*')
         data2 = glob('./Model/datasets/train/02/*')
         batch_idxs = min(len(data), args.train_size) // self.batch_size
-#         self.experiment=Experiment(self.dataset_name)
-#         self.experiment.param("lr_g_opt", lr_g_opt)
-#         self.experiment.param("beta_g_opt", beta_g_opt)
+        self.experiment=Experiment(self.dataset_name)
+        self.experiment.param("lr_g_opt", lr_g_opt)
+        self.experiment.param("beta_g_opt", beta_g_opt)
         p1a=[0. for _ in range(batch_idxs*2)]
         p2a=[0. for _ in range(batch_idxs*2)]
         exp_re_1=[]
@@ -327,13 +339,13 @@ class Model:
                 cur_res_2=np.zeros((self.batch_size,1,self.in_put_size[2]),dtype=np.int16)
                 batch_files = data[idx*self.batch_size:(idx+1)*self.batch_size]
                 batch = np.asarray([load_data(batch_file) for batch_file in batch_files])
-                batch_images = np.array(batch).astype(np.int16).reshape(self.batch_size,2,24000)
+                batch_images = np.array(batch).astype(np.int16).reshape(self.batch_size,2,80000)
 
                 test_train=load_data(data2[idx%2]).reshape(1,2,80000)
 
-                times=24000//self.out_put_size[2]
+                times=80000//self.out_put_size[2]
                 times_added=0
-                if int(24000)%self.out_put_size[2]==0:
+                if int(80000)%self.out_put_size[2]==0:
                     times-=1
                 ti=(batch_idxs*times)//10+1
                 g_score=0
@@ -360,9 +372,8 @@ class Model:
                 p2a.pop(batch_idxs*2)
                 p1=np.mean(p1a)
                 p2=np.mean(p2a)
-                eps=1e-8
-                self.p_scale_1=np.append((np.mean(p1)),-np.log(np.mean(score1)+eps))
-                self.p_scale_2=np.append((np.mean(p2)),-np.log(np.mean(score2)+eps))
+                self.p_scale_1=np.append((np.mean(p1)),1-(np.mean(score1)))
+                self.p_scale_2=np.append((np.mean(p2)),1-(np.mean(score2)))
                 # Update D network
 #                 self.sess.run(d_optim,feed_dict={self.real_data_result:resorce_te ,self.inputs_result:cv1,self.ans_result:target_te ,self.is_train:True })
                 hd,_=self.sess.run([self.d_loss_sum,d_optim],feed_dict={self.real_data_result:resorce_te , self.inputs_result:cv2,self.ans_result:target_te ,self.is_train:True })
@@ -373,7 +384,7 @@ class Model:
                 print("D_score G1:%f %f G2:%f %f"%(np.mean(p1s),np.mean(score1),np.mean(p2s),np.mean(score2)))
                 dps+=(d_score)
                 for t in range(times):
-                    start_pos=self.out_put_size[2]*t+(24000%self.out_put_size[2])
+                    start_pos=self.out_put_size[2]*t+(80000%self.out_put_size[2])
                     target=np.reshape(batch_images[:,0,max(0,start_pos-self.out_put_size[2]):start_pos],(self.batch_size,1,-1))
                     resorce=np.reshape(batch_images[:,1,max(0,start_pos-self.in_put_size[2]):start_pos],(self.batch_size,1,-1))
                     r=max(0,self.in_put_size[2]-resorce.shape[2])
@@ -418,21 +429,23 @@ class Model:
                 gps2+=(g_score2/times_added)
 
             self.save(args.checkpoint_dir, epoch+1)
-#             self.experiment.metric("errG",gps/batch_idxs)
+            self.experiment.metric("errD",dps/batch_idxs)
+            self.experiment.metric("errG",gps/batch_idxs)
+            self.experiment.metric("errG2",gps2/batch_idxs)
             out_puts,out_put_2,taken_time=self.convert(test.reshape(1,1,-1))
             out_put=(out_puts.astype(np.float32)/32767.0)
             out_put2=(out_put_2.astype(np.float32)/32767.0)
             test1=np.mean(np.abs(out_puts-label))
             test2=np.mean(np.abs(out_put_2-label))
+            self.experiment.metric("testG",test1)
+            self.experiment.metric("testG2",test2)
             ff='Z://Data.txt'
             f=open(ff,'a')
-            f.write("-------------------------------\n")
             f.write("TimeStamped:"+nowtime())
-            f.write("\nEpoch: [%2d]  time: %3.1f, \n G-LOSS_1: %f \n G-LOSS_2: %f \n D-Actually: %f \n test-g1 %f \n test-g2 %f \n" % (epoch+1,time.time() - start_time,(gps),(gps2),(dps),(test1),(test2)))
-            f.write("-------------------------------\n")
+            f.write(",Epoch: [%2d]  time: %3.1f, , G-LOSS_1: %f , G-LOSS_2: %f , D-Actually: %f , test-g1 %f , test-g2 %f \n" % (epoch+1,time.time() - start_time,(gps/batch_idxs),(gps2/batch_idxs),(dps/batch_idxs),(test1),(test2)))
             f.close()
-            print("\nEpoch: [%2d]  time: %3.1f, \n G-LOSS_1: %f \n G-LOSS_2: %f \n D-Actually : %f \n" % (epoch+1,time.time() - start_time,(gps),(gps2),(dps)))
-            rs=self.sess.run(self.rrs,feed_dict={ self.exps:out_put,self.exps_2:out_put2,self.g_loss_epo:(gps),self.g_loss_epo_2:(gps2),self.g_test_epo_1:(test1),self.g_test_epo_2:(test2)})
+            print("\nEpoch: [%2d]  time: %3.1f, \n G-LOSS_1: %f \n G-LOSS_2: %f \n D-Actually : %f \n" % (epoch+1,time.time() - start_time,(gps/batch_idxs),(gps2/batch_idxs),(dps/batch_idxs)))
+            rs=self.sess.run(self.rrs,feed_dict={ self.exps:out_put,self.exps_2:out_put2,self.g_loss_epo:(gps/batch_idxs),self.g_loss_epo_2:(gps2/batch_idxs),self.g_test_epo_1:(test1),self.g_test_epo_2:(test2)})
             self.writer.add_summary(rs, epoch+1)
             print("test taken: %f secs" % (taken_time))
             upload(out_put_2)
@@ -462,7 +475,7 @@ class Model:
     def decode(self,in_puts):
         ten=in_puts
         mu=2**8-1.0
-        inputs=  tf.sign(ten,"sign2")*(1/mu)*((1+mu)**tf.abs(ten)-1)
+        inputs=  tf.sign(ten,"sign2")*(1/mu)*(tf.pow((1+mu),tf.abs(ten))-1)
         return tf.to_float(inputs)
 
     def discriminator(self,inp,var,reuse):
@@ -482,7 +495,7 @@ class Model:
         h6 = tf.nn.leaky_relu(tf.nn.conv1d((h5), w, stride=2, padding="VALID",data_format="NCW",name="dis_06"))
         h6=h6+tf.pad(tf.slice(h3, [0,0,0], [-1,-1,h6.shape[2]]),[[0,0],[0,h6.shape[1]-h3.shape[1]],[0,0]])
         w=var['w-7']
-        h7 = (tf.nn.conv1d(tf.layers.batch_normalization(h6,training=self.is_train,name="dis_bn_07",reuse=reuse), w, stride=2, padding="VALID",data_format="NCW",name="dis_07"))
+        h7 = tf.nn.leaky_relu(tf.nn.conv1d(h6, w, stride=2, padding="VALID",data_format="NCW",name="dis_07"))
 
         ten=tf.layers.dense(h7,1,name="dence",reuse=reuse)
         ot=tf.nn.sigmoid(ten)
@@ -570,8 +583,8 @@ class Model:
             w=var['dilated_stack'][depth]['w-4']
             skp=tf.nn.conv2d(d8, w, [1,1,1,1], padding="VALID",data_format="NCHW",dilations=[1,1,1,1] ,name="dil_04"+name)
             skp=tf.reshape(skp,[self.batch_size,self.down,self.out_put_size[2]])
-            if sd!=0 and depth%2==0:
-                otp=shake_layer(otp, rate=(depth)/(2*sd*self.depth),var=(depth)/(sd*self.depth),training=self.is_train,name="do_"+str(depth)+"-"+str(1)+name)
+            if sd!=0 and (depth==2 or 6 or 8):
+                otp=shake_layer(otp, rate=(depth)/(2*sd*self.depth),var=(depth)/(sd*50*self.depth),training=self.is_train,name="do_"+str(depth)+"-"+str(1)+name)
             return skp,otp+con
 
     def save(self, checkpoint_dir, step):
@@ -601,7 +614,6 @@ class Model:
             return False
 
 def dilation_conv(inp,w,w2,name,width,otc,s):
-    in_s=(inp.get_shape())
 #     ten=tf.reshape(inp,[in_s[0],in_s[1],in_s[2],in_s[3]])
 #     ten=tf.transpose(ten, [0,2,1,3])
 #     ten=tf.nn.conv2d(ten, w2, strides=[1,1,1,1], padding="VALID",  data_format="NCHW", name=name+"-CH")
@@ -628,7 +640,7 @@ class Shake_Layer(base.Layer):
             ps1=int(inputs.shape[1])
             ps2=int(inputs.shape[2])
             ps3=int(inputs.shape[3])
-            b=self.rate+random_ops.random_uniform([ps0,1,1,1], name=self.name+"SDR_1")
+            b=self.rate+random_ops.random_uniform([ps0,ps1,ps2,ps3], name=self.name+"SDR_1")
             bel=math_ops.floor(b)
             ten1=inputs
             ten2=(bel)*inputs
@@ -666,5 +678,9 @@ def imread(path):
         ans=np.append(ans,np.frombuffer(bb,"int16"))
         bb=wf.readframes(1024)
     wf.close()
-    i=ans.shape[0]//16000
-    return ans[0:i*16000]
+    i=160000-ans.shape[0]
+    if i>0:
+        ans=np.pad(ans, (0,i), "constant")
+    else:
+        ans=ans[0:160000]
+    return ans
