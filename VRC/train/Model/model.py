@@ -123,7 +123,6 @@ class Model:
 #         lo=-tf.reduce_sum(target*tf.log(logit+eps))/self.batch_size
         lo=tf.nn.sparse_softmax_cross_entropy_with_logits(labels=target, logits=logit)
         #l1=tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=self.real_B, logits=self.fake_B))
-        self.g_loss = lo
         self.g_loss_sum = tf.summary.scalar("g_loss", tf.reduce_mean(self.g_loss))
 
         self.exps=tf.placeholder(tf.float32, [32,80000,1], name="FB")
