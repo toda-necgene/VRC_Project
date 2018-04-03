@@ -21,12 +21,12 @@ class Model:
         self.p_scale_1=0.
         self.down=64
         self.down_c=self.down-7
-        self.up=32
+        self.up=48
         self.input_ch=1
         self.out_channels=self.down
         self.width=2
         self.reset_d=False
-        self.dataset_name="wave2wave_ver0.18.2"
+        self.dataset_name="wave2wave_ver0.20.0"
         self.data_format=[1,1,80000]
         if not os.path.exists("Z://data/"+self.dataset_name+".txt"):
             f=open("Z://data/"+self.dataset_name+".txt",'w')
@@ -114,6 +114,8 @@ class Model:
                         current['w-1'] =w
                         w = tf.get_variable('w3a', [1,1,self.up,self.down],initializer=tf.contrib.layers.xavier_initializer())
                         current['w-3'] =w
+                        w = tf.get_variable('ba', [self.up],initializer=tf.initializers.zeros())
+                        current['w-b'] =w
                         self.var['dilated_stack'].append(current)
 
             with tf.variable_scope('postprocessing'):
@@ -152,43 +154,30 @@ class Model:
 
             self.d_judge_F1,self.d_judge_F1_logits=self.discriminator(self.res1,self.var_pear[1],False)
             self.d_judge_R,self.d_judge_R_logits=self.discriminator(self.res2,self.var_pear[1],True)
-        with tf.variable_scope("rnet",reuse=tf.AUTO_REUSE):
-            self.var=dict()
-            w=tf.get_variable('w1', [1,1,4],initializer=tf.contrib.layers.xavier_initializer())
-            self.var['w-1'] = w
-            w=tf.get_variable('w2', [2,4,8],initializer=tf.contrib.layers.xavier_initializer())
-            self.var['w-2'] = w
-            w=tf.get_variable('w3', [4,8,16],initializer=tf.contrib.layers.xavier_initializer())
-            self.var['w-3'] = w
-            w=tf.get_variable('w4', [8,16,32],initializer=tf.contrib.layers.xavier_initializer())
-            self.var['w-4'] = w
-            w=tf.get_variable('w5', [8,32,64],initializer=tf.contrib.layers.xavier_initializer())
-            self.var_pear.append(self.var)
-            self.r_nets,_=self.r_net(self.noise,self.punish,self.var_pear[2])
 
         self.d_scale = self.d_judge_F1 - self.d_judge_R
         self.g_vars_1=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"generator_1")
         self.d_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"discrim")
-        self.r_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"rnet")
 
-        target=tf.cast(tf.reshape((self.real_B+1.0)/2.0*255.0,[self.batch_size,-1]),dtype=tf.int32)
-        logit_1=tf.transpose(self.fake_B_logit, perm=[0,2,1])
-        lo=tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=target, logits=logit_1))
+        target=tf.one_hot(tf.cast(tf.reshape((self.real_B+1.0)/2.0*255.0,[self.batch_size,-1]),dtype=tf.int32),depth=256)
+        logit_1=tf.transpose(self.fake_B, perm=[0,2,1])
+        lo=tf.reduce_mean(tf.abs(target-logit_1))
         self.lo=lo
-        self.g_loss_1 = lo-tf.log(self.adloss)
+        self.g_loss_1 = lo*100-tf.log(self.adloss)
         self.d_loss_R = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(self.d_judge_R), logits=self.d_judge_R_logits )
         self.d_loss_F = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.zeros_like(self.d_judge_F1), logits=self.d_judge_F1_logits )
         self.d_loss=self.d_loss_R+self.d_loss_F
-        self.g_loss_sum = tf.summary.scalar("g_loss_1", tf.reduce_mean(self.g_loss_1))
+        self.g_loss_sum = tf.summary.scalar("g_loss", tf.reduce_mean(self.g_loss_1))
         self.d_loss_sum = tf.summary.merge([tf.summary.scalar("d_loss_R", tf.reduce_mean(self.d_loss_R)),tf.summary.scalar("d_loss_F", tf.reduce_mean(self.d_loss_F))])
         self.exps=tf.placeholder(tf.float32, [1,1,160000], name="FB")
-        self.fake_B_sum = tf.summary.audio("fake_B_1", tf.reshape(self.exps,[1,160000,1]), 16000, 1)
-        self.g_test_epo_1=tf.placeholder(tf.float32,name="g_l_epo_1")
-        self.g_test_epoch_1 = tf.summary.scalar("g_test_epoch_1", self.g_test_epo_1)
+        self.fake_B_sum = tf.summary.audio("fake_B", tf.reshape(self.exps,[1,160000,1]), 16000, 1)
+        self.g_test_epo_1=tf.placeholder(tf.float32,name="g_l_epo")
+        self.g_test_epoch_1 = tf.summary.scalar("g_test_epoch", self.g_test_epo_1)
         self.g_loss_epo=tf.placeholder(tf.float32,name="g_l_epo")
-        self.g_loss_epoch = tf.summary.scalar("g_loss_epoch_1", self.g_loss_epo)
-
-        self.rrs=tf.summary.merge([self.fake_B_sum,self.g_loss_epoch,self.g_test_epoch_1])
+        self.g_loss_epoch = tf.summary.scalar("g_loss_epoch", self.g_loss_epo)
+        self.d_score_epo=tf.placeholder(tf.float32,name="g_l_epo")
+        self.d_score_epoch= tf.summary.scalar("d_score_epoch", self.d_score_epo)
+        self.rrs=tf.summary.merge([self.fake_B_sum,self.g_loss_epoch,self.g_test_epoch_1,self.d_score_epoch])
 
         self.saver = tf.train.Saver()
 
@@ -216,10 +205,10 @@ class Model:
         self.checkpoint_dir=args.checkpoint_dir
         lr_g_opt=0.01
         beta_g_opt=0.9
-        lr_d_opt=0.000004
-        beta_d_opt=0.5
+        lr_d_opt=0.01
+        beta_d_opt=0.1
         self.lod="[glr="+str(lr_g_opt)+",gb="+str(beta_g_opt)+"]"
-        g_optim_1 = EveOptimizer(lr_g_opt,beta_g_opt).minimize(self.g_loss_1, var_list=self.g_vars_1)
+        g_optim_1 =tf.train.AdamOptimizer(lr_g_opt,beta_g_opt).minimize(self.g_loss_1, var_list=self.g_vars_1)
         d_optim = tf.train.AdamOptimizer(lr_d_opt,beta_d_opt).minimize(self.d_loss, var_list=self.d_vars)
 
         init_op = tf.global_variables_initializer()
@@ -310,11 +299,9 @@ class Model:
                         target=np.pad(target,((0,0),(0,0),(r,0)),'constant')
 
                     # Update G1 network
-                    _,hg=self.sess.run([g_optim_1,self.g_loss_sum],feed_dict={ self.real_data:resorce, self.ans:target ,self.is_train:True,self.adloss:ds })
-                    if counter % 10==0:
-#                         cv1,_=self.convert(resorce_te)
-#                         p1s,score1=self.sess.run([self.d_scale,self.d_judge_F1],feed_dict={ self.real_data_result:resorce_te ,self.inputs_result:cv1 ,self.ans_result:target_te ,self.is_train:False })
-#                         ds=np.mean((score1))
+                    self.sess.run([g_optim_1],feed_dict={ self.real_data:resorce, self.ans:target ,self.is_train:True,self.adloss:ds })
+                    if counter % 20==0:
+                        hg=self.sess.run(self.g_loss_sum,feed_dict={ self.real_data:resorce, self.ans:target ,self.is_train:True,self.adloss:ds })
                         self.writer.add_summary(hg, counter//10+ti*epoch)
                         errG = self.g_loss_1.eval({ self.real_data:resorce, self.ans:target ,self.is_train:True,self.adloss:ds})
                         g_score += (np.mean(errG))
@@ -334,7 +321,7 @@ class Model:
             f.write("TimeStamped:"+nowtime())
             f.write(",%2d,%4.1f,%f,%f,%f\n" % (epoch+1,time.time() - start_time,(gps/batch_idxs),(dps/batch_idxs),(test1)))
             f.close()
-            rs=self.sess.run(self.rrs,feed_dict={ self.exps:out_put,self.g_loss_epo:(gps/batch_idxs),self.g_test_epo_1:(test1)})
+            rs=self.sess.run(self.rrs,feed_dict={ self.exps:out_put,self.g_loss_epo:(gps/batch_idxs),self.g_test_epo_1:(test1),self.d_score_epo:(dps/batch_idxs)})
             self.writer.add_summary(rs, epoch+1)
             print("test taken: %f secs" % (taken_time))
             upload(out_puts)
@@ -359,23 +346,6 @@ class Model:
         mu=2**8-1.0
         inputs=  tf.sign(ten,"sign2")*(1/mu)*(tf.pow((1+mu),tf.abs(ten))-1)
         return tf.to_float(inputs)
-    def r_net(self,inpn,dscore,var):
-        dscore=tf.tile(dscore, [self.batch_size])
-        dscore=tf.reshape(dscore, [self.batch_size,1,1])
-        inpu=tf.concat([inpn,dscore], axis=2)
-        w=var['w-1']
-        h1 = tf.nn.leaky_relu(tf.nn.conv1d(inpu, w, stride=2, padding="VALID",data_format="NCW",name="dis_01"))
-        w=var['w-2']
-        h2 = tf.nn.leaky_relu(tf.nn.conv1d(tf.layers.batch_normalization(h1,training=self.is_train), w, stride=2, padding="VALID",data_format="NCW",name="dis_02"))
-        w=var['w-3']
-        h3 = tf.nn.leaky_relu(tf.nn.conv1d(tf.layers.batch_normalization(h2,training=self.is_train), w, stride=2, padding="VALID",data_format="NCW",name="dis_03"))
-        h3=h3+tf.pad(tf.slice(h1, [0,0,0], [-1,-1,h3.shape[2]]),[[0,0],[0,h3.shape[1]-h1.shape[1]],[0,0]])
-        w=var['w-4']
-        h4 = tf.nn.leaky_relu(tf.nn.conv1d(tf.layers.batch_normalization(h3,training=self.is_train), w, stride=2, padding="VALID",data_format="NCW",name="dis_04"))
-        h4=tf.reshape(h4,[self.batch_size,-1])
-        ten=tf.layers.dense(h4,1024,name="dence")
-        ten=tf.reshape(ten,[self.out_put_size[0],self.out_put_size[2]])
-        return tf.nn.softmax(ten,axis=1),ten
     def discriminator(self,inp,var,reuse):
         inputs=tf.cast(inp, tf.float32)
         w=var['w-1']
@@ -453,9 +423,9 @@ class Model:
 
             etan=tf.layers.batch_normalization(in_put,training=self.is_train,name="bn_"+str(depth)+"-"+str(1)+name)
             w=var['dilated_stack'][depth]['w-1']
-            chs=etan.shape[2]
-            wc= tf.get_variable('w1ac'+name+"_"+str(depth), [8,1,chs,chs],initializer=tf.contrib.layers.xavier_initializer())
-            etan = dilation_conv(etan, w,wc, "dil_01"+name,self.width,self.up,self.down_c)
+            b=var['dilated_stack'][depth]['w-b']
+            etan = dilation_conv(etan, w, "dil_01"+name,self.width,self.up,self.down_c)
+            etan=tf.nn.bias_add(etan, b,data_format="NCHW")
             etan=tf.nn.leaky_relu(etan)
             d8=etan
             d8=tf.layers.batch_normalization(d8,training=self.is_train,name="bn_"+str(depth)+"-"+str(3)+name)
@@ -498,7 +468,7 @@ class Model:
         else:
             return False
 
-def dilation_conv(inp,w,w2,name,width,otc,s):
+def dilation_conv(inp,w,name,width,otc,s):
     ten=tf.nn.conv2d(inp, w, [1,1,1,1], padding="VALID",data_format="NCHW" ,name=name)
     in_s=(ten.get_shape())
     ten=tf.reshape(ten,[in_s[0],otc,width,in_s[2]//width,in_s[3]])
