@@ -2,6 +2,7 @@ from glob import glob
 import tensorflow as tf
 import os
 import time
+import re
 from six.moves import xrange
 import numpy as np
 import wave
@@ -26,7 +27,7 @@ class Model:
         self.out_channels=self.down
         self.width=2
         self.reset_d=False
-        self.dataset_name="wave2wave_ver0.20.0"
+        self.dataset_name="wave2wave_ver0.21.4"
         self.data_format=[1,1,80000]
         if not os.path.exists("Z://data/"+self.dataset_name+".txt"):
             f=open("Z://data/"+self.dataset_name+".txt",'w')
@@ -35,14 +36,14 @@ class Model:
             f.close()
 
         self.gf_dim=64
-        self.depth=10
-        self.batch_size=32
+        self.depth=8
+        self.batch_size=8
 
         self.dilations=[]
         self.f_dilations=[]
         self.hance=[]
         #in=25
-        self.out_put_size=[self.batch_size,1,1024]
+        self.out_put_size=[self.batch_size,1,256]
         d=1
         self.dilations.append(d)
         for i in range(self.depth):
@@ -95,6 +96,8 @@ class Model:
                                         name='current_r_loss_inp')
         self.d_s=tf.placeholder(tf.float32,
                                         name='current_d_score_inp')
+        self.itra=tf.placeholder(tf.float32,[1],name='itaration')
+
         self.real_B = tf.reshape( self.encode(self.ans),[self.batch_size,1,-1])
         self.real_A = tf.reshape( self.encode(self.real_data),[self.batch_size,1,-1])
         with tf.variable_scope("generator_1"):
@@ -159,25 +162,29 @@ class Model:
         self.g_vars_1=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"generator_1")
         self.d_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"discrim")
 
-        target=tf.one_hot(tf.cast(tf.reshape((self.real_B+1.0)/2.0*255.0,[self.batch_size,-1]),dtype=tf.int32),depth=256)
+        target=tf.cast(tf.reshape((self.real_B+1.0)/2.0*255.0,[self.batch_size,-1]),dtype=tf.int32)
         logit_1=tf.transpose(self.fake_B, perm=[0,2,1])
-        lo=tf.reduce_mean(tf.abs(target-logit_1))
+        lo=tf.losses.mean_squared_error(labels=tf.one_hot(target,depth=256),predictions=logit_1)/self.batch_size
+        ll=tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=tf.reshape(target,[self.batch_size,-1]), logits=(tf.transpose(self.fake_B_logit, perm=[0,2,1]))))
+        ggs=filter(lambda x:(re.search("/w*",x.value().name) is not None),self.g_vars_1)
+        l2=tf.add_n([tf.nn.l2_loss(t) for t in ggs])
+        gds=filter(lambda x:(re.search("/w*",x.value().name) is not None),self.d_vars)
+        l2d=tf.add_n([tf.nn.l2_loss(t) for t in gds])
+
         self.lo=lo
-        self.g_loss_1 = lo*100-tf.log(self.adloss)
-        self.d_loss_R = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(self.d_judge_R), logits=self.d_judge_R_logits )
-        self.d_loss_F = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.zeros_like(self.d_judge_F1), logits=self.d_judge_F1_logits )
-        self.d_loss=self.d_loss_R+self.d_loss_F
+        self.g_loss_1 = tf.losses.sigmoid_cross_entropy(multi_class_labels=tf.ones_like(self.adloss),logits=tf.clip_by_value(self.adloss, 1e-5, 1.0))+ll+l2*1e-3
+        self.d_loss_R = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(self.d_judge_R), logits=tf.clip_by_value(self.d_judge_R_logits, -1e+6, (1e+6)))
+        self.d_loss_F = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.zeros_like(self.d_judge_F1), logits=tf.clip_by_value(self.d_judge_F1_logits, -1e+6, (1e+6)))
+        self.d_loss=self.d_loss_R+self.d_loss_F+l2d*1e-3
         self.g_loss_sum = tf.summary.scalar("g_loss", tf.reduce_mean(self.g_loss_1))
         self.d_loss_sum = tf.summary.merge([tf.summary.scalar("d_loss_R", tf.reduce_mean(self.d_loss_R)),tf.summary.scalar("d_loss_F", tf.reduce_mean(self.d_loss_F))])
         self.exps=tf.placeholder(tf.float32, [1,1,160000], name="FB")
         self.fake_B_sum = tf.summary.audio("fake_B", tf.reshape(self.exps,[1,160000,1]), 16000, 1)
         self.g_test_epo_1=tf.placeholder(tf.float32,name="g_l_epo")
         self.g_test_epoch_1 = tf.summary.scalar("g_test_epoch", self.g_test_epo_1)
-        self.g_loss_epo=tf.placeholder(tf.float32,name="g_l_epo")
-        self.g_loss_epoch = tf.summary.scalar("g_loss_epoch", self.g_loss_epo)
         self.d_score_epo=tf.placeholder(tf.float32,name="g_l_epo")
         self.d_score_epoch= tf.summary.scalar("d_score_epoch", self.d_score_epo)
-        self.rrs=tf.summary.merge([self.fake_B_sum,self.g_loss_epoch,self.g_test_epoch_1,self.d_score_epoch])
+        self.rrs=tf.summary.merge([self.fake_B_sum,self.g_test_epoch_1,self.d_score_epoch])
 
         self.saver = tf.train.Saver()
 
@@ -196,7 +203,7 @@ class Model:
                 resorce=np.pad(resorce,((0,0),(0,0),(r,0)),'constant')
             red=np.append(resorce,red,axis=0)
             red=red.reshape((self.in_put_size[0],self.in_put_size[1],self.in_put_size[2]))
-            res=self.sess.run(self.fake_B_decoded,feed_dict={ self.real_data:red,self.is_train:False })
+            res=self.sess.run(self.fake_B_decoded,feed_dict={ self.real_data:red,self.is_train:False ,self.itra:np.asarray([1.])})
             res=res*32767
             otp=np.append(otp,res[0])
         otp=otp[otp.shape[0]-in_put.shape[2]-1:-1]
@@ -206,10 +213,12 @@ class Model:
         lr_g_opt=0.01
         beta_g_opt=0.9
         lr_d_opt=0.01
-        beta_d_opt=0.1
+        beta_d_opt=0.5
         self.lod="[glr="+str(lr_g_opt)+",gb="+str(beta_g_opt)+"]"
-        g_optim_1 =tf.train.AdamOptimizer(lr_g_opt,beta_g_opt).minimize(self.g_loss_1, var_list=self.g_vars_1)
-        d_optim = tf.train.AdamOptimizer(lr_d_opt,beta_d_opt).minimize(self.d_loss, var_list=self.d_vars)
+        opt=tf.train.AdamOptimizer(lr_g_opt,beta_g_opt)
+        gs=opt.compute_gradients(self.g_loss_1, var_list=self.g_vars_1)
+        g_optim_1 =opt.apply_gradients(gs)
+        d_optim = tf.train.MomentumOptimizer(lr_d_opt,beta_d_opt).minimize(self.d_loss, var_list=self.d_vars)
 
         init_op = tf.global_variables_initializer()
         self.exp= np.zeros((self.batch_size,1,80000),dtype=np.int16)
@@ -253,7 +262,7 @@ class Model:
 #             out_puts=self.convert(test)
 #             upload(out_puts,self.drive)
             #test end
-            gps=0
+#             gps=0
             dps=0
             counter=0
             print("Epoch %3d start" % (epoch))
@@ -265,11 +274,11 @@ class Model:
                 test_train=load_data(data2[idx%2]).reshape(1,2,80000)
 
                 times=80000//self.out_put_size[2]
-                times_added=0
+#                 times_added=0
                 if int(80000)%self.out_put_size[2]==0:
                     times-=1
-                ti=(batch_idxs*times)//10+1
-                g_score=0
+                ti=(batch_idxs*times)
+#                 g_score=0
                 #update_Punish_scale
                 resorce_te=test_train[0,1,:].reshape(1,1,-1)
                 target_te=test_train[0,0,:].reshape(1,1,-1)
@@ -279,9 +288,11 @@ class Model:
                 p1s,score1=self.sess.run([self.d_scale,self.d_judge_F1],feed_dict={ self.real_data_result:resorce_te ,self.inputs_result:cv1 ,self.ans_result:target_te ,self.is_train:False })
                 self.p_scale_1=np.asarray([(np.mean(np.abs(p1s)))*(1-(np.mean(score1)))])
                 # Update D network
+                _,_=self.sess.run([self.d_loss_sum,d_optim],feed_dict={self.real_data_result:resorce_te , self.inputs_result:cv1,self.ans_result:target_te ,self.is_train:True })
                 hd,_=self.sess.run([self.d_loss_sum,d_optim],feed_dict={self.real_data_result:resorce_te , self.inputs_result:cv1,self.ans_result:target_te ,self.is_train:True })
                 self.writer.add_summary(hd, idx+batch_idxs*epoch)
                 ds=np.mean((score1))
+#                 print(ds)
                 d_score = (np.mean(ds))
                 dps+=(d_score)
                 times_set=[j for j in range(times)]
@@ -299,19 +310,20 @@ class Model:
                         target=np.pad(target,((0,0),(0,0),(r,0)),'constant')
 
                     # Update G1 network
-                    self.sess.run([g_optim_1],feed_dict={ self.real_data:resorce, self.ans:target ,self.is_train:True,self.adloss:ds })
-                    if counter % 20==0:
-                        hg=self.sess.run(self.g_loss_sum,feed_dict={ self.real_data:resorce, self.ans:target ,self.is_train:True,self.adloss:ds })
-                        self.writer.add_summary(hg, counter//10+ti*epoch)
-                        errG = self.g_loss_1.eval({ self.real_data:resorce, self.ans:target ,self.is_train:True,self.adloss:ds})
-                        g_score += (np.mean(errG))
-                        times_added+=1
+                    _,hg=self.sess.run([g_optim_1,self.g_loss_sum],feed_dict={ self.real_data:resorce, self.ans:target ,self.is_train:True,self.adloss:ds ,self.itra:np.asarray([epoch+1.])})
+                    if counter%20==0:
+#                         hd,_=self.sess.run([self.d_loss_sum,d_optim],feed_dict={self.real_data_result:resorce_te , self.inputs_result:cv1,self.ans_result:target_te ,self.is_train:True })
+#                         self.writer.add_summary(hd, counter+ti*epoch)
+                        self.writer.add_summary(hg, counter+ti*epoch)
+#                         errG = self.g_loss_1.eval({ self.real_data:resorce, self.ans:target ,self.is_train:False,self.adloss:ds,self.itra:np.asarray([epoch+1.])})
+#                         g_score += (np.mean(errG))
+#                         times_added+=1
                     counter+=1
-                gps+=(g_score/times_added)
+#                 gps+=(g_score/times_added)
 
             self.save(args.checkpoint_dir, epoch+1)
             self.experiment.metric("errD",dps/batch_idxs)
-            self.experiment.metric("errG",gps/batch_idxs)
+#             self.experiment.metric("errG",gps/batch_idxs)
             out_puts,taken_time=self.convert(test.reshape(1,1,-1))
             out_put=(out_puts.astype(np.float32)/32767.0)
             test1=np.mean(np.abs(out_puts-label))
@@ -319,9 +331,9 @@ class Model:
             ff="Z://data/"+self.dataset_name+".txt"
             f=open(ff,'a')
             f.write("TimeStamped:"+nowtime())
-            f.write(",%2d,%4.1f,%f,%f,%f\n" % (epoch+1,time.time() - start_time,(gps/batch_idxs),(dps/batch_idxs),(test1)))
+            f.write(",%2d,%4.1f,%f,%f\n" % (epoch+1,time.time() - start_time,(dps/batch_idxs),(test1)))
             f.close()
-            rs=self.sess.run(self.rrs,feed_dict={ self.exps:out_put,self.g_loss_epo:(gps/batch_idxs),self.g_test_epo_1:(test1),self.d_score_epo:(dps/batch_idxs)})
+            rs=self.sess.run(self.rrs,feed_dict={ self.exps:out_put,self.g_test_epo_1:(test1),self.d_score_epo:(dps/batch_idxs)})
             self.writer.add_summary(rs, epoch+1)
             print("test taken: %f secs" % (taken_time))
             upload(out_puts)
@@ -344,7 +356,7 @@ class Model:
     def decode(self,in_puts):
         ten=in_puts
         mu=2**8-1.0
-        inputs=  tf.sign(ten,"sign2")*(1/mu)*(tf.pow((1+mu),tf.abs(ten))-1)
+        inputs= tf.sign(ten,"sign2")*(1/mu)*(tf.pow((1+mu),tf.abs(ten))-1)
         return tf.to_float(inputs)
     def discriminator(self,inp,var,reuse):
         inputs=tf.cast(inp, tf.float32)
@@ -394,11 +406,9 @@ class Model:
             w2=var['postprocessing']['postprocess2']
             conv = tf.nn.conv2d(transformed, w, [1,1,1,1], padding="VALID",data_format="NCHW",dilations=[1,1,1,1] ,name="post_01"+name)
 #             conv = tf.nn.bias_add(conv,var['postprocessing']['bias'],data_format="NCHW")
-            x_in=tf.tile(transformed, [1,256//self.down,1,1])
             transformed=tf.nn.leaky_relu(conv)
             conv = tf.nn.conv2d(transformed, w2, [1,1,1,1], padding="VALID",data_format="NCHW",dilations=[1,1,1,1] ,name="post_02"+name)
 #             conv = tf.nn.bias_add(conv,var['postprocessing']['bias2'],data_format="NCHW")
-            conv = tf.add(conv, x_in)
             conv=tf.reshape(conv, [self.batch_size,256,-1])
         sm=tf.transpose(conv, perm=[0,2,1])
         sm = tf.nn.softmax(sm,axis=2)
@@ -438,8 +448,8 @@ class Model:
             ten=tf.reshape(inp,[in_s[0],self.down,self.width,in_s[2]//self.width,in_s[3]])
             ten=tf.transpose(ten, [0,1,3,2,4])
             con=tf.reshape(ten,[in_s[0],self.down,in_s[2]//self.width,in_s[3]*self.width])
-            if sd!=0 and (depth==2 or 6 or 8):
-                otp=shake_layer(otp, rate=(depth)/(2*sd*self.depth),var=(depth)/(sd*50*self.depth),training=self.is_train,name="do_"+str(depth)+"-"+str(1)+name)
+            if sd!=0 :
+                otp=shake_layer(otp, rate=(depth)/(2*sd*self.depth),var=(2.0)/(sd*(self.itra+1.)*1000*self.depth),training=self.is_train,name="do_"+str(depth)+"-"+str(1)+name)
             return otp+con
 
     def save(self, checkpoint_dir, step):
@@ -490,7 +500,7 @@ class Shake_Layer(base.Layer):
             ps1=int(inputs.shape[1])
             ps2=int(inputs.shape[2])
             ps3=int(inputs.shape[3])
-            b=self.rate+random_ops.random_uniform([ps0,ps1,ps2,ps3], name=self.name+"SDR_1")
+            b=self.rate+random_ops.random_uniform([1], name=self.name+"SDR_1")
             bel=math_ops.floor(b)
             ten1=inputs
             ten2=(bel)*inputs
@@ -521,8 +531,8 @@ def load_data(image_path):
     return images
 def nos(ar):
     s=ar.shape[2]
-    if random.randint(0,5)==0:
-        ar+=(np.random.rand(ar.shape[0],ar.shape[1],ar.shape[2])*32-16).astype(np.int16)
+#     if random.randint(0,5)==0:
+#         ar+=(np.random.rand(ar.shape[0],ar.shape[1],ar.shape[2])*4-2).astype(np.int16)
     i=random.randint(0,80)
     ar=np.pad(ar, ((0,0),(0,0),(i,0)), "constant")[:,:,0:s]
     return ar
