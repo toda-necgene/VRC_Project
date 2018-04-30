@@ -1,9 +1,7 @@
 import pyaudio
 import numpy as np
-import glob
 import wave
-import random
-from copy import deepcopy
+import matplotlib.pyplot as pl
 def addGaussianNoise(src):
     row,col,ch= src.shape
     mean = 0
@@ -13,6 +11,45 @@ def addGaussianNoise(src):
     noisy = src + gauss
 
     return noisy
+
+def fft(data):
+    rate=16000
+    NFFT=32
+    time_song=float(data.shape[0])/rate
+    time_unit=1/rate
+    start=0
+    stop=time_song
+    step=(NFFT//2)*time_unit
+    time_ruler=np.arange(start,stop,step)
+    window=np.hamming(NFFT)
+    spec=np.zeros([len(time_ruler),(NFFT),2])
+    pos=0
+    for fft_index in range(len(time_ruler)):
+        frame=data[pos:pos+NFFT]
+        if len(frame)==NFFT:
+            wined=frame*window
+            fft=np.fft.fft(wined)
+            fft_data=np.asarray([fft.real,fft.imag])
+            fft_data=np.reshape(fft_data, (32,2))
+            for i in range(len(spec[fft_index])):
+                spec[fft_index][-i-1]=fft_data[i]
+            pos+=NFFT//2
+    return spec
+def ifft(data):
+    data=data[:,:,0]+1j*data[:,:,1]
+    time_ruler=data.shape[0]
+    window=np.hamming(32)
+    spec=np.zeros([])
+    pos=0
+    for _ in range(time_ruler):
+        frame=data[pos]
+        fft=np.fft.ifft(frame)
+        fft_data=fft.real
+        fft_data/=window
+        spec=np.append(spec,fft_data)
+        pos+=1
+
+    return spec[1:]
 FORMAT = pyaudio.paInt16
 CHANNELS = 1        #モノラル
 RATE = 16000       #サンプルレート
@@ -36,21 +73,19 @@ data_realB=data[1]
 time=80000
 times=data_realA.shape[0]//time
 mod=80000//5
-for tt in range(5):
-    starttime=mod*tt
-    for i in range(times):
-        ##音声抽出
-        star=random.randint(0,5)
-        dur=random.randint(15,25)
-        data_A_N = deepcopy(data_realA)[i*time+starttime:(i+1)*time+starttime]
-        data_B_N=deepcopy(data_realB)[i*time+starttime:(i+1)*time+starttime]
-        sss=random.randint(1,5-1)
-        #保管
-        p=pyaudio.PyAudio()
-        datanum=np.append(data_A_N,data_B_N)
-        ww = wave.open(WAVE_OUTPUT_FILENAME+str(tt+1)+"-"+str(i+1)+".wav", 'wb')
-        ww.setnchannels(1)
-        ww.setsampwidth(p.get_sample_size(FORMAT))
-        ww.setframerate(RATE)
-        ww.writeframes(datanum.tobytes())
-        ww.close()
+
+data_realA=data_realA[0:8192]
+rate=16000
+
+print(data_realA/32767.0)
+a=fft(data_realA/32767.0)
+b=ifft(a)
+# print(a)
+
+print(a.shape)
+print(b.shape)
+pl.subplot(2,1,1)
+pl.plot(data_realA/32767.0)
+pl.subplot(2,1,2)
+pl.plot(b/5)
+pl.show()
