@@ -11,10 +11,10 @@ def addGaussianNoise(src):
     noisy = src + gauss
 
     return noisy
+NFFT=64
 
 def fft(data):
     rate=16000
-    NFFT=32
     time_song=float(data.shape[0])/rate
     time_unit=1/rate
     start=0
@@ -30,7 +30,7 @@ def fft(data):
             wined=frame*window
             fft=np.fft.fft(wined)
             fft_data=np.asarray([fft.real,fft.imag])
-            fft_data=np.reshape(fft_data, (32,2))
+            fft_data=np.reshape(fft_data, (NFFT,2))
             for i in range(len(spec[fft_index])):
                 spec[fft_index][-i-1]=fft_data[i]
             pos+=NFFT//2
@@ -38,7 +38,7 @@ def fft(data):
 def ifft(data):
     data=data[:,:,0]+1j*data[:,:,1]
     time_ruler=data.shape[0]
-    window=np.hamming(32)
+    window=np.hamming(NFFT)
     spec=np.zeros([])
     pos=0
     for _ in range(time_ruler):
@@ -80,12 +80,18 @@ rate=16000
 print(data_realA/32767.0)
 a=fft(data_realA/32767.0)
 b=ifft(a)
+print(b.shape)
+b=b.reshape([256,-1,2,2])[:,:,0,:].reshape(-1)
 # print(a)
 
 print(a.shape)
 print(b.shape)
-pl.subplot(2,1,1)
+pl.subplot(3,1,1)
 pl.plot(data_realA/32767.0)
-pl.subplot(2,1,2)
+pl.subplot(3,1,2)
 pl.plot(b/5)
+pl.subplot(3,1,3)
+c=np.log(np.transpose(np.abs(a[:,:,0]+1j*a[:,:,1]),[1,0])**2+1e-16)
+pl.imshow(c)
+print(c.shape)
 pl.show()

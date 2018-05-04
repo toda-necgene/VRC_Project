@@ -15,13 +15,13 @@ from datetime import datetime
 import math
 class Model:
     def __init__(self,debug):
-        self.batch_size=8
+        self.batch_size=1
         self.depth=4
         self.input_ch=1
         self.input_size=[self.batch_size,8192,1]
-        self.input_size_model=[self.batch_size,16, 513,1]
+        self.input_size_model=[self.batch_size,64,256,1]
 
-        self.dataset_name="wave2wave_1.0.0"
+        self.dataset_name="wave2wave_1.0.3"
         self.output_size=[self.batch_size,8192,1]
         self.CHANNELS=[4**i+1 for i in range(self.depth+1)]
         self.sess=tf.InteractiveSession(config=tf.ConfigProto(gpu_options=tf.GPUOptions(per_process_gpu_memory_fraction=0.85)))
@@ -30,40 +30,32 @@ class Model:
             self.sess.add_tensor_filter('has_inf_or_nan', has_inf_or_nan)
     def build_model(self):
 
-        self.input_model=tf.placeholder(tf.float32, [self.batch_size,512, 32,2], "inputs")
-        self.input_model_label=tf.placeholder(tf.float32, [self.batch_size,512, 32,2], "inputs")
-        self.input_wave_fake=tf.placeholder(tf.int16, [1, 80000,1], "inputs")
-        self.input_wave_real=tf.placeholder(tf.int16, [1, 80000,1], "inputs")
-        self.input_wave_sour=tf.placeholder(tf.int16, [1, 80000,1], "inputs")
+        self.input_model=tf.placeholder(tf.float32, [self.batch_size,256,64], "inputs_convert")
+        self.input_model_label=tf.placeholder(tf.float32, [self.batch_size,256,64,2], "inputs_answer")
+        self.input_wave_fake=tf.placeholder(tf.int16, [1, 80000,1], "inputs_discriminator_fake")
+        self.input_wave_real=tf.placeholder(tf.int16, [1, 80000,1], "inputs_discriminator_real")
+        self.input_wave_sour=tf.placeholder(tf.int16, [1, 80000,1], "inputs_discriminator_source")
         self.d_score=tf.placeholder(tf.float32, name="inputs_dsa")
         with tf.variable_scope("generator_1"):
-            self.fake_B_image=self.generator(self.input_model, reuse=False,name="gen")
+            self.fake_B_image=self.generator(tf.reshape(self.input_model,[self.batch_size,256,64,1]), reuse=False,name="gen")
 
         self.res1=tf.concat([self.input_wave_sour,self.input_wave_fake], axis=1)
         self.res2=tf.concat([self.input_wave_sour,self.input_wave_real], axis=1)
         with tf.variable_scope("discrim",reuse=tf.AUTO_REUSE):
-            self.var=dict()
-            w=tf.get_variable('w1', [2,1,4],initializer=tf.contrib.layers.xavier_initializer())
-            self.var['w-1'] = w
-            w=tf.get_variable('w2', [2,4,8],initializer=tf.contrib.layers.xavier_initializer())
-            self.var['w-2'] = w
-            w=tf.get_variable('w3', [2,8,16],initializer=tf.contrib.layers.xavier_initializer())
-            self.var['w-3'] = w
-            w=tf.get_variable('w4', [2,16,32],initializer=tf.contrib.layers.xavier_initializer())
-            self.var['w-4'] = w
-            self.d_judge_F1,self.d_judge_F1_logits=self.discriminator(self.res1,self.var,False)
-            self.d_judge_R,self.d_judge_R_logits=self.discriminator(self.res2,self.var,True)
+            self.d_judge_F1,self.d_judge_F1_logits=self.discriminator(self.res1,False)
+            self.d_judge_R,self.d_judge_R_logits=self.discriminator(self.res2,True)
 
         self.g_vars_1=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"generator_1")
         self.g_vars_2=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"generator_2")
         self.d_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"discrim")
-        L1=tf.losses.mean_squared_error(labels=self.input_model_label, predictions=self.fake_B_image)
-        DS=-tf.log(self.d_score)
-        self.g_loss_1=L1*(100+DS)
+        L1=tf.reduce_mean(tf.abs(self.input_model_label-self.fake_B_image))
+        DS=-tf.log(self.d_score+1e-8)
+        self.g_loss_1=L1*(200+DS)
+        self.g_loss_2=L1*100+DS
         self.d_loss_R = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.random_uniform(self.d_judge_R.shape,0.9,1.0),  logits=self.d_judge_R_logits)
         self.d_loss_F = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.random_uniform(self.d_judge_F1.shape,0.1,0.3), logits=self.d_judge_F1_logits)
         self.d_loss=tf.reduce_mean([self.d_loss_R,self.d_loss_F])
-        self.g_loss_sum_1 = tf.summary.scalar("g_loss", tf.reduce_mean(self.g_loss_1))
+        self.g_loss_sum_1 = tf.summary.scalar("g_loss", tf.reduce_mean(self.g_loss_2))
         self.d_loss_sum = tf.summary.merge([tf.summary.scalar("d_loss_R", tf.reduce_mean(self.d_loss_R)),tf.summary.scalar("d_loss_F", tf.reduce_mean(self.d_loss_F))])
         self.exps=tf.placeholder(tf.float32, [1,1,160000], name="FB")
         self.fake_B_sum = tf.summary.audio("fake_B", tf.reshape(self.exps,[1,160000,1]), 16000, 1)
@@ -81,22 +73,22 @@ class Model:
         otp=np.array([],dtype=np.int16)
         for t in range(times):
             red=np.zeros((self.input_size[0]-1,self.input_size[1],self.input_size[2]))
-            start_pos=self.output_size[2]*(t)+((in_put.shape[1])%self.output_size[1])
-            resorce=np.reshape(in_put[0,0,max(0,start_pos-self.input_size[1]):min(start_pos,in_put.shape[1])],(1,1,-1))
+            start_pos=self.output_size[1]*(t)+((in_put.shape[1])%self.output_size[1])
+            resorce=np.reshape(in_put[0,max(0,start_pos-self.input_size[1]):start_pos,0],(1,-1))
             r=max(0,self.input_size[1]-resorce.shape[1])
             if r>0:
-                resorce=np.pad(resorce,((0,0),(0,0),(r,0)),'constant')
+                resorce=np.pad(resorce,((0,0),(r,0)),'constant')
             red=np.append(resorce,red)
             red=red.reshape((self.input_size[0],self.input_size[1],self.input_size[2]))
-            res=np.zeros([self.batch_size,512, 32,2])
+            res=np.zeros([self.batch_size,256,64,2])
             for i in range(self.batch_size):
-                    n=fft(red[i].reshape(-1))
-                    res[i]=(n)
-            red=res.reshape([self.batch_size,512, 32,2])
-            red=red.reshape(self.batch_size,512, 32,2)
+                n=fft(red[i].reshape(-1))
+                res[i]=(n)
+            red=np.log(np.abs(res[:,:,:,0]+1j*res[:,:,:,1])**2+1e-16)
             res=self.sess.run(self.fake_B_image,feed_dict={ self.input_model:red})
             res=ifft(res[0])*32767
-            res=res.reshape(-1)
+            res=res.reshape([-1,64,2,2])
+            res=res[:,:,0,:].reshape(-1)
             otp=np.append(otp,res)
         h=otp.shape[0]-in_put.shape[1]-1
         if h!=-1:
@@ -104,12 +96,12 @@ class Model:
         return otp.reshape(1,in_put.shape[1],in_put.shape[2]),time.time()-tt
     def train_f(self,args):
         self.checkpoint_dir=args.checkpoint_dir
-        lr_g_opt=1e-1
-        beta_g_opt=0.5
-        lr_d_opt=1e-1
-        beta_d_opt=0.1
+        lr_g_opt=1e-4
+        beta_g_opt=0.9
+        lr_d_opt=1e-4
+        beta_d_opt=0.5
         self.lod="[glr="+str(lr_g_opt)+",gb="+str(beta_g_opt)+"]"
-        g_optim_1 =tf.train.AdamOptimizer(lr_g_opt,beta_g_opt).minimize(self.g_loss_1, var_list=self.g_vars_1)
+        g_optim_1 =tf.train.AdamOptimizer(lr_g_opt,beta_g_opt).minimize(self.g_loss_1, var_list=self.g_vars_1,grad_loss=self.g_loss_2)
         d_optim = tf.train.AdamOptimizer(lr_d_opt,beta_d_opt).minimize(self.d_loss, var_list=self.d_vars)
 
         init_op = tf.global_variables_initializer()
@@ -129,6 +121,7 @@ class Model:
         self.experiment=Experiment(self.dataset_name+"_G1")
         self.experiment.param("lr_g_opt", lr_g_opt)
         self.experiment.param("beta_g_opt", beta_g_opt)
+        wds=1.0
         for epoch in range(0,500):
 
             np.random.shuffle(data)
@@ -150,7 +143,7 @@ class Model:
 #                 times_added=0
                 if int(80000)%self.output_size[1]==0:
                     times-=1
-                ti=(batch_idxs*times)
+                ti=(batch_idxs*times//10)
 #                 g_score=0
                 #update_Punish_scale
                 resorce_te=test_train[0,1,:].reshape(1,-1,1)
@@ -160,12 +153,14 @@ class Model:
                 #Calcurate new d_score
                 score1=self.sess.run([self.d_judge_F1],feed_dict={ self.input_wave_sour:resorce_te ,self.input_wave_fake:cv1 ,self.input_wave_real:target_te })
                 # Update D network
+                self.sess.run([d_optim],feed_dict={self.input_wave_sour:resorce_te ,self.input_wave_fake:cv1 ,self.input_wave_real:target_te  })
+                self.sess.run([d_optim],feed_dict={self.input_wave_sour:resorce_te ,self.input_wave_fake:cv1 ,self.input_wave_real:target_te  })
                 hd,_=self.sess.run([self.d_loss_sum,d_optim],feed_dict={self.input_wave_sour:resorce_te ,self.input_wave_fake:cv1 ,self.input_wave_real:target_te  })
                 self.writer.add_summary(hd, idx+batch_idxs*epoch)
-                ds=np.mean((score1))
-                if math.isnan(ds):
-                    ds=0.0
-#                 print(ds)
+                uds=np.mean((score1))
+                if math.isnan(uds):
+                    uds=0.0
+                ds=(uds+wds)/2
                 d_score = (np.mean(ds))
                 dps+=(d_score)
                 times_set=[j for j in range(times)]
@@ -181,18 +176,29 @@ class Model:
                     r=max(0,self.output_size[1]-target.shape[1])
                     if r>0:
                         target=np.pad(target,((0,0),(r,0)),'constant')
-                    res=np.zeros([self.batch_size,512, 32,2])
-                    tar=np.zeros([self.batch_size,512, 32,2])
-                    for i in range(resorce.shape[0]):
+                    res=np.zeros([self.batch_size,256,64,2])
+                    tar=np.zeros([self.batch_size,256,64,2])
+                    for i in range(self.batch_size):
                         res[i]=(fft(resorce[i]))
-                        tar[i]=(fft(resorce[i]))
-                    res=res.reshape([self.batch_size,512, 32,2])
-                    tar=tar.reshape([self.batch_size,512, 32,2])
+                        tar[i]=(fft(target[i]))
+                    res=res.reshape([self.batch_size,256,64,2])
+                    res=np.log(np.abs(res[:,:,:,0]+1j*res[:,:,:,1])**2+1e-16)
+                    tar=tar.reshape([self.batch_size,256,64,2])
                     # Update G1 network
                     _,hg=self.sess.run([g_optim_1,self.g_loss_sum_1],feed_dict={ self.input_model:res, self.input_model_label:tar ,self.d_score:ds})
                     if counter%20==0:
-                        self.writer.add_summary(hg, counter+ti*epoch)
+                        self.writer.add_summary(hg, counter//10+ti*epoch)
                     counter+=1
+                resorce_te= batch_images[0,1,:].reshape(1,-1,1)
+                target_te= batch_images[0,0,:].reshape(1,-1,1)
+                cv1,_=self.convert(resorce_te)
+                score2=self.sess.run([self.d_judge_F1],feed_dict={ self.input_wave_sour:resorce_te ,self.input_wave_fake:cv1 ,self.input_wave_real:target_te })
+                wds=np.mean((score2))
+                if math.isnan(wds):
+                    wds=0.0
+                self.sess.run([d_optim],feed_dict={self.input_wave_sour:resorce_te ,self.input_wave_fake:cv1 ,self.input_wave_real:target_te  })
+                self.sess.run([d_optim],feed_dict={self.input_wave_sour:resorce_te ,self.input_wave_fake:cv1 ,self.input_wave_real:target_te  })
+                hd,_=self.sess.run([self.d_loss_sum,d_optim],feed_dict={self.input_wave_sour:resorce_te ,self.input_wave_fake:cv1 ,self.input_wave_real:target_te  })
             self.save(args.checkpoint_dir, epoch+1)
             self.experiment.metric("errD",dps/batch_idxs)
             out_puts,taken_time=self.convert(test.reshape(1,-1,1))
@@ -207,42 +213,21 @@ class Model:
             rs=self.sess.run(self.rrs,feed_dict={ self.exps:out_put.reshape(1,1,-1),self.g_test_epo_1:(test1),self.d_score_epo:(dps/batch_idxs)})
             self.writer.add_summary(rs, epoch+1)
             print("test taken: %f secs" % (taken_time))
-            upload(out_puts)
+            upload(out_puts,"_u")
+            upload(cv1,"_w")
             start_time = time.time()
         self.experiment.end()
 
-    def discriminator(self,inp,var,reuse):
+    def discriminator(self,inp,reuse):
         inputs=tf.cast(inp, tf.float32)
-        w=var['w-1']
-        h1 = tf.nn.leaky_relu(tf.nn.conv1d(inputs, w, stride=2, padding="VALID",data_format="NWC",name="dis_01"))
-        w=var['w-2']
-        h2 = tf.nn.leaky_relu(tf.nn.conv1d((h1), w, stride=2, padding="VALID",data_format="NWC",name="dis_02"))
-        w=var['w-3']
-        h3 = tf.nn.leaky_relu(tf.nn.conv1d((h2), w, stride=2, padding="VALID",data_format="NWC",name="dis_03"))
-        w=var['w-4']
-        h4 = tf.nn.leaky_relu(tf.nn.conv1d((h3), w, stride=2, padding="VALID",data_format="NWC",name="dis_04"))
-
+        h1 = tf.nn.leaky_relu(tf.layers.conv1d(inputs, 4,4, strides=2, padding="VALID",data_format="channels_last",name="dis_01",reuse=reuse))
+        h2 = tf.nn.leaky_relu(tf.layers.conv1d((h1), 8,4, strides=2, padding="VALID",data_format="channels_last",name="dis_02",reuse=reuse))
+        h3 = tf.nn.leaky_relu(tf.layers.conv1d((h2), 16,4, strides=2, padding="VALID",data_format="channels_last",name="dis_03",reuse=reuse))
+        h4 = tf.nn.leaky_relu(tf.layers.conv1d((h3), 32,4, strides=2, padding="VALID",data_format="channels_last",name="dis_04",reuse=reuse))
+        h4=tf.reshape(h4, [1,-1])
         ten=tf.layers.dense(h4,1,name="dence",reuse=reuse)
         ot=tf.nn.sigmoid(ten)
         return ot,ten
-
-    def waver(self,inp):
-        ten=tf.layers.batch_normalization(inp,axis=3,training=True,gamma_initializer=tf.random_normal_initializer(1.0, 0.2))
-        ten=tf.layers.conv2d(ten,256, kernel_size=2, strides=(1,1), padding="VALID")
-        ten=tf.nn.leaky_relu(ten)
-        ten=tf.layers.batch_normalization(ten,axis=3,training=True,gamma_initializer=tf.random_normal_initializer(1.0, 0.2))
-        ten=tf.layers.conv2d(ten,128, kernel_size=2, strides=(1,1), padding="VALID")
-        ten=tf.nn.leaky_relu(ten)
-        ten=tf.layers.batch_normalization(ten,axis=3,training=True,gamma_initializer=tf.random_normal_initializer(1.0, 0.2))
-        ten=tf.layers.conv2d(ten,32, kernel_size=2, strides=(1,1), padding="VALID")
-        ten=tf.nn.leaky_relu(ten)
-        ten=tf.layers.batch_normalization(ten,axis=3,training=True,gamma_initializer=tf.random_normal_initializer(1.0, 0.2))
-        ten=tf.layers.conv2d(ten,1, kernel_size=2, strides=(1,1), padding="VALID")
-        ten=tf.nn.leaky_relu(ten)
-        ten=tf.layers.batch_normalization(ten,axis=3,training=True,gamma_initializer=tf.random_normal_initializer(1.0, 0.2))
-        ten=tf.reshape(ten, [self.batch_size,-1])
-        ten=tf.layers.dense(ten,8192)
-        return tf.nn.tanh(ten)
     def generator(self,current_outputs,reuse,name):
         if reuse:
             tf.get_variable_scope().reuse_variables()
@@ -258,13 +243,13 @@ class Model:
             connections.append(current)
         for i in range(self.depth):
             current+=connections[self.depth-i-1]
-            current=self.up_layer(current,self.CHANNELS[self.depth-i-1])
-
+            current=self.up_layer(current,self.CHANNELS[self.depth-i-1],i!=(self.depth-1))
         return current
-    def up_layer(self,current,output_shape):
+    def up_layer(self,current,output_shape,bn):
         ten=tf.nn.leaky_relu(current)
         ten=tf.layers.conv2d_transpose(ten, output_shape,kernel_size=4 ,strides=(1,1), padding="SAME",kernel_initializer=tf.contrib.layers.xavier_initializer(),data_format="channels_last")
-        ten=tf.layers.batch_normalization(ten,axis=3,training=True,gamma_initializer=tf.random_normal_initializer(1.0, 0.2))
+        if(bn):
+            ten=tf.layers.batch_normalization(ten,axis=3,training=True,gamma_initializer=tf.random_normal_initializer(1.0, 0.2))
         return ten
     def down_layer(self,current,output_shape):
         ten=tf.layers.batch_normalization(current,axis=3,training=True,gamma_initializer=tf.random_normal_initializer(1.0, 0.2))
@@ -298,7 +283,7 @@ class Model:
             return False
 def fft(data):
     rate=16000
-    NFFT=32
+    NFFT=64
     time_song=float(data.shape[0])/rate
     time_unit=1/rate
     start=0
@@ -309,12 +294,12 @@ def fft(data):
     spec=np.zeros([len(time_ruler),(NFFT),2])
     pos=0
     for fft_index in range(len(time_ruler)):
-        frame=data[pos:pos+NFFT]
+        frame=data[pos:pos+NFFT]/32767.0
         if len(frame)==NFFT:
             wined=frame*window
             fft=np.fft.fft(wined)
             fft_data=np.asarray([fft.real,fft.imag])
-            fft_data=np.reshape(fft_data, (32,2))
+            fft_data=np.reshape(fft_data, (64,2))
             for i in range(len(spec[fft_index])):
                 spec[fft_index][-i-1]=fft_data[i]
             pos+=NFFT//2
@@ -322,25 +307,25 @@ def fft(data):
 def ifft(data):
     data=data[:,:,0]+1j*data[:,:,1]
     time_ruler=data.shape[0]
-    window=np.hamming(32)
+    window=np.hamming(64)
     spec=np.zeros([])
     pos=0
     for _ in range(time_ruler):
-        frame=data[pos]/32767.0
+        frame=data[pos]
         fft=np.fft.ifft(frame)
         fft_data=fft.real
         fft_data/=window
         spec=np.append(spec,fft_data)
         pos+=1
 
-    return spec[1:]/5
+    return spec[1:]
 def nowtime():
     return datetime.now().strftime("%Y_%m_%d %H_%M_%S")
-def upload(voice):
+def upload(voice,strs):
     voiced=voice.astype(np.int16)
     p=pyaudio.PyAudio()
     FORMAT = pyaudio.paInt16
-    ww = wave.open("Z://waves/"+nowtime()+".wav", 'wb')
+    ww = wave.open("Z://waves/"+nowtime()+strs+".wav", 'wb')
     ww.setnchannels(1)
     ww.setsampwidth(p.get_sample_size(FORMAT))
     ww.setframerate(16000)
