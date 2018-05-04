@@ -2,15 +2,6 @@ import pyaudio
 import numpy as np
 import wave
 import matplotlib.pyplot as pl
-def addGaussianNoise(src):
-    row,col,ch= src.shape
-    mean = 0
-    sigma = 15
-    gauss = np.random.normal(mean,sigma,(row,col,ch))
-    gauss = gauss.reshape(row,col,ch)
-    noisy = src + gauss
-
-    return noisy
 NFFT=64
 
 def fft(data):
@@ -30,23 +21,27 @@ def fft(data):
             wined=frame*window
             fft=np.fft.fft(wined)
             fft_data=np.asarray([fft.real,fft.imag])
-            fft_data=np.reshape(fft_data, (NFFT,2))
+            fft_data=np.transpose(fft_data, (1,0))
             for i in range(len(spec[fft_index])):
-                spec[fft_index][-i-1]=fft_data[i]
+                spec[fft_index][i]=fft_data[i]
             pos+=NFFT//2
     return spec
+
 def ifft(data):
     data=data[:,:,0]+1j*data[:,:,1]
     time_ruler=data.shape[0]
     window=np.hamming(NFFT)
     spec=np.zeros([])
     pos=0
+    lats = np.zeros([NFFT//2])
     for _ in range(time_ruler):
         frame=data[pos]
         fft=np.fft.ifft(frame)
         fft_data=fft.real
         fft_data/=window
-        spec=np.append(spec,fft_data)
+        v = lats + fft_data[:NFFT//2]
+        lats = fft_data[NFFT//2:]
+        spec=np.append(spec,v)
         pos+=1
 
     return spec[1:]
@@ -55,10 +50,10 @@ CHANNELS = 1        #モノラル
 RATE = 16000       #サンプルレート
 CHUNK = 1024     #データ点数
 RECORD_SECONDS = 5 #録音する時間の長さ
-WAVE_INPUT_FILENAME = "../train/Model/datasets/source/"
+WAVE_INPUT_FILENAME = "../train/Model/datasets/test/"
 WAVE_TMP="tmp.wav"
 WAVE_OUTPUT_FILENAME = "../train/Model/datasets/train/01/"
-file=(WAVE_INPUT_FILENAME+"/結合済み.wav")
+file=(WAVE_INPUT_FILENAME+"/test.wav")
 index=0
 dms=[]
 wf = wave.open(file, 'rb')
@@ -68,24 +63,28 @@ while dds != b'':
     dds = wf.readframes(CHUNK)
 dms = b''.join(dms)
 data = np.frombuffer(dms, 'int16')[0:4480000].reshape(2,-1)
-data_realA=data[0]
-data_realB=data[1]
+data_realA=data.reshape(-1)
 time=80000
 times=data_realA.shape[0]//time
 mod=80000//5
 
-data_realA=data_realA[0:8192]
 rate=16000
 
-print(data_realA/32767.0)
-a=fft(data_realA/32767.0)
-b=ifft(a)
-print(b.shape)
-b=b.reshape([256,-1,2,2])[:,:,0,:].reshape(-1)
+b=np.empty([])
+times=data_realA.shape[0]//8192+1
+if data_realA.shape[0]%8192==0:
+    times-=1
+for i in range(times):
+    data_realAb = data_realA[8192*i:min([8192*(i+1),data_realA.shape[0]-1])]
+    r=8192-data_realAb.shape[0]
+    if r>0:
+        data_realAb=np.pad(data_realAb,(0,r),"constant")
+    a=fft(data_realAb/32767.0)
+    s=ifft(a)
+    print(s.shape)
+    b=np.append(b,s)
 # print(a)
-
-print(a.shape)
-print(b.shape)
+b=(b[1:]*(32767/8)).astype(np.int16)
 pl.subplot(3,1,1)
 pl.plot(data_realA/32767.0)
 pl.subplot(3,1,2)
@@ -93,5 +92,11 @@ pl.plot(b/5)
 pl.subplot(3,1,3)
 c=np.log(np.transpose(np.abs(a[:,:,0]+1j*a[:,:,1]),[1,0])**2+1e-16)
 pl.imshow(c)
-print(c.shape)
+p = pyaudio.PyAudio()
+ww = wave.open("B.wav", 'wb')
+ww.setnchannels(1)
+ww.setsampwidth(p.get_sample_size(FORMAT))
+ww.setframerate(RATE)
+ww.writeframes(b.tobytes())
+ww.close()
 pl.show()
