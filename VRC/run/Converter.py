@@ -2,12 +2,8 @@ import tensorflow as tf
 import os
 import time
 import numpy as np
-import wave
 from tensorflow.python import debug as tf_debug
 from tensorflow.python.debug.lib.debug_data import has_inf_or_nan
-import pyaudio
-import random
-from datetime import datetime
 class Model:
     def __init__(self,debug):
         self.batch_size=1
@@ -31,37 +27,16 @@ class Model:
         init_op = tf.global_variables_initializer()
         self.sess.run(init_op)
         self.saver = tf.train.Saver()
-    def convert(self,in_put):
+    def convert(self,inputs):
         tt=time.time()
-        times=in_put.shape[1]//(self.output_size[1])+1
-        fc=0
-        if in_put.shape[1]%(self.output_size[1]*self.batch_size)==0:
-            times-=1
-        otp=np.array([],dtype=np.int16)
-        for t in range(times):
-            red=np.zeros((self.input_size[0]-1,self.input_size[1],self.input_size[2]))
-            start_pos=self.output_size[1]*(t)+((in_put.shape[1])%self.output_size[1])
-            resorce=np.reshape(in_put[0,max(0,start_pos-self.input_size[1]):start_pos,0],(1,-1))
-            r=max(0,self.input_size[1]-resorce.shape[1])
-            if r>0:
-                resorce=np.pad(resorce,((0,0),(r,0)),'constant')
-            red=np.append(resorce,red)
-            red=red.reshape((self.input_size[0],self.input_size[1],self.input_size[2]))
-            res=np.zeros([self.batch_size,256,64,2])
-            for i in range(self.batch_size):
-                n=fft(red[i].reshape(-1))
-                res[i]=(n)
-            red=np.log(np.abs(res[:,:,:,0]+1j*res[:,:,:,1])**2+1e-16)
-            tt=time.time()
-            res=self.sess.run(self.fake_B_image,feed_dict={ self.input_model:red})
-            fc+=time.time()-tt
-            res=ifft(res[0])*32767
-            res=res.reshape(-1)
-            otp=np.append(otp,res)
-        h=otp.shape[0]-in_put.shape[1]-1
-        if h!=-1:
-            otp=otp[h:-1]
-        return otp.reshape(1,in_put.shape[1],in_put.shape[2]),[time.time()-tt,fc]
+        res = np.zeros([1, 256, 64, 2])
+        n = fft(inputs.reshape(-1))
+        res[0] = (n)
+        red = np.log(np.abs(res[:, :, :, 0] + 1j * res[:, :, :, 1]) ** 2 + 1e-16)
+        res = self.sess.run(self.fake_B_image,feed_dict={self.input_model:red})
+        res = ifft(res[0]) * 32767
+        res = res.reshape(-1)
+        return res
     def generator(self,current_outputs,reuse,name):
         if reuse:
             tf.get_variable_scope().reuse_variables()

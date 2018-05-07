@@ -35,13 +35,13 @@ while stream.is_active():
     inputs = np.frombuffer(stream.read(chunk),dtype=np.int16).reshape(1,8192,1)
     #本処理
     t2 = time.time()
-    vc,t = m.convert(inputs)
+    vc = m.convert(inputs)
     #後処理
     vs=vc.astype(np.int16)
     vs=vs.tobytes()
     output = stream.write(vs)
     t4=time.time()
-    print("%2.4f | %2.4f | %2.4f" % (time.time()-tt,t[0],t[1]))
+    print("%2.4f" % (time.time()-tt))
     tt = time.time()
 def terminate():
     stream.stop_stream()
