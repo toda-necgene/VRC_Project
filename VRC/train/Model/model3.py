@@ -16,14 +16,14 @@ import math
 class Model:
     def __init__(self,debug):
         self.batch_size=1
-        self.depth=5
+        self.depth=6
         self.input_ch=1
         self.input_size=[self.batch_size,8192,1]
         self.input_size_model=[self.batch_size,64,256,1]
 
-        self.dataset_name="wave2wave_1.0.4"
+        self.dataset_name="wave2wave_1.1.0"
         self.output_size=[self.batch_size,8192,1]
-        self.CHANNELS=[4**i+1 for i in range(self.depth+1)]
+        self.CHANNELS=[min([4**i+1,64]) for i in range(self.depth+1)]
         self.sess=tf.InteractiveSession(config=tf.ConfigProto(gpu_options=tf.GPUOptions(per_process_gpu_memory_fraction=0.85)))
         if debug:
             self.sess=tf_debug.LocalCLIDebugWrapperSession(self.sess)
@@ -42,19 +42,19 @@ class Model:
         self.res1=tf.concat([self.input_wave_sour,self.input_wave_fake], axis=1)
         self.res2=tf.concat([self.input_wave_sour,self.input_wave_real], axis=1)
         with tf.variable_scope("discrim",reuse=tf.AUTO_REUSE):
-            self.d_judge_F1,self.d_judge_F1_logits=self.discriminator(self.res1,False)
-            self.d_judge_R,self.d_judge_R_logits=self.discriminator(self.res2,True)
+            self.d_judge_F1=self.discriminator(self.res1,False)
+            self.d_judge_R=self.discriminator(self.res2,True)
             self.d_scale=1.0-tf.abs(self.d_judge_F1-self.d_judge_R)
         self.g_vars_1=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"generator_1")
         self.d_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"discrim")
         L1=tf.reduce_mean(tf.abs(self.input_model_label-self.fake_B_image))
-        DS=-tf.log(self.d_score+1e-8)
-        self.g_loss_1=tf.reduce_mean((L1)*(10+DS))
-        self.d_loss_R = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.random_uniform(self.d_judge_R.shape,0.9,1.0),  logits=self.d_judge_R_logits)
-        self.d_loss_F = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.random_uniform(self.d_judge_F1.shape,0.1,0.3), logits=self.d_judge_F1_logits)
+        DS=tf.losses.mean_squared_error(labels=tf.ones(1),predictions=self.d_score)
+        self.g_loss_1=tf.reduce_mean((L1)*(DS+1))
+        self.d_loss_R = tf.losses.mean_squared_error(labels=tf.ones(self.d_judge_R.shape),predictions=self.d_judge_R)
+        self.d_loss_F = tf.losses.mean_squared_error(labels=tf.zeros(self.d_judge_F1.shape),predictions=self.d_judge_F1)
         self.d_loss=tf.reduce_mean([self.d_loss_R,self.d_loss_F])
         self.g_loss_sum_1 = tf.summary.scalar("g_loss", tf.reduce_mean(self.g_loss_1))
-        self.d_loss_sum = tf.summary.merge([tf.summary.scalar("d_loss_R", tf.reduce_mean(self.d_loss_R)),tf.summary.scalar("d_loss_F", tf.reduce_mean(self.d_loss_F))])
+        self.d_loss_sum = tf.summary.merge([tf.summary.scalar("d_loss", tf.reduce_mean(self.d_loss)),tf.summary.scalar("d_loss_F", tf.reduce_mean(self.d_loss_F))])
         self.exps=tf.placeholder(tf.float32, [1,1,160000], name="FB")
         self.fake_B_sum = tf.summary.audio("fake_B", tf.reshape(self.exps,[1,160000,1]), 16000, 1)
         self.g_test_epo_1=tf.placeholder(tf.float32,name="g_l_epo")
@@ -93,13 +93,13 @@ class Model:
         return otp.reshape(1,in_put.shape[1],in_put.shape[2]),time.time()-tt
     def train_f(self,args):
         self.checkpoint_dir=args.checkpoint_dir
-        lr_g_opt=2e-3
+        lr_g_opt=2e-4
         beta_g_opt=0.5
-        lr_d_opt=1e-6
-        beta_d_opt=0.1
-        self.lod="[glr="+str(lr_g_opt)+",gb="+str(beta_g_opt)+"]"
+        lr_d_opt=2e-6
+        beta_d_opt=0.5
+        self.lod="[glr="+str(lr_g_opt)+",gb="+str(beta_g_opt)+",dlr="+str(lr_d_opt)+",db="+str(beta_d_opt)+"]"
         g_optim_1 =tf.train.AdamOptimizer(lr_g_opt,beta_g_opt).minimize(self.g_loss_1, var_list=self.g_vars_1)
-        d_optim = tf.train.AdamOptimizer(lr_d_opt,beta_d_opt).minimize(self.d_loss, var_list=self.d_vars)
+        d_optim = tf.train.RMSPropOptimizer(lr_d_opt,beta_d_opt).minimize(self.d_loss, var_list=self.d_vars)
 
         init_op = tf.global_variables_initializer()
         self.exp= np.zeros((self.batch_size,1,80000),dtype=np.int16)
@@ -118,6 +118,10 @@ class Model:
         self.experiment=Experiment(self.dataset_name+"_G1")
         self.experiment.param("lr_g_opt", lr_g_opt)
         self.experiment.param("beta_g_opt", beta_g_opt)
+        self.experiment.param("lr_d_opt", lr_d_opt)
+        self.experiment.param("beta_d_opt", beta_d_opt)
+        self.experiment.param("depth", self.depth)
+
         wds=1.0
         for epoch in range(0,500):
 
@@ -149,6 +153,7 @@ class Model:
                 cv1,_=self.convert(resorce_te)
                 #Calcurate new d_score
                 score1,dp=self.sess.run([self.d_judge_F1,self.d_scale],feed_dict={ self.input_wave_sour:resorce_te ,self.input_wave_fake:cv1 ,self.input_wave_real:target_te })
+                self.sess.run([d_optim],feed_dict={self.input_wave_sour:resorce_te ,self.input_wave_fake:cv1 ,self.input_wave_real:target_te  })
                 self.sess.run([d_optim],feed_dict={self.input_wave_sour:resorce_te ,self.input_wave_fake:cv1 ,self.input_wave_real:target_te  })
                 hd,_=self.sess.run([self.d_loss_sum,d_optim],feed_dict={self.input_wave_sour:resorce_te ,self.input_wave_fake:cv1 ,self.input_wave_real:target_te  })
                 self.writer.add_summary(hd, idx+batch_idxs*epoch)
@@ -191,6 +196,8 @@ class Model:
                 wds=np.mean((score2))*np.mean((dp))
                 if math.isnan(wds):
                     wds=0.0
+                self.sess.run([d_optim],feed_dict={self.input_wave_sour:resorce_te ,self.input_wave_fake:cv1 ,self.input_wave_real:target_te  })
+                self.sess.run([d_optim],feed_dict={self.input_wave_sour:resorce_te ,self.input_wave_fake:cv1 ,self.input_wave_real:target_te  })
                 hd,_=self.sess.run([self.d_loss_sum,d_optim],feed_dict={self.input_wave_sour:resorce_te ,self.input_wave_fake:cv1 ,self.input_wave_real:target_te  })
             self.save(args.checkpoint_dir, epoch+1)
             self.experiment.metric("errD",dps/batch_idxs)
@@ -214,13 +221,12 @@ class Model:
     def discriminator(self,inp,reuse):
         inputs=tf.cast(inp, tf.float32)
         h1 = tf.nn.leaky_relu(tf.layers.conv1d(inputs, 4,4, strides=2, padding="VALID",data_format="channels_last",name="dis_01",reuse=reuse))
-        h2 = tf.nn.leaky_relu(tf.layers.conv1d((h1), 8,4, strides=2, padding="VALID",data_format="channels_last",name="dis_02",reuse=reuse))
-        h3 = tf.nn.leaky_relu(tf.layers.conv1d((h2), 16,4, strides=2, padding="VALID",data_format="channels_last",name="dis_03",reuse=reuse))
-        h4 = tf.nn.leaky_relu(tf.layers.conv1d((h3), 32,4, strides=2, padding="VALID",data_format="channels_last",name="dis_04",reuse=reuse))
+        h2 = tf.nn.leaky_relu(tf.layers.conv1d(tf.layers.batch_normalization(h1,training=True), 8,4, strides=2, padding="VALID",data_format="channels_last",name="dis_02",reuse=reuse))
+        h3 = tf.nn.leaky_relu(tf.layers.conv1d(tf.layers.batch_normalization(h2,training=True), 16,4, strides=2, padding="VALID",data_format="channels_last",name="dis_03",reuse=reuse))
+        h4 = tf.nn.leaky_relu(tf.layers.conv1d(tf.layers.batch_normalization(h3,training=True), 32,4, strides=2, padding="VALID",data_format="channels_last",name="dis_04",reuse=reuse))
         h4=tf.reshape(h4, [1,-1])
         ten=tf.layers.dense(h4,1,name="dence",reuse=reuse)
-        ot=tf.nn.sigmoid(ten)
-        return ot,ten
+        return ten
     def generator(self,current_outputs,reuse,name):
         if reuse:
             tf.get_variable_scope().reuse_variables()
@@ -236,20 +242,20 @@ class Model:
             connections.append(current)
         for i in range(self.depth):
             current+=connections[self.depth-i-1]
-            current=self.up_layer(current,self.CHANNELS[self.depth-i-1],i!=(self.depth-1))
+            current=self.up_layer(current,self.CHANNELS[self.depth-i-1],i!=(self.depth-1),self.depth-i-1>2)
         return current
-    def up_layer(self,current,output_shape,bn):
+    def up_layer(self,current,output_shape,bn,do):
         ten=tf.nn.leaky_relu(current)
         ten=tf.layers.conv2d_transpose(ten, output_shape,kernel_size=4 ,strides=(1,1), padding="SAME",kernel_initializer=tf.contrib.layers.xavier_initializer(),data_format="channels_last")
         if(bn):
             ten=tf.layers.batch_normalization(ten,axis=3,training=True,gamma_initializer=tf.random_normal_initializer(1.0, 0.2))
-        ten=tf.nn.dropout(ten, 0.5)
+        if(do):
+            ten=tf.nn.dropout(ten, 0.5)
         return ten
     def down_layer(self,current,output_shape):
         ten=tf.layers.batch_normalization(current,axis=3,training=True,gamma_initializer=tf.random_normal_initializer(1.0, 0.2))
         ten=tf.layers.conv2d(ten, output_shape,kernel_size=4 ,strides=(1,1), padding="SAME",kernel_initializer=tf.contrib.layers.xavier_initializer(),data_format="channels_last")
         ten=tf.nn.leaky_relu(ten)
-        ten=tf.nn.dropout(ten, 0.5)
         return ten
     def save(self, checkpoint_dir, step):
         model_name = "wave2wave.model"
