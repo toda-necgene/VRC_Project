@@ -3,3 +3,17 @@
 VRC/logs/*
 VRC/datasets/*
 VRC/Network/*
+.editorconfig
+_windows
+code.style.schemes
+codestyles
+colors.scheme.xml
+debugger.xml
+editor.codeinsight.xml
+editor.xml
+filetypes.xml
+ide.general.xml
+inspection
+jdk.table.xml
+project.default.xml
+ui.lnf.xml
