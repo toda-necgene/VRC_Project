@@ -44,7 +44,7 @@ class Model:
         #creating generator
         #G-net（生成側）の作成
         with tf.variable_scope("generator_1"):
-            self.fake_B_image=generator(tf.reshape(self.input_model,[self.batch_size,256,64,1]), reuse=False,chs=self.CHANNELS,depth=self.depth)
+            self.fake_B_image=generator(self.input_model, reuse=False,chs=self.CHANNELS,depth=self.depth)
 
         #creating discriminator inputs
         #D-netの入力の作成
@@ -403,10 +403,10 @@ class Model:
 
 def discriminator(inp,reuse):
     inputs=tf.cast(inp, tf.float32)
-    h1 = tf.nn.leaky_relu(tf.layers.conv2d(inputs, 4,2, strides=2, padding="VALID",data_format="channels_last",name="dis_01",reuse=reuse))
-    h2 = tf.nn.leaky_relu(tf.layers.conv2d(h1, 8,4, strides=4, padding="VALID",data_format="channels_last",name="dis_02",reuse=reuse))
-    h3 = tf.nn.leaky_relu(tf.layers.conv2d(h2, 16,8, strides=8, padding="VALID",data_format="channels_last",name="dis_03",reuse=reuse))
-    h4 = tf.nn.leaky_relu(tf.layers.conv2d(h3, 4,16, strides=1, padding="VALID",data_format="channels_last",name="dis_04",reuse=reuse))
+    h1 = tf.nn.leaky_relu(tf.layers.conv2d(inputs, 4,[8,4], strides=[4,2], padding="VALID",data_format="channels_last",name="dis_01",reuse=reuse))
+    h2 = tf.nn.leaky_relu(tf.layers.conv2d(h1, 8,[8,4], strides=[4,2], padding="VALID",data_format="channels_last",name="dis_02",reuse=reuse))
+    h3 = tf.nn.leaky_relu(tf.layers.conv2d(h2, 16,[8,4], strides=[4,2], padding="VALID",data_format="channels_last",name="dis_03",reuse=reuse))
+    h4 = tf.nn.leaky_relu(tf.layers.conv2d(h3, 32,[6,6], strides=1, padding="VALID",data_format="channels_last",name="dis_04",reuse=reuse))
     h4=tf.reshape(h4, [1,-1])
     ten=tf.layers.dense(h4,1,name="dence",reuse=reuse)
     ot=tf.nn.sigmoid(ten)
@@ -420,11 +420,12 @@ def generator(current_outputs,reuse,depth,chs):
     current=current_outputs
     connections=[ ]
     for i in range(depth):
-        current=down_layer(current,chs[i+1])
         connections.append(current)
+        current = down_layer(current, chs[i+1])
     for i in range(depth):
-        current+=connections[depth-i-1]
         current=up_layer(current,chs[depth-i-1],i!=(depth-1),depth-i-1>2)
+        if i!=depth-1:
+            current += connections[depth - i - 1]
     return current
 
 def up_layer(current,output_shape,bn=True,do=False):
