@@ -1,5 +1,0 @@
-*.bin
-*.class
-VRC/logs/*
-VRC/datasets/*
-VRC/Network/*
