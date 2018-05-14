@@ -18,6 +18,7 @@ class Model:
         self.train_epoch=500
         self.input_ch=1
         self.NFFT=64
+        self.test=True
         self.tensorboard = True
         self.hyperdash =True
         self.wave_output="z://waves/"
@@ -298,30 +299,30 @@ class Model:
             #モデルの保存
             self.save(args.checkpoint_dir, epoch)
 
+            if self.test:
+                #testing
+                #テスト
+                out_puts,taken_time=self.convert(test.reshape(1,-1,1))
+                out_put=(out_puts.astype(np.float32)/32767.0)
 
-            #testing
-            #テスト
-            out_puts,taken_time=self.convert(test.reshape(1,-1,1))
-            out_put=(out_puts.astype(np.float32)/32767.0)
+                # loss of tesing
+                #テストの誤差
+                test1=np.mean(np.abs(out_puts-label.reshape(1,-1,1)))
 
-            # loss of tesing
-            #テストの誤差
-            test1=np.mean(np.abs(out_puts-label.reshape(1,-1,1)))
+                #hyperdash
+                if self.hyperdash:
+                    self.experiment.metric("testG",test1)
 
-            #hyperdash
-            if self.hyperdash:
-                self.experiment.metric("testG",test1)
+                #writing epoch-result into tensorboard
+                #tensorboardの書き込み
+                if self.tensorboard:
+                    rs=self.sess.run(self.tb_results,feed_dict={ self.result:out_put.reshape(1,1,-1),self.g_test_epo:test1})
+                    self.writer.add_summary(rs, epoch)
 
-            #writing epoch-result into tensorboard
-            #tensorboardの書き込み
-            if self.tensorboard:
-                rs=self.sess.run(self.tb_results,feed_dict={ self.result:out_put.reshape(1,1,-1),self.g_test_epo:test1})
-                self.writer.add_summary(rs, epoch)
-
-            #saving test result
-            #テストの結果の保存
-            if self.wave_output is not "FALSE":
-                upload(out_puts,self.wave_output)
+                #saving test result
+                #テストの結果の保存
+                if self.wave_output is not "FALSE":
+                    upload(out_puts,self.wave_output)
 
             #console outputs
             taken_time = time.time() - start_time
