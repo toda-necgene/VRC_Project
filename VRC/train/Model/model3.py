@@ -17,14 +17,15 @@ class Model:
         self.depth=6
         self.train_epoch=500
         self.input_ch=1
-        self.NFFT=64
+        self.NFFT=128
         self.test=True
         self.tensorboard = True
         self.hyperdash =True
+        self.log=False
         self.wave_output="z://waves/"
         self.input_size=[self.batch_size,8192,1]
-        self.input_size_model=[self.batch_size,256,64,2]
-        self.dataset_name="wave2wave_1.4.0"
+        self.input_size_model=[self.batch_size,128,128,2]
+        self.dataset_name="wave2wave_1.5.0"
         self.output_size=[self.batch_size,8192,1]
         self.CHANNELS=[min([2**(i+1),128]) for i in range(self.depth+1)]
         self.sess=tf.InteractiveSession(config=tf.ConfigProto(gpu_options=tf.GPUOptions(per_process_gpu_memory_fraction=0.85)))
@@ -41,20 +42,27 @@ class Model:
         self.input_model=tf.placeholder(tf.float32, self.input_size_model, "inputs_G-net")
         self.input_model_label=tf.placeholder(tf.float32, self.input_size_model, "inputs_GD-net_target_label")
 
+        #前処理
+        self.input_model_p=tf.pow(self.input_model[:,:,:,0],2)+tf.pow(self.input_model[:,:,:,1],2)
+        self.input_model_2=tf.reshape(tf.log(self.input_model_p+1e-10),[self.input_size_model[0],self.input_size_model[1],self.input_size_model[2],1])
+
         #creating generator
         #G-net（生成側）の作成
         with tf.variable_scope("generator_1"):
-            self.fake_B_image=generator(self.input_model, reuse=False,chs=self.CHANNELS,depth=self.depth)
+            self.fake_B_image=generator(self.input_model_2, reuse=False,chs=self.CHANNELS,depth=self.depth)
 
+        self.noise = tf.placeholder(tf.float32, [self.input_size_model[0]], "inputs_Noise")
+
+        b_true=self.input_model_label+tf.random_normal(0,self.noise*10)
         #creating discriminator inputs
         #D-netの入力の作成
         self.res1=tf.concat([self.input_model,self.fake_B_image], axis=1)
-        self.res2=tf.concat([self.input_model,self.input_model_label], axis=1)
+        self.res2=tf.concat([self.input_model,b_true], axis=1)
         #creating discriminator
         #D-net（判別側)の作成
         with tf.variable_scope("discrim",reuse=tf.AUTO_REUSE):
-            self.d_judge_F1,self.d_judge_F1_logits=discriminator(self.res1,False)
-            self.d_judge_R,self.d_judge_R_logits=discriminator(self.res2,True)
+            self.d_judge_F1=discriminator(self.res1,False)
+            self.d_judge_R=discriminator(self.res2,True)
 
         #getting individual variabloes
         #それぞれの変数取得
@@ -67,19 +75,24 @@ class Model:
         #L1 norm loss
         L1=tf.reduce_mean(tf.abs(self.input_model_label-self.fake_B_image))
         #Gan loss
-        DS=tf.reduce_mean(-tf.log(self.d_judge_F1+1e-24))
+        DS=tf.reduce_mean(tf.pow(self.d_judge_F1-1,2)*0.5)
         #generator loss
-        self.g_loss_1=L1*100+DS
+        self.g_loss_1=L1*10+DS
 
+        a=1-self.noise
+        b=(1-L1)/50
         #objective-functions of discriminator
         #D-netの目的関数
-        self.d_loss_R = tf.reduce_mean(tf.pow(self.d_judge_R-1,2)*0.5)
-        self.d_loss_F = tf.reduce_mean(tf.pow(self.d_judge_F1,2)*0.5)
+        self.d_loss_R = tf.reduce_mean(tf.pow(self.d_judge_R-a,2)*0.5)
+        self.d_loss_F = tf.reduce_mean(tf.pow(self.d_judge_F1-b,2)*0.5)
         self.d_loss=tf.reduce_mean(self.d_loss_R+self.d_loss_F)
 
         #tensorboard functions
         #tensorboard 表示用関数
-        self.g_loss_sum_1 = tf.summary.scalar("g_loss", tf.reduce_mean(self.g_loss_1))
+        self.g_loss_all= tf.summary.scalar("g_loss_All", tf.reduce_mean(self.g_loss_1))
+        self.g_loss_gan = tf.summary.scalar("g_loss_gan", tf.reduce_mean(DS))
+        self.dscore = tf.summary.scalar("dscore", tf.reduce_mean(self.d_judge_F1))
+        self.g_loss_sum_1= tf.summary.merge([self.g_loss_all,self.g_loss_gan,self.dscore])
         self.d_loss_sum = tf.summary.merge([tf.summary.scalar("d_loss", tf.reduce_mean(self.d_loss)),tf.summary.scalar("d_loss_F", tf.reduce_mean(self.d_loss_F))])
         self.result=tf.placeholder(tf.float32, [1,1,160000], name="FB")
         self.fake_B_sum = tf.summary.audio("fake_B", tf.reshape(self.result,[1,160000,1]), 16000, 1)
@@ -119,7 +132,7 @@ class Model:
                 resorce=np.pad(resorce,((0,0),(r,0)),'constant')
             red=np.append(resorce,red)
             red=red.reshape((self.input_size[0],self.input_size[1],self.input_size[2]))
-            res=np.zeros([self.batch_size,256,64,2])
+            res=np.zeros([self.batch_size,128,128,2])
 
             # FFT
             # 短時間高速離散フーリエ変換
@@ -155,11 +168,11 @@ class Model:
         self.checkpoint_dir=args.checkpoint_dir
         # setting paramaters
         # パラメータ
-        lr_g_opt=2e-4
+        lr_g_opt=2e-6
         beta_g_opt=0.5
         beta_2_g_opt=0.999
-        lr_d_opt=2e-5
-        beta_d_opt=0.1
+        lr_d_opt=2e-6
+        beta_d_opt=0.5
 
         # naming output-directory
         # 出力ディレクトリ
@@ -217,6 +230,9 @@ class Model:
 
             # initializing epoch info
             # エポック情報の初期化
+            log_data_g=[]
+            log_data_d = []
+
             counter=0
 
             print(" [*] Epoch %3d started" % epoch)
@@ -270,29 +286,33 @@ class Model:
 
                     # FFT
                     # 短時間高速離散フーリエ変換
-                    res=np.zeros([self.batch_size,256,64,2])
-                    tar=np.zeros([self.batch_size,256,64,2])
+                    res=np.zeros([self.batch_size,128,128,2])
+                    tar=np.zeros([self.batch_size,128,128,2])
                     for i in range(self.batch_size):
                         res[i]=(self.fft(resorce[i]))
                         tar[i]=(self.fft(target[i]))
-                    res_t=res.reshape([self.batch_size,256,64,2])
+                    res_t=res.reshape([self.batch_size,128,128,2])
 
                     # Update G network
                     # G-netの学習
                     self.sess.run([g_optim_1],feed_dict={ self.input_model:res_t, self.input_model_label:tar })
                     # Update D network (2times)
                     # D-netの学習(2回)
-                    self.sess.run([d_optim],feed_dict={self.input_model:res_t, self.input_model_label:tar  })
-                    self.sess.run([d_optim],feed_dict={self.input_model:res_t, self.input_model_label:tar })
+                    nos=np.random.rand(self.batch_size)*0.5
+                    self.sess.run([d_optim],feed_dict={self.input_model:res_t, self.input_model_label:tar ,self.noise:nos })
+                    nos = np.random.rand(self.batch_size) * 0.5
+                    self.sess.run([d_optim],feed_dict={self.input_model:res_t, self.input_model_label:tar ,self.noise:nos })
 
                     # saving tensorboard
                     # tensorboardの保存
                     if self.tensorboard and counter%tb_interval==0:
-                        hg=self.sess.run(self.g_loss_sum_1,feed_dict={self.input_model:res_t, self.input_model_label:tar  })
-                        hd = self.sess.run(self.d_loss_sum,feed_dict={self.input_model: res_t, self.input_model_label: tar})
+                        hg,hd=self.sess.run([self.g_loss_sum_1,self.d_loss_sum],feed_dict={self.input_model:res_t, self.input_model_label:tar  })
                         self.writer.add_summary(hg, counter//tb_interval+ti*epoch)
                         self.writer.add_summary(hd, counter//tb_interval+ti*epoch)
-
+                    if self.log and counter % tb_interval == 0:
+                        hg,hd = self.sess.run([self.g_loss_1,self.d_loss], feed_dict={self.input_model: res_t, self.input_model_label: tar})
+                        log_data_g.append(np.mean(hg))
+                        log_data_d.append(np.mean(hd))
                     counter+=1
 
             #saving model
@@ -323,7 +343,9 @@ class Model:
                 #テストの結果の保存
                 if self.wave_output is not "FALSE":
                     upload(out_puts,self.wave_output)
-
+                if self.log:
+                    print(log_data_g)
+                    print(log_data_d)
             #console outputs
             taken_time = time.time() - start_time
             print(" [*] Epoch %5d finished in %.2f" % (epoch,taken_time))
@@ -403,14 +425,13 @@ class Model:
 
 def discriminator(inp,reuse):
     inputs=tf.cast(inp, tf.float32)
-    h1 = tf.nn.leaky_relu(tf.layers.conv2d(inputs, 4,[8,4], strides=[4,2], padding="VALID",data_format="channels_last",name="dis_01",reuse=reuse))
-    h2 = tf.nn.leaky_relu(tf.layers.conv2d(h1, 8,[8,4], strides=[4,2], padding="VALID",data_format="channels_last",name="dis_02",reuse=reuse))
-    h3 = tf.nn.leaky_relu(tf.layers.conv2d(h2, 16,[8,4], strides=[4,2], padding="VALID",data_format="channels_last",name="dis_03",reuse=reuse))
-    h4 = tf.nn.leaky_relu(tf.layers.conv2d(h3, 32,[6,6], strides=1, padding="VALID",data_format="channels_last",name="dis_04",reuse=reuse))
+    h1 = tf.nn.leaky_relu(tf.layers.conv2d(inputs, 4,[4,4], strides=[2,2], padding="VALID",data_format="channels_last",name="dis_01",reuse=reuse))
+    h2 = tf.nn.leaky_relu(tf.layers.conv2d(tf.layers.batch_normalization(h1,training=False), 8,[4,4], strides=[2,2], padding="VALID",data_format="channels_last",name="dis_02",reuse=reuse))
+    h3 = tf.nn.leaky_relu(tf.layers.conv2d(tf.layers.batch_normalization(h2,training=False), 16,[4,4], strides=[2,2], padding="VALID",data_format="channels_last",name="dis_03",reuse=reuse))
+    h4 = tf.nn.leaky_relu(tf.layers.conv2d(tf.layers.batch_normalization(h3,training=False), 32,[6,6], strides=1, padding="VALID",data_format="channels_last",name="dis_04",reuse=reuse))
     h4=tf.reshape(h4, [1,-1])
     ten=tf.layers.dense(h4,1,name="dence",reuse=reuse)
-    ot=tf.nn.sigmoid(ten)
-    return ot,ten
+    return ten
 
 def generator(current_outputs,reuse,depth,chs):
     if reuse:
@@ -426,7 +447,7 @@ def generator(current_outputs,reuse,depth,chs):
         current=up_layer(current,chs[depth-i-1],i!=(depth-1),depth-i-1>2)
         if i!=depth-1:
             current += connections[depth - i - 1]
-    return current
+    return tf.nn.tanh(current)
 
 def up_layer(current,output_shape,bn=True,do=False):
     ten=tf.nn.leaky_relu(current)
