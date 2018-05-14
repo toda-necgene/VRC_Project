@@ -11,7 +11,7 @@ print(" [*]Building Model...")
 net.build_model()
 print(" [*]Built Model!!")
 args=namedtuple('checkpoint_dir', 'train_size')
-args.checkpoint_dir="./datasets"
-args.train_size=148
+args.checkpoint_dir="./trained_models"
+args.train_size=150
 
-net.train_f(args)
+net.train(args)

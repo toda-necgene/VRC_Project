@@ -2,7 +2,6 @@ from glob import glob
 import tensorflow as tf
 import os
 import time
-import re
 from six.moves import xrange
 import numpy as np
 import wave
@@ -12,66 +11,107 @@ import pyaudio
 from hyperdash import Experiment
 import random
 from datetime import datetime
-import math
 class Model:
     def __init__(self,debug):
         self.batch_size=1
         self.depth=6
+        self.train_epoch=500
         self.input_ch=1
+        self.NFFT=64
+        self.tensorboard = True
+        self.hyperdash =True
+        self.wave_output="z://waves/"
         self.input_size=[self.batch_size,8192,1]
-        self.input_size_model=[self.batch_size,64,256,1]
-
-        self.dataset_name="wave2wave_1.1.0"
+        self.input_size_model=[self.batch_size,256,64,2]
+        self.dataset_name="wave2wave_1.4.0"
         self.output_size=[self.batch_size,8192,1]
-        self.CHANNELS=[min([4**i+1,64]) for i in range(self.depth+1)]
+        self.CHANNELS=[min([2**(i+1),128]) for i in range(self.depth+1)]
         self.sess=tf.InteractiveSession(config=tf.ConfigProto(gpu_options=tf.GPUOptions(per_process_gpu_memory_fraction=0.85)))
         if debug:
             self.sess=tf_debug.LocalCLIDebugWrapperSession(self.sess)
             self.sess.add_tensor_filter('has_inf_or_nan', has_inf_or_nan)
+
+
+
     def build_model(self):
 
-        self.input_model=tf.placeholder(tf.float32, [self.batch_size,256,64], "inputs_convert")
-        self.input_model_label=tf.placeholder(tf.float32, [self.batch_size,256,64,2], "inputs_answer")
-        self.input_wave_fake=tf.placeholder(tf.int16, [1, 80000,1], "inputs_discriminator_fake")
-        self.input_wave_real=tf.placeholder(tf.int16, [1, 80000,1], "inputs_discriminator_real")
-        self.input_wave_sour=tf.placeholder(tf.int16, [1, 80000,1], "inputs_discriminator_source")
-        self.d_score=tf.placeholder(tf.float32, name="inputs_dsa")
-        with tf.variable_scope("generator_1"):
-            self.fake_B_image=self.generator(tf.reshape(self.input_model,[self.batch_size,256,64,1]), reuse=False,name="gen")
+        #inputs place holder
+        #入力
+        self.input_model=tf.placeholder(tf.float32, self.input_size_model, "inputs_G-net")
+        self.input_model_label=tf.placeholder(tf.float32, self.input_size_model, "inputs_GD-net_target_label")
 
-        self.res1=tf.concat([self.input_wave_sour,self.input_wave_fake], axis=1)
-        self.res2=tf.concat([self.input_wave_sour,self.input_wave_real], axis=1)
+        #creating generator
+        #G-net（生成側）の作成
+        with tf.variable_scope("generator_1"):
+            self.fake_B_image=generator(tf.reshape(self.input_model,[self.batch_size,256,64,1]), reuse=False,chs=self.CHANNELS,depth=self.depth)
+
+        #creating discriminator inputs
+        #D-netの入力の作成
+        self.res1=tf.concat([self.input_model,self.fake_B_image], axis=1)
+        self.res2=tf.concat([self.input_model,self.input_model_label], axis=1)
+        #creating discriminator
+        #D-net（判別側)の作成
         with tf.variable_scope("discrim",reuse=tf.AUTO_REUSE):
-            self.d_judge_F1=self.discriminator(self.res1,False)
-            self.d_judge_R=self.discriminator(self.res2,True)
-            self.d_scale=1.0-tf.abs(self.d_judge_F1-self.d_judge_R)
+            self.d_judge_F1,self.d_judge_F1_logits=discriminator(self.res1,False)
+            self.d_judge_R,self.d_judge_R_logits=discriminator(self.res2,True)
+
+        #getting individual variabloes
+        #それぞれの変数取得
         self.g_vars_1=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"generator_1")
         self.d_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"discrim")
+
+        #objective-functions of generator
+        #G-netの目的関数
+
+        #L1 norm loss
         L1=tf.reduce_mean(tf.abs(self.input_model_label-self.fake_B_image))
-        DS=tf.losses.mean_squared_error(labels=tf.ones(1),predictions=self.d_score)
-        self.g_loss_1=tf.reduce_mean((L1)*(DS+1))
-        self.d_loss_R = tf.losses.mean_squared_error(labels=tf.ones(self.d_judge_R.shape),predictions=self.d_judge_R)
-        self.d_loss_F = tf.losses.mean_squared_error(labels=tf.zeros(self.d_judge_F1.shape),predictions=self.d_judge_F1)
-        self.d_loss=tf.reduce_mean([self.d_loss_R,self.d_loss_F])
+        #Gan loss
+        DS=tf.reduce_mean(tf.pow(self.d_judge_F1-1,2)*0.5)
+        #generator loss
+        self.g_loss_1=L1+DS
+
+        #objective-functions of discriminator
+        #D-netの目的関数
+        self.d_loss_R = tf.reduce_mean(tf.pow(self.d_judge_R-1,2)*0.5)
+        self.d_loss_F = tf.reduce_mean(tf.pow(self.d_judge_F1,2)*0.5)
+        self.d_loss=tf.reduce_mean(self.d_loss_R+self.d_loss_F)
+
+        #tensorboard functions
+        #tensorboard 表示用関数
         self.g_loss_sum_1 = tf.summary.scalar("g_loss", tf.reduce_mean(self.g_loss_1))
         self.d_loss_sum = tf.summary.merge([tf.summary.scalar("d_loss", tf.reduce_mean(self.d_loss)),tf.summary.scalar("d_loss_F", tf.reduce_mean(self.d_loss_F))])
-        self.exps=tf.placeholder(tf.float32, [1,1,160000], name="FB")
-        self.fake_B_sum = tf.summary.audio("fake_B", tf.reshape(self.exps,[1,160000,1]), 16000, 1)
-        self.g_test_epo_1=tf.placeholder(tf.float32,name="g_l_epo")
-        self.g_test_epoch_1 = tf.summary.scalar("g_test_epoch", self.g_test_epo_1)
-        self.d_score_epo=tf.placeholder(tf.float32,name="g_l_epo")
-        self.d_score_epoch= tf.summary.scalar("d_score_epoch", self.d_score_epo)
-        self.rrs=tf.summary.merge([self.fake_B_sum,self.g_test_epoch_1,self.d_score_epoch])
+        self.result=tf.placeholder(tf.float32, [1,1,160000], name="FB")
+        self.fake_B_sum = tf.summary.audio("fake_B", tf.reshape(self.result,[1,160000,1]), 16000, 1)
+        self.g_test_epo=tf.placeholder(tf.float32,name="g_test_epoch_end")
+        self.g_test_epoch = tf.summary.scalar("g_test_epoch_end", self.g_test_epo)
+        self.tb_results=tf.summary.merge([self.fake_B_sum,self.g_test_epoch])
+
+        #saver
+        #保存の準備
         self.saver = tf.train.Saver()
+
+
+
     def convert(self,in_put):
+        #function of test
+        #To convert wave file
+        #テスト用関数
+        #wave file　変換用
+
+
         tt=time.time()
         times=in_put.shape[1]//(self.output_size[1])+1
         if in_put.shape[1]%(self.output_size[1]*self.batch_size)==0:
             times-=1
         otp=np.array([],dtype=np.int16)
         for t in range(times):
+            # Preprocess
+            # 前処理
+
+            # Padiing
+            # サイズ合わせ
             red=np.zeros((self.input_size[0]-1,self.input_size[1],self.input_size[2]))
-            start_pos=self.output_size[1]*(t)+((in_put.shape[1])%self.output_size[1])
+            start_pos=self.output_size[1]*t+((in_put.shape[1])%self.output_size[1])
             resorce=np.reshape(in_put[0,max(0,start_pos-self.input_size[1]):start_pos,0],(1,-1))
             r=max(0,self.input_size[1]-resorce.shape[1])
             if r>0:
@@ -79,184 +119,220 @@ class Model:
             red=np.append(resorce,red)
             red=red.reshape((self.input_size[0],self.input_size[1],self.input_size[2]))
             res=np.zeros([self.batch_size,256,64,2])
+
+            # FFT
+            # 短時間高速離散フーリエ変換
             for i in range(self.batch_size):
-                n=fft(red[i].reshape(-1))
-                res[i]=(n)
-            red=np.log(np.abs(res[:,:,:,0]+1j*res[:,:,:,1])**2+1e-16)
-            res=self.sess.run(self.fake_B_image,feed_dict={ self.input_model:red})
-            res=ifft(res[0])*32767
+                n=self.fft(red[i].reshape(-1))
+                res[i]=n
+
+            # running network
+            # ネットワーク実行
+            res=self.sess.run(self.fake_B_image,feed_dict={ self.input_model:res})
+
+
+            # Postprocess
+            # 後処理
+
+            # IFFT
+            # 短時間高速離散逆フーリエ変換
+            res=self.ifft(res[0])*32767
+
+            # chaching results
+            # 結果の保存
             res=res.reshape(-1)
             otp=np.append(otp,res)
+
         h=otp.shape[0]-in_put.shape[1]-1
         if h!=-1:
             otp=otp[h:-1]
         return otp.reshape(1,in_put.shape[1],in_put.shape[2]),time.time()-tt
-    def train_f(self,args):
+
+
+
+    def train(self,args):
         self.checkpoint_dir=args.checkpoint_dir
+        # setting paramaters
+        # パラメータ
         lr_g_opt=2e-4
         beta_g_opt=0.5
-        lr_d_opt=2e-6
-        beta_d_opt=0.5
-        self.lod="[glr="+str(lr_g_opt)+",gb="+str(beta_g_opt)+",dlr="+str(lr_d_opt)+",db="+str(beta_d_opt)+"]"
-        g_optim_1 =tf.train.AdamOptimizer(lr_g_opt,beta_g_opt).minimize(self.g_loss_1, var_list=self.g_vars_1)
-        d_optim = tf.train.RMSPropOptimizer(lr_d_opt,beta_d_opt).minimize(self.d_loss, var_list=self.d_vars)
+        beta_2_g_opt=0.999
+        lr_d_opt=2e-4
+        beta_d_opt=0.1
 
+        # naming output-directory
+        # 出力ディレクトリ
+        self.lod="[glr="+str(lr_g_opt)+",gb="+str(beta_g_opt)+",dlr="+str(lr_d_opt)+",db="+str(beta_d_opt)+"]"
+        g_optim_1 =tf.train.AdamOptimizer(lr_g_opt,beta_g_opt,beta_2_g_opt).minimize(self.g_loss_1, var_list=self.g_vars_1)
+        d_optim = tf.train.AdamOptimizer(lr_d_opt,beta_d_opt).minimize(self.d_loss, var_list=self.d_vars)
+
+        # initialize variables
+        # 変数の初期化
         init_op = tf.global_variables_initializer()
-        self.exp= np.zeros((self.batch_size,1,80000),dtype=np.int16)
         self.sess.run(init_op)
-        self.writer = tf.summary.FileWriter("./logs/"+self.lod+self.dataset_name, self.sess.graph)
-        counter = 1
+
+        # logging
+        # ログ出力
+        if self.tensorboard:
+            self.writer = tf.summary.FileWriter("./logs/"+self.lod+self.dataset_name, self.sess.graph)
+
+        # initialize training info
+        # 学習の情報の初期化
         start_time = time.time()
-        cv1=None
+
+        # loading net
+        # 過去の学習データの読み込み
         if self.load(self.checkpoint_dir):
             print(" [*] Load SUCCESS")
         else:
             print(" [!] Load failed...")
+
+        # loading training data directory
+        # トレーニングデータの格納ディレクトリの読み込み
         data = glob('./Model/datasets/train/01/*')
-        data2 = glob('./Model/datasets/train/02/*')
+
+        # loading test data
+        # テストデータの読み込み
+        test=imread('./Model/datasets/test/test.wav')[0:160000]
+        label=imread('./Model/datasets/test/label.wav')[0:160000]
+
+        # times of one epoch
+        # 回数計算
         batch_idxs = min(len(data), args.train_size) // self.batch_size
-        self.experiment=Experiment(self.dataset_name+"_G1")
-        self.experiment.param("lr_g_opt", lr_g_opt)
-        self.experiment.param("beta_g_opt", beta_g_opt)
-        self.experiment.param("lr_d_opt", lr_d_opt)
-        self.experiment.param("beta_d_opt", beta_d_opt)
-        self.experiment.param("depth", self.depth)
 
-        wds=1.0
-        for epoch in range(0,500):
+        # hyperdash
+        if self.hyperdash:
+            self.experiment=Experiment(self.dataset_name+"_G1")
+            self.experiment.param("lr_g_opt", lr_g_opt)
+            self.experiment.param("beta_g_opt", beta_g_opt)
+            self.experiment.param("lr_d_opt", lr_d_opt)
+            self.experiment.param("beta_d_opt", beta_d_opt)
+            self.experiment.param("depth", self.depth)
 
+        for epoch in range(0,self.train_epoch):
+            # shuffling training data
+            # トレーニングデータのシャッフル
             np.random.shuffle(data)
-            np.random.shuffle(data2)
 
-            test=load_data('./Model/datasets/test/test.wav')[0:160000]
-            label=load_data('./Model/datasets/test/label.wav')[0:160000]
-            dps=0
+            # initializing epoch info
+            # エポック情報の初期化
             counter=0
-            print("Epoch %3d start" % (epoch))
+
+            print(" [*] Epoch %3d started" % epoch)
+
             for idx in xrange(0, batch_idxs):
+                # loading trainig data
+                # トレーニングデータの読み込み
                 batch_files = data[idx*self.batch_size:(idx+1)*self.batch_size]
-                batch = np.asarray([(load_data(batch_file)) for batch_file in batch_files])
-                batch_images = np.array(batch).astype(np.int16).reshape(self.batch_size,2,80000)
+                batch = np.asarray([(imread(batch_file)) for batch_file in batch_files])
+                batch_sounds = np.array(batch).astype(np.int16).reshape(self.batch_size,2,80000)
 
-                test_train=load_data(data2[idx%2]).reshape(1,2,80000)
-
+                # calculating one iteration repetation times
+                # 1イテレーション実行回数計算
                 times=80000//self.output_size[1]
-#                 times_added=0
                 if int(80000)%self.output_size[1]==0:
                     times-=1
-                ti=(batch_idxs*times//10)
-#                 g_score=0
-                #update_Punish_scale
-                resorce_te=test_train[0,1,:].reshape(1,-1,1)
-                target_te=test_train[0,0,:].reshape(1,-1,1)
-                target_te=nos(target_te)
-                cv1,_=self.convert(resorce_te)
-                #Calcurate new d_score
-                score1,dp=self.sess.run([self.d_judge_F1,self.d_scale],feed_dict={ self.input_wave_sour:resorce_te ,self.input_wave_fake:cv1 ,self.input_wave_real:target_te })
-                self.sess.run([d_optim],feed_dict={self.input_wave_sour:resorce_te ,self.input_wave_fake:cv1 ,self.input_wave_real:target_te  })
-                self.sess.run([d_optim],feed_dict={self.input_wave_sour:resorce_te ,self.input_wave_fake:cv1 ,self.input_wave_real:target_te  })
-                hd,_=self.sess.run([self.d_loss_sum,d_optim],feed_dict={self.input_wave_sour:resorce_te ,self.input_wave_fake:cv1 ,self.input_wave_real:target_te  })
-                self.writer.add_summary(hd, idx+batch_idxs*epoch)
-                uds=np.mean((score1))*np.mean((dp))
-                if math.isnan(uds):
-                    uds=0.0
-                ds=(uds+wds)/2
-                d_score = (np.mean(ds))
-                dps+=(d_score)
-                times_set=[j for j in range(times)]
-                random.shuffle(times_set)
-                for t in times_set:
-                    start_pos=self.output_size[1]*t+(80000%self.output_size[1])
-                    target=np.reshape(batch_images[:,0,max(0,start_pos-self.output_size[1]):start_pos],(self.batch_size,-1))
-                    resorce=np.reshape(batch_images[:,1,max(0,start_pos-self.input_size[1]):start_pos],(self.batch_size,-1))
-                    r=max(0,self.input_size[1]-resorce.shape[1])
+                # shuffle start time
+                # 開始タイミングのシャッフル
+                time_set=[j for j in range(times)]
+                random.shuffle(time_set)
 
+
+                # tensorboard interval
+                # tensorboard保存のインターバル
+                tb_interval=10
+                ti=(batch_idxs*times//tb_interval)
+
+                for t in time_set:
+
+                    # calculating starting position
+                    # 開始位置の計算
+                    start_pos=self.output_size[1]*t+(80000%self.output_size[1])
+
+                    # getting training data
+                    # トレーニングデータの取得
+                    target=np.reshape(batch_sounds[:,0,max(0,start_pos-self.output_size[1]):start_pos],(self.batch_size,-1))
+                    resorce=np.reshape(batch_sounds[:,1,max(0,start_pos-self.input_size[1]):start_pos],(self.batch_size,-1))
+
+
+                    # preprocessing of input
+                    # 入力の前処理
+
+                    # padding
+                    # サイズ合わせ
+                    r=max(0,self.input_size[1]-resorce.shape[1])
                     if r>0:
                         resorce=np.pad(resorce,((0,0),(r,0)),'constant')
                     r=max(0,self.output_size[1]-target.shape[1])
                     if r>0:
                         target=np.pad(target,((0,0),(r,0)),'constant')
+
+                    # FFT
+                    # 短時間高速離散フーリエ変換
                     res=np.zeros([self.batch_size,256,64,2])
                     tar=np.zeros([self.batch_size,256,64,2])
                     for i in range(self.batch_size):
-                        res[i]=(fft(resorce[i]))
-                        tar[i]=(fft(target[i]))
-                    res=res.reshape([self.batch_size,256,64,2])
-                    res=np.log(np.abs(res[:,:,:,0]+1j*res[:,:,:,1])**2+1e-16)
-                    tar=tar.reshape([self.batch_size,256,64,2])
-                    # Update G1 network
-                    _,hg=self.sess.run([g_optim_1,self.g_loss_sum_1],feed_dict={ self.input_model:res, self.input_model_label:tar ,self.d_score:ds})
-                    if counter%20==0:
-                        self.writer.add_summary(hg, counter//10+ti*epoch)
+                        res[i]=(self.fft(resorce[i]))
+                        tar[i]=(self.fft(target[i]))
+                    res_t=res.reshape([self.batch_size,256,64,2])
+
+                    # Update G network
+                    # G-netの学習
+                    self.sess.run([g_optim_1],feed_dict={ self.input_model:res_t, self.input_model_label:tar })
+                    # Update D network (2times)
+                    # D-netの学習(2回)
+                    self.sess.run([d_optim],feed_dict={self.input_model:res_t, self.input_model_label:tar  })
+                    self.sess.run([d_optim],feed_dict={self.input_model:res_t, self.input_model_label:tar })
+
+                    # saving tensorboard
+                    # tensorboardの保存
+                    if self.tensorboard and counter%tb_interval==0:
+                        hg=self.sess.run(self.g_loss_sum_1,feed_dict={self.input_model:res_t, self.input_model_label:tar  })
+                        hd = self.sess.run(self.d_loss_sum,feed_dict={self.input_model: res_t, self.input_model_label: tar})
+                        self.writer.add_summary(hg, counter//tb_interval+ti*epoch)
+                        self.writer.add_summary(hd, counter//tb_interval+ti*epoch)
+
                     counter+=1
-                resorce_te= batch_images[0,1,:].reshape(1,-1,1)
-                target_te= batch_images[0,0,:].reshape(1,-1,1)
-                cv1,_=self.convert(resorce_te)
-                score2,dp=self.sess.run([self.d_judge_F1,self.d_scale],feed_dict={ self.input_wave_sour:resorce_te ,self.input_wave_fake:cv1 ,self.input_wave_real:target_te })
-                wds=np.mean((score2))*np.mean((dp))
-                if math.isnan(wds):
-                    wds=0.0
-                self.sess.run([d_optim],feed_dict={self.input_wave_sour:resorce_te ,self.input_wave_fake:cv1 ,self.input_wave_real:target_te  })
-                self.sess.run([d_optim],feed_dict={self.input_wave_sour:resorce_te ,self.input_wave_fake:cv1 ,self.input_wave_real:target_te  })
-                hd,_=self.sess.run([self.d_loss_sum,d_optim],feed_dict={self.input_wave_sour:resorce_te ,self.input_wave_fake:cv1 ,self.input_wave_real:target_te  })
-            self.save(args.checkpoint_dir, epoch+1)
-            self.experiment.metric("errD",dps/batch_idxs)
+
+            #saving model
+            #モデルの保存
+            self.save(args.checkpoint_dir, epoch)
+
+
+            #testing
+            #テスト
             out_puts,taken_time=self.convert(test.reshape(1,-1,1))
             out_put=(out_puts.astype(np.float32)/32767.0)
+
+            # loss of tesing
+            #テストの誤差
             test1=np.mean(np.abs(out_puts-label.reshape(1,-1,1)))
-            self.experiment.metric("testG",test1)
-            ff="Z://data/"+self.dataset_name+".txt"
-            f=open(ff,'a')
-            f.write("TimeStamped:"+nowtime())
-            f.write(",%2d,%4.1f,%f,%f\n" % (epoch+1,time.time() - start_time,(dps/batch_idxs),(test1)))
-            f.close()
-            rs=self.sess.run(self.rrs,feed_dict={ self.exps:out_put.reshape(1,1,-1),self.g_test_epo_1:(test1),self.d_score_epo:(dps/batch_idxs)})
-            self.writer.add_summary(rs, epoch+1)
-            print("test taken: %f secs" % (taken_time))
-            upload(out_puts,"_u")
-            upload(cv1,"_w")
-            start_time = time.time()
-        self.experiment.end()
 
-    def discriminator(self,inp,reuse):
-        inputs=tf.cast(inp, tf.float32)
-        h1 = tf.nn.leaky_relu(tf.layers.conv1d(inputs, 4,4, strides=2, padding="VALID",data_format="channels_last",name="dis_01",reuse=reuse))
-        h2 = tf.nn.leaky_relu(tf.layers.conv1d(tf.layers.batch_normalization(h1,training=True), 8,4, strides=2, padding="VALID",data_format="channels_last",name="dis_02",reuse=reuse))
-        h3 = tf.nn.leaky_relu(tf.layers.conv1d(tf.layers.batch_normalization(h2,training=True), 16,4, strides=2, padding="VALID",data_format="channels_last",name="dis_03",reuse=reuse))
-        h4 = tf.nn.leaky_relu(tf.layers.conv1d(tf.layers.batch_normalization(h3,training=True), 32,4, strides=2, padding="VALID",data_format="channels_last",name="dis_04",reuse=reuse))
-        h4=tf.reshape(h4, [1,-1])
-        ten=tf.layers.dense(h4,1,name="dence",reuse=reuse)
-        return ten
-    def generator(self,current_outputs,reuse,name):
-        if reuse:
-            tf.get_variable_scope().reuse_variables()
-        else:
-            assert tf.get_variable_scope().reuse == False
+            #hyperdash
+            if self.hyperdash:
+                self.experiment.metric("testG",test1)
 
-        current=current_outputs
+            #writing epoch-result into tensorboard
+            #tensorboardの書き込み
+            if self.tensorboard:
+                rs=self.sess.run(self.tb_results,feed_dict={ self.result:out_put.reshape(1,1,-1),self.g_test_epo:test1})
+                self.writer.add_summary(rs, epoch)
 
-        connections=[ ]
+            #saving test result
+            #テストの結果の保存
+            if self.wave_output is not "FALSE":
+                upload(out_puts,self.wave_output)
 
-        for i in range(self.depth):
-            current=self.down_layer(current,self.CHANNELS[i+1])
-            connections.append(current)
-        for i in range(self.depth):
-            current+=connections[self.depth-i-1]
-            current=self.up_layer(current,self.CHANNELS[self.depth-i-1],i!=(self.depth-1),self.depth-i-1>2)
-        return current
-    def up_layer(self,current,output_shape,bn,do):
-        ten=tf.nn.leaky_relu(current)
-        ten=tf.layers.conv2d_transpose(ten, output_shape,kernel_size=4 ,strides=(1,1), padding="SAME",kernel_initializer=tf.contrib.layers.xavier_initializer(),data_format="channels_last")
-        if(bn):
-            ten=tf.layers.batch_normalization(ten,axis=3,training=True,gamma_initializer=tf.random_normal_initializer(1.0, 0.2))
-        if(do):
-            ten=tf.nn.dropout(ten, 0.5)
-        return ten
-    def down_layer(self,current,output_shape):
-        ten=tf.layers.batch_normalization(current,axis=3,training=True,gamma_initializer=tf.random_normal_initializer(1.0, 0.2))
-        ten=tf.layers.conv2d(ten, output_shape,kernel_size=4 ,strides=(1,1), padding="SAME",kernel_initializer=tf.contrib.layers.xavier_initializer(),data_format="channels_last")
-        ten=tf.nn.leaky_relu(ten)
-        return ten
+            #console outputs
+            taken_time = time.time() - start_time
+            print(" [*] Epoch %5d finished in %.2f" % (epoch,taken_time))
+            start_time=time.time()
+
+        #hyperdash
+        if self.hyperdash:
+            self.experiment.end()
+        print(" [*] Finished!! on "+nowtime())
+
     def save(self, checkpoint_dir, step):
         model_name = "wave2wave.model"
         model_dir = "%s_%s_%s layers" % (self.dataset_name, self.batch_size,self.depth)
@@ -282,70 +358,103 @@ class Model:
             return True
         else:
             return False
-def fft(data):
-    rate=16000
-    NFFT=64
-    time_song=float(data.shape[0])/rate
-    time_unit=1/rate
-    start=0
-    stop=time_song
-    step=(NFFT//2)*time_unit
-    time_ruler=np.arange(start,stop,step)
-    window=np.hamming(NFFT)
-    spec=np.zeros([len(time_ruler),(NFFT),2])
-    pos=0
-    for fft_index in range(len(time_ruler)):
-        frame=data[pos:pos+NFFT]/32767.0
-        if len(frame)==NFFT:
-            wined=frame*window
-            fft=np.fft.fft(wined)
-            fft_data=np.asarray([fft.real,fft.imag])
-            fft_data=np.transpose(fft_data, (1,0))
-            for i in range(len(spec[fft_index])):
-                spec[fft_index][i]=fft_data[i]
-            pos+=NFFT//2
-    return spec
-def ifft(data):
-    data=data[:,:,0]+1j*data[:,:,1]
-    time_ruler=data.shape[0]
-    window=np.hamming(64)
-    spec=np.zeros([])
-    lats = np.zeros([32])
-    pos=0
-    for _ in range(time_ruler):
-        frame=data[pos]
-        fft=np.fft.ifft(frame)
-        fft_data=fft.real
-        fft_data/=window
-        v = lats + fft_data[:32]
-        lats = fft_data[32:]
-        spec=np.append(spec,v)
-        pos+=1
-    return spec[1:]
+    def fft(self,data):
+        rate=16000
+        time_song=float(data.shape[0])/rate
+        time_unit=1/rate
+        start=0
+        stop=time_song
+        step=(self.NFFT//2)*time_unit
+        time_ruler=np.arange(start,stop,step)
+        window=np.hamming(self.NFFT)
+        spec=np.zeros([len(time_ruler),self.NFFT,2])
+        pos=0
+        for fft_index in range(len(time_ruler)):
+            frame=data[pos:pos+self.NFFT]/32767.0
+            if len(frame)==self.NFFT:
+                wined=frame*window
+                fft_result=np.fft.fft(wined)
+                fft_data=np.asarray([fft_result.real,fft_result.imag])
+                fft_data=np.transpose(fft_data, (1,0))
+                for i in range(len(spec[fft_index])):
+                    spec[fft_index][i]=fft_data[i]
+                pos+=self.NFFT//2
+        return spec
+    def ifft(self,data):
+        data=data[:,:,0]+1j*data[:,:,1]
+        time_ruler=data.shape[0]
+        window=np.hamming(self.NFFT)
+        spec=np.zeros([])
+        lats = np.zeros([self.NFFT//2])
+        pos=0
+        for _ in range(time_ruler):
+            frame=data[pos]
+            fft_result=np.fft.ifft(frame)
+            fft_data=fft_result.real
+            fft_data/=window
+            v = lats + fft_data[:self.NFFT//2]
+            lats = fft_data[self.NFFT//2:]
+            spec=np.append(spec,v)
+            pos+=1
+        return spec[1:]
+
+#model architectures
+
+def discriminator(inp,reuse):
+    inputs=tf.cast(inp, tf.float32)
+    h1 = tf.nn.leaky_relu(tf.layers.conv2d(inputs, 4,2, strides=2, padding="VALID",data_format="channels_last",name="dis_01",reuse=reuse))
+    h2 = tf.nn.leaky_relu(tf.layers.conv2d(h1, 8,4, strides=4, padding="VALID",data_format="channels_last",name="dis_02",reuse=reuse))
+    h3 = tf.nn.leaky_relu(tf.layers.conv2d(h2, 16,8, strides=8, padding="VALID",data_format="channels_last",name="dis_03",reuse=reuse))
+    h4 = tf.nn.leaky_relu(tf.layers.conv2d(h3, 4,16, strides=1, padding="VALID",data_format="channels_last",name="dis_04",reuse=reuse))
+    h4=tf.reshape(h4, [1,-1])
+    ten=tf.layers.dense(h4,1,name="dence",reuse=reuse)
+    ot=tf.nn.sigmoid(ten)
+    return ot,ten
+
+def generator(current_outputs,reuse,depth,chs):
+    if reuse:
+        tf.get_variable_scope().reuse_variables()
+    else:
+        assert tf.get_variable_scope().reuse == False
+    current=current_outputs
+    connections=[ ]
+    for i in range(depth):
+        current=down_layer(current,chs[i+1])
+        connections.append(current)
+    for i in range(depth):
+        current+=connections[depth-i-1]
+        current=up_layer(current,chs[depth-i-1],i!=(depth-1),depth-i-1>2)
+    return current
+
+def up_layer(current,output_shape,bn=True,do=False):
+    ten=tf.nn.leaky_relu(current)
+    ten=tf.layers.conv2d_transpose(ten, output_shape,kernel_size=4 ,strides=(1,1), padding="SAME",kernel_initializer=tf.contrib.layers.xavier_initializer(),data_format="channels_last")
+    if bn:
+        ten=tf.layers.batch_normalization(ten,axis=3,training=True,gamma_initializer=tf.random_normal_initializer(1.0, 0.2))
+    if do:
+        ten=tf.nn.dropout(ten, 0.5)
+    return ten
+def down_layer(current,output_shape):
+    ten=tf.layers.batch_normalization(current,axis=3,training=True,gamma_initializer=tf.random_normal_initializer(1.0, 0.2))
+    ten=tf.layers.conv2d(ten, output_shape,kernel_size=4 ,strides=(1,1), padding="SAME",kernel_initializer=tf.contrib.layers.xavier_initializer(),data_format="channels_last")
+    ten=tf.nn.leaky_relu(ten)
+    return ten
+
 def nowtime():
     return datetime.now().strftime("%Y_%m_%d %H_%M_%S")
-def upload(voice,strs):
+
+def upload(voice,to):
     voiced=voice.astype(np.int16)
     p=pyaudio.PyAudio()
     FORMAT = pyaudio.paInt16
-    ww = wave.open("Z://waves/"+nowtime()+strs+".wav", 'wb')
+    ww = wave.open(to+nowtime()+".wav", 'wb')
     ww.setnchannels(1)
     ww.setsampwidth(p.get_sample_size(FORMAT))
     ww.setframerate(16000)
     ww.writeframes(voiced.reshape(-1).tobytes())
     ww.close()
     p.terminate()
-def load_data(image_path):
-    images = imread(image_path)
-    # img_AB shape: (fine_size, fine_size, input_c_dim + output_c_dim)
-    return images
-def nos(ar):
-    s=ar.shape[1]
-    if random.randint(0,2)==0:
-        ar+=(np.random.rand(ar.shape[0],ar.shape[1],ar.shape[2])*4-2).astype(np.int16)
-    i=random.randint(0,80)
-    ar=np.pad(ar, ((0,0),(i,0),(0,0)), "constant")[:,0:s,:]
-    return ar
+
 def imread(path):
     wf = wave.open(path, 'rb')
     ans=np.empty([],dtype=np.int16)
