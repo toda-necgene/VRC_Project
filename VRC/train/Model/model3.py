@@ -67,9 +67,9 @@ class Model:
         #L1 norm loss
         L1=tf.reduce_mean(tf.abs(self.input_model_label-self.fake_B_image))
         #Gan loss
-        DS=tf.reduce_mean(tf.pow(self.d_judge_F1-1,2)*0.5)
+        DS=tf.reduce_mean(-tf.log(self.d_judge_F1+1e-24))
         #generator loss
-        self.g_loss_1=L1+DS
+        self.g_loss_1=L1*100+DS
 
         #objective-functions of discriminator
         #D-netの目的関数
@@ -158,14 +158,14 @@ class Model:
         lr_g_opt=2e-4
         beta_g_opt=0.5
         beta_2_g_opt=0.999
-        lr_d_opt=2e-4
+        lr_d_opt=2e-5
         beta_d_opt=0.1
 
         # naming output-directory
         # 出力ディレクトリ
         self.lod="[glr="+str(lr_g_opt)+",gb="+str(beta_g_opt)+",dlr="+str(lr_d_opt)+",db="+str(beta_d_opt)+"]"
         g_optim_1 =tf.train.AdamOptimizer(lr_g_opt,beta_g_opt,beta_2_g_opt).minimize(self.g_loss_1, var_list=self.g_vars_1)
-        d_optim = tf.train.AdamOptimizer(lr_d_opt,beta_d_opt).minimize(self.d_loss, var_list=self.d_vars)
+        d_optim = tf.train.RMSPropOptimizer(lr_d_opt,beta_d_opt).minimize(self.d_loss, var_list=self.d_vars)
 
         # initialize variables
         # 変数の初期化
