@@ -18,6 +18,7 @@ class Model:
         self.train_epoch=500
         self.input_ch=1
         self.NFFT=64
+        self.test=True
         self.tensorboard = True
         self.hyperdash =True
         self.wave_output="z://waves/"
@@ -43,7 +44,7 @@ class Model:
         #creating generator
         #G-net（生成側）の作成
         with tf.variable_scope("generator_1"):
-            self.fake_B_image=generator(tf.reshape(self.input_model,[self.batch_size,256,64,1]), reuse=False,chs=self.CHANNELS,depth=self.depth)
+            self.fake_B_image=generator(self.input_model, reuse=False,chs=self.CHANNELS,depth=self.depth)
 
         #creating discriminator inputs
         #D-netの入力の作成
@@ -66,9 +67,9 @@ class Model:
         #L1 norm loss
         L1=tf.reduce_mean(tf.abs(self.input_model_label-self.fake_B_image))
         #Gan loss
-        DS=tf.reduce_mean(tf.pow(self.d_judge_F1-1,2)*0.5)
+        DS=tf.reduce_mean(-tf.log(self.d_judge_F1+1e-24))
         #generator loss
-        self.g_loss_1=L1+DS
+        self.g_loss_1=L1*100+DS
 
         #objective-functions of discriminator
         #D-netの目的関数
@@ -157,14 +158,14 @@ class Model:
         lr_g_opt=2e-4
         beta_g_opt=0.5
         beta_2_g_opt=0.999
-        lr_d_opt=2e-4
+        lr_d_opt=2e-5
         beta_d_opt=0.1
 
         # naming output-directory
         # 出力ディレクトリ
         self.lod="[glr="+str(lr_g_opt)+",gb="+str(beta_g_opt)+",dlr="+str(lr_d_opt)+",db="+str(beta_d_opt)+"]"
         g_optim_1 =tf.train.AdamOptimizer(lr_g_opt,beta_g_opt,beta_2_g_opt).minimize(self.g_loss_1, var_list=self.g_vars_1)
-        d_optim = tf.train.AdamOptimizer(lr_d_opt,beta_d_opt).minimize(self.d_loss, var_list=self.d_vars)
+        d_optim = tf.train.RMSPropOptimizer(lr_d_opt,beta_d_opt).minimize(self.d_loss, var_list=self.d_vars)
 
         # initialize variables
         # 変数の初期化
@@ -298,30 +299,30 @@ class Model:
             #モデルの保存
             self.save(args.checkpoint_dir, epoch)
 
+            if self.test:
+                #testing
+                #テスト
+                out_puts,taken_time=self.convert(test.reshape(1,-1,1))
+                out_put=(out_puts.astype(np.float32)/32767.0)
 
-            #testing
-            #テスト
-            out_puts,taken_time=self.convert(test.reshape(1,-1,1))
-            out_put=(out_puts.astype(np.float32)/32767.0)
+                # loss of tesing
+                #テストの誤差
+                test1=np.mean(np.abs(out_puts-label.reshape(1,-1,1)))
 
-            # loss of tesing
-            #テストの誤差
-            test1=np.mean(np.abs(out_puts-label.reshape(1,-1,1)))
+                #hyperdash
+                if self.hyperdash:
+                    self.experiment.metric("testG",test1)
 
-            #hyperdash
-            if self.hyperdash:
-                self.experiment.metric("testG",test1)
+                #writing epoch-result into tensorboard
+                #tensorboardの書き込み
+                if self.tensorboard:
+                    rs=self.sess.run(self.tb_results,feed_dict={ self.result:out_put.reshape(1,1,-1),self.g_test_epo:test1})
+                    self.writer.add_summary(rs, epoch)
 
-            #writing epoch-result into tensorboard
-            #tensorboardの書き込み
-            if self.tensorboard:
-                rs=self.sess.run(self.tb_results,feed_dict={ self.result:out_put.reshape(1,1,-1),self.g_test_epo:test1})
-                self.writer.add_summary(rs, epoch)
-
-            #saving test result
-            #テストの結果の保存
-            if self.wave_output is not "FALSE":
-                upload(out_puts,self.wave_output)
+                #saving test result
+                #テストの結果の保存
+                if self.wave_output is not "FALSE":
+                    upload(out_puts,self.wave_output)
 
             #console outputs
             taken_time = time.time() - start_time
@@ -402,10 +403,10 @@ class Model:
 
 def discriminator(inp,reuse):
     inputs=tf.cast(inp, tf.float32)
-    h1 = tf.nn.leaky_relu(tf.layers.conv2d(inputs, 4,2, strides=2, padding="VALID",data_format="channels_last",name="dis_01",reuse=reuse))
-    h2 = tf.nn.leaky_relu(tf.layers.conv2d(h1, 8,4, strides=4, padding="VALID",data_format="channels_last",name="dis_02",reuse=reuse))
-    h3 = tf.nn.leaky_relu(tf.layers.conv2d(h2, 16,8, strides=8, padding="VALID",data_format="channels_last",name="dis_03",reuse=reuse))
-    h4 = tf.nn.leaky_relu(tf.layers.conv2d(h3, 4,16, strides=1, padding="VALID",data_format="channels_last",name="dis_04",reuse=reuse))
+    h1 = tf.nn.leaky_relu(tf.layers.conv2d(inputs, 4,[8,4], strides=[4,2], padding="VALID",data_format="channels_last",name="dis_01",reuse=reuse))
+    h2 = tf.nn.leaky_relu(tf.layers.conv2d(h1, 8,[8,4], strides=[4,2], padding="VALID",data_format="channels_last",name="dis_02",reuse=reuse))
+    h3 = tf.nn.leaky_relu(tf.layers.conv2d(h2, 16,[8,4], strides=[4,2], padding="VALID",data_format="channels_last",name="dis_03",reuse=reuse))
+    h4 = tf.nn.leaky_relu(tf.layers.conv2d(h3, 32,[6,6], strides=1, padding="VALID",data_format="channels_last",name="dis_04",reuse=reuse))
     h4=tf.reshape(h4, [1,-1])
     ten=tf.layers.dense(h4,1,name="dence",reuse=reuse)
     ot=tf.nn.sigmoid(ten)
@@ -419,11 +420,12 @@ def generator(current_outputs,reuse,depth,chs):
     current=current_outputs
     connections=[ ]
     for i in range(depth):
-        current=down_layer(current,chs[i+1])
         connections.append(current)
+        current = down_layer(current, chs[i+1])
     for i in range(depth):
-        current+=connections[depth-i-1]
         current=up_layer(current,chs[depth-i-1],i!=(depth-1),depth-i-1>2)
+        if i!=depth-1:
+            current += connections[depth - i - 1]
     return current
 
 def up_layer(current,output_shape,bn=True,do=False):
