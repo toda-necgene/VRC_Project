@@ -2,20 +2,14 @@ import pyaudio
 import numpy as np
 import wave
 import matplotlib.pyplot as pl
-NFFT=64
-
+NFFT=512
+SHIFT=NFFT//2
 def fft(data):
-    rate=16000
-    time_song=float(data.shape[0])/rate
-    time_unit=1/rate
-    start=0
-    stop=time_song
-    step=(NFFT//2)*time_unit
-    time_ruler=np.arange(start,stop,step)
+    time_ruler=data.shape[0]//SHIFT-1
     window=np.hamming(NFFT)
-    spec=np.zeros([len(time_ruler),(NFFT),2])
+    spec=np.zeros([time_ruler,NFFT,2])
     pos=0
-    for fft_index in range(len(time_ruler)):
+    for fft_index in range(time_ruler):
         frame=data[pos:pos+NFFT]
         if len(frame)==NFFT:
             wined=frame*window
@@ -71,27 +65,32 @@ mod=80000//5
 rate=16000
 
 b=np.empty([])
-times=data_realA.shape[0]//8192+1
-if data_realA.shape[0]%8192==0:
+ab=np.empty([0,NFFT,2])
+term=16384
+times=data_realA.shape[0]//term+1
+if data_realA.shape[0]%16384==0:
     times-=1
 for i in range(times):
-    data_realAb = data_realA[8192*i:min([8192*(i+1),data_realA.shape[0]-1])]
-    r=8192-data_realAb.shape[0]
+    ind=SHIFT+term
+    data_realAb = data_realA[max(term*i-SHIFT,0):min([term*(i+1),data_realA.shape[0]-1])]
+    r=ind-data_realAb.shape[0]
     if r>0:
         data_realAb=np.pad(data_realAb,(0,r),"constant")
     a=fft(data_realAb/32767.0)
+    ab = np.append(ab, a,axis=0)
     s=ifft(a)
     print(s.shape)
     b=np.append(b,s)
 # print(a)
-b=(b[1:]*(32767/8)).astype(np.int16)
+b=(b[1:data_realA.shape[0]+1]*32767/2).astype(np.int16)
 pl.subplot(3,1,1)
 pl.plot(data_realA/32767.0)
 pl.subplot(3,1,2)
-pl.plot(b/5)
+pl.plot(b/32767.0)
 pl.subplot(3,1,3)
-c=np.log(np.transpose(np.abs(a[:,:,0]+1j*a[:,:,1]),[1,0])**2+1e-16)
+c=np.log(np.transpose(np.power(ab[:,:,0],2)+np.power(ab[:,:,1],2),[1,0])+1e-8)
 pl.imshow(c)
+pl.colorbar()
 p = pyaudio.PyAudio()
 ww = wave.open("B.wav", 'wb')
 ww.setnchannels(1)
