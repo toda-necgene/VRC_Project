@@ -34,6 +34,7 @@ class Model:
         self.args["channels"] =[2]
         self.args["model_name"] = "wave2wave"
         self.args["version"] = "1.0.0"
+        self.args["log_eps"] = 1e-8
         self.args["g_lr"]=2e-4
         self.args["g_b1"] = 0.5
         self.args["g_b2"] = 0.999
@@ -61,11 +62,12 @@ class Model:
         if len(self.args["channels"]) != (self.args['depth'] + 1):
             print(" [!] Channels length and depth+1 must be equal ." + str(len(self.args["channels"])) + "vs" + str(self.args['depth'] + 1))
             self.args["channels"] = [min([4 ** (i + 1) - 2, 254]) for i in range(self.args['depth'] + 1)]
-
+        self.args["SHIFT"] = self.args["NFFT"]//2
         ss=int(self.args["input_size"])*2//int(self.args["NFFT"])
         self.args["name_save"] = self.args["model_name"] + self.args["version"]
 
         self.input_size_model=[self.args["batch_size"],ss,self.args["NFFT"],2]
+        print("model input size:"+str(self.input_size_model))
         self.sess=tf.InteractiveSession(config=tf.ConfigProto(gpu_options=tf.GPUOptions(per_process_gpu_memory_fraction=0.85)))
         if bool(self.args["debug"]):
             self.sess=tf_debug.LocalCLIDebugWrapperSession(self.sess)
@@ -84,7 +86,7 @@ class Model:
 
         #前処理
         self.input_model_p=tf.pow(self.input_model[:,:,:,0],2)+tf.pow(self.input_model[:,:,:,1],2)
-        self.input_model_2=tf.reshape(tf.log(self.input_model_p+1e-10),[self.input_size_model[0],self.input_size_model[1],self.input_size_model[2],1])
+        self.input_model_2=tf.reshape(tf.log(self.input_model_p+self.args["log_eps"]),[self.input_size_model[0],self.input_size_model[1],self.input_size_model[2],1])
 
         #creating generator
         #G-net（生成側）の作成
@@ -93,11 +95,15 @@ class Model:
 
         self.noise = tf.placeholder(tf.float32, [self.args["batch_size"]], "inputs_Noise")
 
-        b_true=self.input_model_label+tf.random_normal(self.input_model_label.shape,0,self.noise)
+        b_true_noised=self.input_model_label+tf.random_normal(self.input_model_label.shape,0,self.noise)
+        p = tf.pow(b_true_noised[:, :, :, 0], 2) + tf.pow(b_true_noised[:, :, :, 1], 2)
+        b_true=tf.reshape(tf.log(p+self.args["log_eps"]),[self.input_size_model[0],self.input_size_model[1],self.input_size_model[2],1])
+        pp=tf.pow(self.fake_B_image[:, :, :, 0], 2) + tf.pow(self.fake_B_image[:, :, :, 1], 2)
+        b_fake=tf.reshape(tf.log(pp+self.args["log_eps"]),[self.input_size_model[0],self.input_size_model[1],self.input_size_model[2],1])
         #creating discriminator inputs
         #D-netの入力の作成
-        self.res1=tf.concat([self.input_model,self.fake_B_image], axis=1)
-        self.res2=tf.concat([self.input_model,b_true], axis=1)
+        self.res1=tf.concat([self.input_model_2,b_fake], axis=1)
+        self.res2=tf.concat([self.input_model_2,b_true], axis=1)
         #creating discriminator
         #D-net（判別側)の作成
         with tf.variable_scope("discrim",reuse=tf.AUTO_REUSE):
@@ -113,11 +119,11 @@ class Model:
         #G-netの目的関数
 
         #L1 norm loss
-        L1=tf.reduce_mean(tf.abs(self.input_model_label-self.fake_B_image))
+        L1=tf.reduce_mean(tf.pow(self.input_model_label-self.fake_B_image,2)*0.5)
         #Gan loss
         DS=tf.reduce_mean(tf.pow(self.d_judge_F1-1,2)*0.5)
         #generator loss
-        self.g_loss_1=L1*2+DS
+        self.g_loss_1=L1*5+DS
 
         a=1-self.noise
         b=0
@@ -154,6 +160,7 @@ class Model:
 
 
         tt=time.time()
+        ipt=self.args["SHIFT"]+self.args["input_size"]
         times=in_put.shape[1]//(self.args["input_size"])+1
         if in_put.shape[1]%(self.args["input_size"]*self.args["batch_size"])==0:
             times-=1
@@ -165,13 +172,13 @@ class Model:
             # Padiing
             # サイズ合わせ
             red=np.zeros((self.args["batch_size"]-1,self.args["input_size"]))
-            start_pos=self.args["input_size"]*t+((in_put.shape[1])%self.args["input_size"])
-            resorce=np.reshape(in_put[0,max(0,start_pos-self.args["input_size"]):start_pos,0],(1,-1))
-            r=max(0,self.args["input_size"]-resorce.shape[1])
+            start_pos=self.args["input_size"]*(t+1)-((in_put.shape[1])%self.args["input_size"])
+            resorce=np.reshape(in_put[0,max(0,start_pos-ipt):start_pos,0],(1,-1))
+            r=max(0,ipt-resorce.shape[1])
             if r>0:
                 resorce=np.pad(resorce,((0,0),(r,0)),'constant')
             red=np.append(resorce,red)
-            red=red.reshape((self.args["batch_size"],self.args["input_size"]))
+            red=red.reshape((self.args["batch_size"],ipt))
             res=np.zeros(self.input_size_model)
 
             # FFT
@@ -190,7 +197,7 @@ class Model:
 
             # IFFT
             # 短時間高速離散逆フーリエ変換
-            res=self.ifft(res[0])*32767
+            res=self.ifft(res[0])*32767/2
 
             # chaching results
             # 結果の保存
@@ -273,7 +280,7 @@ class Model:
             # エポック情報の初期化
             log_data_g=np.empty(0)
             log_data_d =np.empty(0)
-
+            ipt = self.args["SHIFT"] + self.args["input_size"]
             counter=0
 
             print(" [*] Epoch %3d started" % epoch)
@@ -303,12 +310,12 @@ class Model:
 
                     # calculating starting position
                     # 開始位置の計算
-                    start_pos=self.args["input_size"]*t+(80000%self.args["input_size"])
+                    start_pos=self.args["input_size"]*(t+1)-(80000%self.args["input_size"])
 
                     # getting training data
                     # トレーニングデータの取得
-                    target=np.reshape(batch_sounds[:,0,max(0,start_pos-self.args["input_size"]):start_pos],(self.args["batch_size"],-1))
-                    resorce=np.reshape(batch_sounds[:,1,max(0,start_pos-self.args["input_size"]):start_pos],(self.args["batch_size"],-1))
+                    target=np.reshape(batch_sounds[:,0,max(0,start_pos-ipt):start_pos],(self.args["batch_size"],-1))
+                    resorce=np.reshape(batch_sounds[:,1,max(0,start_pos-ipt):start_pos],(self.args["batch_size"],-1))
 
 
                     # preprocessing of input
@@ -316,10 +323,10 @@ class Model:
 
                     # padding
                     # サイズ合わせ
-                    r=max(0,self.args["input_size"]-resorce.shape[1])
+                    r=max(0,ipt-resorce.shape[1])
                     if r>0:
                         resorce=np.pad(resorce,((0,0),(r,0)),'constant')
-                    r=max(0,self.args["input_size"]-target.shape[1])
+                    r=max(0,ipt-target.shape[1])
                     if r>0:
                         target=np.pad(target,((0,0),(r,0)),'constant')
 
@@ -423,33 +430,26 @@ class Model:
         else:
             return False
     def fft(self,data):
-        rate=16000
-        time_song=float(data.shape[0])/rate
-        time_unit=1/rate
-        start=0
-        stop=time_song
-        step=(self.args["NFFT"]//2)*time_unit
-        time_ruler=np.arange(start,stop,step)
+        time_ruler=data.shape[0]//self.args["SHIFT"]-1
         window=np.hamming(self.args["NFFT"])
-        spec=np.zeros([len(time_ruler),self.args["NFFT"],2])
+        spec=np.zeros([time_ruler,self.args["NFFT"],2])
         pos=0
-        for fft_index in range(len(time_ruler)):
+        for fft_index in range(time_ruler):
             frame=data[pos:pos+self.args["NFFT"]]/32767.0
-            if len(frame)==self.args["NFFT"]:
-                wined=frame*window
-                fft_result=np.fft.fft(wined)
-                fft_data=np.asarray([fft_result.real,fft_result.imag])
-                fft_data=np.transpose(fft_data, (1,0))
-                for i in range(len(spec[fft_index])):
-                    spec[fft_index][i]=fft_data[i]
-                pos+=self.args["NFFT"]//2
+            wined=frame*window
+            fft_result=np.fft.fft(wined)
+            fft_data=np.asarray([fft_result.real,fft_result.imag])
+            fft_data=np.transpose(fft_data, (1,0))
+            for i in range(len(spec[fft_index])):
+                spec[fft_index][i]=fft_data[i]
+            pos+=self.args["SHIFT"]
         return spec
     def ifft(self,data):
         data=data[:,:,0]+1j*data[:,:,1]
         time_ruler=data.shape[0]
         window=np.hamming(self.args["NFFT"])
         spec=np.zeros([])
-        lats = np.zeros([self.args["NFFT"]//2])
+        lats = np.zeros(self.args["SHIFT"])
         pos=0
         for _ in range(time_ruler):
             frame=data[pos]
@@ -460,7 +460,7 @@ class Model:
             lats = fft_data[self.args["NFFT"]//2:]
             spec=np.append(spec,v)
             pos+=1
-        return spec[1:]
+        return spec[self.args["SHIFT"]:]
 
 #model architectures
 
@@ -492,11 +492,11 @@ def generator(current_outputs,reuse,depth,chs):
         current=up_layer(current,chs[depth-i-1],i!=(depth-1),depth-i-1>2)
         if i!=depth-1:
             current += connections[depth - i - 1]
-    return tf.nn.tanh(current)
+    return current
 
 def up_layer(current,output_shape,bn=True,do=False):
     ten=tf.nn.leaky_relu(current)
-    ten=tf.layers.conv2d_transpose(ten, output_shape,kernel_size=4 ,strides=(2,2), padding="SAME",kernel_initializer=tf.contrib.layers.xavier_initializer(),data_format="channels_last")
+    ten=tf.layers.conv2d_transpose(ten, output_shape,kernel_size=8 ,strides=(1,1), padding="SAME",kernel_initializer=tf.contrib.layers.xavier_initializer(),data_format="channels_last")
     if bn:
         ten=tf.layers.batch_normalization(ten,axis=3,training=True,gamma_initializer=tf.random_normal_initializer(1.0, 0.2))
     if do:
@@ -504,7 +504,7 @@ def up_layer(current,output_shape,bn=True,do=False):
     return ten
 def down_layer(current,output_shape):
     ten=tf.layers.batch_normalization(current,axis=3,training=True,gamma_initializer=tf.random_normal_initializer(1.0, 0.2))
-    ten=tf.layers.conv2d(ten, output_shape,kernel_size=4 ,strides=(2,2), padding="SAME",kernel_initializer=tf.contrib.layers.xavier_initializer(),data_format="channels_last")
+    ten=tf.layers.conv2d(ten, output_shape,kernel_size=8 ,strides=(1,1), padding="SAME",kernel_initializer=tf.contrib.layers.xavier_initializer(),data_format="channels_last")
     ten=tf.nn.leaky_relu(ten)
     return ten
 
