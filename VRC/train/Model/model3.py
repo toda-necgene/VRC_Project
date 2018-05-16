@@ -11,31 +11,71 @@ import pyaudio
 from hyperdash import Experiment
 import random
 from datetime import datetime
+import json
 class Model:
-    def __init__(self,debug):
-        self.batch_size=1
-        self.depth=6
-        self.train_epoch=500
-        self.input_ch=1
-        self.NFFT=128
-        self.test=True
-        self.tensorboard = True
-        self.hyperdash =True
-        self.log=False
-        self.wave_output="z://waves/"
-        self.input_size=[self.batch_size,8192,1]
-        self.input_size_model=[self.batch_size,128,128,2]
-        self.dataset_name="wave2wave_1.5.0"
-        self.output_size=[self.batch_size,8192,1]
-        self.CHANNELS=[min([2**(i+1),128]) for i in range(self.depth+1)]
+    def __init__(self,path):
+        self.args=dict()
+        self.args["checkpoint_dir"]="./trained_models"
+        self.args["wave_otp_dir"] = "False"
+        self.args["train_data_num"]=500
+        self.args["batch_size"]=1
+        self.args["depth"] =4
+        self.args["train_epoch"]=500
+        self.args["test"]=True
+        self.args["log"] = True
+        self.args["tensorboard"]=False
+        self.args["hyperdash"]=False
+        self.args["stop_argument"]=True
+        self.args["stop_value"] = 0.5
+        self.args["input_size"] = 8192
+        self.args["NFFT"]=128
+        self.args["debug"] = False
+        self.args["noise"] = False
+        self.args["channels"] =[2]
+        self.args["model_name"] = "wave2wave"
+        self.args["version"] = "1.0.0"
+        self.args["g_lr"]=2e-4
+        self.args["g_b1"] = 0.5
+        self.args["g_b2"] = 0.999
+        self.args["d_b1"] = 0.5
+        self.args["d_b2"] = 0.999
+        self.args["train_d_scale"]=1.0
+        self.args["train_interval"]=10
+        if os.path.exists(path):
+            try:
+                with open(path,"r") as f:
+                    data=json.load(f)
+                    keys=data.keys()
+                    for k in keys:
+                        if k in self.args:
+                            if type(self.args[k])==type(data[k]):
+                                self.args[k]=data[k]
+                            else:
+                                print(" [!] Argumet \""+k+"\" is incorrect data type. Please change to \""+str(type(self.args[k]))+"\"")
+                        else:
+                            print(" [!] Argument \"" + k + "\" is not exsits.")
+            except json.JSONDecodeError as e:
+                 print(' [x] JSONDecodeError: ', e)
+        else:
+            print( " [!] Setting file is not found")
+        if len(self.args["channels"]) != (self.args['depth'] + 1):
+            print(" [!] Channels length and depth+1 must be equal ." + str(len(self.args["channels"])) + "vs" + str(self.args['depth'] + 1))
+            self.args["channels"] = [min([4 ** (i + 1) - 2, 254]) for i in range(self.args['depth'] + 1)]
+
+        ss=int(self.args["input_size"])*2//int(self.args["NFFT"])
+        self.args["name_save"] = self.args["model_name"] + self.args["version"]
+
+        self.input_size_model=[self.args["batch_size"],ss,self.args["NFFT"],2]
         self.sess=tf.InteractiveSession(config=tf.ConfigProto(gpu_options=tf.GPUOptions(per_process_gpu_memory_fraction=0.85)))
-        if debug:
+        if bool(self.args["debug"]):
             self.sess=tf_debug.LocalCLIDebugWrapperSession(self.sess)
             self.sess.add_tensor_filter('has_inf_or_nan', has_inf_or_nan)
 
 
 
     def build_model(self):
+
+        #DとGの学習のしやすさの比率は[ G:D = 1:12000 ]
 
         #inputs place holder
         #入力
@@ -49,11 +89,11 @@ class Model:
         #creating generator
         #G-net（生成側）の作成
         with tf.variable_scope("generator_1"):
-            self.fake_B_image=generator(self.input_model_2, reuse=False,chs=self.CHANNELS,depth=self.depth)
+            self.fake_B_image=generator(self.input_model_2, reuse=False,chs=self.args["channels"],depth=self.args["depth"])
 
-        self.noise = tf.placeholder(tf.float32, [self.input_size_model[0]], "inputs_Noise")
+        self.noise = tf.placeholder(tf.float32, [self.args["batch_size"]], "inputs_Noise")
 
-        b_true=self.input_model_label+tf.random_normal(0,self.noise*10)
+        b_true=self.input_model_label+tf.random_normal(self.input_model_label.shape,0,self.noise)
         #creating discriminator inputs
         #D-netの入力の作成
         self.res1=tf.concat([self.input_model,self.fake_B_image], axis=1)
@@ -77,10 +117,10 @@ class Model:
         #Gan loss
         DS=tf.reduce_mean(tf.pow(self.d_judge_F1-1,2)*0.5)
         #generator loss
-        self.g_loss_1=L1*10+DS
+        self.g_loss_1=L1*2+DS
 
         a=1-self.noise
-        b=(1-L1)/50
+        b=0
         #objective-functions of discriminator
         #D-netの目的関数
         self.d_loss_R = tf.reduce_mean(tf.pow(self.d_judge_R-a,2)*0.5)
@@ -114,8 +154,8 @@ class Model:
 
 
         tt=time.time()
-        times=in_put.shape[1]//(self.output_size[1])+1
-        if in_put.shape[1]%(self.output_size[1]*self.batch_size)==0:
+        times=in_put.shape[1]//(self.args["input_size"])+1
+        if in_put.shape[1]%(self.args["input_size"]*self.args["batch_size"])==0:
             times-=1
         otp=np.array([],dtype=np.int16)
         for t in range(times):
@@ -124,19 +164,19 @@ class Model:
 
             # Padiing
             # サイズ合わせ
-            red=np.zeros((self.input_size[0]-1,self.input_size[1],self.input_size[2]))
-            start_pos=self.output_size[1]*t+((in_put.shape[1])%self.output_size[1])
-            resorce=np.reshape(in_put[0,max(0,start_pos-self.input_size[1]):start_pos,0],(1,-1))
-            r=max(0,self.input_size[1]-resorce.shape[1])
+            red=np.zeros((self.args["batch_size"]-1,self.args["input_size"]))
+            start_pos=self.args["input_size"]*t+((in_put.shape[1])%self.args["input_size"])
+            resorce=np.reshape(in_put[0,max(0,start_pos-self.args["input_size"]):start_pos,0],(1,-1))
+            r=max(0,self.args["input_size"]-resorce.shape[1])
             if r>0:
                 resorce=np.pad(resorce,((0,0),(r,0)),'constant')
             red=np.append(resorce,red)
-            red=red.reshape((self.input_size[0],self.input_size[1],self.input_size[2]))
-            res=np.zeros([self.batch_size,128,128,2])
+            red=red.reshape((self.args["batch_size"],self.args["input_size"]))
+            res=np.zeros(self.input_size_model)
 
             # FFT
             # 短時間高速離散フーリエ変換
-            for i in range(self.batch_size):
+            for i in range(self.args["batch_size"]):
                 n=self.fft(red[i].reshape(-1))
                 res[i]=n
 
@@ -164,21 +204,23 @@ class Model:
 
 
 
-    def train(self,args):
-        self.checkpoint_dir=args.checkpoint_dir
+    def train(self):
+        self.checkpoint_dir=self.args["checkpoint_dir"]
         # setting paramaters
         # パラメータ
-        lr_g_opt=2e-6
-        beta_g_opt=0.5
-        beta_2_g_opt=0.999
-        lr_d_opt=2e-6
-        beta_d_opt=0.5
-
+        tln=self.args["train_d_scale"]
+        lr_g_opt=self.args["g_lr"]
+        beta_g_opt=self.args["g_b1"]
+        beta_2_g_opt=self.args["g_b2"]
+        lr_d_opt=lr_g_opt*tln
+        beta_d_opt=self.args["d_b1"]
+        beta_2_d_opt=self.args["d_b2"]
         # naming output-directory
         # 出力ディレクトリ
         self.lod="[glr="+str(lr_g_opt)+",gb="+str(beta_g_opt)+",dlr="+str(lr_d_opt)+",db="+str(beta_d_opt)+"]"
         g_optim_1 =tf.train.AdamOptimizer(lr_g_opt,beta_g_opt,beta_2_g_opt).minimize(self.g_loss_1, var_list=self.g_vars_1)
-        d_optim = tf.train.RMSPropOptimizer(lr_d_opt,beta_d_opt).minimize(self.d_loss, var_list=self.d_vars)
+        d_optim = tf.train.AdamOptimizer(lr_d_opt,beta_d_opt,beta_2_d_opt).minimize(self.d_loss, var_list=self.d_vars)
+        d_optim_R = tf.train.AdamOptimizer(lr_d_opt, beta_d_opt,beta_2_d_opt).minimize(self.d_loss_R, var_list=self.d_vars)
 
         # initialize variables
         # 変数の初期化
@@ -187,13 +229,13 @@ class Model:
 
         # logging
         # ログ出力
-        if self.tensorboard:
-            self.writer = tf.summary.FileWriter("./logs/"+self.lod+self.dataset_name, self.sess.graph)
+        if self.args["tensorboard"]:
+            self.writer = tf.summary.FileWriter("./logs/"+self.lod+self.args["name_save"], self.sess.graph)
 
         # initialize training info
         # 学習の情報の初期化
         start_time = time.time()
-
+        DS=1.0
         # loading net
         # 過去の学習データの読み込み
         if self.load(self.checkpoint_dir):
@@ -212,26 +254,25 @@ class Model:
 
         # times of one epoch
         # 回数計算
-        batch_idxs = min(len(data), args.train_size) // self.batch_size
+        batch_idxs = min(len(data), self.args["train_data_num"]) // self.args["batch_size"]
 
         # hyperdash
-        if self.hyperdash:
-            self.experiment=Experiment(self.dataset_name+"_G1")
+        if self.args["hyperdash"]:
+            self.experiment=Experiment(self.args["name_save"]+"_G1")
             self.experiment.param("lr_g_opt", lr_g_opt)
             self.experiment.param("beta_g_opt", beta_g_opt)
-            self.experiment.param("lr_d_opt", lr_d_opt)
-            self.experiment.param("beta_d_opt", beta_d_opt)
-            self.experiment.param("depth", self.depth)
+            self.experiment.param("training_interval", self.args["train_interval"])
+            self.experiment.param("learning_rate_scale", tln)
 
-        for epoch in range(0,self.train_epoch):
+        for epoch in range(0,self.args["train_epoch"]):
             # shuffling training data
             # トレーニングデータのシャッフル
             np.random.shuffle(data)
 
             # initializing epoch info
             # エポック情報の初期化
-            log_data_g=[]
-            log_data_d = []
+            log_data_g=np.empty(0)
+            log_data_d =np.empty(0)
 
             counter=0
 
@@ -240,14 +281,14 @@ class Model:
             for idx in xrange(0, batch_idxs):
                 # loading trainig data
                 # トレーニングデータの読み込み
-                batch_files = data[idx*self.batch_size:(idx+1)*self.batch_size]
+                batch_files = data[idx*self.args["batch_size"]:(idx+1)*self.args["batch_size"]]
                 batch = np.asarray([(imread(batch_file)) for batch_file in batch_files])
-                batch_sounds = np.array(batch).astype(np.int16).reshape(self.batch_size,2,80000)
+                batch_sounds = np.array(batch).astype(np.int16).reshape(self.args["batch_size"],2,80000)
 
                 # calculating one iteration repetation times
                 # 1イテレーション実行回数計算
-                times=80000//self.output_size[1]
-                if int(80000)%self.output_size[1]==0:
+                times=80000//self.args["input_size"]
+                if int(80000)%self.args["input_size"]==0:
                     times-=1
                 # shuffle start time
                 # 開始タイミングのシャッフル
@@ -255,21 +296,19 @@ class Model:
                 random.shuffle(time_set)
 
 
-                # tensorboard interval
-                # tensorboard保存のインターバル
-                tb_interval=10
-                ti=(batch_idxs*times//tb_interval)
+
+                ti=(batch_idxs*times//self.args["train_interval"])+1
 
                 for t in time_set:
 
                     # calculating starting position
                     # 開始位置の計算
-                    start_pos=self.output_size[1]*t+(80000%self.output_size[1])
+                    start_pos=self.args["input_size"]*t+(80000%self.args["input_size"])
 
                     # getting training data
                     # トレーニングデータの取得
-                    target=np.reshape(batch_sounds[:,0,max(0,start_pos-self.output_size[1]):start_pos],(self.batch_size,-1))
-                    resorce=np.reshape(batch_sounds[:,1,max(0,start_pos-self.input_size[1]):start_pos],(self.batch_size,-1))
+                    target=np.reshape(batch_sounds[:,0,max(0,start_pos-self.args["input_size"]):start_pos],(self.args["batch_size"],-1))
+                    resorce=np.reshape(batch_sounds[:,1,max(0,start_pos-self.args["input_size"]):start_pos],(self.args["batch_size"],-1))
 
 
                     # preprocessing of input
@@ -277,49 +316,52 @@ class Model:
 
                     # padding
                     # サイズ合わせ
-                    r=max(0,self.input_size[1]-resorce.shape[1])
+                    r=max(0,self.args["input_size"]-resorce.shape[1])
                     if r>0:
                         resorce=np.pad(resorce,((0,0),(r,0)),'constant')
-                    r=max(0,self.output_size[1]-target.shape[1])
+                    r=max(0,self.args["input_size"]-target.shape[1])
                     if r>0:
                         target=np.pad(target,((0,0),(r,0)),'constant')
 
                     # FFT
                     # 短時間高速離散フーリエ変換
-                    res=np.zeros([self.batch_size,128,128,2])
-                    tar=np.zeros([self.batch_size,128,128,2])
-                    for i in range(self.batch_size):
+                    res=np.zeros(self.input_size_model)
+                    tar=np.zeros(self.input_size_model)
+                    for i in range(self.args["batch_size"]):
                         res[i]=(self.fft(resorce[i]))
                         tar[i]=(self.fft(target[i]))
-                    res_t=res.reshape([self.batch_size,128,128,2])
+                    res_t=res.reshape(self.input_size_model)
 
                     # Update G network
                     # G-netの学習
                     self.sess.run([g_optim_1],feed_dict={ self.input_model:res_t, self.input_model_label:tar })
                     # Update D network (2times)
                     # D-netの学習(2回)
-                    nos=np.random.rand(self.batch_size)*0.5
-                    self.sess.run([d_optim],feed_dict={self.input_model:res_t, self.input_model_label:tar ,self.noise:nos })
-                    nos = np.random.rand(self.batch_size) * 0.5
-                    self.sess.run([d_optim],feed_dict={self.input_model:res_t, self.input_model_label:tar ,self.noise:nos })
-
+                    if DS>self.args["stop_value"]:
+                        nos=np.random.rand(self.args["batch_size"])*0.5
+                        self.sess.run([d_optim],feed_dict={self.input_model:res_t, self.input_model_label:tar ,self.noise:nos })
+                    nos = np.random.rand(self.args["batch_size"]) * 0.5
+                    self.sess.run([d_optim_R],feed_dict={self.input_model:res_t, self.input_model_label:tar ,self.noise:nos })
                     # saving tensorboard
                     # tensorboardの保存
-                    if self.tensorboard and counter%tb_interval==0:
-                        hg,hd=self.sess.run([self.g_loss_sum_1,self.d_loss_sum],feed_dict={self.input_model:res_t, self.input_model_label:tar  })
-                        self.writer.add_summary(hg, counter//tb_interval+ti*epoch)
-                        self.writer.add_summary(hd, counter//tb_interval+ti*epoch)
-                    if self.log and counter % tb_interval == 0:
-                        hg,hd = self.sess.run([self.g_loss_1,self.d_loss], feed_dict={self.input_model: res_t, self.input_model_label: tar})
-                        log_data_g.append(np.mean(hg))
-                        log_data_d.append(np.mean(hd))
+                    if self.args["tensorboard"] and counter%self.args["train_interval"]==0:
+                        nos = np.random.rand(self.args["batch_size"]) * 0.5
+                        hg,hd=self.sess.run([self.g_loss_sum_1,self.d_loss_sum],feed_dict={self.input_model:res_t, self.input_model_label:tar ,self.noise:nos  })
+                        self.writer.add_summary(hg, counter//self.args["train_interval"]+ti*epoch)
+                        self.writer.add_summary(hd, counter//self.args["train_interval"]+ti*epoch)
+                    if self.args["log"] and counter % self.args["train_interval"] == 0:
+                        nos = np.random.rand(self.args["batch_size"]) * 0.5
+                        hg,hd = self.sess.run([self.g_loss_1,self.d_judge_F1], feed_dict={self.input_model: res_t, self.input_model_label: tar,self.noise:nos })
+                        log_data_g=np.append(log_data_g,np.mean(hg))
+                        log_data_d=np.append(log_data_d,np.mean(hd))
+                        DS=np.mean(hd)
                     counter+=1
 
             #saving model
             #モデルの保存
-            self.save(args.checkpoint_dir, epoch)
+            self.save(self.args["checkpoint_dir"], epoch)
 
-            if self.test:
+            if self.args["test"]:
                 #testing
                 #テスト
                 out_puts,taken_time=self.convert(test.reshape(1,-1,1))
@@ -330,35 +372,35 @@ class Model:
                 test1=np.mean(np.abs(out_puts-label.reshape(1,-1,1)))
 
                 #hyperdash
-                if self.hyperdash:
+                if self.args["hyperdash"]:
                     self.experiment.metric("testG",test1)
+                    if self.args["log"]:
+                        self.experiment.metric("ScoreD", np.mean(log_data_d))
+                        self.experiment.metric("lossG", np.mean(log_data_g))
 
                 #writing epoch-result into tensorboard
                 #tensorboardの書き込み
-                if self.tensorboard:
+                if self.args["tensorboard"]:
                     rs=self.sess.run(self.tb_results,feed_dict={ self.result:out_put.reshape(1,1,-1),self.g_test_epo:test1})
                     self.writer.add_summary(rs, epoch)
 
                 #saving test result
                 #テストの結果の保存
-                if self.wave_output is not "FALSE":
-                    upload(out_puts,self.wave_output)
-                if self.log:
-                    print(log_data_g)
-                    print(log_data_d)
+                if os.path.exists(self.args["wave_otp_dir"]):
+                    upload(out_puts,self.args["wave_otp_dir"])
             #console outputs
             taken_time = time.time() - start_time
             print(" [*] Epoch %5d finished in %.2f" % (epoch,taken_time))
             start_time=time.time()
 
         #hyperdash
-        if self.hyperdash:
+        if self.args["hyperdash"]:
             self.experiment.end()
         print(" [*] Finished!! on "+nowtime())
 
     def save(self, checkpoint_dir, step):
         model_name = "wave2wave.model"
-        model_dir = "%s_%s_%s layers" % (self.dataset_name, self.batch_size,self.depth)
+        model_dir =  self.args["name_save"]
         checkpoint_dir = os.path.join(checkpoint_dir, model_dir)
 
         if not os.path.exists(checkpoint_dir):
@@ -369,8 +411,7 @@ class Model:
                         global_step=step)
     def load(self, checkpoint_dir):
         print(" [*] Reading checkpoint...")
-
-        model_dir = "%s_%s_%s layers" % (self.dataset_name, self.batch_size,self.depth)
+        model_dir = self.args["name_save"]
         checkpoint_dir = os.path.join(checkpoint_dir, model_dir)
 
         ckpt = tf.train.get_checkpoint_state(checkpoint_dir)
@@ -387,36 +428,36 @@ class Model:
         time_unit=1/rate
         start=0
         stop=time_song
-        step=(self.NFFT//2)*time_unit
+        step=(self.args["NFFT"]//2)*time_unit
         time_ruler=np.arange(start,stop,step)
-        window=np.hamming(self.NFFT)
-        spec=np.zeros([len(time_ruler),self.NFFT,2])
+        window=np.hamming(self.args["NFFT"])
+        spec=np.zeros([len(time_ruler),self.args["NFFT"],2])
         pos=0
         for fft_index in range(len(time_ruler)):
-            frame=data[pos:pos+self.NFFT]/32767.0
-            if len(frame)==self.NFFT:
+            frame=data[pos:pos+self.args["NFFT"]]/32767.0
+            if len(frame)==self.args["NFFT"]:
                 wined=frame*window
                 fft_result=np.fft.fft(wined)
                 fft_data=np.asarray([fft_result.real,fft_result.imag])
                 fft_data=np.transpose(fft_data, (1,0))
                 for i in range(len(spec[fft_index])):
                     spec[fft_index][i]=fft_data[i]
-                pos+=self.NFFT//2
+                pos+=self.args["NFFT"]//2
         return spec
     def ifft(self,data):
         data=data[:,:,0]+1j*data[:,:,1]
         time_ruler=data.shape[0]
-        window=np.hamming(self.NFFT)
+        window=np.hamming(self.args["NFFT"])
         spec=np.zeros([])
-        lats = np.zeros([self.NFFT//2])
+        lats = np.zeros([self.args["NFFT"]//2])
         pos=0
         for _ in range(time_ruler):
             frame=data[pos]
             fft_result=np.fft.ifft(frame)
             fft_data=fft_result.real
             fft_data/=window
-            v = lats + fft_data[:self.NFFT//2]
-            lats = fft_data[self.NFFT//2:]
+            v = lats + fft_data[:self.args["NFFT"]//2]
+            lats = fft_data[self.args["NFFT"]//2:]
             spec=np.append(spec,v)
             pos+=1
         return spec[1:]
@@ -426,10 +467,14 @@ class Model:
 def discriminator(inp,reuse):
     inputs=tf.cast(inp, tf.float32)
     h1 = tf.nn.leaky_relu(tf.layers.conv2d(inputs, 4,[4,4], strides=[2,2], padding="VALID",data_format="channels_last",name="dis_01",reuse=reuse))
-    h2 = tf.nn.leaky_relu(tf.layers.conv2d(tf.layers.batch_normalization(h1,training=False), 8,[4,4], strides=[2,2], padding="VALID",data_format="channels_last",name="dis_02",reuse=reuse))
-    h3 = tf.nn.leaky_relu(tf.layers.conv2d(tf.layers.batch_normalization(h2,training=False), 16,[4,4], strides=[2,2], padding="VALID",data_format="channels_last",name="dis_03",reuse=reuse))
-    h4 = tf.nn.leaky_relu(tf.layers.conv2d(tf.layers.batch_normalization(h3,training=False), 32,[6,6], strides=1, padding="VALID",data_format="channels_last",name="dis_04",reuse=reuse))
-    h4=tf.reshape(h4, [1,-1])
+    h1_2 = tf.nn.leaky_relu(tf.layers.conv2d(h1, 8, [1, 1], strides=[1, 1], padding="VALID", data_format="channels_last", name="dis_01_2",reuse=reuse))
+    h2 = tf.nn.leaky_relu(tf.layers.conv2d(tf.layers.batch_normalization(h1_2,training=False), 16,[4,4], strides=[2,2], padding="VALID",data_format="channels_last",name="dis_02",reuse=reuse))
+    h2_2 = tf.nn.leaky_relu(tf.layers.conv2d(tf.layers.batch_normalization(h2, training=False),32, [4, 4], strides=[1, 1],padding="VALID", data_format="channels_last", name="dis_02_2", reuse=reuse))
+    h3 = tf.nn.leaky_relu(tf.layers.conv2d(tf.layers.batch_normalization(h2_2,training=False), 64,[4,4], strides=[2,2], padding="VALID",data_format="channels_last",name="dis_03",reuse=reuse))
+    h3_2 = tf.nn.leaky_relu(tf.layers.conv2d(tf.layers.batch_normalization(h3, training=False), 128, [4, 4], strides=[1, 1], padding="VALID",data_format="channels_last", name="dis_03_2", reuse=reuse))
+    h4 = tf.nn.leaky_relu(tf.layers.conv2d(tf.layers.batch_normalization(h3_2,training=False), 64,[16,6], strides=1, padding="VALID",data_format="channels_last",name="dis_04",reuse=reuse))
+    h4_2 = tf.nn.leaky_relu(tf.layers.conv2d(tf.layers.batch_normalization(h4, training=False), 32, [10, 4], strides=[1, 1], padding="VALID",data_format="channels_last", name="dis_04_2", reuse=reuse))
+    h4=tf.reshape(h4_2, [1,-1])
     ten=tf.layers.dense(h4,1,name="dence",reuse=reuse)
     return ten
 
@@ -451,7 +496,7 @@ def generator(current_outputs,reuse,depth,chs):
 
 def up_layer(current,output_shape,bn=True,do=False):
     ten=tf.nn.leaky_relu(current)
-    ten=tf.layers.conv2d_transpose(ten, output_shape,kernel_size=4 ,strides=(1,1), padding="SAME",kernel_initializer=tf.contrib.layers.xavier_initializer(),data_format="channels_last")
+    ten=tf.layers.conv2d_transpose(ten, output_shape,kernel_size=4 ,strides=(2,2), padding="SAME",kernel_initializer=tf.contrib.layers.xavier_initializer(),data_format="channels_last")
     if bn:
         ten=tf.layers.batch_normalization(ten,axis=3,training=True,gamma_initializer=tf.random_normal_initializer(1.0, 0.2))
     if do:
@@ -459,7 +504,7 @@ def up_layer(current,output_shape,bn=True,do=False):
     return ten
 def down_layer(current,output_shape):
     ten=tf.layers.batch_normalization(current,axis=3,training=True,gamma_initializer=tf.random_normal_initializer(1.0, 0.2))
-    ten=tf.layers.conv2d(ten, output_shape,kernel_size=4 ,strides=(1,1), padding="SAME",kernel_initializer=tf.contrib.layers.xavier_initializer(),data_format="channels_last")
+    ten=tf.layers.conv2d(ten, output_shape,kernel_size=4 ,strides=(2,2), padding="SAME",kernel_initializer=tf.contrib.layers.xavier_initializer(),data_format="channels_last")
     ten=tf.nn.leaky_relu(ten)
     return ten
 
