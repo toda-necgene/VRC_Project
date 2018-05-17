@@ -84,26 +84,18 @@ class Model:
         self.input_model=tf.placeholder(tf.float32, self.input_size_model, "inputs_G-net")
         self.input_model_label=tf.placeholder(tf.float32, self.input_size_model, "inputs_GD-net_target_label")
 
-        #前処理
-        self.input_model_p=tf.pow(self.input_model[:,:,:,0],2)+tf.pow(self.input_model[:,:,:,1],2)
-        self.input_model_2=tf.reshape(tf.log(self.input_model_p+self.args["log_eps"]),[self.input_size_model[0],self.input_size_model[1],self.input_size_model[2],1])
-
         #creating generator
         #G-net（生成側）の作成
         with tf.variable_scope("generator_1"):
-            self.fake_B_image=generator(self.input_model_2, reuse=False,chs=self.args["channels"],depth=self.args["depth"])
+            self.fake_B_image=generator(self.input_model, reuse=False,chs=self.args["channels"],depth=self.args["depth"])
 
         self.noise = tf.placeholder(tf.float32, [self.args["batch_size"]], "inputs_Noise")
 
         b_true_noised=self.input_model_label+tf.random_normal(self.input_model_label.shape,0,self.noise)
-        p = tf.pow(b_true_noised[:, :, :, 0], 2) + tf.pow(b_true_noised[:, :, :, 1], 2)
-        b_true=tf.reshape(tf.log(p+self.args["log_eps"]),[self.input_size_model[0],self.input_size_model[1],self.input_size_model[2],1])
-        pp=tf.pow(self.fake_B_image[:, :, :, 0], 2) + tf.pow(self.fake_B_image[:, :, :, 1], 2)
-        b_fake=tf.reshape(tf.log(pp+self.args["log_eps"]),[self.input_size_model[0],self.input_size_model[1],self.input_size_model[2],1])
         #creating discriminator inputs
         #D-netの入力の作成
-        self.res1=tf.concat([self.input_model_2,b_fake], axis=1)
-        self.res2=tf.concat([self.input_model_2,b_true], axis=1)
+        self.res1=tf.concat([self.input_model,self.fake_B_image], axis=1)
+        self.res2=tf.concat([self.input_model,b_true_noised], axis=1)
         #creating discriminator
         #D-net（判別側)の作成
         with tf.variable_scope("discrim",reuse=tf.AUTO_REUSE):
@@ -126,7 +118,7 @@ class Model:
         self.g_loss_1=L1*5+DS
 
         a=1-self.noise
-        b=0
+        b=-1
         #objective-functions of discriminator
         #D-netの目的関数
         self.d_loss_R = tf.reduce_mean(tf.pow(self.d_judge_R-a,2)*0.5)
@@ -438,14 +430,20 @@ class Model:
             frame=data[pos:pos+self.args["NFFT"]]/32767.0
             wined=frame*window
             fft_result=np.fft.fft(wined)
-            fft_data=np.asarray([fft_result.real,fft_result.imag])
+            c = np.log(np.power(fft_result.real, 2) + np.power(fft_result.imag, 2) + 1e-24)
+            d = np.arctan2(fft_result.imag, fft_result.real)
+            fft_data=np.asarray([c,d])
             fft_data=np.transpose(fft_data, (1,0))
             for i in range(len(spec[fft_index])):
                 spec[fft_index][i]=fft_data[i]
             pos+=self.args["SHIFT"]
         return spec
     def ifft(self,data):
-        data=data[:,:,0]+1j*data[:,:,1]
+        p = np.sqrt(np.exp(data[:, :, 0]))
+        r = p * (np.cos(data[:, :, 1]))
+        i = p * (np.sin(data[:, :, 1]))
+        dds = np.concatenate((r.reshape(r.shape[0], r.shape[1], 1), i.reshape(i.shape[0], i.shape[1], 1)), 2)
+        data=dds[:,:,0]+1j*dds[:,:,1]
         time_ruler=data.shape[0]
         window=np.hamming(self.args["NFFT"])
         spec=np.zeros([])

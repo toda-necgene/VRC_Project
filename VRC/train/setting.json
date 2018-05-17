@@ -11,10 +11,10 @@
 
   "log_eps":1e-7,
   "train_epoch":1000,
-  "version":"1.6.5",
-  "g_lr":1e-3,
+  "version":"1.7.0",
+  "g_lr":1e-5,
   "g_b1":0.9,
-  "train_d_scale":0.1,
+  "train_d_scale":0.005,
   "train_interval":100,
 
   "tensorboard":true,
