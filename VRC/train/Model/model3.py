@@ -32,6 +32,10 @@ class Model:
         self.args["debug"] = False
         self.args["noise"] = False
         self.args["channels"] =[2]
+        self.args["strides_g"] = [2,2]
+        self.args["strides_d"] = [2,2]
+        self.args["filter_g"] = [8,8]
+        self.args["filter_d"] = [4,4]
         self.args["model_name"] = "wave2wave"
         self.args["version"] = "1.0.0"
         self.args["log_eps"] = 1e-8
@@ -87,7 +91,7 @@ class Model:
         #creating generator
         #G-net（生成側）の作成
         with tf.variable_scope("generator_1"):
-            self.fake_B_image=generator(self.input_model, reuse=False,chs=self.args["channels"],depth=self.args["depth"])
+            self.fake_B_image=generator(self.input_model, reuse=False,chs=self.args["channels"],depth=self.args["depth"],f=self.args["filter_g"],s=self.args["strides_g"])
 
         self.noise = tf.placeholder(tf.float32, [self.args["batch_size"]], "inputs_Noise")
 
@@ -99,8 +103,8 @@ class Model:
         #creating discriminator
         #D-net（判別側)の作成
         with tf.variable_scope("discrim",reuse=tf.AUTO_REUSE):
-            self.d_judge_F1=discriminator(self.res1,False)
-            self.d_judge_R=discriminator(self.res2,True)
+            self.d_judge_F1=discriminator(self.res1,False,self.args["filter_d"],self.args["strides_d"],self.args["depth"])
+            self.d_judge_R=discriminator(self.res2,True,self.args["filter_d"],self.args["strides_d"],self.args["depth"])
 
         #getting individual variabloes
         #それぞれの変数取得
@@ -115,7 +119,7 @@ class Model:
         #Gan loss
         DS=tf.reduce_mean(tf.pow(self.d_judge_F1-1,2)*0.5)
         #generator loss
-        self.g_loss_1=L1*5+DS
+        self.g_loss_1=L1*20+DS
 
         a=1-self.noise
         b=-1
@@ -197,7 +201,7 @@ class Model:
             otp=np.append(otp,res)
 
         h=otp.shape[0]-in_put.shape[1]-1
-        if h!=-1:
+        if h>0:
             otp=otp[h:-1]
         return otp.reshape(1,in_put.shape[1],in_put.shape[2]),time.time()-tt
 
@@ -458,25 +462,21 @@ class Model:
             lats = fft_data[self.args["NFFT"]//2:]
             spec=np.append(spec,v)
             pos+=1
-        return spec[self.args["SHIFT"]:]
+        return spec[1:]
 
 #model architectures
 
-def discriminator(inp,reuse):
-    inputs=tf.cast(inp, tf.float32)
-    h1 = tf.nn.leaky_relu(tf.layers.conv2d(inputs, 4,[4,4], strides=[2,2], padding="VALID",data_format="channels_last",name="dis_01",reuse=reuse))
-    h1_2 = tf.nn.leaky_relu(tf.layers.conv2d(h1, 8, [1, 1], strides=[1, 1], padding="VALID", data_format="channels_last", name="dis_01_2",reuse=reuse))
-    h2 = tf.nn.leaky_relu(tf.layers.conv2d(tf.layers.batch_normalization(h1_2,training=False), 16,[4,4], strides=[2,2], padding="VALID",data_format="channels_last",name="dis_02",reuse=reuse))
-    h2_2 = tf.nn.leaky_relu(tf.layers.conv2d(tf.layers.batch_normalization(h2, training=False),32, [4, 4], strides=[1, 1],padding="VALID", data_format="channels_last", name="dis_02_2", reuse=reuse))
-    h3 = tf.nn.leaky_relu(tf.layers.conv2d(tf.layers.batch_normalization(h2_2,training=False), 64,[4,4], strides=[2,2], padding="VALID",data_format="channels_last",name="dis_03",reuse=reuse))
-    h3_2 = tf.nn.leaky_relu(tf.layers.conv2d(tf.layers.batch_normalization(h3, training=False), 128, [4, 4], strides=[1, 1], padding="VALID",data_format="channels_last", name="dis_03_2", reuse=reuse))
-    h4 = tf.nn.leaky_relu(tf.layers.conv2d(tf.layers.batch_normalization(h3_2,training=False), 64,[16,6], strides=1, padding="VALID",data_format="channels_last",name="dis_04",reuse=reuse))
-    h4_2 = tf.nn.leaky_relu(tf.layers.conv2d(tf.layers.batch_normalization(h4, training=False), 32, [10, 4], strides=[1, 1], padding="VALID",data_format="channels_last", name="dis_04_2", reuse=reuse))
-    h4=tf.reshape(h4_2, [1,-1])
+def discriminator(inp,reuse,f,s,depth):
+    current=tf.cast(inp, tf.float32)
+    for i in range(depth):
+        current = down_layer(current, 2 ** (i + 1), f, s)
+        current = down_layer(current, 2 ** (i + 1), f, s)
+    h4=tf.reshape(current, [1,-1])
+    print("Dence shape:" + str(h4.shape))
     ten=tf.layers.dense(h4,1,name="dence",reuse=reuse)
     return ten
 
-def generator(current_outputs,reuse,depth,chs):
+def generator(current_outputs,reuse,depth,chs,f,s):
     if reuse:
         tf.get_variable_scope().reuse_variables()
     else:
@@ -485,24 +485,25 @@ def generator(current_outputs,reuse,depth,chs):
     connections=[ ]
     for i in range(depth):
         connections.append(current)
-        current = down_layer(current, chs[i+1])
+        current = down_layer(current, chs[i+1],f,s)
+    print("shape of structure:"+str([[int(c.shape[0]),int(c.shape[1]),int(c.shape[2]),int(c.shape[3])] for c in connections]))
     for i in range(depth):
-        current=up_layer(current,chs[depth-i-1],i!=(depth-1),depth-i-1>2)
+        current=up_layer(current,chs[depth-i-1],f,s,i!=(depth-1),depth-i-1>2)
         if i!=depth-1:
-            current += connections[depth - i - 1]
+            current += connections[depth - i -1]
     return current
 
-def up_layer(current,output_shape,bn=True,do=False):
+def up_layer(current,output_shape,f,s,bn=True,do=False):
     ten=tf.nn.leaky_relu(current)
-    ten=tf.layers.conv2d_transpose(ten, output_shape,kernel_size=8 ,strides=(1,1), padding="SAME",kernel_initializer=tf.contrib.layers.xavier_initializer(),data_format="channels_last")
+    ten=tf.layers.conv2d_transpose(ten, output_shape,kernel_size=f ,strides=s, padding="SAME",kernel_initializer=tf.contrib.layers.xavier_initializer(),data_format="channels_last")
     if bn:
         ten=tf.layers.batch_normalization(ten,axis=3,training=True,gamma_initializer=tf.random_normal_initializer(1.0, 0.2))
     if do:
         ten=tf.nn.dropout(ten, 0.5)
     return ten
-def down_layer(current,output_shape):
+def down_layer(current,output_shape,f,s):
     ten=tf.layers.batch_normalization(current,axis=3,training=True,gamma_initializer=tf.random_normal_initializer(1.0, 0.2))
-    ten=tf.layers.conv2d(ten, output_shape,kernel_size=8 ,strides=(1,1), padding="SAME",kernel_initializer=tf.contrib.layers.xavier_initializer(),data_format="channels_last")
+    ten=tf.layers.conv2d(ten, output_shape,kernel_size=f ,strides=s, padding="SAME",kernel_initializer=tf.contrib.layers.xavier_initializer(),data_format="channels_last")
     ten=tf.nn.leaky_relu(ten)
     return ten
 
