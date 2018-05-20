@@ -46,6 +46,9 @@ class Model:
         self.args["d_b2"] = 0.999
         self.args["train_d_scale"]=1.0
         self.args["train_interval"]=10
+        self.args["pitch_rate"] = 1.0
+        self.args["pitch_res"]=563.0
+        self.args["pitch_tar"]=563.0
         if os.path.exists(path):
             try:
                 with open(path,"r") as f:
@@ -66,6 +69,9 @@ class Model:
         if len(self.args["channels"]) != (self.args['depth'] + 1):
             print(" [!] Channels length and depth+1 must be equal ." + str(len(self.args["channels"])) + "vs" + str(self.args['depth'] + 1))
             self.args["channels"] = [min([4 ** (i + 1) - 2, 254]) for i in range(self.args['depth'] + 1)]
+        if self.args["pitch_rate"]==1.0:
+            self.args["pitch_rate"] = self.args["pitch_tar"]/self.args["pitch_res"]
+            print(" [!] pitch_rate is not found . calculated value : "+str(self.args["pitch_rate"]))
         self.args["SHIFT"] = self.args["NFFT"]//2
         ss=int(self.args["input_size"])*2//int(self.args["NFFT"])
         self.args["name_save"] = self.args["model_name"] + self.args["version"]
@@ -81,7 +87,6 @@ class Model:
 
     def build_model(self):
 
-        #DとGの学習のしやすさの比率は[ G:D = 1:12000 ]
 
         #inputs place holder
         #入力
@@ -119,7 +124,7 @@ class Model:
         #Gan loss
         DS=tf.reduce_mean(tf.pow(self.d_judge_F1-1,2)*0.5)
         #generator loss
-        self.g_loss_1=L1*20+DS
+        self.g_loss_1=L1*10+DS
 
         a=1-self.noise
         b=-1
@@ -161,6 +166,8 @@ class Model:
         if in_put.shape[1]%(self.args["input_size"]*self.args["batch_size"])==0:
             times-=1
         otp=np.array([],dtype=np.int16)
+        otp2 = np.array([], dtype=np.int16)
+
         for t in range(times):
             # Preprocess
             # 前処理
@@ -168,14 +175,22 @@ class Model:
             # Padiing
             # サイズ合わせ
             red=np.zeros((self.args["batch_size"]-1,self.args["input_size"]))
-            start_pos=self.args["input_size"]*(t+1)-((in_put.shape[1])%self.args["input_size"])
+            start_pos=self.args["input_size"]*(t+1)
             resorce=np.reshape(in_put[0,max(0,start_pos-ipt):start_pos,0],(1,-1))
             r=max(0,ipt-resorce.shape[1])
             if r>0:
-                resorce=np.pad(resorce,((0,0),(r,0)),'constant')
+                resorce=np.pad(resorce,((0,0),(r,0)),'reflect')
             red=np.append(resorce,red)
             red=red.reshape((self.args["batch_size"],ipt))
-            res=np.zeros(self.input_size_model)
+            res = np.zeros(self.input_size_model)
+
+            # changing pitch
+            # ピッチ変更
+            for i in range(self.args["batch_size"]):
+                red[i] = shift(red[i] / 32767.0, self.args["pitch_rate"]).reshape(resorce[i].shape)
+                r = self.args["SHIFT"] - res[i].shape[0] % self.args["SHIFT"]
+                if r != self.args["SHIFT"]:
+                    red[i] = np.pad(red[i], (0, r), "reflect")
 
             # FFT
             # 短時間高速離散フーリエ変換
@@ -194,12 +209,10 @@ class Model:
             # IFFT
             # 短時間高速離散逆フーリエ変換
             res=self.ifft(res[0])*32767/2
-
             # chaching results
             # 結果の保存
             res=res.reshape(-1)
             otp=np.append(otp,res)
-
         h=otp.shape[0]-in_put.shape[1]-1
         if h>0:
             otp=otp[h:-1]
@@ -239,9 +252,11 @@ class Model:
         # 学習の情報の初期化
         start_time = time.time()
         DS=1.0
+        log_data_g = np.empty(0)
+        log_data_d = np.empty(0)
         # loading net
         # 過去の学習データの読み込み
-        if self.load(self.checkpoint_dir):
+        if self.load():
             print(" [*] Load SUCCESS")
         else:
             print(" [!] Load failed...")
@@ -272,12 +287,35 @@ class Model:
             # トレーニングデータのシャッフル
             np.random.shuffle(data)
 
-            # initializing epoch info
-            # エポック情報の初期化
-            log_data_g=np.empty(0)
-            log_data_d =np.empty(0)
+
+
             ipt = self.args["SHIFT"] + self.args["input_size"]
             counter=0
+            print(" [*] Epoch %3d testing" % epoch)
+            if self.args["test"]:
+                #testing
+                #テスト
+                out_puts,taken_time=self.convert(test.reshape(1,-1,1))
+                out_put=(out_puts.astype(np.float32)/32767.0)
+
+                # loss of tesing
+                #テストの誤差
+                test1=np.mean(np.abs(out_puts.reshape(1,-1,1)[0]-label.reshape(1,-1,1)[0]))
+
+                #hyperdash
+                if self.args["hyperdash"]:
+                    self.experiment.metric("testG",test1)
+
+                #writing epoch-result into tensorboard
+                #tensorboardの書き込み
+                if self.args["tensorboard"]:
+                    rs=self.sess.run(self.tb_results,feed_dict={ self.result:out_put.reshape(1,1,-1),self.g_test_epo:test1})
+                    self.writer.add_summary(rs, epoch)
+
+                #saving test result
+                #テストの結果の保存
+                if os.path.exists(self.args["wave_otp_dir"]):
+                    upload(out_puts,self.args["wave_otp_dir"])
 
             print(" [*] Epoch %3d started" % epoch)
 
@@ -306,12 +344,12 @@ class Model:
 
                     # calculating starting position
                     # 開始位置の計算
-                    start_pos=self.args["input_size"]*(t+1)-(80000%self.args["input_size"])
+                    start_pos=self.args["input_size"]*(t+1)
 
                     # getting training data
                     # トレーニングデータの取得
-                    target=np.reshape(batch_sounds[:,0,max(0,start_pos-ipt):start_pos],(self.args["batch_size"],-1))
-                    resorce=np.reshape(batch_sounds[:,1,max(0,start_pos-ipt):start_pos],(self.args["batch_size"],-1))
+                    target=np.reshape(batch_sounds[:,0,max(0,start_pos-ipt):start_pos],(self.args["batch_size"],-1))/32767.0
+                    resorce=np.reshape(batch_sounds[:,1,max(0,start_pos-ipt):start_pos],(self.args["batch_size"],-1))/32767.0
 
 
                     # preprocessing of input
@@ -321,19 +359,29 @@ class Model:
                     # サイズ合わせ
                     r=max(0,ipt-resorce.shape[1])
                     if r>0:
-                        resorce=np.pad(resorce,((0,0),(r,0)),'constant')
+                        resorce=np.pad(resorce,((0,0),(r,0)),'reflect')
                     r=max(0,ipt-target.shape[1])
                     if r>0:
-                        target=np.pad(target,((0,0),(r,0)),'constant')
+                        target=np.pad(target,((0,0),(r,0)),'reflect')
+
+
+                    # changing pitch
+                    # ピッチ変更
+                    res = np.zeros(resorce.shape)
+                    for i in range(self.args["batch_size"]):
+                        res[i] = shift(resorce[i],self.args["pitch_rate"]).reshape(resorce[i].shape)
+                        r = self.args["SHIFT"] - res[i].shape[0] % self.args["SHIFT"]
+                        if r != self.args["SHIFT"]:
+                            res[i] = np.pad(res[i], (0, r), "reflect")
 
                     # FFT
                     # 短時間高速離散フーリエ変換
-                    res=np.zeros(self.input_size_model)
+                    res_i=np.zeros(self.input_size_model)
                     tar=np.zeros(self.input_size_model)
                     for i in range(self.args["batch_size"]):
-                        res[i]=(self.fft(resorce[i]))
+                        res_i[i]=(self.fft(res[i]))
                         tar[i]=(self.fft(target[i]))
-                    res_t=res.reshape(self.input_size_model)
+                    res_t=res_i.reshape(self.input_size_model)
 
                     # Update G network
                     # G-netの学習
@@ -364,33 +412,15 @@ class Model:
             #モデルの保存
             self.save(self.args["checkpoint_dir"], epoch)
 
-            if self.args["test"]:
-                #testing
-                #テスト
-                out_puts,taken_time=self.convert(test.reshape(1,-1,1))
-                out_put=(out_puts.astype(np.float32)/32767.0)
+            if self.args["log"] and self.args["hyperdash"] :
+                self.experiment.metric("ScoreD", np.mean(log_data_d))
+                self.experiment.metric("lossG", np.mean(log_data_g))
 
-                # loss of tesing
-                #テストの誤差
-                test1=np.mean(np.abs(out_puts-label.reshape(1,-1,1)))
+            # initializing epoch info
+            # エポック情報の初期化
+            log_data_g = np.empty(0)
+            log_data_d = np.empty(0)
 
-                #hyperdash
-                if self.args["hyperdash"]:
-                    self.experiment.metric("testG",test1)
-                    if self.args["log"]:
-                        self.experiment.metric("ScoreD", np.mean(log_data_d))
-                        self.experiment.metric("lossG", np.mean(log_data_g))
-
-                #writing epoch-result into tensorboard
-                #tensorboardの書き込み
-                if self.args["tensorboard"]:
-                    rs=self.sess.run(self.tb_results,feed_dict={ self.result:out_put.reshape(1,1,-1),self.g_test_epo:test1})
-                    self.writer.add_summary(rs, epoch)
-
-                #saving test result
-                #テストの結果の保存
-                if os.path.exists(self.args["wave_otp_dir"]):
-                    upload(out_puts,self.args["wave_otp_dir"])
             #console outputs
             taken_time = time.time() - start_time
             print(" [*] Epoch %5d finished in %.2f" % (epoch,taken_time))
@@ -412,10 +442,10 @@ class Model:
         self.saver.save(self.sess,
                         os.path.join(checkpoint_dir, model_name),
                         global_step=step)
-    def load(self, checkpoint_dir):
+    def load(self):
         print(" [*] Reading checkpoint...")
         model_dir = self.args["name_save"]
-        checkpoint_dir = os.path.join(checkpoint_dir, model_dir)
+        checkpoint_dir = os.path.join(self.checkpoint_dir, model_dir)
 
         ckpt = tf.train.get_checkpoint_state(checkpoint_dir)
         if ckpt and ckpt.model_checkpoint_path:
@@ -425,13 +455,14 @@ class Model:
             return True
         else:
             return False
+
     def fft(self,data):
         time_ruler=data.shape[0]//self.args["SHIFT"]-1
         window=np.hamming(self.args["NFFT"])
         spec=np.zeros([time_ruler,self.args["NFFT"],2])
         pos=0
         for fft_index in range(time_ruler):
-            frame=data[pos:pos+self.args["NFFT"]]/32767.0
+            frame=data[pos:pos+self.args["NFFT"]]
             wined=frame*window
             fft_result=np.fft.fft(wined)
             c = np.log(np.power(fft_result.real, 2) + np.power(fft_result.imag, 2) + 1e-24)
@@ -506,6 +537,41 @@ def down_layer(current,output_shape,f,s):
     ten=tf.layers.conv2d(ten, output_shape,kernel_size=f ,strides=s, padding="SAME",kernel_initializer=tf.contrib.layers.xavier_initializer(),data_format="channels_last")
     ten=tf.nn.leaky_relu(ten)
     return ten
+
+def shift(data_inps,pitch):
+    data_inp=data_inps.reshape(-1)
+    return scale(time_strech(data_inp,1/pitch),data_inp.shape[0])
+    # return time_strech(data_inp,1/pitch)
+    # return scale(data_inp,data_inp.shape[0]/2)
+
+def scale(inputs,len_wave):
+    x=np.linspace(0.0,inputs.shape[0]-1,len_wave)
+    ref_x_n=(x+0.5).astype(int)
+    spec=inputs[ref_x_n[...]]
+    return spec.reshape(-1)
+def time_strech(datanum,speed):
+    term_s = int(16000 * 0.05)
+    pulus=int(term_s*speed)
+    data_s=datanum.reshape(-1)
+    spec=np.zeros(1)
+    ifs=np.zeros(pulus//2)
+    for i_s in np.arange(0.0,data_s.shape[0],pulus):
+        dd=data_s[int(i_s):int(i_s+term_s)]
+        fade = min(int(pulus/2),dd.shape[0])
+        ds_in= np.linspace(0,1,fade)
+        ds_out =  np.linspace(1,0,fade)
+        stock=dd[:fade]
+        dd[:fade] = dd[:fade] * ds_in
+        if  i_s!=0:
+            dd[:fade]+=ifs[:fade]
+        else :
+            dd[:fade] += stock * np.linspace(1, 0, fade)
+        ifs=dd[-fade:]*ds_out
+        if i_s+pulus>=data_s.shape[0]:
+            spec = np.append(spec, dd)
+        else:
+            spec=np.append(spec,dd[:-fade])
+    return spec[1:]
 
 def nowtime():
     return datetime.now().strftime("%Y_%m_%d %H_%M_%S")
