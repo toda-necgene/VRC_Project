@@ -93,7 +93,7 @@ class Model:
                 os.makedirs(self.args["wave_otp_dir"])
             shutil.copy(path,self.args["wave_otp_dir"]+"info.json")
             self.args["log_file"]=self.args["wave_otp_dir"]+"log.txt"
-
+        self.checkpoint_dir = self.args["checkpoint_dir"]
 
     def build_model(self):
 
@@ -230,7 +230,7 @@ class Model:
 
 
     def train(self):
-        self.checkpoint_dir=self.args["checkpoint_dir"]
+
         # setting paramaters
         # パラメータ
         tln=self.args["train_d_scale"]
@@ -247,10 +247,7 @@ class Model:
         d_optim = tf.train.AdamOptimizer(lr_d_opt,beta_d_opt,beta_2_d_opt).minimize(self.d_loss_F, var_list=self.d_vars)
         d_optim_R = tf.train.AdamOptimizer(lr_d_opt, beta_d_opt,beta_2_d_opt).minimize(self.d_loss_R, var_list=self.d_vars)
 
-        # initialize variables
-        # 変数の初期化
-        init_op = tf.global_variables_initializer()
-        self.sess.run(init_op)
+
         time_of_epoch=np.zeros(1)
 
         # logging
@@ -475,6 +472,10 @@ class Model:
                         os.path.join(checkpoint_dir, model_name),
                         global_step=step)
     def load(self):
+        # initialize variables
+        # 変数の初期化
+        init_op = tf.global_variables_initializer()
+        self.sess.run(init_op)
         print(" [*] Reading checkpoint...")
         model_dir = self.args["name_save"]
         checkpoint_dir = os.path.join(self.checkpoint_dir, model_dir)
@@ -539,18 +540,50 @@ class Model:
     def test(self):
         self.load()
         with open(self.args["log_file"], "w") as f:
-            f.write("name       :score")
-        target=imread(self.args["test_dir"]+"/target.wav")
-        tar=self.fft(target)
-        list_data=glob(self.args["test_dir"])
+            f.write("name       :low-score    :meanscore")
+        target=imread(self.args["test_dir"]+"/target.wav").reshape(1,-1,1)
+        list_data=glob(self.args["test_dir"]+"/*")
+        ipt = self.args["SHIFT"] + self.args["input_size"]
+        times = target.shape[0] // (self.args["input_size"]) + 1
+        if target.shape[0] % (self.args["input_size"] * self.args["batch_size"]) == 0:
+            times -= 1
+        input_size_model=target.shape[1]
+        otp = np.array([], dtype=np.float32)
         for i in list_data:
-            da=imread(i)
-            d=self.fft(da)
-            nos=np.zeros([1])
-            score=self.sess.run(self.d_judge_R,feed_dict={self.input_model:d, self.input_model_label:tar ,self.noise:nos})
-            with open(self.args["log_file"], "a") as f:
-                f.write("\n %10s : %5.5f" % (i,float(np.mean(score))))
-                f.flush()
+            da=imread(i).reshape(1,-1,1)
+            for t in range(times):
+                # Preprocess
+                # 前処理
+
+                # Padiing
+                # サイズ合わせ
+                red = np.zeros((self.args["batch_size"] - 1, ipt))
+                start_pos = self.args["input_size"] * (t + 1)
+                resorce = np.reshape(da[0, max(0, start_pos - ipt):start_pos, 0], (1, -1))
+                r = max(0, ipt - resorce.shape[1])
+                if r > 0:
+                    resorce = np.pad(resorce, ((0, 0), (r, 0)), 'reflect')
+                red = np.append(resorce, red)
+                red = red.reshape((self.args["batch_size"], ipt))
+                r = max(0, ipt - target.shape[1])
+                if r > 0:
+                    target = np.pad(target, ((0, 0), (r, 0)), 'reflect')
+
+                res = np.zeros(input_size_model)
+                tar = np.zeros(input_size_model)
+                # FFT
+                # 短時間高速離散フーリエ変換
+                for i in range(self.args["batch_size"]):
+                    n = self.fft(red[i].reshape(-1))
+                    tar[i] = (self.fft(target[i]))
+                    res[i] = n
+                d=self.fft(da)
+                nos=np.zeros([1])
+                score=self.sess.run(self.d_judge_R,feed_dict={self.input_model:tar, self.input_model_label:res ,self.noise:nos})
+                otp=np.append(otp,score)
+        with open(self.args["log_file"], "a") as f:
+            f.write("\n %10s : %5.5f  :%5.5f" % (i,float(np.min(otp)),float(np.mean(otp))))
+            f.flush()
 
 #model architectures
 

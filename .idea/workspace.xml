@@ -2,17 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="22fa9a76-09a0-4f62-a2d8-6f3210b56f42" name="Default" comment="">
-      <change afterPath="$PROJECT_DIR$/VRC/train/Model/model_unet.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/VRC/train/test.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/train/Model/eve.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/train/Model/model.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/train/Model/model2.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/train/Model/model3.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/train/Model/model_proto.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/train/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/train/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/train/setting.json" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/train/setting.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/utils/B.wav" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/utils/B.wav" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/utils/voice.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/utils/voice.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/VRC/train/Model/model_proto.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/train/Model/model_proto.py" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/VRC/Network/to/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -45,8 +36,8 @@
       <file leaf-file-name="model_proto.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="8017">
-              <caret line="541" column="38" selection-start-line="541" selection-start-column="38" selection-end-line="541" selection-end-column="38" />
+            <state relative-caret-position="469">
+              <caret line="542" column="56" selection-start-line="542" selection-start-column="56" selection-end-line="542" selection-end-column="56" />
               <folding>
                 <element signature="e#0#21#0" expanded="true" />
               </folding>
@@ -165,6 +156,13 @@
               <item name="VRC" type="462c0819:PsiDirectoryNode" />
               <item name="train" type="462c0819:PsiDirectoryNode" />
               <item name="Model" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
+              <item name="vrc" type="462c0819:PsiDirectoryNode" />
+              <item name="VRC" type="462c0819:PsiDirectoryNode" />
+              <item name="train" type="462c0819:PsiDirectoryNode" />
+              <item name="trained_models" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
@@ -348,7 +346,14 @@
       <option name="project" value="LOCAL" />
       <updated>1526806140904</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="[update] test update &lt;version 1.8.0&gt;&#10;&#10;[change] test機能の追加">
+      <created>1527014344250</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1527014344250</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="TodoView">
@@ -392,7 +397,8 @@
     <MESSAGE value="[update] objective update &lt;version 1.7.0&gt;&#10;&#10;[change] 入力、出力をパワースペクトラムと位相スペクトラムに変更" />
     <MESSAGE value="[update] objective update &lt;version 1.7.2&gt;&#10;&#10;[change] 畳み込みを時系列のつながりを弱くし、周波数同士のつながりを強めた" />
     <MESSAGE value="[update] pitch shift update &lt;version 1.8.0&gt;&#10;&#10;[change] ピッチ変更機能を追加" />
-    <option name="LAST_COMMIT_MESSAGE" value="[update] pitch shift update &lt;version 1.8.0&gt;&#10;&#10;[change] ピッチ変更機能を追加" />
+    <MESSAGE value="[update] test update &lt;version 1.8.0&gt;&#10;&#10;[change] test機能の追加" />
+    <option name="LAST_COMMIT_MESSAGE" value="[update] test update &lt;version 1.8.0&gt;&#10;&#10;[change] test機能の追加" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -767,8 +773,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="8017">
-          <caret line="541" column="38" selection-start-line="541" selection-start-column="38" selection-end-line="541" selection-end-column="38" />
+        <state relative-caret-position="469">
+          <caret line="542" column="56" selection-start-line="542" selection-start-column="56" selection-end-line="542" selection-end-column="56" />
           <folding>
             <element signature="e#0#21#0" expanded="true" />
           </folding>
