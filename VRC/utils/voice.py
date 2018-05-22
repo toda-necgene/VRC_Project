@@ -2,6 +2,8 @@ import pyaudio
 import numpy as np
 import wave
 import matplotlib.pyplot as pl
+import cupy
+import time
 NFFT=128
 SHIFT=NFFT//2
 C1=32.703
@@ -16,20 +18,22 @@ def fft(data):
     if data.shape[0]%SHIFT==0:
         time_ruler-=1
     window=np.hamming(NFFT)
-    spec=np.zeros([time_ruler,NFFT,2])
     pos=0
+    wined=np.zeros([time_ruler,NFFT])
     for fft_index in range(time_ruler):
         frame=data[pos:pos+NFFT]
-        wined=frame*window
-        fft_r=np.fft.fft(wined)
-        re=fft_r.real.reshape(-1)
-        im=fft_r.imag.reshape(-1)
-        c = np.log(np.power(re, 2) + np.power(im, 2) + 1e-24).reshape(-1,1)
-        d = np.arctan2(im, re).reshape(-1,1)
-        fft_data=np.concatenate((c,d),1)
-        for ik in range(len(spec[fft_index])):
-            spec[fft_index][ik]=fft_data[ik]
-        pos+=NFFT//2
+        wined[fft_index]=frame*window
+        pos += NFFT // 2
+    wineds=cupy.asarray(wined,dtype=cupy.float64)
+    print(wineds.shape)
+    fft_rs=cupy.fft.fft(wineds,n=NFFT,axis=-1)
+    fft_r=cupy.asnumpy(fft_rs)
+
+    re=fft_r.real.reshape(time_ruler,-1)
+    im=fft_r.imag.reshape(time_ruler,-1)
+    c = np.log(np.power(re, 2) + np.power(im, 2) + 1e-24).reshape(time_ruler,-1,1)
+    d = np.arctan2(im, re).reshape(time_ruler,-1,1)
+    spec=np.concatenate((c,d),2)
     return spec
 def shift(data_inps,pitch):
     data_inp=data_inps.reshape(-1)
@@ -67,25 +71,22 @@ def time_strech(datanum,speed):
     return spec[1:]
 
 def ifft(data):
-    time_ruler=data.shape[0]
     window=np.hamming(NFFT)
-    spec=np.zeros([])
-    pos=0
-    lats = np.zeros([NFFT//2])
-    for _ in range(time_ruler):
-        frame=data[pos]
-        power = np.sqrt(np.exp(frame[:,0]))
-        re = power * (np.cos(frame[:,1]))
-        im = power * (np.sin(frame[:,1]))
-        ep = re+1j*im
-        fft_s=np.fft.ifft(ep)
-        fft_data=fft_s.real
-        fft_data/=window
-        v = lats + fft_data[:NFFT//2]
-        lats = fft_data[NFFT//2:]
-        spec=np.append(spec,v)
-        pos+=1
-    return spec[1:]
+    frame=data
+    power = np.sqrt(np.exp(frame[:,:,0]))
+    re = power * (np.cos(frame[:,:,1]))
+    im = power * (np.sin(frame[:,:,1]))
+    ep = re+1j*im
+    eep=cupy.asarray(ep)
+    fft_s=cupy.fft.ifft(eep)
+    fft_s=cupy.asnumpy(fft_s)
+    fft_data=fft_s.real
+    fft_data/=window
+    v = fft_data[:,:NFFT//2]
+    lats = np.roll(fft_data[:,NFFT//2:],(0,1))
+    lats[:,0]=0
+    spec=np.reshape(v+lats,(-1))
+    return spec
 FORMAT = pyaudio.paInt16
 CHANNELS = 1        #モノラル
 RATE = 16000       #サンプルレート
@@ -105,8 +106,8 @@ while dds != b'':
 dms = b''.join(dms)
 data = np.frombuffer(dms, 'int16')[0:160000].reshape(2,-1)
 data_realA=data.reshape(-1)
-time=80000
-times=data_realA.shape[0]//time
+timee=80000
+times=data_realA.shape[0]//timee
 
 rate=16000
 
@@ -118,6 +119,7 @@ term=8192
 times=data_realA.shape[0]//term+1
 if data_realA.shape[0]%term==0:
     times-=1
+ttm=time.time()
 for i in range(times):
     ind=SHIFT+term
     startpos=term*(i+1)
@@ -133,12 +135,9 @@ for i in range(times):
     a=fft(dmn)
     ab = np.append(ab, a, axis=0)
     s=ifft(a)
-    ac=fft(s/2)
-    abc=np.append(abc,ac,axis=0)
-    s=ifft(ac)
     b=np.append(b,s)
 # print(a)
-
+print(time.time()-ttm)
 r=b.shape[0]-data_realA.shape[0]
 b=(b[1:]/2*32767).astype(np.int16)
 # c=np.log(np.power(ab[:,:,0],2)+np.power(ab[:,:,1],2)+1e-8)
@@ -146,15 +145,18 @@ b=(b[1:]/2*32767).astype(np.int16)
 # e=np.sqrt(np.exp(c))*np.exp(d)
 # sa=np.transpose(ab[:,:,0],(1,0))
 
-pl.subplot(2,1,1)
+pl.subplot(4,1,1)
 aba=np.transpose(ab[1:,:,0],(1,0))
 pl.imshow(aba,aspect="auto")
 pl.colorbar()
-pl.subplot(2,1,2)
+pl.subplot(4,1,2)
 abn=np.transpose(ab[1:,:,0],(1,0))
 pl.imshow(abn,aspect="auto")
 pl.colorbar()
-
+pl.subplot(4,1,3)
+pl.plot(data_realA)
+pl.subplot(4,1,4)
+pl.plot(b)
 p=pyaudio.PyAudio()
 ww = wave.open("B.wav", 'wb')
 ww.setnchannels(1)
@@ -163,3 +165,5 @@ ww.setframerate(RATE)
 ww.writeframes(b.tobytes())
 ww.close()
 pl.show()
+a=np.asarray([88],dtype=np.float32)
+print(np.exp(a))

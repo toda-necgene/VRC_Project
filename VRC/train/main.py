@@ -3,7 +3,7 @@ import sys
 debug=False
 if __name__ == '__main__':
     pass
-from Model import model3 as model
+from Model import model_proto as model
 path="./setting.json"
 if len(sys.argv)!=0 and sys.argv.__contains__("--debug"):
     debug=True
