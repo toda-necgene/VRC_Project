@@ -13,6 +13,7 @@ import random
 from datetime import datetime
 import json
 import shutil
+import math
 import cupy
 class Model:
     def __init__(self,path):
@@ -132,16 +133,15 @@ class Model:
         #L1 norm loss
         L1=tf.reduce_mean(tf.pow(self.input_model_label-self.fake_B_image,2)*0.5)
         #Gan loss
-        DS=tf.reduce_mean(tf.pow(self.d_judge_F1-1,2)*0.5)
+        DS=tf.reduce_mean(-tf.log(self.d_judge_F1))
         #generator loss
-        self.g_loss_1=L1*10+DS
+        self.g_loss_1=L1*100+DS
 
-        a=1-self.noise
-        b=-1
+        a=1.0-self.noise
         #objective-functions of discriminator
         #D-netの目的関数
-        self.d_loss_R = tf.reduce_mean(tf.pow(self.d_judge_R-a,2)*0.5)
-        self.d_loss_F = tf.reduce_mean(tf.pow(self.d_judge_F1-b,2)*0.5)
+        self.d_loss_R = tf.reduce_mean(jsd(self.d_judge_R,a))
+        self.d_loss_F = tf.reduce_mean(jsd(self.d_judge_F1,0.0))
 
         #tensorboard functions
         #tensorboard 表示用関数
@@ -153,7 +153,8 @@ class Model:
         self.result=tf.placeholder(tf.float32, [1,1,160000], name="FB")
         self.fake_B_sum = tf.summary.audio("fake_B", tf.reshape(self.result,[1,160000,1]), 16000, 1)
         self.g_test_epo=tf.placeholder(tf.float32,name="g_test_epoch_end")
-        self.g_test_epoch = tf.summary.scalar("g_test_epoch_end", self.g_test_epo)
+        self.g_test_epo_2 = tf.placeholder(tf.float32, name="g_test_epoch_end_2")
+        self.g_test_epoch = tf.summary.merge([tf.summary.scalar("g_test_epoch_end", self.g_test_epo),tf.summary.scalar("g_related_score", self.g_test_epo_2)])
         self.tb_results=tf.summary.merge([self.fake_B_sum,self.g_test_epoch])
 
         #saver
@@ -296,6 +297,8 @@ class Model:
             self.experiment.param("training_interval", self.args["train_interval"])
             self.experiment.param("learning_rate_scale", tln)
 
+        test_before=None
+
         for epoch in range(0,self.args["train_epoch"]):
             # shuffling training data
             # トレーニングデータのシャッフル
@@ -304,11 +307,21 @@ class Model:
             ts = 0.0
             ipt = self.args["SHIFT"] + self.args["input_size"]
             counter=0
+            bbb=0.0
             print(" [*] Epoch %3d testing" % epoch)
             if self.args["test"]:
                 #testing
                 #テスト
                 out_puts,taken_time=self.convert(test.reshape(1,-1,1))
+
+                if test_before is not None:
+                    aaa=self.testact(test_before.reshape(1,-1,1),label.reshape(1,-1,1))
+                    bbb=self.testact(out_puts.reshape(1,-1,1), label.reshape(1,-1,1))
+                    test2+=bbb-aaa
+                else:
+                    bbb = self.testact(out_puts.reshape(1, -1, 1), label.reshape(1, -1, 1))
+                    test2 = bbb
+                test_before=out_puts
                 out_put=(out_puts.astype(np.float32)/32767.0)
 
                 # loss of tesing
@@ -318,11 +331,11 @@ class Model:
                 #hyperdash
                 if self.args["hyperdash"]:
                     self.experiment.metric("testG",test1)
-
+                    self.experiment.metric("relativeG", test2)
                 #writing epoch-result into tensorboard
                 #tensorboardの書き込み
                 if self.args["tensorboard"]:
-                    rs=self.sess.run(self.tb_results,feed_dict={ self.result:out_put.reshape(1,1,-1),self.g_test_epo:test1})
+                    rs=self.sess.run(self.tb_results,feed_dict={ self.result:out_put.reshape(1,1,-1),self.g_test_epo:test1,self.g_test_epo_2:test2})
                     self.writer.add_summary(rs, epoch)
 
                 #saving test result
@@ -429,13 +442,13 @@ class Model:
             if self.args["log"] and self.args["wave_otp_dir"]!="False":
                 with open(self.args["log_file"],"a") as f:
                     if self.args["stop_argument"]:
-                        f.write("\n %6d,%5.5f,%5.5f,%10.5f" % (
-                        epoch, float(np.mean(log_data_d)), float(np.mean(log_data_g)), float(test1)))
+                        f.write("\n %6d,%5.5f,%5.5f,%10.5f,%5.5f,%5.5f" % (
+                        epoch, float(np.mean(log_data_d)), float(np.mean(log_data_g)), float(test1), float(test2),float(bbb)))
                     else:
-                        f.write("%6d,%10.5f" % (epoch, float(test1)))
+                        f.write("%6d,%10.5f,%5.5f,%5.5f" % (epoch, float(test1), float(test2),float(bbb)))
                     f.flush()
             if self.args["hyperdash"] and self.args["stop_argument"] :
-                self.experiment.metric("ScoreD", np.mean(log_data_d))
+                self.experiment.metric("ScoreD", np.mean(bbb))
                 self.experiment.metric("lossG", np.mean(log_data_g))
 
             # initializing epoch info
@@ -537,6 +550,45 @@ class Model:
         lats[0, :] = 0
         spec = np.reshape(v + lats, (-1))
         return spec
+
+    def testact(self,s,target):
+        with open(self.args["log_file"], "w") as f:
+            f.write("name       :low-score    :meanscore")
+        ipt = self.args["SHIFT"] + self.args["input_size"]
+        times = target.shape[0] // (self.args["input_size"]) + 1
+        if target.shape[0] % (self.args["input_size"] * self.args["batch_size"]) == 0:
+            times -= 1
+        otp = np.array([], dtype=np.float32)
+        da=s.reshape(1,-1,1)
+        for t in range(times):
+            # Preprocess
+            # 前処理
+
+            # Padiing
+            # サイズ合わせ
+            start_pos = self.args["input_size"] * (t + 1)
+            resorce = np.reshape(da[0, max(0, start_pos - ipt):start_pos, 0], (1, -1))
+            r = max(0, ipt - resorce.shape[1])
+            if r > 0:
+                resorce = np.pad(resorce, ((0, 0), (r, 0)), 'reflect')
+            targ = np.reshape(target[0, max(0, start_pos - ipt):start_pos, 0], (1, -1))
+            r = max(0, ipt - targ.shape[1])
+            if r > 0:
+                targ = np.pad(targ, ((0, 0), (r, 0)), 'reflect')
+
+            res = np.zeros(self.input_size_model)
+            tar = np.zeros(self.input_size_model)
+            # FFT
+            # 短時間高速離散フーリエ変換
+            for imr in range(self.args["batch_size"]):
+                n = self.fft(resorce[imr].reshape(-1)/ 32767.0)
+                tar[imr] = (self.fft(targ[imr].reshape(-1))/ 32767.0)
+                res[imr] = n
+            nos=np.zeros([1])
+            score=self.sess.run(self.d_judge_R,feed_dict={self.input_model:tar, self.input_model_label:res ,self.noise:nos})
+            otp=np.append(otp,score)
+        ss=np.mean(otp)
+        return ss
     def test(self):
         self.load()
         with open(self.args["log_file"], "w") as f:
@@ -547,9 +599,9 @@ class Model:
         times = target.shape[0] // (self.args["input_size"]) + 1
         if target.shape[0] % (self.args["input_size"] * self.args["batch_size"]) == 0:
             times -= 1
-        input_size_model=target.shape[1]
-        otp = np.array([], dtype=np.float32)
+
         for i in list_data:
+            otp = np.array([], dtype=np.float32)
             da=imread(i).reshape(1,-1,1)
             for t in range(times):
                 # Preprocess
@@ -565,39 +617,44 @@ class Model:
                     resorce = np.pad(resorce, ((0, 0), (r, 0)), 'reflect')
                 red = np.append(resorce, red)
                 red = red.reshape((self.args["batch_size"], ipt))
-                r = max(0, ipt - target.shape[1])
+                targ = np.reshape(target[0, max(0, start_pos - ipt):start_pos, 0], (1, -1))
+                r = max(0, ipt - targ.shape[1])
                 if r > 0:
-                    target = np.pad(target, ((0, 0), (r, 0)), 'reflect')
+                    targ = np.pad(targ, ((0, 0), (r, 0)), 'reflect')
 
-                res = np.zeros(input_size_model)
-                tar = np.zeros(input_size_model)
+                res = np.zeros(self.input_size_model)
+                tar = np.zeros(self.input_size_model)
                 # FFT
                 # 短時間高速離散フーリエ変換
-                for i in range(self.args["batch_size"]):
-                    n = self.fft(red[i].reshape(-1))
-                    tar[i] = (self.fft(target[i]))
-                    res[i] = n
-                d=self.fft(da)
+                for imr in range(self.args["batch_size"]):
+                    n = self.fft(resorce[imr].reshape(-1)/ 32767.0)
+                    tar[imr] = (self.fft(targ[imr].reshape(-1))/ 32767.0)
+                    res[imr] = n
                 nos=np.zeros([1])
                 score=self.sess.run(self.d_judge_R,feed_dict={self.input_model:tar, self.input_model_label:res ,self.noise:nos})
                 otp=np.append(otp,score)
-        with open(self.args["log_file"], "a") as f:
-            f.write("\n %10s : %5.5f  :%5.5f" % (i,float(np.min(otp)),float(np.mean(otp))))
-            f.flush()
+            with open(self.args["log_file"], "a") as f:
+                f.write("\n %10s : %5.5f  :%5.5f" % (i,float(np.min(otp)),float(np.mean(otp))))
+                f.flush()
 
 #model architectures
+def kld(p,q):
+    eps=1e-8
+    return tf.reduce_sum(p*tf.log(p/(q+eps)+eps))
+
+def jsd(p,q):
+    m=(p+q)*0.5
+    return 0.5*(kld(p,m)+kld(q,m))
 
 def discriminator(inp,reuse,f,s,depth,chs):
     current=tf.cast(inp, tf.float32)
     for i in range(depth):
-        ten = tf.layers.batch_normalization(current, axis=3, training=False,
-                                            gamma_initializer=tf.random_normal_initializer(1.0, 0.2))
-        ten = tf.layers.conv2d(ten, chs[i], kernel_size=f, strides=s, padding="VALID",
-                               kernel_initializer=tf.contrib.layers.xavier_initializer(), data_format="channels_last")
+        ten = tf.layers.conv2d(current, chs[i], kernel_size=f, strides=s, padding="VALID",
+                               kernel_initializer=tf.contrib.layers.xavier_initializer(), data_format="channels_last",name="disc_"+str(i),reuse=reuse)
         current = tf.nn.leaky_relu(ten)
     h4=tf.reshape(current, [current.shape[0],-1])
     ten=tf.layers.dense(h4,1,name="dence",reuse=reuse)
-    return ten
+    return tf.nn.sigmoid(ten)
 def generator(current_outputs,reuse,depth,chs,f,s):
     if reuse:
         tf.get_variable_scope().reuse_variables()
@@ -623,8 +680,11 @@ def generator(current_outputs,reuse,depth,chs,f,s):
             ten = tf.nn.dropout(ten, 0.5**(depth-i))
 
         current = ten + connections
-
-    return current
+    ca=current.shape
+    x=tf.constant([[[[88.0]]]])
+    x2=tf.constant([[[[math.pi]]]])
+    a=tf.nn.tanh(current)*tf.concat([tf.tile(x,[int(ca[0]),int(ca[1]),int(ca[2]),1]),tf.tile(x2,[int(ca[0]),int(ca[1]),int(ca[2]),1])],3)
+    return a
 
 def shift(data_inps,pitch):
     data_inp=data_inps.reshape(-1)
