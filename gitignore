@@ -1,5 +1,7 @@
 *.bin
 *.class
+*.meta
+*.wav
 VRC/logs/*
 VRC/datasets/*
 VRC/Network/*
