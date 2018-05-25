@@ -3,7 +3,6 @@ import numpy as np
 import wave
 import matplotlib.pyplot as pl
 import matplotlib.cm as cm
-import cupy
 import time
 NFFT=1024
 SHIFT=NFFT//2
@@ -14,6 +13,22 @@ now=317.6
 target=563.666
 upidx=target/now
 print(upidx)
+
+def filter_clip(dd,f=1.5):
+    dxf=np.maximum(dd,f)-f+np.minimum(dd,-f)+f
+    return -dxf*0.5
+
+def filter_eps(dd,f=1.5):
+    dp=np.roll(dd,1)
+    dp[-1]=0
+    ds=dd-dp
+    dxf=np.maximum(ds,f)-f+np.minimum(ds,-f)+f
+    dp = np.roll(dd, -1)
+    dp[-1] = 0
+    ds = dd - dp
+    dxf2 = np.maximum(ds, f) - f + np.minimum(ds, -f) + f
+    return -(dxf+dxf2)*1.2
+
 def fft(data):
     time_ruler=data.shape[0]//SHIFT
     if data.shape[0]%SHIFT==0:
@@ -25,10 +40,8 @@ def fft(data):
         frame=data[pos:pos+NFFT]
         wined[fft_index]=frame*window
         pos += NFFT // 2
-    wineds=cupy.asarray(wined,dtype=cupy.float64)
-    fft_rs=cupy.fft.fft(wineds,n=NFFT,axis=-1)
-    fft_r=cupy.asnumpy(fft_rs)
-    return fft_r.reshape(time_ruler, -1)
+    fft_rs=np.fft.fft(wined,n=NFFT,axis=-1)
+    return fft_rs.reshape(time_ruler, -1)
 def shift(data_inps,pitch):
     data_inp=data_inps.reshape(-1)
     return scale(time_strech(data_inp,1/pitch),data_inp.shape[0])
@@ -81,26 +94,25 @@ def pp_to_complex(frame):
     ep = re + 1j * im
     return ep
 
-def ifft(data):
+def ifft(data,inp):
     window=np.hamming(NFFT)
-    eep=cupy.asarray(data)
-    fft_s=cupy.fft.ifft(eep)
-    fft_s=cupy.asnumpy(fft_s)
+    fft_s=np.fft.ifft(data,n=NFFT,axis=-1)
     fft_data=fft_s.real
-    fft_data/=window
+    fft_data[:]/=window
     v = fft_data[:,:NFFT//2]
-    lats = np.roll(fft_data[:,NFFT//2:],(0,1))
-    lats[:,0]=0
+    lats = np.roll(fft_data[:,NFFT//2:],(1,0))
+    res=lats[0,:]
+    lats[0,:]=inp
     spec=np.reshape(v+lats,(-1))
-    return spec
+    return spec,res
 FORMAT = pyaudio.paInt16
 CHANNELS = 1        #モノラル
 RATE = 16000       #サンプルレート
 CHUNK = 1024     #データ点数
 RECORD_SECONDS = 5 #録音する時間の長さ
 WAVE_INPUT_FILENAME = "./"
-WAVE_OUTPUT_FILENAME = "../train/Model/datasets/test/test.wav"
-file=(WAVE_INPUT_FILENAME+"noise.wav")
+WAVE_OUTPUT_FILENAME = "./test.wav"
+file_l=("../train/Model/datasets/test/label.wav")
 file=WAVE_OUTPUT_FILENAME
 index=0
 dms=[]
@@ -113,6 +125,18 @@ dms = b''.join(dms)
 data = np.frombuffer(dms, 'int16')
 data_realA=data.reshape(-1)
 print(data_realA.shape)
+
+dms=[]
+wf = wave.open(file_l, 'rb')
+dds = wf.readframes(CHUNK)
+while dds != b'':
+    dms.append(dds)
+    dds = wf.readframes(CHUNK)
+dms = b''.join(dms)
+data = np.frombuffer(dms, 'int16')
+data_realB=data.reshape(-1)
+print(data_realB.shape)
+
 timee=80000
 times=data_realA.shape[0]//timee
 
@@ -127,47 +151,72 @@ times=data_realA.shape[0]//term+1
 if data_realA.shape[0]%term==0:
     times-=1
 ttm=time.time()
+resp=np.zeros([NFFT//2])
 for i in range(times):
     ind=SHIFT+term
     startpos=term*(i+1)
     data_realAb = data_realA[max(startpos-ind,0):startpos]
+    data_realBb = data_realB[max(startpos - ind, 0):startpos]
     r=ind-data_realAb.shape[0]
     if r>0:
         data_realAb=np.pad(data_realAb,(0,r),"reflect")
+        data_realBb=np.pad(data_realBb,(0,r),"reflect")
     dmn=data_realAb/32767.0
+    ddms=data_realBb/32767.0
     dmn=shift(dmn,upidx)
     r=SHIFT-dmn.shape[0]%SHIFT
     if r!=SHIFT:
         dmn=np.pad(dmn,(0,r),"reflect")
     a=fft(dmn)
+    bss=fft(ddms)
     a=complex_to_pp(a)
-    abc = np.append(abc, a, axis=0)
+    bss=complex_to_pp(bss)
+    abc = np.append(abc, bss, axis=0)
     ab = np.append(ab, a, axis=0)
+    # a[:,:,0]=bss[:,:,0]
     a=pp_to_complex(a)
-    s=ifft(a)
+    s,resp=ifft(a,resp)
     b=np.append(b,s)
 # print(a)
 r=b.shape[0]-data_realA.shape[0]
-b=(b[1:]/2*32767).astype(np.int16)
+bsd=filter_clip(b,0.75)
+bbb=b
+# bbb+=bsd
+# bsd=filter_eps(bbb,0.5)
+# bbb+=bsd
+# bsd=filter_eps(bbb,0.5)
+# bbb+=bsd
+# bsd=filter_eps(bbb,0.5)
+# bbb+=bsd
+bbb=(bbb[1:]/2*32767).astype(np.int16)
 pl.subplot(4,1,1)
 aba=np.transpose(ab[1:,:,0],(1,0))
 aba[0,0]=10
 pl.imshow(aba,aspect="auto")
+pl.clim(-30,10)
 pl.colorbar()
 pl.subplot(4,1,2)
-abn=np.transpose(ab[1:,:,1],(1,0))
+abn=np.transpose(abc[1:,:,0],(1,0))
 abn[0,0]=10
 pl.imshow(abn,aspect="auto")
+pl.clim(-30,10)
 pl.colorbar()
 pl.subplot(4,1,3)
-pl.plot(data_realA)
+aba=np.transpose(ab[1:,:,1],(1,0))
+aba[0,0]=10
+pl.imshow(aba,aspect="auto")
+pl.clim(-3.141592,3.141592)
+pl.colorbar()
 pl.subplot(4,1,4)
-pl.plot(b)
+abn=np.transpose(abc[1:,:,1],(1,0))
+pl.imshow(abn,aspect="auto")
+pl.clim(-3.141592,3.141592)
+pl.colorbar()
 p=pyaudio.PyAudio()
 ww = wave.open("B.wav", 'wb')
 ww.setnchannels(1)
 ww.setsampwidth(p.get_sample_size(FORMAT))
 ww.setframerate(RATE)
-ww.writeframes(b.tobytes())
+ww.writeframes(bbb.tobytes())
 ww.close()
 pl.show()

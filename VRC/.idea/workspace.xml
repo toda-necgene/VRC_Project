@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="118ef545-7803-4684-8710-61ccd65f9b8d" name="Default" comment="" />
+    <list default="true" id="118ef545-7803-4684-8710-61ccd65f9b8d" name="Default" comment="[ver]">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils/B.wav" beforeDir="false" afterPath="$PROJECT_DIR$/utils/B.wav" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils/voice.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/voice.py" afterDir="false" />
+    </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -10,7 +14,20 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="FileEditorManager">
-    <leaf SIDE_TABS_SIZE_LIMIT_KEY="375" />
+    <leaf SIDE_TABS_SIZE_LIMIT_KEY="375">
+      <file leaf-file-name="voice.py" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/utils/voice.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="87">
+              <caret line="193" column="11" lean-forward="true" selection-start-line="193" selection-start-column="11" selection-end-line="193" selection-end-column="11" />
+              <folding>
+                <element signature="e#0#14#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+    </leaf>
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
@@ -33,10 +50,10 @@
         <option value="$PROJECT_DIR$/VRC_cpu.py" />
         <option value="$PROJECT_DIR$/Converter.py" />
         <option value="$PROJECT_DIR$/train/Model/model2.py" />
-        <option value="$PROJECT_DIR$/utils/voice.py" />
         <option value="$PROJECT_DIR$/run/VRC.py" />
         <option value="$PROJECT_DIR$/run/VRC_cpu.py" />
         <option value="$PROJECT_DIR$/run/Converter.py" />
+        <option value="$PROJECT_DIR$/utils/voice.py" />
       </list>
     </option>
   </component>
@@ -52,6 +69,7 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
+      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -74,28 +92,12 @@
               <item name="VRC" type="b2602c69:ProjectViewProjectNode" />
               <item name="vrc" type="462c0819:PsiDirectoryNode" />
               <item name="VRC" type="462c0819:PsiDirectoryNode" />
-              <item name="train" type="462c0819:PsiDirectoryNode" />
-              <item name="Model" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="VRC" type="b2602c69:ProjectViewProjectNode" />
-              <item name="vrc" type="462c0819:PsiDirectoryNode" />
-              <item name="VRC" type="462c0819:PsiDirectoryNode" />
-              <item name="train" type="462c0819:PsiDirectoryNode" />
-              <item name="Model" type="462c0819:PsiDirectoryNode" />
-              <item name="datasets" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="VRC" type="b2602c69:ProjectViewProjectNode" />
-              <item name="vrc" type="462c0819:PsiDirectoryNode" />
-              <item name="VRC" type="462c0819:PsiDirectoryNode" />
               <item name="utils" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
         </subPane>
       </pane>
-      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -119,7 +121,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.VRC_cpu (1)">
+  <component name="RunManager" selected="Python.voice">
     <configuration name="Converter" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="VRC" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -200,8 +202,8 @@
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.VRC_cpu (1)" />
         <item itemvalue="Python.voice" />
+        <item itemvalue="Python.VRC_cpu (1)" />
         <item itemvalue="Python.VRC_cpu" />
         <item itemvalue="Python.Converter" />
       </list>
@@ -229,23 +231,23 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="-8" y="-8" width="1456" height="876" extended-state="6" />
+    <frame x="-7" y="-7" width="1550" height="838" extended-state="6" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.12341326" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.123046875" />
       <window_info anchor="bottom" id="TODO" order="6" />
       <window_info anchor="bottom" id="Event Log" order="7" side_tool="true" weight="0.32952183" />
-      <window_info anchor="bottom" id="Run" order="2" weight="0.3234649" />
       <window_info anchor="bottom" id="Version Control" order="8" weight="0.32894737" />
       <window_info anchor="bottom" id="Python Console" order="9" weight="0.31907895" />
+      <window_info anchor="bottom" id="Run" order="2" weight="0.32284543" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info anchor="bottom" id="Terminal" order="10" />
-      <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
       <window_info id="Favorites" order="2" side_tool="true" />
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
+      <window_info anchor="right" id="Data View" order="3" />
       <window_info anchor="right" id="Commander" order="0" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
-      <window_info anchor="right" id="Data View" order="3" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Find" order="1" weight="0.32894737" />
@@ -259,6 +261,43 @@
     <option name="LAST_COMMIT_MESSAGE" value="[ver] 1.0.4 &lt;VRC_CPU added&gt;" />
   </component>
   <component name="editorHistoryManager">
+    <entry file="file://$PROJECT_DIR$/train/Model/model2.py" />
+    <entry file="file://$PROJECT_DIR$/utils/voice.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1145">
+          <caret line="92" column="42" lean-forward="true" selection-start-line="92" selection-start-column="42" selection-end-line="92" selection-end-column="42" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/utils/testing.py" />
+    <entry file="file://$PROJECT_DIR$/train/Model/model3.py" />
+    <entry file="file://$PROJECT_DIR$/run/VRC_cpu.py" />
+    <entry file="file://$PROJECT_DIR$/run/VRC.py" />
+    <entry file="file://$PROJECT_DIR$/run/Converter.py" />
+    <entry file="file://$PROJECT_DIR$/train/Model/model_unet.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$USER_HOME$/AppData/Local/Programs/Python/Python35/Lib/wave.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="194">
+          <caret line="158" selection-start-line="158" selection-end-line="158" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/train/setting.json">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="170">
+          <caret line="10" column="17" selection-start-line="10" selection-start-column="17" selection-end-line="10" selection-end-column="17" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/train/Model/model_proto.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2180">
+          <caret line="656" selection-start-line="656" selection-end-line="656" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/utils/voice.py">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
@@ -320,26 +359,27 @@
     <entry file="file://$PROJECT_DIR$/Converter.py" />
     <entry file="file://$PROJECT_DIR$/VRC_cpu.py" />
     <entry file="file://$PROJECT_DIR$/train/Model/model2.py" />
-    <entry file="file://$PROJECT_DIR$/utils/voice.py">
+    <entry file="file://$PROJECT_DIR$/utils/testing.py" />
+    <entry file="file://$PROJECT_DIR$/train/Model/model3.py" />
+    <entry file="file://$PROJECT_DIR$/run/VRC_cpu.py" />
+    <entry file="file://$PROJECT_DIR$/run/VRC.py" />
+    <entry file="file://$PROJECT_DIR$/run/Converter.py" />
+    <entry file="file://$PROJECT_DIR$/train/test.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1145">
-          <caret line="92" column="42" lean-forward="true" selection-start-line="92" selection-start-column="42" selection-end-line="92" selection-end-column="42" />
+        <state>
+          <caret column="19" selection-start-column="19" selection-end-column="19" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/utils/testing.py" />
-    <entry file="file://$PROJECT_DIR$/train/Model/model3.py">
+    <entry file="file://$PROJECT_DIR$/utils/voice.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="105">
-          <caret line="104" column="8" selection-start-line="103" selection-start-column="8" selection-end-line="104" selection-end-column="8" />
+        <state relative-caret-position="87">
+          <caret line="193" column="11" lean-forward="true" selection-start-line="193" selection-start-column="11" selection-end-line="193" selection-end-column="11" />
           <folding>
-            <element signature="e#0#21#0" expanded="true" />
+            <element signature="e#0#14#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/run/VRC_cpu.py" />
-    <entry file="file://$PROJECT_DIR$/run/VRC.py" />
-    <entry file="file://$PROJECT_DIR$/run/Converter.py" />
   </component>
 </project>
