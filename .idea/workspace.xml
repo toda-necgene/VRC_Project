@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="BookmarkManager">
+    <bookmark url="file://$PROJECT_DIR$/VRC/train/setting.json" line="26" />
+  </component>
   <component name="ChangeListManager">
-    <list default="true" id="22fa9a76-09a0-4f62-a2d8-6f3210b56f42" name="Default" comment="">
+    <list default="true" id="22fa9a76-09a0-4f62-a2d8-6f3210b56f42" name="Default" comment="[update] test update &lt;version 2.2.0&gt;&#10;&#10;[change] tanhを廃止&#10;[change] split network 廃止">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/VRC/train/Model/model_proto.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/train/Model/model_proto.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/VRC/train/setting.json" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/train/setting.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/utils/B.wav" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/utils/B.wav" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/utils/voice.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/utils/voice.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/utils/検査用.wav" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/utils/検査用.wav" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/VRC/Network/to/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -22,8 +22,8 @@
       <file leaf-file-name="setting.json" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/train/setting.json">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="225">
-              <caret line="27" column="28" selection-start-line="27" selection-start-column="28" selection-end-line="27" selection-end-column="28" />
+            <state relative-caret-position="240">
+              <caret line="27" column="18" selection-start-line="27" selection-start-column="18" selection-end-line="27" selection-end-column="18" />
             </state>
           </provider>
         </entry>
@@ -37,11 +37,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="model_proto.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="model_proto.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-4571">
-              <caret line="114" column="23" selection-start-line="114" selection-start-column="23" selection-end-line="114" selection-end-column="23" />
+            <state relative-caret-position="54">
+              <caret line="114" column="89" selection-start-line="114" selection-start-column="89" selection-end-line="114" selection-end-column="89" />
               <folding>
                 <element signature="e#0#21#0" expanded="true" />
               </folding>
@@ -49,11 +49,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="voice.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="voice.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/utils/voice.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-175">
-              <caret line="65" column="19" selection-start-line="65" selection-start-column="19" selection-end-line="65" selection-end-column="19" />
+            <state relative-caret-position="224">
+              <caret line="78" column="19" selection-start-line="78" selection-start-column="19" selection-end-line="78" selection-end-column="19" />
               <folding>
                 <element signature="e#0#14#0" expanded="true" />
               </folding>
@@ -109,6 +109,7 @@
         <option value="$PROJECT_DIR$/VRC/train/Model/model_unet.py" />
         <option value="$PROJECT_DIR$/VRC/train/test.py" />
         <option value="$PROJECT_DIR$/VRC/utils/voice.py" />
+        <option value="$PROJECT_DIR$/VRC/train/trained_models/wave2wave2.2.000_survey11/checkpoint" />
         <option value="$PROJECT_DIR$/VRC/train/setting.json" />
         <option value="$PROJECT_DIR$/VRC/train/Model/model_proto.py" />
       </list>
@@ -124,7 +125,6 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -184,12 +184,28 @@
               <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
               <item name="vrc" type="462c0819:PsiDirectoryNode" />
               <item name="VRC" type="462c0819:PsiDirectoryNode" />
+              <item name="train" type="462c0819:PsiDirectoryNode" />
+              <item name="trained_models" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
+              <item name="vrc" type="462c0819:PsiDirectoryNode" />
+              <item name="VRC" type="462c0819:PsiDirectoryNode" />
+              <item name="train" type="462c0819:PsiDirectoryNode" />
+              <item name="trained_models" type="462c0819:PsiDirectoryNode" />
+              <item name="wave2wave2.2.000_survey11" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
+              <item name="vrc" type="462c0819:PsiDirectoryNode" />
+              <item name="VRC" type="462c0819:PsiDirectoryNode" />
               <item name="utils" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
         </subPane>
       </pane>
+      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -207,6 +223,121 @@
       <recent name="C:\Users\tadop\git\vrc\VRC\Data" />
       <recent name="C:\Users\tadop\git\vrc\VRC\utils\logs" />
     </key>
+  </component>
+  <component name="RestoreUpdateTree" date="Moments ago" ActionInfo="_Update">
+    <UpdatedFiles>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Updated from server" />
+        <option name="myStatusName" value="Changed on server" />
+        <option name="mySupportsDeletion" value="false" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="CHANGED_ON_SERVER" />
+        <FILE-GROUP>
+          <option name="myUpdateName" value="Updated" />
+          <option name="myStatusName" value="Changed" />
+          <option name="mySupportsDeletion" value="false" />
+          <option name="myCanBeAbsent" value="false" />
+          <option name="myId" value="UPDATED" />
+          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/.idea/workspace.xml</PATH>
+          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/utils/B.wav</PATH>
+          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/utils/voice.py</PATH>
+          <PATH vcs="Git" revision="">$PROJECT_DIR$/gitignore</PATH>
+        </FILE-GROUP>
+        <FILE-GROUP>
+          <option name="myUpdateName" value="Created" />
+          <option name="myStatusName" value="Created" />
+          <option name="mySupportsDeletion" value="false" />
+          <option name="myCanBeAbsent" value="false" />
+          <option name="myId" value="CREATED" />
+          <PATH vcs="Git" revision="">$PROJECT_DIR$/.gitignore</PATH>
+          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/run/__pycache__/Converter.cpython-35.pyc</PATH>
+        </FILE-GROUP>
+        <FILE-GROUP>
+          <option name="myUpdateName" value="Deleted" />
+          <option name="myStatusName" value="Deleted" />
+          <option name="mySupportsDeletion" value="false" />
+          <option name="myCanBeAbsent" value="true" />
+          <option name="myId" value="REMOVED_FROM_REPOSITORY" />
+        </FILE-GROUP>
+        <FILE-GROUP>
+          <option name="myUpdateName" value="Restored" />
+          <option name="myStatusName" value="Will be restored" />
+          <option name="mySupportsDeletion" value="false" />
+          <option name="myCanBeAbsent" value="false" />
+          <option name="myId" value="RESTORED" />
+        </FILE-GROUP>
+      </FILE-GROUP>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Modified" />
+        <option name="myStatusName" value="Modified" />
+        <option name="mySupportsDeletion" value="false" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="MODIFIED" />
+      </FILE-GROUP>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Skipped" />
+        <option name="myStatusName" value="Skipped" />
+        <option name="mySupportsDeletion" value="false" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="SKIPPED" />
+      </FILE-GROUP>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Merged with conflicts" />
+        <option name="myStatusName" value="Will be merged with conflicts" />
+        <option name="mySupportsDeletion" value="false" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="MERGED_WITH_CONFLICTS" />
+      </FILE-GROUP>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Merged with tree conflicts" />
+        <option name="myStatusName" value="Merged with tree conflicts" />
+        <option name="mySupportsDeletion" value="false" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="MERGED_WITH_TREE_CONFLICT" />
+      </FILE-GROUP>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Merged with property conflicts" />
+        <option name="myStatusName" value="Will be merged with property conflicts" />
+        <option name="mySupportsDeletion" value="false" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="MERGED_WITH_PROPERTY_CONFLICT" />
+      </FILE-GROUP>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Merged" />
+        <option name="myStatusName" value="Will be merged" />
+        <option name="mySupportsDeletion" value="false" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="MERGED" />
+      </FILE-GROUP>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Not in repository" />
+        <option name="myStatusName" value="Not in repository" />
+        <option name="mySupportsDeletion" value="true" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="UNKNOWN" />
+      </FILE-GROUP>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Locally added" />
+        <option name="myStatusName" value="Locally added" />
+        <option name="mySupportsDeletion" value="false" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="LOCALLY_ADDED" />
+      </FILE-GROUP>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Locally removed" />
+        <option name="myStatusName" value="Locally removed" />
+        <option name="mySupportsDeletion" value="false" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="LOCALLY_REMOVED" />
+      </FILE-GROUP>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Switched" />
+        <option name="myStatusName" value="Switched" />
+        <option name="mySupportsDeletion" value="false" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="SWITCHED" />
+      </FILE-GROUP>
+    </UpdatedFiles>
   </component>
   <component name="RunDashboard">
     <option name="ruleStates">
@@ -401,7 +532,14 @@
       <option name="project" value="LOCAL" />
       <updated>1527066622835</updated>
     </task>
-    <option name="localTasksCounter" value="10" />
+    <task id="LOCAL-00010" summary="[update] test update &lt;version 2.2.0&gt;&#10;&#10;[change] tanhを位相スペクトラムにのみかけるようにした。また、PI倍している&#10;[]">
+      <created>1527172534893</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1527172534893</updated>
+    </task>
+    <option name="localTasksCounter" value="11" />
     <servers />
   </component>
   <component name="TodoView">
@@ -415,11 +553,11 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1456" height="876" extended-state="6" />
+    <editor active="true" />
     <layout>
       <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.2496474" />
       <window_info anchor="bottom" id="TODO" order="6" weight="0.3292683" />
       <window_info anchor="bottom" id="Event Log" order="9" sideWeight="0.50070524" side_tool="true" weight="0.3292683" />
-      <window_info anchor="bottom" id="Find" order="1" weight="0.3292683" />
       <window_info anchor="bottom" id="Version Control" order="10" weight="0.3292683" />
       <window_info anchor="bottom" id="Python Console" order="7" weight="0.3292683" />
       <window_info anchor="bottom" id="Run" order="5" sideWeight="0.4992948" visible="true" weight="0.2615176" />
@@ -429,10 +567,11 @@
       <window_info anchor="bottom" id="Debug" order="2" weight="0.39972898" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="4" weight="0.4" />
-      <window_info anchor="bottom" id="Cvs" order="3" weight="0.25" />
       <window_info anchor="right" id="Commander" order="0" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="bottom" id="Message" order="0" />
+      <window_info anchor="bottom" id="Cvs" order="3" weight="0.25" />
+      <window_info anchor="bottom" id="Find" order="1" weight="0.3292683" />
     </layout>
   </component>
   <component name="VcsContentAnnotationSettings">
@@ -448,7 +587,8 @@
     <MESSAGE value="[update] test update &lt;version 1.8.0&gt;&#10;&#10;[change] test機能の追加" />
     <MESSAGE value="[update] test update &lt;version 2.0.0&gt;&#10;&#10;[fix] test機能の修正" />
     <MESSAGE value="[update] test update &lt;version 2.1.0&gt;&#10;&#10;[add]    相対test機能の追加&#10;[change] Sigmoidを改めて導入" />
-    <option name="LAST_COMMIT_MESSAGE" value="[update] test update &lt;version 2.1.0&gt;&#10;&#10;[add]    相対test機能の追加&#10;[change] Sigmoidを改めて導入" />
+    <MESSAGE value="[update] test update &lt;version 2.2.0&gt;&#10;&#10;[change] tanhを位相スペクトラムにのみかけるようにした。また、PI倍している&#10;[]" />
+    <option name="LAST_COMMIT_MESSAGE" value="[update] test update &lt;version 2.2.0&gt;&#10;&#10;[change] tanhを位相スペクトラムにのみかけるようにした。また、PI倍している&#10;[]" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -456,23 +596,6 @@
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="8864">
-          <caret line="554" column="44" selection-start-line="554" selection-start-column="44" selection-end-line="554" selection-end-column="44" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/utils/voice.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="576">
-          <caret line="39" column="27" selection-start-line="39" selection-start-column="27" selection-end-line="39" selection-end-column="27" />
-          <folding>
-            <element signature="e#0#14#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/VRC/utils/testing.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="32">
@@ -719,13 +842,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$USER_HOME$/AppData/Local/Programs/Python/Python36/Lib/site-packages/numpy/core/_methods.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="156">
-          <caret line="79" selection-start-line="79" selection-end-line="79" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/VRC/utils/noise_profile.py" />
     <entry file="file://$USER_HOME$/AppData/Local/Programs/Python/Python36/Lib/site-packages/matplotlib/transforms.py">
       <provider selected="true" editor-type-id="text-editor">
@@ -738,13 +854,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="153">
           <caret line="2960" selection-start-line="2960" selection-end-line="2960" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/utils/testing.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="32">
-          <caret line="2" column="11" selection-start-line="2" selection-start-column="11" selection-end-line="2" selection-end-column="11" />
         </state>
       </provider>
     </entry>
@@ -790,20 +899,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/train/test.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state>
-          <caret line="1" column="10" selection-start-line="1" selection-start-column="10" selection-end-line="1" selection-end-column="10" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/train/setting.json">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="225">
-          <caret line="27" column="28" selection-start-line="27" selection-start-column="28" selection-end-line="27" selection-end-column="28" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/VRC/train/main.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="240">
@@ -811,22 +906,64 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
+    <entry file="file://$PROJECT_DIR$/VRC/utils/testing.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-4571">
-          <caret line="114" column="23" selection-start-line="114" selection-start-column="23" selection-end-line="114" selection-end-column="23" />
-          <folding>
-            <element signature="e#0#21#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="32">
+          <caret line="2" column="11" selection-start-line="2" selection-start-column="11" selection-end-line="2" selection-end-column="11" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/utils/voice.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-175">
-          <caret line="65" column="19" selection-start-line="65" selection-start-column="19" selection-end-line="65" selection-end-column="19" />
+        <state relative-caret-position="224">
+          <caret line="78" column="19" selection-start-line="78" selection-start-column="19" selection-end-line="78" selection-end-column="19" />
           <folding>
             <element signature="e#0#14#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/VRC/train/test.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state>
+          <caret line="1" column="10" selection-start-line="1" selection-start-column="10" selection-end-line="1" selection-end-column="10" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/AppData/Local/Programs/Python/Python36/Lib/site-packages/numpy/core/_methods.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="156">
+          <caret line="79" selection-start-line="79" selection-end-line="79" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/AppData/Local/Programs/Python/Python36/Lib/site-packages/numpy/core/fromnumeric.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="173">
+          <caret line="2956" selection-start-line="2956" selection-end-line="2956" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/VRC/train/trained_models/wave2wave2.2.000_survey11/checkpoint">
+      <provider selected="true" editor-type-id="text-editor">
+        <state>
+          <caret column="43" selection-start-column="43" selection-end-column="43" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/VRC/train/setting.json">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="240">
+          <caret line="27" column="18" selection-start-line="27" selection-start-column="18" selection-end-line="27" selection-end-column="18" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="54">
+          <caret line="114" column="89" selection-start-line="114" selection-start-column="89" selection-end-line="114" selection-end-column="89" />
+          <folding>
+            <element signature="e#0#21#0" expanded="true" />
           </folding>
         </state>
       </provider>

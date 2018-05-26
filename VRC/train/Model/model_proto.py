@@ -25,6 +25,7 @@ class Model:
         self.args["depth"] =4
         self.args["d_depth"] = 4
         self.args["train_epoch"]=500
+        self.args["start_epoch"]=0
         self.args["test"]=True
         self.args["log"] = True
         self.args["tensorboard"]=False
@@ -111,12 +112,7 @@ class Model:
         #creating generator
         #G-net（生成側）の作成
         with tf.variable_scope("generator_1"):
-            ipt=self.input_size_model[0:3]
-            ipt.append(1)
-            self.fake_B_image1=generator(tf.reshape(self.input_model[:,:,:,0],ipt), reuse=False,chs=self.args["G_channel"],depth=self.args["depth"],f=self.args["filter_g"],s=self.args["strides_g"],activate=False)
-            self.fake_B_image2 = generator(tf.reshape(self.input_model[:,:,:,1],ipt), reuse=False, chs=self.args["G_channel"],
-                                          depth=self.args["depth"], f=self.args["filter_g2"], s=self.args["strides_g2"],activate=True)
-            self.fake_B_image=tf.concat([self.fake_B_image1,self.fake_B_image2],3)
+            self.fake_B_image=generator(tf.reshape(self.input_model,self.input_size_model), reuse=False,chs=self.args["G_channel"],depth=self.args["depth"],f=self.args["filter_g"],s=self.args["strides_g"],activate=False)
         self.noise = tf.placeholder(tf.float32, [self.args["batch_size"]], "inputs_Noise")
 
         b_true_noised=self.input_model_label+tf.random_normal(self.input_model_label.shape,0,self.noise[0])
@@ -159,7 +155,7 @@ class Model:
         self.g_loss_sum_1= tf.summary.merge([self.g_loss_all,self.g_loss_gan,self.dscore])
         self.d_loss_sum = tf.summary.merge([tf.summary.scalar("d_loss", tf.reduce_mean(self.d_loss_R)),tf.summary.scalar("d_loss_F", tf.reduce_mean(self.d_loss_F))])
         self.result=tf.placeholder(tf.float32, [1,1,320000], name="FB")
-        self.fake_B_sum = tf.summary.audio("fake_B", tf.reshape(self.result,[1,320000,1]), 32000, 1)
+        self.fake_B_sum = tf.summary.audio("fake_B", tf.reshape(self.result,[1,320000,1]), 16000, 1)
         self.g_test_epo=tf.placeholder(tf.float32,name="g_test_epoch_end")
         self.g_test_epo_2 = tf.placeholder(tf.float32, name="g_test_epoch_end_2")
         self.g_test_epoch = tf.summary.merge([tf.summary.scalar("g_test_epoch_end", self.g_test_epo),tf.summary.scalar("g_related_score", self.g_test_epo_2)])
@@ -314,7 +310,7 @@ class Model:
 
         test_before=None
 
-        for epoch in range(0,self.args["train_epoch"]):
+        for epoch in range(self.args["start_epoch"],self.args["train_epoch"]):
             # shuffling training data
             # トレーニングデータのシャッフル
             np.random.shuffle(data)
@@ -561,7 +557,7 @@ class Model:
             fft_s = np.fft.ifft(data,n=self.args["NFFT"], axis=1)
 
         fft_data = fft_s.real
-        fft_data[:]/=window
+        # fft_data[:]/=window
         v = fft_data[:, :self.args["NFFT"]// 2]
         lats = np.roll(fft_data[:, self.args["NFFT"] // 2:], (1, 0))
         lats[0, :] = 0
@@ -685,7 +681,7 @@ def generator(current_outputs,reuse,depth,chs,f,s,activate=False):
         ten = tf.layers.conv2d_transpose(ten, output_shape, kernel_size=f, strides=s, padding="VALID",
                                          kernel_initializer=tf.contrib.layers.xavier_initializer(),
                                          data_format="channels_last")
-        if i>2:
+        if i>1:
             ten = tf.nn.dropout(ten, 0.5**(depth-i))
 
         current = ten + connections
