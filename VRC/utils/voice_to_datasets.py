@@ -1,9 +1,9 @@
 import pyaudio
 import numpy as np
 import wave
-import matplotlib.pyplot as pl
 import time
 import glob
+import cupy
 NFFT=1024
 SHIFT=NFFT//2
 C1=32.703
@@ -12,8 +12,6 @@ Hz=C1*(2**0)
 now=317.6
 target=563.666
 upidx=target/now
-print(upidx)
-
 
 def fft(data):
     time_ruler=data.shape[0]//SHIFT
@@ -26,7 +24,9 @@ def fft(data):
         frame=data[pos:pos+NFFT]
         wined[fft_index]=frame*window
         pos += NFFT // 2
-    fft_rs=np.fft.fft(wined,n=NFFT,axis=-1)
+    wined=cupy.asarray(wined, dtype=cupy.float64)
+    fft_rs=cupy.fft.fft(wined,n=NFFT,axis=-1)
+    fft_rs=cupy.asnumpy(fft_rs)
     return fft_rs.reshape(time_ruler, -1)
 def shift(data_inps,pitch):
     data_inp=data_inps.reshape(-1)
@@ -78,7 +78,7 @@ CHANNELS = 1        #モノラル
 RATE = 16000       #サンプルレート
 CHUNK = 1024     #データ点数
 RECORD_SECONDS = 5 #録音する時間の長さ
-WAVE_INPUT_FILENAME = "../train/Model/datasets/source"
+WAVE_INPUT_FILENAME = "../train/Model/datasets/source/01"
 files=glob.glob(WAVE_INPUT_FILENAME+"/*.wav")
 cnt=0
 for file in files:
@@ -111,14 +111,14 @@ for file in files:
     ttm=time.time()
     resp=np.zeros([NFFT//2])
     for i in range(times):
-        ind=SHIFT+term
-        startpos=term*(i+1)
+        ind=SHIFT+NFFT+term
+        startpos=term*i+data_realA.shape[0]%term
         data_realAb = data_realA[max(startpos-ind,0):startpos]
         data_realBb = data_realB[max(startpos - ind, 0):startpos]
         r=ind-data_realAb.shape[0]
         if r>0:
-            data_realAb=np.pad(data_realAb,(0,r),"reflect")
-            data_realBb=np.pad(data_realBb,(0,r),"reflect")
+            data_realAb=np.pad(data_realAb,(r,0),"constant")
+            data_realBb=np.pad(data_realBb,(r,0),"constant")
         dmn=data_realAb/32767.0
         ddms=data_realBb/32767.0
         dmn=shift(dmn,upidx)
