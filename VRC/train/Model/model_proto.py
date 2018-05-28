@@ -113,18 +113,29 @@ class Model:
         #creating generator
         #G-net（生成側）の作成
         with tf.variable_scope("generator_1"):
-            self.fake_B_image=generator(tf.reshape(self.input_model,self.input_size_model), reuse=False,chs=self.args["G_channel"],tr=self.training,depth=self.args["depth"],f=self.args["filter_g"],s=self.args["strides_g"],activate=False)
+            self.ifs=generator(tf.reshape(self.input_model,self.input_size_model), reuse=False,chs=self.args["G_channel"],depth=self.args["depth"],f=self.args["filter_g"],s=self.args["strides_g"])
+            self.fake_B_image=self.ifs[-1]
         self.noise = tf.placeholder(tf.float32, [self.args["batch_size"]], "inputs_Noise")
 
         b_true_noised=self.input_model_label+tf.random_normal(self.input_model_label.shape,0,self.noise[0])
         #creating discriminator inputs
         #D-netの入力の作成
+        self.res3=[]
+        for c in self.ifs:
+           self.res3.append(tf.concat([self.input_model,c], axis=1))
         self.res1=tf.concat([self.input_model,self.fake_B_image], axis=1)
+
         self.res2=tf.concat([self.input_model,b_true_noised], axis=1)
         #creating discriminator
         #D-net（判別側)の作成
+        self.d_judge_F_logits=[]
         with tf.variable_scope("discrim",reuse=tf.AUTO_REUSE):
             self.d_judge_F1,self.d_judge_F1_logits=discriminator(self.res1,False,self.args["filter_d"],self.args["strides_d"],self.args["d_depth"],self.args["D_channels"])
+            for g  in self.res3:
+                self.d_judge_F_logits.append(discriminator(g, True, self.args["filter_d"],
+                                                                        self.args["strides_d"], self.args["d_depth"],
+                                                                        self.args["D_channels"]))
+
             self.d_judge_R,self.d_judge_R_logits=discriminator(self.res2,True,self.args["filter_d"],self.args["strides_d"],self.args["d_depth"],self.args["D_channels"])
 
         #getting individual variabloes
@@ -132,22 +143,35 @@ class Model:
         self.g_vars_1=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"generator_1")
         self.d_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"discrim")
 
-        #objective-functions of generator
-        #G-netの目的関数
 
-        #L1 norm loss
-        L1=tf.reduce_mean(tf.abs(self.input_model_label-self.fake_B_image))
-        #Gan loss
-        DS=tf.reduce_mean(-tf.log(self.d_judge_F1+1e-8))
-        #generator loss
-        self.g_loss_1=L1*self.args["weight_Norm"]+DS
         c=1.0-self.noise
         a=tf.reshape(c,self.d_judge_F1_logits.shape)
         #objective-functions of discriminator
         #D-netの目的関数
         self.d_loss_R = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=a,logits=self.d_judge_R_logits))
         self.d_loss_F = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.zeros(self.d_judge_F1_logits.shape),logits=self.d_judge_F1_logits))
-        self.d_loss=(self.d_loss_F+self.d_loss_R)/2.0
+
+        self.d_loss_Fs=[]
+        for f in self.d_judge_F_logits:
+            self.d_loss_Fs.append(tf.reduce_mean(
+                tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.zeros(self.d_judge_F1_logits.shape),
+                                                        logits=f[1])))
+
+        self.d_loss=(self.d_loss_F+self.d_loss_R+tf.reduce_mean(self.d_loss_Fs))/3.0
+
+        # objective-functions of generator
+        # G-netの目的関数
+
+        # L1 norm loss
+        L1 = tf.reduce_mean(tf.abs(self.input_model_label - self.fake_B_image))
+        # Gan loss
+        DS = tf.reduce_mean(-tf.log(self.d_judge_F1 + 1e-8))
+        drm=[]
+        for f in self.d_judge_F_logits:
+            drm.append(-tf.log(f[0] + 1e-8))
+        DSs=tf.reduce_mean(drm)
+        # generator loss
+        self.g_loss_1 = L1 * self.args["weight_Norm"] + DS + DSs
 
         #BN_UPDATE
         self.update_ops=tf.get_collection(tf.GraphKeys.UPDATE_OPS)
@@ -603,51 +627,42 @@ def discriminator(inp,reuse,f,s,depth,chs):
     h4=tf.reshape(current, [current.shape[0],-1])
     ten=tf.layers.dense(h4,1,name="dence",reuse=reuse)
     return tf.nn.sigmoid(ten),ten
-def generator(current_outputs,reuse,depth,chs,f,s,tr,activate=False):
+def generator(current_outputs,reuse,depth,chs,f,s):
     if reuse:
         tf.get_variable_scope().reuse_variables()
     else:
         assert tf.get_variable_scope().reuse == False
     current=current_outputs
+    ctr=[]
     output_shape=int(current.shape[3])
     #main process
     for i in range(depth):
         connections = current
-        ten=block(current,output_shape,chs,f,s,tr)
+        ten=block(current,output_shape,chs,f,s)
         if i>1:
-            ten=tf.layers.dropout(ten,0.5,training=tr)
+            ten=tf.nn.dropout(ten,0.5)
         current = ten + connections
-    cxp=current
-    for i in range(2):
-        connections = cxp
-        cxp=block(cxp,1,chs, f, s,tr)
-        cxp=cxp+tf.slice(connections,[0,0,0,0],cxp.shape)
-    cxf = current
-    for i in range(2):
-        connections = cxf
-        cxf = block(cxf, 1, chs, f, [1,1],tr)
-        cxf = cxf + tf.slice(connections,[0,0,0,0],cxf.shape)
-    ca =cxp.shape
-    if activate:
-        x2=tf.constant([[[[16]]]])
-        cxp=tf.nn.tanh(cxp)*tf.tile(x2,[int(ca[0]),int(ca[1]),int(ca[2]),1])
-    current=tf.concat([cxp,cxf],axis=3)
-    return current
-def block(current,output_shape,chs,f,s,tr):
+        ctr.append(current)
+    return ctr
+def block(current,output_shape,chs,f,s):
     ten=current
-    ten = tf.layers.batch_normalization(ten, axis=3, training=tr,trainable=True,
+    ten = tf.layers.batch_normalization(ten, axis=3, training=True,trainable=True,
                                         gamma_initializer=tf.ones_initializer())
     
     ten = tf.layers.conv2d(ten, chs, kernel_size=f, strides=s, padding="VALID",
                            kernel_initializer=tf.contrib.layers.xavier_initializer(), data_format="channels_last")
     ten = tf.nn.leaky_relu(ten)
 
-    ten = tf.layers.batch_normalization(ten, axis=3, training=tr, trainable=True,
+    ten = tf.layers.batch_normalization(ten, axis=3, training=True, trainable=True,
                                         gamma_initializer=tf.ones_initializer())
 
     ten = tf.layers.conv2d_transpose(ten, output_shape, kernel_size=f, strides=s, padding="VALID",
                                      kernel_initializer=tf.contrib.layers.xavier_initializer(),
                                      data_format="channels_last")
+
+    ten = tf.layers.batch_normalization(ten, axis=3, training=True, trainable=True,
+                                        gamma_initializer=tf.ones_initializer())
+
     return ten
 
 def shift(data_inps,pitch):
