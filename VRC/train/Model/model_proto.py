@@ -9,7 +9,6 @@ from tensorflow.python import debug as tf_debug
 from tensorflow.python.debug.lib.debug_data import has_inf_or_nan
 import pyaudio
 from hyperdash import Experiment
-import random
 from datetime import datetime
 import json
 import shutil
@@ -85,7 +84,7 @@ class Model:
             self.args["pitch_rate"] = self.args["pitch_tar"]/self.args["pitch_res"]
             print(" [!] pitch_rate is not found . calculated value : "+str(self.args["pitch_rate"]))
         self.args["SHIFT"] = self.args["NFFT"]//2
-        ss=int(self.args["input_size"])*2//int(self.args["NFFT"])+2
+        ss=int(self.args["input_size"])*2//int(self.args["NFFT"])+1
         self.args["name_save"] = self.args["model_name"] + self.args["version"]
 
         self.input_size_model=[self.args["batch_size"],ss,self.args["NFFT"],2]
@@ -202,7 +201,7 @@ class Model:
 
 
         tt=time.time()
-        ipt=self.args["input_size"]+self.args["NFFT"]+self.args["SHIFT"]
+        ipt=self.args["input_size"]+self.args["NFFT"]
         times=in_put.shape[1]//(self.args["input_size"])+1
         if in_put.shape[1]%((self.args["input_size"])*self.args["batch_size"])==0:
             times-=1
@@ -254,15 +253,6 @@ class Model:
         h=otp.shape[0]-in_put.shape[1]
         if h>0:
             otp=otp[h:]
-        # resas=resas[1:].reshape(-1,self.args["NFFT"],2)
-        # plt.subplot(4, 1, 1)
-        # abn = np.transpose(resas[ :, :, 0], (1, 0))
-        # plt.imshow(abn,aspect="auto")
-        # plt.colorbar()
-        # plt.subplot(4, 1, 2)
-        # abn = np.transpose(resas[:, :, 1], (1, 0))
-        # plt.imshow(abn,aspect="auto")
-        # plt.colorbar()
 
         return otp.reshape(1,in_put.shape[1],in_put.shape[2]),time.time()-tt
 
@@ -329,7 +319,16 @@ class Model:
 
         # times of one epoch
         # 回数計算
-        batch_idxs = min(len(data), self.args["train_data_num"]) // self.args["batch_size"]
+        train_data_num = min(len(data), self.args["train_data_num"])
+        batch_idxs = train_data_num // self.args["batch_size"]
+        index_list=[h for h in range(train_data_num)]
+
+
+        #　学習データをメモリに乗っける
+        batch_files2 = data[:train_data_num]
+        batch_files = ["./Model/datasets/train/Answer_data/" + os.path.basename(bn) for bn in data[0:train_data_num]]
+        batch_sounds_r = np.asarray([(imread(batch_file)) for batch_file in batch_files])
+        batch_sounds_t = np.asarray([(imread(batch_file)) for batch_file in batch_files2])
 
         # hyperdash
         if self.args["hyperdash"]:
@@ -343,7 +342,7 @@ class Model:
         for epoch in range(self.args["start_epoch"],self.args["train_epoch"]):
             # shuffling training data
             # トレーニングデータのシャッフル
-            np.random.shuffle(data)
+            np.random.shuffle(index_list)
             test1=0.0
             ts = 0.0
             ipt = self.input_size_model[1]
@@ -379,19 +378,18 @@ class Model:
             for idx in xrange(0, batch_idxs):
                 # loading trainig data
                 # トレーニングデータの読み込み
-                batch_files2 = data[idx*self.args["batch_size"]:(idx+1)*self.args["batch_size"]]
-                batch_files = ["./Model/datasets/train/Answer_data/"+os.path.basename(bn) for bn in data[idx * self.args["batch_size"]:(idx + 1) * self.args["batch_size"]]]
-                batch_sounds1 = np.asarray([(imread(batch_file)) for batch_file in batch_files])
-                batch_sounds2= np.asarray([(imread(batch_file)) for batch_file in batch_files2])
+                st=self.args["batch_size"]*idx
+                batch_sounds1 = np.asarray([batch_sounds_r[ind] for ind in index_list[st:st+self.args["batch_size"]]])
+                batch_sounds2= np.asarray([batch_sounds_t[ind] for ind in index_list[st:st+self.args["batch_size"]]])
                 # calculating one iteration repetation times
                 # 1イテレーション実行回数計算
-                times=80000//self.args["input_size"]+1
-                if int(80000)%self.args["input_size"]==0:
+                times=int(batch_sounds1.shape[1])//self.input_size_model[1]+1
+                if int(batch_sounds1.shape[1])%self.input_size_model[1]==0:
                     times-=1
                 # shuffle start time
                 # 開始タイミングのシャッフル
                 time_set=[j for j in range(times)]
-                random.shuffle(time_set)
+                np.random.shuffle(time_set)
 
                 ti=(batch_idxs*times)
                 for t in time_set:
@@ -406,6 +404,10 @@ class Model:
                     tar=batch_sounds2[:,max(0,start_pos-ipt):start_pos]
 
                     ts+=time.time()-tm
+                    r=self.input_size_model[1]-res_t.shape[1]
+                    if r>0:
+                        res_t=np.pad(res_t,((0,0),(r,0),(0,0),(0,0)),"constant")
+                        tar = np.pad(tar,((0,0),(r,0),(0,0),(0,0)),"constant")
 
                     # Update G network
                     # G-netの学習
@@ -564,10 +566,10 @@ class Model:
         fft_data[:]/=window
         v = fft_data[:, :self.args["NFFT"]// 2]
         lats = np.roll(fft_data[:, self.args["NFFT"] // 2:], (1, 0))
-        red=lats[0, :]
-        lats[0, :]=0.0
+        reds=lats[0, :].copy
+        lats[0, :]=red
         spec = np.reshape(v + lats, (-1))
-        return spec,red
+        return spec,reds
 
 
     def test(self):

@@ -3,6 +3,7 @@ import numpy as np
 import wave
 import time
 import glob
+import cupy
 NFFT=1024
 SHIFT=NFFT//2
 C1=32.703
@@ -110,11 +111,12 @@ for file in files:
     ttm=time.time()
     resp=np.zeros([NFFT//2])
     for i in range(times):
-        ind=SHIFT+NFFT+term
+        ind=NFFT+term
         startpos=term*i+data_realA.shape[0]%term
         data_realAb = data_realA[max(startpos-ind,0):startpos]
         data_realBb = data_realB[max(startpos - ind, 0):startpos]
         r=ind-data_realAb.shape[0]
+        print(r)
         if r>0:
             data_realAb=np.pad(data_realAb,(r,0),"constant")
             data_realBb=np.pad(data_realBb,(r,0),"constant")
@@ -131,5 +133,6 @@ for file in files:
         abc = np.append(abc, bss, axis=0)
         ab = np.append(ab, a, axis=0)
     np.save("../train/Model/datasets/train/Source_data/"+str(cnt)+".data",abc)
+    print(abc.shape)
     np.save("../train/Model/datasets/train/Answer_data/"+str(cnt) +".data", ab)
     cnt+=1
