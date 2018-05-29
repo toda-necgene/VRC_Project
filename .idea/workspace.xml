@@ -1,26 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="BookmarkManager">
-    <bookmark url="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py" line="533" />
+    <bookmark url="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py" line="557" />
   </component>
   <component name="ChangeListManager">
     <list default="true" id="22fa9a76-09a0-4f62-a2d8-6f3210b56f42" name="Default" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/train/Model/datasets/source/01/Wi-Fi飛んでる？.wav" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/train/Model/datasets/source/01/noise.wav" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/train/Model/datasets/source/01/あなたの手番ですよ.wav" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/train/Model/datasets/source/01/あれ？.wav" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/train/Model/datasets/source/01/うわー91.wav" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/train/Model/datasets/source/01/おはよう80.wav" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/train/Model/datasets/source/01/おはようございます.wav" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/train/Model/datasets/source/01/おらぁ.wav" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/train/Model/datasets/source/01/こんにちわ.wav" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/train/Model/datasets/source/01/こんにちわんこ.wav" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/train/Model/datasets/source/01/カウントダウン54321.wav" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/train/Model/datasets/source/01/８月３０日.wav" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/VRC/train/Model/model_proto.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/train/Model/model_proto.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/VRC/train/setting.json" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/train/setting.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/utils/voice_to_datasets.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/utils/voice_to_datasets.py" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/VRC/Network/to/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -35,8 +22,8 @@
       <file leaf-file-name="setting.json" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/VRC/train/setting.json">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="64">
-              <caret line="10" column="16" selection-start-line="10" selection-start-column="16" selection-end-line="10" selection-end-column="16" />
+            <state relative-caret-position="400">
+              <caret line="25" column="28" selection-start-line="25" selection-start-column="28" selection-end-line="25" selection-end-column="28" />
             </state>
           </provider>
         </entry>
@@ -44,8 +31,8 @@
       <file leaf-file-name="model_proto.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="107">
-              <caret line="383" column="20" selection-start-line="383" selection-start-column="20" selection-end-line="383" selection-end-column="20" />
+            <state relative-caret-position="293">
+              <caret line="640" column="48" selection-start-line="640" selection-start-column="48" selection-end-line="640" selection-end-column="48" />
               <folding>
                 <element signature="e#0#21#0" expanded="true" />
               </folding>
@@ -141,21 +128,6 @@
               <item name="VRC" type="462c0819:PsiDirectoryNode" />
               <item name="train" type="462c0819:PsiDirectoryNode" />
               <item name="logs" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
-              <item name="vrc" type="462c0819:PsiDirectoryNode" />
-              <item name="VRC" type="462c0819:PsiDirectoryNode" />
-              <item name="train" type="462c0819:PsiDirectoryNode" />
-              <item name="logs" type="462c0819:PsiDirectoryNode" />
-              <item name="[glr=0.001,gb=0.5,dlr=0.001,db=0.5]wave2wave2.2.003_survey1" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
-              <item name="vrc" type="462c0819:PsiDirectoryNode" />
-              <item name="VRC" type="462c0819:PsiDirectoryNode" />
-              <item name="train" type="462c0819:PsiDirectoryNode" />
-              <item name="Model" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
@@ -412,7 +384,21 @@
       <option name="project" value="LOCAL" />
       <updated>1527330336712</updated>
     </task>
-    <option name="localTasksCounter" value="12" />
+    <task id="LOCAL-00012" summary="[update] speedup update &lt;version 2.2.003&gt;&#10;&#10;[add] 学習データを事前用意できる形に&#10;[fix] FFTのバグを修正">
+      <created>1527506506627</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1527506506627</updated>
+    </task>
+    <task id="LOCAL-00013" summary="[update] speedup update &lt;version 2.2.003&gt;&#10;&#10;[add] 安定化">
+      <created>1527548821691</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1527548821691</updated>
+    </task>
+    <option name="localTasksCounter" value="14" />
     <servers />
   </component>
   <component name="TodoView">
@@ -426,16 +412,15 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1456" height="876" extended-state="6" />
-    <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.2496474" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.2496474" />
       <window_info anchor="bottom" id="TODO" order="6" weight="0.3292683" />
       <window_info anchor="bottom" id="Event Log" order="8" sideWeight="0.50070524" side_tool="true" weight="0.3292683" />
       <window_info anchor="bottom" id="Version Control" order="10" weight="0.3292683" />
       <window_info anchor="bottom" id="Python Console" order="7" weight="0.3292683" />
-      <window_info active="true" anchor="bottom" id="Run" order="5" sideWeight="0.4992948" visible="true" weight="0.2615176" />
+      <window_info anchor="bottom" id="Run" order="5" sideWeight="0.4992948" weight="0.2615176" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
-      <window_info anchor="bottom" id="Terminal" order="9" weight="0.3292683" />
+      <window_info anchor="bottom" id="Terminal" order="9" visible="true" weight="0.3292683" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Debug" order="2" weight="0.39972898" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
@@ -462,7 +447,9 @@
     <MESSAGE value="[update] test update &lt;version 2.1.0&gt;&#10;&#10;[add]    相対test機能の追加&#10;[change] Sigmoidを改めて導入" />
     <MESSAGE value="[update] test update &lt;version 2.2.0&gt;&#10;&#10;[change] tanhを位相スペクトラムにのみかけるようにした。また、PI倍している&#10;[]" />
     <MESSAGE value="[update] test update &lt;version 2.2.0&gt;&#10;&#10;[change] tanhを廃止&#10;[change] split network 廃止" />
-    <option name="LAST_COMMIT_MESSAGE" value="[update] test update &lt;version 2.2.0&gt;&#10;&#10;[change] tanhを廃止&#10;[change] split network 廃止" />
+    <MESSAGE value="[update] speedup update &lt;version 2.2.003&gt;&#10;&#10;[add] 学習データを事前用意できる形に&#10;[fix] FFTのバグを修正" />
+    <MESSAGE value="[update] speedup update &lt;version 2.2.003&gt;&#10;&#10;[add] 安定化" />
+    <option name="LAST_COMMIT_MESSAGE" value="[update] speedup update &lt;version 2.2.003&gt;&#10;&#10;[add] 安定化" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -808,8 +795,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="107">
-          <caret line="383" column="20" selection-start-line="383" selection-start-column="20" selection-end-line="383" selection-end-column="20" />
+        <state relative-caret-position="293">
+          <caret line="640" column="48" selection-start-line="640" selection-start-column="48" selection-end-line="640" selection-end-column="48" />
           <folding>
             <element signature="e#0#21#0" expanded="true" />
           </folding>
@@ -818,8 +805,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/train/setting.json">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="64">
-          <caret line="10" column="16" selection-start-line="10" selection-start-column="16" selection-end-line="10" selection-end-column="16" />
+        <state relative-caret-position="400">
+          <caret line="25" column="28" selection-start-line="25" selection-start-column="28" selection-end-line="25" selection-end-column="28" />
         </state>
       </provider>
     </entry>

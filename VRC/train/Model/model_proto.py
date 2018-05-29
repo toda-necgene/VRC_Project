@@ -638,13 +638,13 @@ def generator(current_outputs,reuse,depth,chs,f,s):
     #main process
     for i in range(depth):
         connections = current
-        ten=block(current,output_shape,chs,f,s)
+        ten=block(current,output_shape,chs,f,s,i)
         if i>1:
             ten=tf.nn.dropout(ten,0.5)
         current = ten + connections
         ctr.append(current)
     return ctr
-def block(current,output_shape,chs,f,s):
+def block(current,output_shape,chs,f,s,depth):
     ten=current
     ten = tf.layers.batch_normalization(ten, axis=3, training=True,trainable=True,
                                         gamma_initializer=tf.ones_initializer())
@@ -662,6 +662,13 @@ def block(current,output_shape,chs,f,s):
 
     ten = tf.layers.batch_normalization(ten, axis=3, training=True, trainable=True,
                                         gamma_initializer=tf.ones_initializer())
+
+    #Add_filter_Layer
+    with tf.variable_scope("add_layer_Layer_"+str(depth)):
+        sc=ten.shape[1:]
+        fig=tf.reshape(tf.get_variable("add_filter",sc,tf.float32,tf.ones_initializer(),trainable=True),[1,sc[0],sc[1],sc[2]])
+        figs=tf.tile(fig,(ten.shape[0],1,1,1))
+        ten = ten + figs
 
     return ten
 
