@@ -3,7 +3,6 @@ import numpy as np
 import wave
 import time
 import glob
-import cupy
 NFFT=1024
 SHIFT=NFFT//2
 C1=32.703
