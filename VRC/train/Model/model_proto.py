@@ -162,22 +162,26 @@ class Model:
         # G-netの目的関数
 
         # L1 norm loss
-        L1 = tf.reduce_mean(tf.abs(self.input_model_label - self.fake_B_image))
+        drml = []
+        for f in self.ifs:
+            a=tf.clip_by_value(tf.abs(self.input_model_label[:,:,:,0] - f[:,:,:,0])/30,-1.0,1.0)
+            b=tf.clip_by_value(tf.abs(self.input_model_label[:,:,:,1] - f[:,:,:,1])/3.141593/2,-1.0,1.0)
+            drml.append(a+b)
+        L1 = tf.reduce_mean(drml)
         # Gan loss
-        DS = tf.reduce_mean(-tf.log(self.d_judge_F1 + 1e-8))
         drm=[]
         for f in self.d_judge_F_logits:
             drm.append(-tf.log(f[0] + 1e-8))
         DSs=tf.reduce_mean(drm)
         # generator loss
-        self.g_loss_1 = L1 * self.args["weight_Norm"] + DS + DSs
+        self.g_loss_1 = L1 * self.args["weight_Norm"]  + DSs
 
         #BN_UPDATE
         self.update_ops=tf.get_collection(tf.GraphKeys.UPDATE_OPS)
         #tensorboard functions
         #tensorboard 表示用関数
         self.g_loss_all= tf.summary.scalar("g_loss_All", tf.reduce_mean(self.g_loss_1))
-        self.g_loss_gan = tf.summary.scalar("g_loss_gan", tf.reduce_mean(DS))
+        self.g_loss_gan = tf.summary.scalar("g_loss_gan", tf.reduce_mean(DSs))
         self.dscore = tf.summary.scalar("dscore", tf.reduce_mean(self.d_judge_F1))
         self.g_loss_sum_1= tf.summary.merge([self.g_loss_all,self.g_loss_gan,self.dscore])
         self.d_loss_sum = tf.summary.scalar("d_loss", tf.reduce_mean(self.d_loss))
@@ -206,7 +210,7 @@ class Model:
         if in_put.shape[1]%((self.args["input_size"])*self.args["batch_size"])==0:
             times-=1
         otp=np.array([],dtype=np.int16)
-        rss=np.zeros([self.input_size_model[2]//2])
+        rss=np.zeros([self.input_size_model[2]//2],dtype=np.float64)
         for t in range(times):
             # Preprocess
             # 前処理
@@ -546,7 +550,7 @@ class Model:
         spec = np.concatenate((c, d), 2)
 
         return spec
-    def ifft(self,data,red):
+    def ifft(self,data,redi):
         a=np.clip(data[:, :, 0],a_min=-100000,a_max=88)
         sss=np.exp(a)
         p = np.sqrt(sss)
@@ -566,8 +570,8 @@ class Model:
         fft_data[:]/=window
         v = fft_data[:, :self.args["NFFT"]// 2]
         lats = np.roll(fft_data[:, self.args["NFFT"] // 2:], (1, 0))
-        reds=lats[0, :].copy
-        lats[0, :]=red
+        reds=lats[0, :].copy()
+        lats[0, :]=redi
         spec = np.reshape(v + lats, (-1))
         return spec,reds
 
@@ -662,8 +666,8 @@ def block(current,output_shape,chs,f,s,depth):
                                      kernel_initializer=tf.contrib.layers.xavier_initializer(),
                                      data_format="channels_last")
 
-    ten = tf.layers.batch_normalization(ten, axis=3, training=True, trainable=True,
-                                        gamma_initializer=tf.ones_initializer())
+    # ten = tf.layers.batch_normalization(ten, axis=3, training=True, trainable=True,
+    #                                     gamma_initializer=tf.ones_initializer())
 
     #Add_filter_Layer
     with tf.variable_scope("add_layer_Layer_"+str(depth)):
