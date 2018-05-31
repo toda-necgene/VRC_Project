@@ -1,16 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="118ef545-7803-4684-8710-61ccd65f9b8d" name="Default" comment="[update] training speedup update &lt;version 2.2.004&gt;&#10;&#10;[add]データセットをあらかじめFFTに掛けておく機能を追加">
-      <change afterPath="$PROJECT_DIR$/__main__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/utils/model_proto_cpu.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/utils/model_test.py" afterDir="false" />
+    <list default="true" id="118ef545-7803-4684-8710-61ccd65f9b8d" name="Default" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/run/Converter.py" beforeDir="false" afterPath="$PROJECT_DIR$/run/Converter.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/train/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/train/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/train/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/train/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils/voice_to_datasets.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/voice_to_datasets.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils/model_proto_cpu.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/model_proto_cpu.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils/model_test.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/model_test.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -21,20 +15,32 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="375">
-      <file leaf-file-name="model_proto_cpu.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="model_proto_cpu.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/utils/model_proto_cpu.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-1000">
-              <caret line="264" selection-start-line="264" selection-end-line="264" />
+            <state relative-caret-position="309">
+              <caret line="188" column="41" selection-start-line="188" selection-start-column="41" selection-end-line="188" selection-end-column="41" />
+              <folding>
+                <element signature="e#0#23#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="model_test.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="model_test.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/utils/model_test.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="323">
-              <caret line="25" column="19" lean-forward="true" selection-start-line="25" selection-start-column="19" selection-end-line="25" selection-end-column="19" />
+            <state relative-caret-position="3043">
+              <caret line="185" column="26" selection-start-line="185" selection-start-column="26" selection-end-line="185" selection-end-column="26" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="setting.json" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/setting.json">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="289">
+              <caret line="17" column="13" selection-start-line="17" selection-start-column="13" selection-end-line="17" selection-end-column="13" />
             </state>
           </provider>
         </entry>
@@ -45,6 +51,7 @@
     <findStrings>
       <find>self.</find>
       <find>m.out_put_size[2]</find>
+      <find>print</find>
     </findStrings>
     <replaceStrings>
       <replace>m.</replace>
@@ -65,7 +72,6 @@
         <option value="$PROJECT_DIR$/run/VRC.py" />
         <option value="$PROJECT_DIR$/run/VRC_cpu.py" />
         <option value="$PROJECT_DIR$/utils/voice_profile.py" />
-        <option value="$PROJECT_DIR$/utils/voice.py" />
         <option value="$PROJECT_DIR$/run/Converter.py" />
         <option value="$PROJECT_DIR$/utils/voice_to_datasets.py" />
         <option value="$PROJECT_DIR$/train/main.py" />
@@ -73,8 +79,9 @@
         <option value="$PROJECT_DIR$/__init__.py" />
         <option value="$PROJECT_DIR$/__main__.py" />
         <option value="$PROJECT_DIR$/train/Model/model_proto_cpu.py" />
-        <option value="$PROJECT_DIR$/utils/model_test.py" />
         <option value="$PROJECT_DIR$/setting.json" />
+        <option value="$PROJECT_DIR$/utils/model_test.py" />
+        <option value="$PROJECT_DIR$/utils/voice.py" />
         <option value="$PROJECT_DIR$/utils/model_proto_cpu.py" />
       </list>
     </option>
@@ -82,8 +89,8 @@
   <component name="ProjectFrameBounds" extendedState="6">
     <option name="x" value="-10" />
     <option name="y" value="-10" />
-    <option name="width" value="1940" />
-    <option name="height" value="1050" />
+    <option name="width" value="978" />
+    <option name="height" value="1039" />
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectView">
@@ -91,7 +98,6 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -138,7 +144,7 @@
               <item name="train" type="462c0819:PsiDirectoryNode" />
               <item name="Model" type="462c0819:PsiDirectoryNode" />
               <item name="datasets" type="462c0819:PsiDirectoryNode" />
-              <item name="test" type="462c0819:PsiDirectoryNode" />
+              <item name="source" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="VRC" type="b2602c69:ProjectViewProjectNode" />
@@ -150,6 +156,7 @@
           <select />
         </subPane>
       </pane>
+      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -157,128 +164,17 @@
   </component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\C0116170\git\vrc\vrc\VRC" />
       <recent name="C:\Users\C0116170\git\vrc\vrc\VRC\train\Model\datasets\source" />
       <recent name="C:\Users\C0116170\git\vrc\vrc\VRC\utils" />
     </key>
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\C0116170\git\vrc\vrc\VRC" />
       <recent name="C:\Users\C0116170\git\vrc\vrc\VRC\utils" />
       <recent name="C:\Users\C0116170\git\vrc\vrc\VRC\Network" />
-      <recent name="C:\Users\C0116170\git\vrc\vrc\VRC" />
       <recent name="C:\Users\C0116170\git\vrc\vrc\VRC\train\Model" />
       <recent name="C:\Users\C0116170\git\vrc\vrc\VRC\run" />
     </key>
-  </component>
-  <component name="RestoreUpdateTree" date="Moments ago" ActionInfo="_Update">
-    <UpdatedFiles>
-      <FILE-GROUP>
-        <option name="myUpdateName" value="Updated from server" />
-        <option name="myStatusName" value="Changed on server" />
-        <option name="mySupportsDeletion" value="false" />
-        <option name="myCanBeAbsent" value="false" />
-        <option name="myId" value="CHANGED_ON_SERVER" />
-        <FILE-GROUP>
-          <option name="myUpdateName" value="Updated" />
-          <option name="myStatusName" value="Changed" />
-          <option name="mySupportsDeletion" value="false" />
-          <option name="myCanBeAbsent" value="false" />
-          <option name="myId" value="UPDATED" />
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/../.idea/workspace.xml</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/train/Model/model_proto.py</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/train/setting.json</PATH>
-        </FILE-GROUP>
-        <FILE-GROUP>
-          <option name="myUpdateName" value="Created" />
-          <option name="myStatusName" value="Created" />
-          <option name="mySupportsDeletion" value="false" />
-          <option name="myCanBeAbsent" value="false" />
-          <option name="myId" value="CREATED" />
-        </FILE-GROUP>
-        <FILE-GROUP>
-          <option name="myUpdateName" value="Deleted" />
-          <option name="myStatusName" value="Deleted" />
-          <option name="mySupportsDeletion" value="false" />
-          <option name="myCanBeAbsent" value="true" />
-          <option name="myId" value="REMOVED_FROM_REPOSITORY" />
-        </FILE-GROUP>
-        <FILE-GROUP>
-          <option name="myUpdateName" value="Restored" />
-          <option name="myStatusName" value="Will be restored" />
-          <option name="mySupportsDeletion" value="false" />
-          <option name="myCanBeAbsent" value="false" />
-          <option name="myId" value="RESTORED" />
-        </FILE-GROUP>
-      </FILE-GROUP>
-      <FILE-GROUP>
-        <option name="myUpdateName" value="Modified" />
-        <option name="myStatusName" value="Modified" />
-        <option name="mySupportsDeletion" value="false" />
-        <option name="myCanBeAbsent" value="false" />
-        <option name="myId" value="MODIFIED" />
-      </FILE-GROUP>
-      <FILE-GROUP>
-        <option name="myUpdateName" value="Skipped" />
-        <option name="myStatusName" value="Skipped" />
-        <option name="mySupportsDeletion" value="false" />
-        <option name="myCanBeAbsent" value="false" />
-        <option name="myId" value="SKIPPED" />
-      </FILE-GROUP>
-      <FILE-GROUP>
-        <option name="myUpdateName" value="Merged with conflicts" />
-        <option name="myStatusName" value="Will be merged with conflicts" />
-        <option name="mySupportsDeletion" value="false" />
-        <option name="myCanBeAbsent" value="false" />
-        <option name="myId" value="MERGED_WITH_CONFLICTS" />
-      </FILE-GROUP>
-      <FILE-GROUP>
-        <option name="myUpdateName" value="Merged with tree conflicts" />
-        <option name="myStatusName" value="Merged with tree conflicts" />
-        <option name="mySupportsDeletion" value="false" />
-        <option name="myCanBeAbsent" value="false" />
-        <option name="myId" value="MERGED_WITH_TREE_CONFLICT" />
-      </FILE-GROUP>
-      <FILE-GROUP>
-        <option name="myUpdateName" value="Merged with property conflicts" />
-        <option name="myStatusName" value="Will be merged with property conflicts" />
-        <option name="mySupportsDeletion" value="false" />
-        <option name="myCanBeAbsent" value="false" />
-        <option name="myId" value="MERGED_WITH_PROPERTY_CONFLICT" />
-      </FILE-GROUP>
-      <FILE-GROUP>
-        <option name="myUpdateName" value="Merged" />
-        <option name="myStatusName" value="Will be merged" />
-        <option name="mySupportsDeletion" value="false" />
-        <option name="myCanBeAbsent" value="false" />
-        <option name="myId" value="MERGED" />
-      </FILE-GROUP>
-      <FILE-GROUP>
-        <option name="myUpdateName" value="Not in repository" />
-        <option name="myStatusName" value="Not in repository" />
-        <option name="mySupportsDeletion" value="true" />
-        <option name="myCanBeAbsent" value="false" />
-        <option name="myId" value="UNKNOWN" />
-      </FILE-GROUP>
-      <FILE-GROUP>
-        <option name="myUpdateName" value="Locally added" />
-        <option name="myStatusName" value="Locally added" />
-        <option name="mySupportsDeletion" value="false" />
-        <option name="myCanBeAbsent" value="false" />
-        <option name="myId" value="LOCALLY_ADDED" />
-      </FILE-GROUP>
-      <FILE-GROUP>
-        <option name="myUpdateName" value="Locally removed" />
-        <option name="myStatusName" value="Locally removed" />
-        <option name="mySupportsDeletion" value="false" />
-        <option name="myCanBeAbsent" value="false" />
-        <option name="myId" value="LOCALLY_REMOVED" />
-      </FILE-GROUP>
-      <FILE-GROUP>
-        <option name="myUpdateName" value="Switched" />
-        <option name="myStatusName" value="Switched" />
-        <option name="mySupportsDeletion" value="false" />
-        <option name="myCanBeAbsent" value="false" />
-        <option name="myId" value="SWITCHED" />
-      </FILE-GROUP>
-    </UpdatedFiles>
   </component>
   <component name="RunDashboard">
     <option name="ruleStates">
@@ -311,6 +207,24 @@
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
     </configuration>
+    <configuration name="voice" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="VRC" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/utils" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/utils/voice.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+    </configuration>
     <configuration name="voice_profile" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="VRC" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -332,10 +246,12 @@
     <list>
       <item itemvalue="Python.voice_profile" />
       <item itemvalue="Python.model_test" />
+      <item itemvalue="Python.voice" />
     </list>
     <recent_temporary>
       <list>
         <item itemvalue="Python.model_test" />
+        <item itemvalue="Python.voice" />
         <item itemvalue="Python.voice_profile" />
       </list>
     </recent_temporary>
@@ -365,29 +281,37 @@
       <option name="project" value="LOCAL" />
       <updated>1527493962226</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="[update] training speedup update &lt;version 2.2.005&gt;&#10;&#10;[add] Convertの修正">
+      <created>1527562445025</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1527562445025</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="ToolWindowManager">
     <frame x="-7" y="-7" width="1550" height="838" extended-state="6" />
+    <editor active="true" />
     <layout>
       <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.14713542" />
       <window_info anchor="bottom" id="TODO" order="6" />
       <window_info anchor="bottom" id="Event Log" order="7" side_tool="true" weight="0.32952183" />
       <window_info anchor="bottom" id="Version Control" order="8" weight="0.32831737" />
       <window_info anchor="bottom" id="Python Console" order="9" weight="0.31907895" />
-      <window_info anchor="bottom" id="Run" order="2" weight="0.32147744" />
+      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.32147744" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info anchor="bottom" id="Terminal" order="10" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
+      <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
+      <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="right" id="Data View" order="3" />
       <window_info anchor="right" id="Commander" order="0" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="bottom" id="Find" order="1" weight="0.32831737" />
-      <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
-      <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Messages" order="11" />
     </layout>
@@ -398,17 +322,15 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="[ver] 1.0.4 &lt;VRC_CPU added&gt;" />
     <MESSAGE value="[update] training speedup update &lt;version 2.2.004&gt;&#10;&#10;[add]データセットをあらかじめFFTに掛けておく機能を追加" />
-    <option name="LAST_COMMIT_MESSAGE" value="[update] training speedup update &lt;version 2.2.004&gt;&#10;&#10;[add]データセットをあらかじめFFTに掛けておく機能を追加" />
+    <MESSAGE value="[update] training speedup update &lt;version 2.2.005&gt;&#10;&#10;[add] Convertの修正" />
+    <option name="LAST_COMMIT_MESSAGE" value="[update] training speedup update &lt;version 2.2.005&gt;&#10;&#10;[add] Convertの修正" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <option name="time" value="1" />
+    </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/utils/voice.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="735">
-          <caret line="40" column="26" selection-start-line="40" selection-start-column="26" selection-end-line="40" selection-end-column="26" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/train/Model/model2.py" />
     <entry file="file://$PROJECT_DIR$/utils/testing.py" />
     <entry file="file://$PROJECT_DIR$/utils/voice.py">
       <provider selected="true" editor-type-id="text-editor">
@@ -480,18 +402,7 @@
     <entry file="file://$PROJECT_DIR$/utils/testing.py">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
-    <entry file="file://$PROJECT_DIR$/utils/voice.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="493">
-          <caret line="115" column="5" lean-forward="true" selection-start-line="115" selection-start-column="5" selection-end-line="115" selection-end-column="5" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/utils/test_visualizer.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-612" />
-      </provider>
-    </entry>
+    <entry file="file://$PROJECT_DIR$/utils/test_visualizer.py" />
     <entry file="file://$PROJECT_DIR$/run/Converter.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="34">
@@ -503,9 +414,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="204">
           <caret line="12" column="19" lean-forward="true" selection-start-line="12" selection-start-column="19" selection-end-line="12" selection-end-column="19" />
-          <folding>
-            <element signature="e#0#18#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -530,9 +438,7 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Network/wave2wave2.2.003_survey3/checkpoint">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
+    <entry file="file://$PROJECT_DIR$/Network/wave2wave2.2.003_survey3/checkpoint" />
     <entry file="file://$PROJECT_DIR$/Network/wave2wave2.2.003_survey4/checkpoint">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
@@ -543,51 +449,59 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/train/Model/model_proto_cpu.py" />
+    <entry file="file://$PROJECT_DIR$/train/Model/model_proto.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="259">
+          <caret line="86" column="67" lean-forward="true" selection-start-line="86" selection-start-column="67" selection-end-line="86" selection-end-column="67" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/utils/__init__.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$USER_HOME$/AppData/Local/Programs/Python/Python35/Lib/site-packages/matplotlib/axes/_subplots.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="156">
+          <caret line="63" selection-start-line="63" selection-end-line="63" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/utils/voice_to_datasets.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-1850">
+        <state relative-caret-position="-1595">
           <caret line="5" column="9" selection-start-line="5" selection-start-column="9" selection-end-line="5" selection-end-column="9" />
-          <folding>
-            <element signature="e#0#14#0" expanded="true" />
-          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/utils/voice.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="119">
+          <caret line="115" column="25" lean-forward="true" selection-start-line="115" selection-start-column="25" selection-end-line="115" selection-end-column="25" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/setting.json">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="394">
-          <caret line="25" column="28" selection-start-line="25" selection-start-column="28" selection-end-line="25" selection-end-column="28" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/train/Model/model_proto_cpu.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="241">
-          <caret line="187" lean-forward="true" selection-start-line="187" selection-end-line="187" />
-          <folding>
-            <element signature="e#0#21#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/train/Model/model_proto.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="329">
-          <caret line="670" column="24" lean-forward="true" selection-start-line="666" selection-start-column="4" selection-end-line="670" selection-end-column="24" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/utils/model_proto_cpu.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-1000">
-          <caret line="264" selection-start-line="264" selection-end-line="264" />
+        <state relative-caret-position="289">
+          <caret line="17" column="13" selection-start-line="17" selection-start-column="13" selection-end-line="17" selection-end-column="13" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/utils/model_test.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="323">
-          <caret line="25" column="19" lean-forward="true" selection-start-line="25" selection-start-column="19" selection-end-line="25" selection-end-column="19" />
+        <state relative-caret-position="3043">
+          <caret line="185" column="26" selection-start-line="185" selection-start-column="26" selection-end-line="185" selection-end-column="26" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/utils/model_proto_cpu.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="309">
+          <caret line="188" column="41" selection-start-line="188" selection-start-column="41" selection-end-line="188" selection-end-column="41" />
+          <folding>
+            <element signature="e#0#23#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>

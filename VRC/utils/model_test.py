@@ -5,7 +5,7 @@ import matplotlib.pyplot as pl
 import time
 
 from .model_proto_cpu import Model as model
-Add_Effect=False
+Add_Effect=True
 NFFT=1024
 SHIFT=NFFT//2
 C1=32.703
@@ -22,7 +22,7 @@ if not net.load():
     exit(-1)
 print(" [*] load success!!")
 def filter_clip(dd,f=1.5):
-    dxf=np.maximum(dd,f)-f+np.minimum(dd,-f)+f
+    dxf=np.maximum(dd,-f)+f+np.minimum(dd,f)-f
     return -dxf*0.5
 
 def filter_mean(dd):
@@ -96,7 +96,7 @@ def complex_to_pp(fft_r):
     time_ruler=fft_r.shape[0]
     re = fft_r.real
     im = fft_r.imag
-    c = np.log(np.power(re, 2) + np.power(im, 2) + 1e-24).reshape(time_ruler, -1, 1)
+    c = np.log(np.power(re, 2) + np.power(im, 2) + 1e-34).reshape(time_ruler, -1, 1)
     d = np.arctan2(im, re).reshape(time_ruler, -1, 1)
     spec = np.concatenate((c, d), 2)
     return spec
@@ -114,12 +114,11 @@ def ifft(data,inp):
     fft_data=fft_s.real
     fft_data[:]/=window
     v = fft_data[:,:NFFT//2]
-    lats = np.roll(fft_data[:,NFFT//2:],(1,0))
-    res=lats[0,:].copy
+    res = fft_data[-1, NFFT//2 :].copy()
+    lats = np.roll(fft_data[:,NFFT//2:],1,axis=0)
     lats[0,:]=inp
     spec=np.reshape(v+lats,(-1))
     return spec,res
-FORMAT = pyaudio.paInt16
 CHANNELS = 1        #モノラル
 RATE = 16000       #サンプルレート
 CHUNK = 1024     #データ点数
@@ -158,14 +157,12 @@ print(" [*] conversion finished in %3.3f!!" % (time.time()-tm))
 data_C=data_C.reshape(-1)
 
 timee=80000
-times=data_realA.shape[0]//timee
+times=data_realB.shape[0]//timee
 
 rate=16000
 
-b=np.zeros([1])
 ab=np.zeros([1,1024,2])
 abc=np.zeros([1,1024,2])
-
 term=8192
 times=data_C.shape[0]//term+1
 if data_C.shape[0]%term==0:
@@ -173,81 +170,61 @@ if data_C.shape[0]%term==0:
 ttm=time.time()
 resp=np.zeros([NFFT//2])
 for i in range(times):
-    ind=SHIFT+term
-    startpos=term*(i+1)
-    data_realAb = data_C[max(startpos-ind,0):startpos]
+    ind=term+SHIFT
+    startpos=term*i+data_realB.shape[0]%term
     data_realBb = data_realB[max(startpos - ind, 0):startpos]
-    r=ind-data_realAb.shape[0]
+    r=ind-data_realBb.shape[0]
     if r>0:
-        data_realAb=np.pad(data_realAb,(0,r),"reflect")
-        data_realBb=np.pad(data_realBb,(0,r),"reflect")
-    dmn=data_realAb/32767.0
+        data_realBb=np.pad(data_realBb,(r,0),"constant")
     ddms=data_realBb/32767.0
-    dmn=shift(dmn,upidx)
-    r=SHIFT-dmn.shape[0]%SHIFT
-    if r!=SHIFT:
-        dmn=np.pad(dmn,(0,r),"reflect")
-    a=fft(dmn)
     bss=fft(ddms)
-    a=complex_to_pp(a)
     bss=complex_to_pp(bss)
     abc = np.append(abc, bss, axis=0)
-    if Add_Effect:
-        a = mask_scale(a, 250, 770, 10)
-        a = mask_const(a, 250, 770, 8)
-        a = mask_scale(a, 250, 770, -10)
-    # a = mask(a, 250, 770, 10)
-    ab = np.append(ab, a, axis=0)
-    a=pp_to_complex(a)
-    s,resp=ifft(a,resp)
-    b=np.append(b,s)
 # print(a)
-r=b.shape[0]-data_C.shape[0]
-bbb=b
-if Add_Effect:
-    bsd=shift(bbb,upidx)
-    bsd=filter_clip(bsd,0.1)
-    bbb=bsd
-data_E=(data_E/32767.0).astype(np.float32)
-if Add_Effect:
-        data_E=filter_clip(data_E,0.1)
-data_E=(data_E*32767).astype(np.int16)
-# bbb+=bsd
-# bsd=filter_eps(bbb,0.5)
-# bbb+=bsd
-# bsd=filter_eps(bbb,0.5)
-# bbb+=bsd
-# bsd=filter_eps(bbb,0.5)
-# bbb+=bsd
-bbb=(bbb[1:]/2*32767).astype(np.int16)
-pl.subplot(4,1,1)
-aba=ab[:,:,0].transpose((1,0))
-pl.imshow(aba,aspect="auto")
-pl.clim(-30,10)
-pl.colorbar()
+bsd=data_D.astype(np.float32)/32767
+bsd=filter_mean(bsd)
+bsd=filter_clip(bsd,f=0.5)
+# bsd=filter_mean(bsd)
+data_D=(bsd*32767).astype(np.int16)
+# pl.subplot(6,1,1)
+# aba=ab[:,:,0].transpose((1,0))
+# pl.imshow(aba,aspect="auto")
+# pl.clim(-30,10)
+# pl.colorbar()
 pl.subplot(4,1,2)
 abn=np.transpose(abc[1:,:,0],(1,0))
 pl.imshow(abn,aspect="auto")
 pl.clim(-30,10)
 pl.colorbar()
-pl.subplot(4,1,3)
-aba=ab[:,:,1].transpose((1,0))
-pl.imshow(aba,aspect="auto")
-pl.clim(-3.141592,3.141592)
-pl.colorbar()
+# pl.subplot(6,1,3)
+# aba=ab[:,:,1].transpose((1,0))
+# pl.imshow(aba,aspect="auto")
+# pl.clim(-3.141592,3.141592)
+# pl.colorbar()
 pl.subplot(4,1,4)
 abn=np.transpose(abc[1:,:,1],(1,0))
 pl.imshow(abn,aspect="auto")
 pl.clim(-3.141592,3.141592)
 pl.colorbar()
+pl.subplot(4, 1, 1)
+data_E=data_E.reshape([-1,1024,2])
+abn = np.transpose(data_E[1:, :, 0], (1, 0))
+pl.imshow(abn, aspect="auto")
+pl.clim(-30, 10)
+pl.colorbar()
+pl.subplot(4, 1, 3)
+aba = data_E[:, :, 1].transpose((1, 0))
+pl.imshow(aba, aspect="auto")
+pl.clim(-3.141592, 3.141592)
+pl.colorbar()
 
-
+FORMAT=pyaudio.paInt16
 p=pyaudio.PyAudio()
 ww = wave.open(WAVE_OUTPUT_FILENAME, 'wb')
 ww.setnchannels(1)
 ww.setsampwidth(p.get_sample_size(FORMAT))
 ww.setframerate(RATE)
-ww.writeframes(bbb.tobytes())
+ww.writeframes(data_C.tobytes())
 ww.close()
 
 
@@ -255,8 +232,9 @@ ww = wave.open(WAVE_OUTPUT_FILENAME2, 'wb')
 ww.setnchannels(1)
 ww.setsampwidth(p.get_sample_size(FORMAT))
 ww.setframerate(RATE)
-ww.writeframes(data_E.tobytes())
+ww.writeframes(data_D.tobytes())
 ww.close()
 
+print(" [*] Finished!!")
 
 pl.show()

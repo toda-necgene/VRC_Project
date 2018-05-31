@@ -1,17 +1,15 @@
-from glob import glob
 import tensorflow as tf
 import os
 import time
-from six.moves import xrange
 import numpy as np
 import wave
 from tensorflow.python import debug as tf_debug
 from tensorflow.python.debug.lib.debug_data import has_inf_or_nan
 import pyaudio
-import random
 from datetime import datetime
 import json
 import shutil
+import matplotlib.pyplot as pl
 class Model:
     def __init__(self,path):
         self.args=dict()
@@ -83,7 +81,7 @@ class Model:
             self.args["pitch_rate"] = self.args["pitch_tar"]/self.args["pitch_res"]
             print(" [!] pitch_rate is not found . calculated value : "+str(self.args["pitch_rate"]))
         self.args["SHIFT"] = self.args["NFFT"]//2
-        ss=int(self.args["input_size"])*2//int(self.args["NFFT"])+2
+        ss=int(self.args["input_size"])*2//int(self.args["NFFT"])+1
         self.args["name_save"] = self.args["model_name"] + self.args["version"]
 
         self.input_size_model=[self.args["batch_size"],ss,self.args["NFFT"],2]
@@ -132,16 +130,15 @@ class Model:
         #wave file　変換用
 
         tt=time.time()
-        ipt=self.args["input_size"]+self.args["NFFT"]+self.args["SHIFT"]
+        ipt=self.args["input_size"]+self.args["NFFT"]
         times=in_put.shape[1]//(self.args["input_size"])+1
         if in_put.shape[1]%((self.args["input_size"])*self.args["batch_size"])==0:
             times-=1
         otp=np.array([],dtype=np.int16)
-        otp2=np.asarray([[[0]]],np.float32)
-        otp3 = np.array([], dtype=np.int16)
-
+        otp2=np.asarray([],dtype=np.int16)
+        otp3= np.asarray([[[]]], dtype=np.float32)
         rss=np.zeros([self.input_size_model[2]//2])
-        rss2 = np.zeros([self.input_size_model[2] // 2])
+        rss4=np.zeros([self.input_size_model[2]//2])
         for t in range(times):
             # Preprocess
             # 前処理
@@ -167,32 +164,56 @@ class Model:
             for i in range(self.args["batch_size"]):
                 n=self.fft(red[i].reshape(-1))
                 res[i]=n
+            scales=np.sqrt(np.var(res[0,:,:,0],axis=1)+1e-64)
+            means=np.mean(res[0,:,:,0],axis=1)
             # running network
             # ネットワーク実行
-            res2=self.sess.run(self.fake_B_image,feed_dict={ self.input_model:res})
-            # resas = np.append(resas, res[0])
 
+            res2=self.sess.run(self.fake_B_image,feed_dict={ self.input_model:res})
+            # otp3 = np.append(otp3, res2[0,2:, :, :])
+
+            # resas = np.append(resas, res[0])
             # Postprocess
             # 後処理
-            otp2 = np.append(otp2, res2[0,2:])
+            a=res2[0].copy()
+            scales2=np.sqrt(np.var(a[:,:,0],axis=1)+1e-64)
+            means2 = np.mean(a[:, :, 0], axis=1)
+            ss=np.tile((scales/scales2).reshape(-1,1),(1,self.args["NFFT"]))
+            sm=np.tile((means-means2).reshape(-1,1),(1,self.args["NFFT"]))
+            c=a[:,:,0]
+
+            c=c+sm
+            c=c*ss
+            a[:,:,0]=c
+            # a = mask_scale(a, 250, 770, 10)
+            a = mask_const(a, 250, 770, 8)
+            # a = mask_scale(a, 250, 770, -10)
+            otp3 = np.append(otp3, a[ 2:, :, :])
+
+            # otp3 = np.append(otp3, a[ 2:, :, :])
+
             # IFFT
             # 短時間高速離散逆フーリエ変換
-            res3,rss=self.ifft(res2[0],rss)
-            red2,rss2=self.ifft(res[0],rss2)
-            res3=res3*32767
+            res2,rss=self.ifft(res2[0],rss)
+            res2=np.clip(res2/2,-1.0,1.0)
+            res2=res2*32767
+            res4, rss4 = self.ifft(a, rss4)
+            res4 = np.clip(res4/2, -1.0, 1.0)
+            res4 = res4 * 32767
             # chaching results
             # 結果の保存
-            red2=red2*32767
-            red2 = red2.reshape(-1).astype(np.int16)
-            otp3 = np.append(otp3, (red2[:8192]).astype(np.int16))
-            res3=res3.reshape(-1).astype(np.int16)
-            otp=np.append(otp,res3[-8192:])
+            res2=res2.reshape(-1).astype(np.int16)
+            res4 = res4.reshape(-1).astype(np.int16)
+
+            otp=np.append(otp,res2[-8192:])
+            otp2 = np.append(otp2, res4[-8192:])
         h=otp.shape[0]-in_put.shape[1]
         if h>0:
             otp=otp[h:]
-            otp3=otp3[h:]
-
-        return otp.reshape(1,in_put.shape[1],in_put.shape[2]),otp2[1:].reshape(-1,self.args["NFFT"],2),otp3
+        h = otp2.shape[0] - in_put.shape[1]
+        if h > 0:
+            otp2 = otp2[h:]
+        return otp.reshape(1,in_put.shape[1],in_put.shape[2]),otp2,otp3
 
     def save(self, checkpoint_dir, step):
         model_name = "wave2wave.model"
@@ -255,12 +276,11 @@ class Model:
         fft_data = fft_s.real
         fft_data[:]/=window
         v = fft_data[:, :self.args["NFFT"]// 2]
-        lats = np.roll(fft_data[:, self.args["NFFT"] // 2:], (1, 0))
-        reds = lats[0, :].copy()
+        reds = fft_data[-1, self.args["NFFT"] // 2:].copy()
+        lats = np.roll(fft_data[:, self.args["NFFT"] // 2:], 1,axis=0)
         lats[0, :] =red
         spec = np.reshape(v + lats, (-1))
-        spec=np.append(spec, reds)
-        return spec,reds
+        return spec[:-1],reds
 
 
 def generator(current_outputs,reuse,depth,chs,f,s):
@@ -295,13 +315,13 @@ def block(current,output_shape,chs,f,s,depth):
                                      kernel_initializer=tf.contrib.layers.xavier_initializer(),
                                      data_format="channels_last")
 
-    ten = tf.layers.batch_normalization(ten, axis=3, training=ask_train, trainable=True,
-                                        gamma_initializer=tf.ones_initializer())
-    with tf.variable_scope("add_layer_Layer_"+str(depth)):
-        sc=ten.shape[1:]
-        fig=tf.reshape(tf.get_variable("add_filter",sc,tf.float32,tf.ones_initializer(),trainable=True),[1,sc[0],sc[1],sc[2]])
-        figs=tf.tile(fig,(ten.shape[0],1,1,1))
-        ten = ten + figs
+    # ten = tf.layers.batch_normalization(ten, axis=3, training=ask_train, trainable=True,
+    #                                     gamma_initializer=tf.ones_initializer())
+    # with tf.variable_scope("add_layer_Layer_"+str(depth)):
+    #     sc=ten.shape[1:]
+    #     fig=tf.reshape(tf.get_variable("add_filter",sc,tf.float32,tf.zeros_initializer(),trainable=True),[1,sc[0],sc[1],sc[2]])
+    #     figs=tf.tile(fig,(ten.shape[0],1,1,1))
+    #     ten = ten + figs
     return ten
 
 def shift(data_inps,pitch):
@@ -374,3 +394,11 @@ def isread(path):
     return ans
 def imread(path):
     return np.load(path)
+def mask_scale(dd,f,t,power):
+    dd[:,f:t,0]-=(power/100*-dd[:,f:t,0])
+
+    return dd
+def mask_const(dd,f,t,power):
+    dd[:,f:t,0]-=power
+    # dd[:,:,1]=dd[:,:,1]*1.12
+    return dd
