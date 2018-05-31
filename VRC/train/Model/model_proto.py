@@ -13,6 +13,8 @@ from datetime import datetime
 import json
 import shutil
 import cupy
+import dropbox
+import matplotlib.pyplot as plt
 class Model:
     def __init__(self,path):
         self.args=dict()
@@ -60,6 +62,7 @@ class Model:
         self.args["pitch_res"]=563.0
         self.args["pitch_tar"]=563.0
         self.args["test_dir"] = "./test"
+        self.args["dropbox"]="False"
         if os.path.exists(path):
             try:
                 with open(path,"r") as f:
@@ -97,22 +100,27 @@ class Model:
             self.args["wave_otp_dir"]=self.args["wave_otp_dir"]+ self.args["name_save"]+"/"
             if not os.path.exists(self.args["wave_otp_dir"]):
                 os.makedirs(self.args["wave_otp_dir"])
-            shutil.copy(path,self.args["wave_otp_dir"]+"info.json")
+            shutil.copy(path,self.args["wave_otp_dir"]+"setting.json")
             self.args["log_file"]=self.args["wave_otp_dir"]+"log.txt"
+        if self.args["dropbox"]!="False":
+            self.dbx=dropbox.Dropbox(self.args["dropbox"])
+            self.dbx.users_get_current_account()
+
+        else:
+            self.dbx=None
         self.checkpoint_dir = self.args["checkpoint_dir"]
 
     def build_model(self):
-
 
         #inputs place holder
         #入力
         self.input_model=tf.placeholder(tf.float32, self.input_size_model, "inputs_G-net")
         self.input_model_label=tf.placeholder(tf.float32, self.input_size_model, "inputs_GD-net_target_label")
-        self.training=tf.placeholder(tf.bool,name="Training")
+        self.training=tf.placeholder(tf.float32,[1],name="Training")
         #creating generator
         #G-net（生成側）の作成
         with tf.variable_scope("generator_1"):
-            self.ifs=generator(tf.reshape(self.input_model,self.input_size_model), reuse=False,chs=self.args["G_channel"],depth=self.args["depth"],f=self.args["filter_g"],s=self.args["strides_g"])
+            self.ifs=generator(tf.reshape(self.input_model,self.input_size_model), reuse=False,chs=self.args["G_channel"],depth=self.args["depth"],f=self.args["filter_g"],s=self.args["strides_g"],rate=self.training)
             self.fake_B_image=self.ifs[-1]
         self.noise = tf.placeholder(tf.float32, [self.args["batch_size"]], "inputs_Noise")
 
@@ -164,8 +172,8 @@ class Model:
         # L1 norm loss
         drml = []
         for f in self.ifs:
-            a=tf.clip_by_value(tf.abs(self.input_model_label[:,:,:,0] - f[:,:,:,0])/30,-1.0,1.0)
-            b=tf.clip_by_value(tf.abs(self.input_model_label[:,:,:,1] - f[:,:,:,1])/3.141593/2,-1.0,1.0)
+            a=tf.clip_by_value(tf.abs(self.input_model_label[:,:,:,0] - f[:,:,:,0])/60,0.0,1.0)
+            b=tf.clip_by_value(tf.abs(self.input_model_label[:,:,:,1] - f[:,:,:,1])/3.141593/20,0.0,1.0)
             drml.append(a+b)
         L1 = tf.reduce_mean(drml)
         # Gan loss
@@ -210,6 +218,7 @@ class Model:
         if in_put.shape[1]%((self.args["input_size"])*self.args["batch_size"])==0:
             times-=1
         otp=np.array([],dtype=np.int16)
+        res2 = np.asarray([[[]]], dtype=np.float32)
         rss=np.zeros([self.input_size_model[2]//2],dtype=np.float64)
         for t in range(times):
             # Preprocess
@@ -237,18 +246,40 @@ class Model:
             for i in range(self.args["batch_size"]):
                 n=self.fft(red[i].reshape(-1))
                 res[i]=n
-
+            scales = np.sqrt(np.var(res[0, :, :, 0], axis=1) + 1e-64)
+            means = np.mean(res[0, :, :, 0], axis=1)
+            mms=np.tile(np.reshape(scales,(-1,1)),(1,self.args["NFFT"]))
+            scl = np.tile(np.reshape(means, (-1, 1)), (1, self.args["NFFT"]))
+            res[0,:,:,0]=res[0,:,:,0]*mms-scl
             # running network
             # ネットワーク実行
-            res=self.sess.run(self.fake_B_image,feed_dict={ self.input_model:res,self.training:False})
+            res=self.sess.run(self.fake_B_image,feed_dict={ self.input_model:res,self.training:np.asarray([1.0])})
             # resas = np.append(resas, res[0])
+            a=res[0].copy()
+            scales2 = np.sqrt(np.var(a[:, :, 0], axis=1) + 1e-64)
+            means2 = np.mean(a[:, :, 0], axis=1)
+            ss = np.tile((scales / scales2).reshape(-1, 1), (1, self.args["NFFT"]))
+            sm = np.tile((means - means2).reshape(-1, 1), (1, self.args["NFFT"]))
+            c = a[:, :, 0]
+
+            c = c + sm
+            c = c * ss
+            a[:, :, 0] = c
+            # a = mask_scale(a, 250, 770, 10)
+            a = mask_const(a, 250, 770, 8)
+            # a = mask_scale(a, 250, 770, -10)
+            res2 = np.append(res2, a[ 2:, :, :])
+
 
             # Postprocess
             # 後処理
 
             # IFFT
             # 短時間高速離散逆フーリエ変換
-            res,rss=self.ifft(res[0],rss)
+            res,rss=self.ifft(a,rss)
+            # 変換後処理
+            bsd = filter_mean(res)
+            res = filter_clip(bsd, f=0.5)
             res=res*32767/2
             # chaching results
             # 結果の保存
@@ -258,7 +289,7 @@ class Model:
         if h>0:
             otp=otp[h:]
 
-        return otp.reshape(1,in_put.shape[1],in_put.shape[2]),time.time()-tt
+        return otp.reshape(1,in_put.shape[1],in_put.shape[2]),time.time()-tt,res2
 
 
 
@@ -355,7 +386,7 @@ class Model:
                 print(" [*] Epoch %3d testing" % epoch)
                 #testing
                 #テスト
-                out_puts,taken_time_test=self.convert(test.reshape(1,-1,1))
+                out_puts,taken_time_test,im=self.convert(test.reshape(1,-1,1))
                 out_put=out_puts.astype(np.float32)/32767.0
 
                 # loss of tesing
@@ -374,7 +405,30 @@ class Model:
                 #saving test result
                 #テストの結果の保存
                 if os.path.exists(self.args["wave_otp_dir"]):
-                    upload(out_puts,self.args["wave_otp_dir"])
+                    im=im.reshape([-1,self.args["NFFT"],2])
+                    plt.subplot(211)
+                    ins=np.transpose(im[:,:,0],(1,0))
+                    plt.imshow(ins,aspect="auto")
+                    plt.clim(-30,10)
+                    if epoch==self.args["start_epoch"]:
+                        plt.colorbar()
+                    plt.subplot(212)
+                    ins = np.transpose(im[:, :, 1], (1, 0))
+                    plt.imshow(ins, aspect="auto")
+                    plt.clim(-3.141593, 3.141593)
+                    if epoch == self.args["start_epoch"]:
+                        plt.colorbar()
+                    path=self.args["wave_otp_dir"]+nowtime()
+                    plt.savefig(path+".png")
+                    upload(out_puts,path)
+                    if self.dbx is not None:
+                        print(" [*] Files uploading")
+                        with open(path+".png","rb") as ff:
+                            self.dbx.files_upload(ff.read(),"/apps/tensorflow_watching_app/Latestimage.png",mode=dropbox.files.WriteMode.overwrite)
+                        with open(path + ".wav", "rb") as ff:
+                            self.dbx.files_upload(ff.read(), "/apps/tensorflow_watching_app/Latestwave.wav",mode=dropbox.files.WriteMode.overwrite)
+                        print(" [*] Files uploaded!!")
+
                 print(" [*] Epoch %3d tested in %3.3f" % (epoch, taken_time_test))
 
             print(" [*] Epoch %3d started" % epoch)
@@ -415,31 +469,32 @@ class Model:
 
                     # Update G network
                     # G-netの学習
-                    self.sess.run([g_optim_1,self.update_ops],feed_dict={ self.input_model:res_t, self.input_model_label:tar,self.training:True })
+                    rate=1.0-0.5**(epoch//50+1)
+                    self.sess.run([g_optim_1,self.update_ops],feed_dict={ self.input_model:res_t, self.input_model_label:tar,self.training:np.asarray([rate])})
 
                     # Update D network (2times)
                     # D-netの学習(2回)
                     if self.args["stop_argument"]:
                         if DS>self.args["stop_value"] :
                             nos=np.random.rand(self.args["batch_size"])*0.5
-                            self.sess.run([d_optim],feed_dict={self.input_model:res_t, self.input_model_label:tar ,self.noise:nos ,self.training:True})
+                            self.sess.run([d_optim],feed_dict={self.input_model:res_t, self.input_model_label:tar ,self.noise:nos ,self.training:np.asarray([rate])})
                         nos = np.random.rand(self.args["batch_size"]) * 0.5
-                        self.sess.run([d_optim_R],feed_dict={self.input_model: res_t, self.input_model_label: tar, self.noise: nos,self.training:True})
+                        self.sess.run([d_optim_R],feed_dict={self.input_model: res_t, self.input_model_label: tar, self.noise: nos,self.training:np.asarray([rate])})
                     else :
                         nos = np.random.rand(self.args["batch_size"]) * 0.5
                         self.sess.run([d_optim2],
-                                      feed_dict={self.input_model: res_t, self.input_model_label: tar, self.noise: nos,self.training:True})
+                                      feed_dict={self.input_model: res_t, self.input_model_label: tar, self.noise: nos,self.training:np.asarray([rate])})
 
                         # saving tensorboard
                     # tensorboardの保存
                     if self.args["tensorboard"] and (counter+ti*epoch)%self.args["train_interval"]==0:
                         nos = np.random.rand(self.args["batch_size"]) * 0.5
-                        hg,hd=self.sess.run([self.g_loss_sum_1,self.d_loss_sum],feed_dict={self.input_model:res_t, self.input_model_label:tar ,self.noise:nos ,self.training:False })
+                        hg,hd=self.sess.run([self.g_loss_sum_1,self.d_loss_sum],feed_dict={self.input_model:res_t, self.input_model_label:tar ,self.noise:nos ,self.training:np.asarray([1.0]) })
                         self.writer.add_summary(hg, counter+ti*epoch)
                         self.writer.add_summary(hd, counter+ti*epoch)
                     if self.args["stop_argument"] and (counter+ti*epoch) % self.args["train_interval"] == 0:
                         nos = np.random.rand(self.args["batch_size"]) * 0.5
-                        hg,hd = self.sess.run([self.g_loss_1,self.d_judge_F1], feed_dict={self.input_model: res_t, self.input_model_label: tar,self.noise:nos ,self.training:False})
+                        hg,hd = self.sess.run([self.g_loss_1,self.d_judge_F1], feed_dict={self.input_model: res_t, self.input_model_label: tar,self.noise:nos ,self.training:np.asarray([1.0])})
                         log_data_g=np.append(log_data_g,np.mean(hg))
                         log_data_d=np.append(log_data_d,np.mean(hd))
                         DS=np.mean(hd)
@@ -569,8 +624,8 @@ class Model:
         fft_data = fft_s.real
         fft_data[:]/=window
         v = fft_data[:, :self.args["NFFT"]// 2]
-        lats = np.roll(fft_data[:, self.args["NFFT"] // 2:], (1, 0))
-        reds=lats[0, :].copy()
+        reds = fft_data[-1, self.args["NFFT"] // 2:].copy()
+        lats = np.roll(fft_data[:, self.args["NFFT"] // 2:], 1, axis=0 )
         lats[0, :]=redi
         spec = np.reshape(v + lats, (-1))
         return spec,reds
@@ -617,7 +672,7 @@ class Model:
                     tar[imr] = (self.fft(targ[imr].reshape(-1))/ 32767.0)
                     res[imr] = n
                 nos=np.zeros([1])
-                score=self.sess.run(self.d_judge_R,feed_dict={self.input_model:tar, self.input_model_label:res ,self.noise:nos,self.training:False})
+                score=self.sess.run(self.d_judge_R,feed_dict={self.input_model:tar, self.input_model_label:res ,self.noise:nos,self.training:np.asarray([1.0])})
                 otp=np.append(otp,score)
             with open(self.args["log_file"], "a") as f:
                 f.write("\n %10s : %5.5f  :%5.5f" % (i,float(np.min(otp)),float(np.mean(otp))))
@@ -633,7 +688,7 @@ def discriminator(inp,reuse,f,s,depth,chs):
     h4=tf.reshape(current, [current.shape[0],-1])
     ten=tf.layers.dense(h4,1,name="dence",reuse=reuse)
     return tf.nn.sigmoid(ten),ten
-def generator(current_outputs,reuse,depth,chs,f,s):
+def generator(current_outputs,reuse,depth,chs,f,s,rate):
     if reuse:
         tf.get_variable_scope().reuse_variables()
     else:
@@ -645,8 +700,8 @@ def generator(current_outputs,reuse,depth,chs,f,s):
     for i in range(depth):
         connections = current
         ten=block(current,output_shape,chs,f,s,i)
-        if i>1:
-            ten=tf.nn.dropout(ten,0.5)
+        # if i>1:
+            # ten=tf.nn.dropout(ten,rate[0]-((1-rate[0])*0.5*(i/depth)))
         current = ten + connections
         ctr.append(current)
     return ctr
@@ -670,11 +725,11 @@ def block(current,output_shape,chs,f,s,depth):
     #                                     gamma_initializer=tf.ones_initializer())
 
     #Add_filter_Layer
-    with tf.variable_scope("add_layer_Layer_"+str(depth)):
-        sc=ten.shape[1:]
-        fig=tf.reshape(tf.get_variable("add_filter",sc,tf.float32,tf.ones_initializer(),trainable=True),[1,sc[0],sc[1],sc[2]])
-        figs=tf.tile(fig,(ten.shape[0],1,1,1))
-        ten = ten + figs
+    # with tf.variable_scope("add_layer_Layer_"+str(depth)):
+    #     sc=ten.shape[1:]
+    #     fig=tf.reshape(tf.get_variable("add_filter",sc,tf.float32,tf.ones_initializer(),trainable=True),[1,sc[0],sc[1],sc[2]])
+    #     figs=tf.tile(fig,(ten.shape[0],1,1,1))
+    #     ten = ten + figs
 
     return ten
 
@@ -722,7 +777,7 @@ def upload(voice,to,comment=""):
     voiced=voice.astype(np.int16)
     p=pyaudio.PyAudio()
     FORMAT = pyaudio.paInt16
-    ww = wave.open(to+nowtime()+comment+".wav", 'wb')
+    ww = wave.open(to+".wav", 'wb')
     ww.setnchannels(1)
     ww.setsampwidth(p.get_sample_size(FORMAT))
     ww.setframerate(16000)
@@ -747,3 +802,25 @@ def isread(path):
     return ans
 def imread(path):
     return np.load(path)
+def mask_scale(dd,f,t,power):
+    dd[:,f:t,0]-=(power/100*-dd[:,f:t,0])
+
+    return dd
+def mask_const(dd,f,t,power):
+    dd[:,f:t,0]-=power
+    # dd[:,:,1]=dd[:,:,1]*1.12
+    return dd
+def filter_clip(dd,f=1.5):
+    dxf=np.maximum(dd,-f)+f+np.minimum(dd,f)-f
+    return -dxf*0.5
+
+def filter_mean(dd):
+    dxx1=np.roll(dd,1)
+    dxx1[:1]=dd[:1]
+    dxx2=np.roll(dd,2)
+    dxx2[:2] = dd[:2]
+    dxx3= np.roll(dd, 3)
+    dxx3[:3] = dd[:3]
+    dxx4 = np.roll(dd, 4)
+    dxx4[:4] = dd[:4]
+    return (dd+dxx1+dxx2+dxx3+dxx4)/5.0

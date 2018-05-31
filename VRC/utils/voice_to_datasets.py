@@ -4,6 +4,7 @@ import wave
 import time
 import glob
 import cupy
+import matplotlib.pyplot as plt
 NFFT=1024
 SHIFT=NFFT//2
 C1=32.703
@@ -116,7 +117,6 @@ for file in files:
         data_realAb = data_realA[max(startpos-ind,0):startpos]
         data_realBb = data_realB[max(startpos - ind, 0):startpos]
         r=ind-data_realAb.shape[0]
-        print(r)
         if r>0:
             data_realAb=np.pad(data_realAb,(r,0),"constant")
             data_realBb=np.pad(data_realBb,(r,0),"constant")
@@ -130,9 +130,23 @@ for file in files:
         bss=fft(ddms)
         a=complex_to_pp(a)
         bss=complex_to_pp(bss)
+        c=a[:,:,0]
+        a[:,:,0]-=np.tile(np.mean(c,axis=1).reshape(-1,1),(1,NFFT))
+        v=1/np.sqrt(np.var(c,axis=1)+1e-36)
+        a[:,:,0]=np.einsum("ij,i->ij",a[:,:,0],v)
+        c=bss[:,:,0]
+        bss[:,:,0]-=np.tile(np.mean(c,axis=1).reshape(-1,1),(1,NFFT))
+        v=1/np.sqrt(np.var(c,axis=1)+1e-36)
+        bss[:,:,0]=np.einsum("ij,i->ij",bss[:,:,0],v)
         abc = np.append(abc, bss, axis=0)
         ab = np.append(ab, a, axis=0)
-    np.save("../train/Model/datasets/train/Source_data/"+str(cnt)+".data",abc)
-    print(abc.shape)
-    np.save("../train/Model/datasets/train/Answer_data/"+str(cnt) +".data", ab)
+    np.save("../train/Model/datasets/train/Answer_data/"+str(cnt)+".data",abc)
+    np.save("../train/Model/datasets/train/Source_data/"+str(cnt) +".data", ab)
     cnt+=1
+plt.subplot(211)
+plt.imshow(abc[:,:,0],aspect="auto")
+plt.colorbar()
+plt.subplot(212)
+plt.imshow(abc[:,:,1],aspect="auto")
+plt.colorbar()
+plt.show()
