@@ -164,8 +164,11 @@ class Model:
             for i in range(self.args["batch_size"]):
                 n=self.fft(red[i].reshape(-1))
                 res[i]=n
-            scales=np.sqrt(np.var(res[0,:,:,0],axis=1)+1e-64)
-            means=np.mean(res[0,:,:,0],axis=1)
+            scales = np.sqrt(np.var(res[0, :, :, 0], axis=1) + 1e-64)
+            means = np.mean(res[0, :, :, 0], axis=1)
+            mms = np.tile(np.reshape(scales, (-1, 1)), (1, self.args["NFFT"]))
+            scl = np.tile(np.reshape(means, (-1, 1)), (1, self.args["NFFT"]))
+            res[0, :, :, 0] = res[0, :, :, 0] * mms - scl
             # running network
             # ネットワーク実行
 
@@ -185,26 +188,28 @@ class Model:
             c=c+sm
             c=c*ss
             a[:,:,0]=c
+            b = mask_scale(a.copy(), 250, 770, 5)
+            b= mask_const(b, 250, 770, 10)
+            b = mask_scale(b, 250, 770, -5)
             # a = mask_scale(a, 250, 770, 10)
-            a = mask_const(a, 250, 770, 8)
             # a = mask_scale(a, 250, 770, -10)
-            otp3 = np.append(otp3, a[ 2:, :, :])
+            otp3 = np.append(otp3, b[ 1:, :, :])
 
             # otp3 = np.append(otp3, a[ 2:, :, :])
 
             # IFFT
             # 短時間高速離散逆フーリエ変換
-            res2,rss=self.ifft(res2[0],rss)
-            res2=np.clip(res2/2,-1.0,1.0)
+            res2,rss=self.ifft(a,rss)
+            res2=np.clip(res2,-1.0,1.0)
             res2=res2*32767
-            res4, rss4 = self.ifft(a, rss4)
-            res4 = np.clip(res4/2, -1.0, 1.0)
+            res4, rss4 = self.ifft(b, rss4)
+            res4 = np.clip(res4, -1.0, 1.0)
             res4 = res4 * 32767
             # chaching results
             # 結果の保存
             res2=res2.reshape(-1).astype(np.int16)
             res4 = res4.reshape(-1).astype(np.int16)
-
+            # print(res2.shape)
             otp=np.append(otp,res2[-8192:])
             otp2 = np.append(otp2, res4[-8192:])
         h=otp.shape[0]-in_put.shape[1]
@@ -274,13 +279,13 @@ class Model:
         window=np.hamming(self.args["NFFT"])
         fft_s = np.fft.ifft(datanum,n=self.args["NFFT"], axis=1)
         fft_data = fft_s.real
-        fft_data[:]/=window
+        # fft_data[:]/=window
         v = fft_data[:, :self.args["NFFT"]// 2]
         reds = fft_data[-1, self.args["NFFT"] // 2:].copy()
         lats = np.roll(fft_data[:, self.args["NFFT"] // 2:], 1,axis=0)
         lats[0, :] =red
         spec = np.reshape(v + lats, (-1))
-        return spec[:-1],reds
+        return spec,reds
 
 
 def generator(current_outputs,reuse,depth,chs,f,s):

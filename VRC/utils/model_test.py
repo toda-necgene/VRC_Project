@@ -3,8 +3,12 @@ import numpy as np
 import wave
 import matplotlib.pyplot as pl
 import time
+import os
 
 from .model_proto_cpu import Model as model
+from datetime import datetime
+import glob
+
 Add_Effect=True
 NFFT=1024
 SHIFT=NFFT//2
@@ -14,6 +18,7 @@ Hz=C1*(2**0)
 now=317.6
 target=563.666
 upidx=target/now
+upidx=1.0
 path="../setting.json"
 net=model(path)
 net.build_model()
@@ -125,9 +130,9 @@ CHUNK = 1024     #データ点数
 RECORD_SECONDS = 5 #録音する時間の長さ
 WAVE_OUTPUT_FILENAME = "./B.wav"
 WAVE_OUTPUT_FILENAME2 = "./B2.wav"
-
 file_l="../train/Model/datasets/test/label.wav"
-file="../train/Model/datasets/test/test.wav"
+file="../train/Model/datasets/test/label.wav"
+# file="../train/Model/datasets/test/test.wav"
 
 index=0
 dms=[]
@@ -182,37 +187,38 @@ for i in range(times):
     abc = np.append(abc, bss, axis=0)
 # print(a)
 bsd=data_D.astype(np.float32)/32767
-bsd=filter_mean(bsd)
+
 bsd=filter_clip(bsd,f=0.5)
 # bsd=filter_mean(bsd)
 data_D=(bsd*32767).astype(np.int16)
-# pl.subplot(6,1,1)
-# aba=ab[:,:,0].transpose((1,0))
-# pl.imshow(aba,aspect="auto")
-# pl.clim(-30,10)
-# pl.colorbar()
-pl.subplot(4,1,2)
+data_E=data_E.reshape([-1,NFFT,2])
+pl.subplot(6,1,5)
+aba=np.abs(abc[1:,:,0]-data_E[:,:,0]).transpose((1,0))
+pl.imshow(aba,aspect="auto",cmap="GnBu")
+pl.clim(0,6)
+pl.colorbar()
+pl.subplot(6,1,2)
 abn=np.transpose(abc[1:,:,0],(1,0))
 pl.imshow(abn,aspect="auto")
 pl.clim(-30,10)
 pl.colorbar()
-# pl.subplot(6,1,3)
-# aba=ab[:,:,1].transpose((1,0))
-# pl.imshow(aba,aspect="auto")
-# pl.clim(-3.141592,3.141592)
-# pl.colorbar()
-pl.subplot(4,1,4)
+pl.subplot(6,1,6)
+aba=np.abs(abc[1:,:,1]-data_E[:,:,1]).transpose((1,0))
+pl.imshow(aba,aspect="auto",cmap="GnBu")
+pl.clim(0,3.141592)
+pl.colorbar()
+pl.subplot(6,1,4)
 abn=np.transpose(abc[1:,:,1],(1,0))
 pl.imshow(abn,aspect="auto")
 pl.clim(-3.141592,3.141592)
 pl.colorbar()
-pl.subplot(4, 1, 1)
+pl.subplot(6, 1, 1)
 data_E=data_E.reshape([-1,1024,2])
 abn = np.transpose(data_E[1:, :, 0], (1, 0))
 pl.imshow(abn, aspect="auto")
 pl.clim(-30, 10)
 pl.colorbar()
-pl.subplot(4, 1, 3)
+pl.subplot(6, 1, 3)
 aba = data_E[:, :, 1].transpose((1, 0))
 pl.imshow(aba, aspect="auto")
 pl.clim(-3.141592, 3.141592)
@@ -235,6 +241,32 @@ ww.setframerate(RATE)
 ww.writeframes(data_D.tobytes())
 ww.close()
 
+L1_1=np.mean(np.abs(abc[1:,:,0]-data_E[:,:,0]).reshape(-1))
+L1_2=np.mean(np.abs(abc[1:,:,1]-data_E[:,:,1]).reshape(-1))
+
 print(" [*] Finished!!")
+
+def nowtime():
+    return datetime.now().strftime("%Y_%m_%d %H_%M_%S")
+
+f=glob.glob(net.args["wave_otp_dir"]+"/*.wav")
+print(net.args["wave_otp_dir"]+"/*.wav")
+tm=os.path.basename(f[-1])
+print(" ______________________________________")
+print("|///      stats %18s ///|" % nowtime())
+print("|/// File_name  %18s ///|" % tm[0:19])
+print("|/// L1_norm_Loss_0    %1.4f       ///|" % L1_1)
+print("|/// L1_norm_Loss_1    %1.4f       ///|" % L1_2)
+print(" ---------------------------------------")
+
+
+with open("C://Users/C0116170/Desktop/results.txt","a") as f:
+    f.write("\n")
+    f.write(" ______________________________________\n")
+    f.write("|///      tats  %18s ///|\n" % nowtime())
+    f.write("|/// File_name  %18s ///|\n" % tm[0:19])
+    f.write("|/// L1_norm_Loss_0    %1.4f       ///|\n" % L1_1)
+    f.write("|/// L1_norm_Loss_1    %1.4f       ///|\n" % L1_2)
+    f.write(" ---------------------------------------\n")
 
 pl.show()
