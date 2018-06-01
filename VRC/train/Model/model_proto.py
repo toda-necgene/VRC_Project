@@ -164,7 +164,7 @@ class Model:
                 tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.zeros(self.d_judge_F1_logits.shape),
                                                         logits=f[1])))
 
-        self.d_loss=(self.d_loss_F+self.d_loss_R+tf.reduce_mean(self.d_loss_Fs))/3.0
+        self.d_loss=(self.d_loss_R+tf.reduce_mean(self.d_loss_Fs))/2.0
 
         # objective-functions of generator
         # G-netの目的関数
@@ -172,8 +172,8 @@ class Model:
         # L1 norm loss
         drml = []
         for f in self.ifs:
-            a=tf.clip_by_value(tf.abs(self.input_model_label[:,:,:,0] - f[:,:,:,0])/60,0.0,1.0)
-            b=tf.clip_by_value(tf.abs(self.input_model_label[:,:,:,1] - f[:,:,:,1])/3.141593/20,0.0,1.0)
+            a=tf.clip_by_value(tf.abs(self.input_model_label[:,:,:,0] - f[:,:,:,0])/800,0.0,1.0)
+            b = tf.clip_by_value(tf.abs(self.input_model_label[:, :, :, 1] - f[:, :, :, 1]) / 600, 0.0, 1.0)
             drml.append(a+b)
         L1 = tf.reduce_mean(drml)
         # Gan loss
@@ -280,7 +280,8 @@ class Model:
             # 変換後処理
             bsd = filter_mean(res)
             res = filter_clip(bsd, f=0.5)
-            res=res*32767/2
+            res=np.clip(res,-1.0,1.0)
+            res=res*32767
             # chaching results
             # 結果の保存
             res=res.reshape(-1).astype(np.int16)
@@ -622,7 +623,7 @@ class Model:
             fft_s = np.fft.ifft(data,n=self.args["NFFT"], axis=1)
 
         fft_data = fft_s.real
-        fft_data[:]/=window
+        # fft_data[:]/=window
         v = fft_data[:, :self.args["NFFT"]// 2]
         reds = fft_data[-1, self.args["NFFT"] // 2:].copy()
         lats = np.roll(fft_data[:, self.args["NFFT"] // 2:], 1, axis=0 )

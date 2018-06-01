@@ -94,8 +94,8 @@ for file in files:
     dms = b''.join(dms)
     data = np.frombuffer(dms, 'int16')
     data_real=data.reshape(2,80000)
-    data_realA=data_real[0]
-    data_realB=data_real[1]
+    data_realA=data_real[1]
+    data_realB=data_real[0]
     timee=80000
     times=data_realA.shape[0]//timee
 
