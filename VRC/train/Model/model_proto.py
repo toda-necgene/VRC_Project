@@ -195,7 +195,7 @@ class Model:
 
 
         tt=time.time()
-        ipt=self.args["input_size"]+self.args["NFFT"]
+        ipt=self.args["input_size"]
         times=in_put.shape[1]//(self.args["input_size"])+1
         if in_put.shape[1]%((self.args["input_size"])*self.args["batch_size"])==0:
             times-=1
@@ -246,20 +246,20 @@ class Model:
             c = c * ss
             c = c + sm
             a[:, :, 0] = c
-            a = mask_scale(a, 250, 770, 10)
-            a = mask_scale(a, 0, 250, -20)
-            a = mask_scale(a, 770, 1024, -20)
-            a = mask_const(a,250,770,2)
+            # a = mask_scale(a, 32, 96, 10)
+            # a = mask_scale(a, 0, 32, -20)
+            # a = mask_scale(a, 96, 128, -20)
+            # a = mask_const(a,32,96,2)
+            #
+            # means_mask=means.copy()
+            # means_mask[means_mask<-2.5]=-30.0
+            # scale3= np.sqrt(np.var(a[:, :, 0], axis=1) + 1e-64)
+            # means3 = np.mean(a[:, :, 0], axis=1)
+            # ss2 = scales / (scale3+1e-32)
+            # sm2 = np.tile((means_mask - means3).reshape(-1, 1), (1, self.args["NFFT"]))
+            a[:,:,0]=np.clip(a[:,:,0],-60.0,9.0)
 
-            means_mask=means.copy()
-            means_mask[means_mask<-2.5]=-30.0
-            scale3= np.sqrt(np.var(a[:, :, 0], axis=1) + 1e-64)
-            means3 = np.mean(a[:, :, 0], axis=1)
-            ss2 = scales / (scale3+1e-32)
-            sm2 = np.tile((means_mask - means3).reshape(-1, 1), (1, self.args["NFFT"]))
-            a[:,:,0]=np.clip(np.einsum("ij,i->ij",a[:,:,0]+sm2,ss2),-60.0,10.0)
-
-            res2 = np.append(res2, a[ :, :, :])
+            res2 = np.append(res2, a[ self.ac:, self.ab:, :])
 
 
             # Postprocess
@@ -433,7 +433,7 @@ class Model:
                 batch_sounds2= np.asarray([batch_sounds_t[ind] for ind in index_list[st:st+self.args["batch_size"]]])
                 # calculating one iteration repetation times
                 # 1イテレーション実行回数計算
-                times=int(batch_sounds1.shape[1])//self.input_size_model[1]+1
+                times=int(batch_sounds1.shape[1])//self.input_size_model[1]
                 if int(batch_sounds1.shape[1])%self.input_size_model[1]==0:
                     times-=1
                 # shuffle start time
@@ -574,6 +574,7 @@ class Model:
             return False
 
     def fft(self,data):
+
         time_ruler = data.shape[0] // self.args["SHIFT"]
         if data.shape[0] % self.args["SHIFT"] == 0:
             time_ruler -= 1
@@ -600,7 +601,7 @@ class Model:
         spec=np.pad(spec,((self.ac,0),(self.ab,0),(0,0)),"constant")
         return spec
     def ifft(self,data,redi):
-        a=data[self.ac:-1,self.ab:-1,:]
+        a=data[self.ac:,self.ab:,:]
         a[:, :, 0]=np.clip(a[:, :, 0],a_min=-100000,a_max=88)
         sss=np.exp(a[:,:,0])
         p = np.sqrt(sss)
@@ -608,7 +609,6 @@ class Model:
         i = p * (np.sin(a[:, :, 1]))
         dds = np.concatenate((r.reshape(r.shape[0], r.shape[1], 1), i.reshape(i.shape[0], i.shape[1], 1)), 2)
         data=dds[:,:,0]+1j*dds[:,:,1]
-        window=np.hamming(self.args["NFFT"])
         if self.args["cupy"]:
             eep = cupy.asarray(data, dtype=cupy.complex128)
             fft_se = cupy.fft.ifft(eep,n=self.args["NFFT"], axis=1)
@@ -623,6 +623,7 @@ class Model:
         lats = np.roll(fft_data[:, self.args["NFFT"] // 2:], 1, axis=0 )
         lats[0, :]=redi
         spec = np.reshape(v + lats, (-1))
+        spec=np.append(spec,reds)
         return spec,reds
 
 

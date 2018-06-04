@@ -5,7 +5,7 @@ import time
 import glob
 import cupy
 import matplotlib.pyplot as plt
-NFFT=256
+NFFT=128
 SHIFT=NFFT//2
 C1=32.703
 rate=16000
@@ -102,8 +102,8 @@ for file in files:
     rate=16000
 
     b=np.zeros([1])
-    ab=np.zeros([1,256,2])
-    abc=np.zeros([1,256,2])
+    ab=np.zeros([1,128,2])
+    abc=np.zeros([1,128,2])
 
     term=8192
     times=data_realA.shape[0]//term+1
@@ -112,7 +112,7 @@ for file in files:
     ttm=time.time()
     resp=np.zeros([NFFT//2])
     for i in range(times):
-        ind=NFFT+term
+        ind=term
         startpos=term*i+data_realA.shape[0]%term
         data_realAb = data_realA[max(startpos-ind,0):startpos]
         data_realBb = data_realB[max(startpos - ind, 0):startpos]
