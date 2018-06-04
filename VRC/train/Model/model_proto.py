@@ -90,7 +90,7 @@ class Model:
         ss=int(self.args["input_size"])*2//int(self.args["NFFT"])+1
         self.args["name_save"] = self.args["model_name"] + self.args["version"]
 
-        self.input_size_model=[self.args["batch_size"],ss,self.args["NFFT"],2]
+        self.input_size_model=[self.args["batch_size"],self.args["NFFT"],self.args["NFFT"],2]
         print("model input size:"+str(self.input_size_model))
         self.sess=tf.InteractiveSession(config=tf.ConfigProto(gpu_options=tf.GPUOptions()))
         if bool(self.args["debug"]):
@@ -159,7 +159,7 @@ class Model:
         # L1 norm loss
         drml = []
         a=tf.clip_by_value(tf.abs(self.input_model_label[:,:,:,0] - self.fake_B_image[:,:,:,0])/1200,0.0,1.0)
-        b = tf.clip_by_value(tf.abs(self.input_model_label[:, :, :, 1] - self.fake_B_image[:, :, :, 1]) / 600, 0.0, 1.0)
+        b = tf.clip_by_value(tf.abs(self.input_model_label[:, :, :, 1] - self.fake_B_image[:, :, :, 1]) / 1200, 0.0, 1.0)
         L1 = a+b
         # Gan loss
         DSs=tf.reduce_mean(-tf.log(self.d_judge_F1+ 1e-8))
@@ -246,15 +246,18 @@ class Model:
             c = c * ss
             c = c + sm
             a[:, :, 0] = c
-            a = mask_scale(a, 250, 770, -10)
+            a = mask_scale(a, 250, 770, 10)
             a = mask_scale(a, 0, 250, -20)
             a = mask_scale(a, 770, 1024, -20)
-            a = mask_const(a,250,770,5)
+            a = mask_const(a,250,770,2)
+
+            means_mask=means.copy()
+            means_mask[means_mask<-2.5]=-30.0
             scale3= np.sqrt(np.var(a[:, :, 0], axis=1) + 1e-64)
             means3 = np.mean(a[:, :, 0], axis=1)
             ss2 = scales / (scale3+1e-32)
-            sm2 = np.tile((means - means3).reshape(-1, 1), (1, self.args["NFFT"]))
-            a[:,:,0]=np.clip(np.einsum("ij.i->ij",a[:,:,0]+sm2,ss2),-60.0,10.0)
+            sm2 = np.tile((means_mask - means3).reshape(-1, 1), (1, self.args["NFFT"]))
+            a[:,:,0]=np.clip(np.einsum("ij,i->ij",a[:,:,0]+sm2,ss2),-60.0,10.0)
 
             res2 = np.append(res2, a[ :, :, :])
 
@@ -592,14 +595,17 @@ class Model:
         c = np.log(np.power(re, 2) + np.power(im, 2) + 1e-24).reshape(time_ruler, -1, 1)
         d = np.arctan2(im, re).reshape(time_ruler, -1, 1)
         spec = np.concatenate((c, d), 2)
-
+        self.ac=max([self.args["NFFT"]-spec.shape[0],0])
+        self.ab=max([self.args["NFFT"]-spec.shape[1],0])
+        spec=np.pad(spec,((self.ac,0),(self.ab,0),(0,0)),"constant")
         return spec
     def ifft(self,data,redi):
-        a=np.clip(data[:, :, 0],a_min=-100000,a_max=88)
-        sss=np.exp(a)
+        a=data[self.ac:-1,self.ab:-1,:]
+        a[:, :, 0]=np.clip(a[:, :, 0],a_min=-100000,a_max=88)
+        sss=np.exp(a[:,:,0])
         p = np.sqrt(sss)
-        r = p * (np.cos(data[:, :, 1]))
-        i = p * (np.sin(data[:, :, 1]))
+        r = p * (np.cos(a[:, :, 1]))
+        i = p * (np.sin(a[:, :, 1]))
         dds = np.concatenate((r.reshape(r.shape[0], r.shape[1], 1), i.reshape(i.shape[0], i.shape[1], 1)), 2)
         data=dds[:,:,0]+1j*dds[:,:,1]
         window=np.hamming(self.args["NFFT"])
@@ -696,15 +702,13 @@ def generator(current_outputs,reuse,depth,chs,f,s,rate):
     return ctr
 def block(current,output_shape,chs,f,s,depth):
     ten=current
-    ten = tf.layers.batch_normalization(ten, axis=3, training=True,trainable=True,
-                                        gamma_initializer=tf.ones_initializer())
-    
+
     ten = tf.layers.conv2d(ten, chs, kernel_size=f, strides=s, padding="VALID",
                            kernel_initializer=tf.contrib.layers.xavier_initializer(), data_format="channels_last")
     ten = tf.nn.leaky_relu(ten)
 
-    # ten = tf.layers.batch_normalization(ten, axis=3, training=True, trainable=True,
-    #                                     gamma_initializer=tf.ones_initializer())
+    ten = tf.layers.batch_normalization(ten, axis=3, training=True, trainable=True,
+                                        gamma_initializer=tf.ones_initializer())
 
     ten = tf.layers.conv2d_transpose(ten, output_shape, kernel_size=f, strides=s, padding="VALID",
                                      kernel_initializer=tf.contrib.layers.xavier_initializer(),
