@@ -128,21 +128,13 @@ class Model:
         #creating discriminator inputs
         #D-netの入力の作成
         self.res3=[]
-        for c in self.ifs:
-           self.res3.append(tf.concat([self.input_model,c], axis=1))
         self.res1=tf.concat([self.input_model,self.fake_B_image], axis=1)
-
         self.res2=tf.concat([self.input_model,b_true_noised], axis=1)
         #creating discriminator
         #D-net（判別側)の作成
         self.d_judge_F_logits=[]
         with tf.variable_scope("discrim",reuse=tf.AUTO_REUSE):
             self.d_judge_F1,self.d_judge_F1_logits=discriminator(self.res1,False,self.args["filter_d"],self.args["strides_d"],self.args["d_depth"],self.args["D_channels"])
-            for g  in self.res3:
-                self.d_judge_F_logits.append(discriminator(g, True, self.args["filter_d"],
-                                                                        self.args["strides_d"], self.args["d_depth"],
-                                                                        self.args["D_channels"]))
-
             self.d_judge_R,self.d_judge_R_logits=discriminator(self.res2,True,self.args["filter_d"],self.args["strides_d"],self.args["d_depth"],self.args["D_channels"])
 
         #getting individual variabloes
@@ -158,29 +150,19 @@ class Model:
         self.d_loss_R = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=a,logits=self.d_judge_R_logits))
         self.d_loss_F = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.zeros(self.d_judge_F1_logits.shape),logits=self.d_judge_F1_logits))
 
-        self.d_loss_Fs=[]
-        for f in self.d_judge_F_logits:
-            self.d_loss_Fs.append(tf.reduce_mean(
-                tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.zeros(self.d_judge_F1_logits.shape),
-                                                        logits=f[1])))
 
-        self.d_loss=(self.d_loss_R+tf.reduce_mean(self.d_loss_Fs))/2.0
+        self.d_loss=(self.d_loss_R+self.d_loss_F)/2.0
 
         # objective-functions of generator
         # G-netの目的関数
 
         # L1 norm loss
         drml = []
-        for f in self.ifs:
-            a=tf.clip_by_value(tf.abs(self.input_model_label[:,:,:,0] - f[:,:,:,0])/800,0.0,1.0)
-            b = tf.clip_by_value(tf.abs(self.input_model_label[:, :, :, 1] - f[:, :, :, 1]) / 600, 0.0, 1.0)
-            drml.append(a+b)
-        L1 = tf.reduce_mean(drml)
+        a=tf.clip_by_value(tf.abs(self.input_model_label[:,:,:,0] - self.fake_B_image[:,:,:,0])/1200,0.0,1.0)
+        b = tf.clip_by_value(tf.abs(self.input_model_label[:, :, :, 1] - self.fake_B_image[:, :, :, 1]) / 600, 0.0, 1.0)
+        L1 = a+b
         # Gan loss
-        drm=[]
-        for f in self.d_judge_F_logits:
-            drm.append(-tf.log(f[0] + 1e-8))
-        DSs=tf.reduce_mean(drm)
+        DSs=tf.reduce_mean(-tf.log(self.d_judge_F1+ 1e-8))
         # generator loss
         self.g_loss_1 = L1 * self.args["weight_Norm"]  + DSs
 
@@ -248,9 +230,9 @@ class Model:
                 res[i]=n
             scales = np.sqrt(np.var(res[0, :, :, 0], axis=1) + 1e-64)
             means = np.mean(res[0, :, :, 0], axis=1)
-            mms=np.tile(np.reshape(scales,(-1,1)),(1,self.args["NFFT"]))
+            mms=1/scales
             scl = np.tile(np.reshape(means, (-1, 1)), (1, self.args["NFFT"]))
-            res[0,:,:,0]=res[0,:,:,0]*mms-scl
+            res[0,:,:,0]=np.einsum("ij,i->ij",res[0,:,:,0]-scl,mms)
             # running network
             # ネットワーク実行
             res=self.sess.run(self.fake_B_image,feed_dict={ self.input_model:res,self.training:np.asarray([1.0])})
@@ -261,14 +243,20 @@ class Model:
             ss = np.tile((scales / scales2).reshape(-1, 1), (1, self.args["NFFT"]))
             sm = np.tile((means - means2).reshape(-1, 1), (1, self.args["NFFT"]))
             c = a[:, :, 0]
-
-            c = c + sm
             c = c * ss
+            c = c + sm
             a[:, :, 0] = c
-            # a = mask_scale(a, 250, 770, 10)
-            a = mask_const(a, 250, 770, 8)
-            # a = mask_scale(a, 250, 770, -10)
-            res2 = np.append(res2, a[ 2:, :, :])
+            a = mask_scale(a, 250, 770, -10)
+            a = mask_scale(a, 0, 250, -20)
+            a = mask_scale(a, 770, 1024, -20)
+            a = mask_const(a,250,770,5)
+            scale3= np.sqrt(np.var(a[:, :, 0], axis=1) + 1e-64)
+            means3 = np.mean(a[:, :, 0], axis=1)
+            ss2 = scales / (scale3+1e-32)
+            sm2 = np.tile((means - means3).reshape(-1, 1), (1, self.args["NFFT"]))
+            a[:,:,0]=np.clip(np.einsum("ij.i->ij",a[:,:,0]+sm2,ss2),-60.0,10.0)
+
+            res2 = np.append(res2, a[ :, :, :])
 
 
             # Postprocess
@@ -278,8 +266,8 @@ class Model:
             # 短時間高速離散逆フーリエ変換
             res,rss=self.ifft(a,rss)
             # 変換後処理
-            bsd = filter_mean(res)
-            res = filter_clip(bsd, f=0.5)
+            # bsd = filter_mean(res)
+            # res = filter_clip(res, f=0.5)
             res=np.clip(res,-1.0,1.0)
             res=res*32767
             # chaching results
@@ -715,20 +703,20 @@ def block(current,output_shape,chs,f,s,depth):
                            kernel_initializer=tf.contrib.layers.xavier_initializer(), data_format="channels_last")
     ten = tf.nn.leaky_relu(ten)
 
-    ten = tf.layers.batch_normalization(ten, axis=3, training=True, trainable=True,
-                                        gamma_initializer=tf.ones_initializer())
+    # ten = tf.layers.batch_normalization(ten, axis=3, training=True, trainable=True,
+    #                                     gamma_initializer=tf.ones_initializer())
 
     ten = tf.layers.conv2d_transpose(ten, output_shape, kernel_size=f, strides=s, padding="VALID",
                                      kernel_initializer=tf.contrib.layers.xavier_initializer(),
                                      data_format="channels_last")
 
-    # ten = tf.layers.batch_normalization(ten, axis=3, training=True, trainable=True,
-    #                                     gamma_initializer=tf.ones_initializer())
+    ten = tf.layers.batch_normalization(ten, axis=3, training=True, trainable=True,
+                                        gamma_initializer=tf.ones_initializer())
 
-    #Add_filter_Layer
+    # Add_filter_Layer
     # with tf.variable_scope("add_layer_Layer_"+str(depth)):
     #     sc=ten.shape[1:]
-    #     fig=tf.reshape(tf.get_variable("add_filter",sc,tf.float32,tf.ones_initializer(),trainable=True),[1,sc[0],sc[1],sc[2]])
+    #     fig=tf.reshape(tf.get_variable("add_filter",sc,tf.float32,tf.zeros_initializer(),trainable=True),[1,sc[0],sc[1],sc[2]])
     #     figs=tf.tile(fig,(ten.shape[0],1,1,1))
     #     ten = ten + figs
 
