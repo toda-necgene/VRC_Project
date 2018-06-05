@@ -158,19 +158,22 @@ class Model:
 
         # L1 norm loss
         drml = []
-        a=tf.clip_by_value(tf.abs(self.input_model_label[:,:,:,0] - self.fake_B_image[:,:,:,0])/1200,0.0,1.0)
-        b = tf.clip_by_value(tf.abs(self.input_model_label[:, :, :, 1] - self.fake_B_image[:, :, :, 1]) / 1200, 0.0, 1.0)
-        L1 = a+b
+        for f in self.ifs:
+            a=tf.clip_by_value(tf.pow(self.input_model_label[:,:,:,0] - f[:, :, :, 0],2)/60.0,0.0,1.0)
+            b = tf.clip_by_value(tf.pow(self.input_model_label[:, :, :, 1] - f[:, :, :, 1],2) / 6.4, 0.0, 1.0)
+            drml.append(a+b)
+        # L1=tf.reduce_sum(drml)
+        L1=drml[-1]
         # Gan loss
         DSs=tf.reduce_mean(-tf.log(self.d_judge_F1+ 1e-8))
         # generator loss
-        self.g_loss_1 = L1 * self.args["weight_Norm"]  + DSs
+        self.g_loss_1 = L1 * self.args["weight_Norm"]
 
         #BN_UPDATE
         self.update_ops=tf.get_collection(tf.GraphKeys.UPDATE_OPS)
         #tensorboard functions
         #tensorboard 表示用関数
-        self.g_loss_all= tf.summary.scalar("g_loss_All", tf.reduce_mean(self.g_loss_1))
+        self.g_loss_all= tf.summary.scalar("g_loss_L1", tf.reduce_mean(L1))
         self.g_loss_gan = tf.summary.scalar("g_loss_gan", tf.reduce_mean(DSs))
         self.dscore = tf.summary.scalar("dscore", tf.reduce_mean(self.d_judge_F1))
         self.g_loss_sum_1= tf.summary.merge([self.g_loss_all,self.g_loss_gan,self.dscore])
@@ -466,16 +469,16 @@ class Model:
 
                     # Update D network (2times)
                     # D-netの学習(2回)
-                    if self.args["stop_argument"]:
-                        if DS>self.args["stop_value"] :
-                            nos=np.random.rand(self.args["batch_size"])*0.5
-                            self.sess.run([d_optim],feed_dict={self.input_model:res_t, self.input_model_label:tar ,self.noise:nos ,self.training:np.asarray([rate])})
-                        nos = np.random.rand(self.args["batch_size"]) * 0.5
-                        self.sess.run([d_optim_R],feed_dict={self.input_model: res_t, self.input_model_label: tar, self.noise: nos,self.training:np.asarray([rate])})
-                    else :
-                        nos = np.random.rand(self.args["batch_size"]) * 0.5
-                        self.sess.run([d_optim2],
-                                      feed_dict={self.input_model: res_t, self.input_model_label: tar, self.noise: nos,self.training:np.asarray([rate])})
+                    # if self.args["stop_argument"]:
+                    #     if DS>self.args["stop_value"] :
+                    #         nos=np.random.rand(self.args["batch_size"])*0.5
+                    #         self.sess.run([d_optim],feed_dict={self.input_model:res_t, self.input_model_label:tar ,self.noise:nos ,self.training:np.asarray([rate])})
+                    #     nos = np.random.rand(self.args["batch_size"]) * 0.5
+                    #     self.sess.run([d_optim_R],feed_dict={self.input_model: res_t, self.input_model_label: tar, self.noise: nos,self.training:np.asarray([rate])})
+                    # else :
+                    #     nos = np.random.rand(self.args["batch_size"]) * 0.5
+                    #     self.sess.run([d_optim2],
+                    #                   feed_dict={self.input_model: res_t, self.input_model_label: tar, self.noise: nos,self.training:np.asarray([rate])})
 
                         # saving tensorboard
                     # tensorboardの保存
@@ -704,20 +707,22 @@ def generator(current_outputs,reuse,depth,chs,f,s,rate):
 def block(current,output_shape,chs,f,s,depth):
     ten=current
 
+    ten = tf.layers.batch_normalization(ten, axis=3, training=True, trainable=True,
+                                        gamma_initializer=tf.ones_initializer())
+
     ten = tf.layers.conv2d(ten, chs, kernel_size=f, strides=s, padding="VALID",
                            kernel_initializer=tf.contrib.layers.xavier_initializer(), data_format="channels_last")
     ten = tf.nn.leaky_relu(ten)
 
-    ten = tf.layers.batch_normalization(ten, axis=3, training=True, trainable=True,
-                                        gamma_initializer=tf.ones_initializer())
+    # ten = tf.layers.batch_normalization(ten, axis=3, training=True, trainable=True,
+    #                                     gamma_initializer=tf.ones_initializer())
 
     ten = tf.layers.conv2d_transpose(ten, output_shape, kernel_size=f, strides=s, padding="VALID",
                                      kernel_initializer=tf.contrib.layers.xavier_initializer(),
                                      data_format="channels_last")
-
-    ten = tf.layers.batch_normalization(ten, axis=3, training=True, trainable=True,
-                                        gamma_initializer=tf.ones_initializer())
-
+    cct = tf.layers.batch_normalization(tf.reshape(ten[:, :, :, 0],[ten.shape[0],ten.shape[1],ten.shape[2],1]), axis=-1, training=True, trainable=True,gamma_initializer=tf.ones_initializer())
+    cct2=tf.reshape(ten[:,:,:,1],[ten.shape[0],ten.shape[1],ten.shape[2],1])
+    ten=tf.concat([cct,cct2],axis=3)
     # Add_filter_Layer
     # with tf.variable_scope("add_layer_Layer_"+str(depth)):
     #     sc=ten.shape[1:]
