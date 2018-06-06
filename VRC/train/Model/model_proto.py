@@ -87,7 +87,6 @@ class Model:
             self.args["pitch_rate"] = self.args["pitch_tar"]/self.args["pitch_res"]
             print(" [!] pitch_rate is not found . calculated value : "+str(self.args["pitch_rate"]))
         self.args["SHIFT"] = self.args["NFFT"]//2
-        ss=int(self.args["input_size"])*2//int(self.args["NFFT"])+1
         self.args["name_save"] = self.args["model_name"] + self.args["version"]
 
         self.input_size_model=[self.args["batch_size"],self.args["NFFT"],self.args["NFFT"],2]
@@ -114,70 +113,112 @@ class Model:
 
         #inputs place holder
         #入力
-        self.input_model=tf.placeholder(tf.float32, self.input_size_model, "inputs_G-net")
-        self.input_model_label=tf.placeholder(tf.float32, self.input_size_model, "inputs_GD-net_target_label")
+        self.input_modela=tf.placeholder(tf.float32, self.input_size_model, "inputs_G-net_A")
+        self.input_modelb = tf.placeholder(tf.float32, self.input_size_model, "inputs_G-net_B")
+
+
         self.training=tf.placeholder(tf.float32,[1],name="Training")
         #creating generator
         #G-net（生成側）の作成
-        with tf.variable_scope("generator_1"):
-            self.ifs=generator(tf.reshape(self.input_model,self.input_size_model), reuse=False,chs=self.args["G_channel"],depth=self.args["depth"],f=self.args["filter_g"],s=self.args["strides_g"],rate=self.training)
-            self.fake_B_image=self.ifs[-1]
+        with tf.variable_scope("generators"):
+
+            with tf.variable_scope("generator_1"):
+                self.fake_aB_image = generator(tf.reshape(self.input_modela, self.input_size_model), reuse=None,
+                                              chs=self.args["G_channel"], depth=self.args["depth"], f=self.args["filter_g"],
+                                              s=self.args["strides_g"], rate=self.training)
+            with tf.variable_scope("generator_2"):
+                self.fake_bA_image = generator(tf.reshape(self.input_modelb, self.input_size_model), reuse=None,
+                                              chs=self.args["G_channel"], depth=self.args["depth"], f=self.args["filter_g"],
+                                              s=self.args["strides_g"], rate=self.training)
+            with tf.variable_scope("generator_2"):
+                self.fake_Ba_image = generator(tf.reshape(self.fake_aB_image, self.input_size_model), reuse=True,
+                                              chs=self.args["G_channel"], depth=self.args["depth"], f=self.args["filter_g"],
+                                              s=self.args["strides_g"], rate=self.training)
+            with tf.variable_scope("generator_1"):
+                self.fake_Ab_image = generator(tf.reshape(self.fake_bA_image, self.input_size_model), reuse=True,
+                                               chs=self.args["G_channel"], depth=self.args["depth"],
+                                               f=self.args["filter_g"],
+                                               s=self.args["strides_g"], rate=self.training)
         self.noise = tf.placeholder(tf.float32, [self.args["batch_size"]], "inputs_Noise")
 
-        b_true_noised=self.input_model_label+tf.random_normal(self.input_model_label.shape,0,self.noise[0])
+        a_true_noised=self.input_modela+tf.random_normal(self.input_modela.shape,0,self.noise[0])
+        b_true_noised = self.input_modelb + tf.random_normal(self.input_modelb.shape, 0, self.noise[0])
+
         #creating discriminator inputs
         #D-netの入力の作成
-        self.res3=[]
-        self.res1=tf.concat([self.input_model,self.fake_B_image], axis=1)
-        self.res2=tf.concat([self.input_model,b_true_noised], axis=1)
         #creating discriminator
         #D-net（判別側)の作成
         self.d_judge_F_logits=[]
-        with tf.variable_scope("discrim",reuse=tf.AUTO_REUSE):
-            self.d_judge_F1,self.d_judge_F1_logits=discriminator(self.res1,False,self.args["filter_d"],self.args["strides_d"],self.args["d_depth"],self.args["D_channels"])
-            self.d_judge_R,self.d_judge_R_logits=discriminator(self.res2,True,self.args["filter_d"],self.args["strides_d"],self.args["d_depth"],self.args["D_channels"])
+        with tf.variable_scope("discrimB"):
+            self.d_judge_BR, self.d_judge_BR_logits = discriminator(b_true_noised, False, self.args["filter_d"],
+                                                                   self.args["strides_d"], self.args["d_depth"],
+                                                                   self.args["D_channels"])
+
+            self.d_judge_BF, self.d_judge_BF_logits = discriminator(self.fake_aB_image, True, self.args["filter_d"],
+                                                                   self.args["strides_d"], self.args["d_depth"],
+                                                                   self.args["D_channels"])
+        with tf.variable_scope("discrimA"):
+            self.d_judge_AR, self.d_judge_AR_logits = discriminator(a_true_noised, False, self.args["filter_d"],
+                                                                    self.args["strides_d"], self.args["d_depth"],
+                                                                    self.args["D_channels"])
+            self.d_judge_AF, self.d_judge_AF_logits = discriminator(self.fake_bA_image, True, self.args["filter_d"],
+                                                                    self.args["strides_d"], self.args["d_depth"],
+                                                                    self.args["D_channels"])
+
 
         #getting individual variabloes
         #それぞれの変数取得
-        self.g_vars_1=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"generator_1")
-        self.d_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"discrim")
+        self.g_vars_aB=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"generators")
+        self.g_vars_bA = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, "generators")
+
+        self.d_vars_1=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"discrimA")
+        self.d_vars_2=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"discrimB")
 
 
-        c=1.0-self.noise
-        a=tf.reshape(c,self.d_judge_F1_logits.shape)
         #objective-functions of discriminator
         #D-netの目的関数
-        self.d_loss_R = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=a,logits=self.d_judge_R_logits))
-        self.d_loss_F = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.zeros(self.d_judge_F1_logits.shape),logits=self.d_judge_F1_logits))
+        self.d_loss_AR = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones(self.d_judge_AR_logits.shape),logits=self.d_judge_AR_logits))
+        self.d_loss_AF = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.zeros(self.d_judge_AF_logits.shape),logits=self.d_judge_AF_logits))
+        self.d_loss_BR = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones(self.d_judge_BR_logits.shape), logits=self.d_judge_BR_logits))
+        self.d_loss_BF = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.zeros(self.d_judge_BF_logits.shape),logits=self.d_judge_BF_logits))
 
-
-        self.d_loss=(self.d_loss_R+self.d_loss_F)/2.0
+        self.d_lossA=(self.d_loss_AR+self.d_loss_AF)/2.0
+        self.d_lossB= (self.d_loss_BR + self.d_loss_BF) / 2.0
 
         # objective-functions of generator
         # G-netの目的関数
 
-        # L1 norm loss
-        drml = []
-        for f in self.ifs:
-            a=tf.clip_by_value(tf.pow(self.input_model_label[:,:,:,0] - f[:, :, :, 0],2)/60.0,0.0,1.0)
-            b = tf.clip_by_value(tf.pow(self.input_model_label[:, :, :, 1] - f[:, :, :, 1],2) / 6.4, 0.0, 1.0)
-            drml.append(a+b)
-        # L1=tf.reduce_sum(drml)
-        L1=drml[-1]
+        # L1 norm lossA
+        L1B=tf.clip_by_value(tf.abs(self.input_modela - self.fake_Ba_image)/24.4,0.0,1.0)
+
+        # Gan lossA
+        DSb=tf.reduce_mean(-tf.log(self.d_judge_BF+ 1e-8))
+        # generator lossA
+        self.g_loss_aB = L1B * self.args["weight_Norm"]+DSb
+        # L1 norm lossB
+        L1bAAb = tf.clip_by_value(tf.abs(self.input_modelb - self.fake_Ab_image) / 24.4, 0.0,1.0)
         # Gan loss
-        DSs=tf.reduce_mean(-tf.log(self.d_judge_F1+ 1e-8))
+        DSA = tf.reduce_mean(-tf.log(self.d_judge_AF + 1e-8))
         # generator loss
-        self.g_loss_1 = L1 * self.args["weight_Norm"]
+        self.g_loss_bA = L1bAAb * self.args["weight_Norm"] + DSA
 
         #BN_UPDATE
         self.update_ops=tf.get_collection(tf.GraphKeys.UPDATE_OPS)
         #tensorboard functions
         #tensorboard 表示用関数
-        self.g_loss_all= tf.summary.scalar("g_loss_L1", tf.reduce_mean(L1))
-        self.g_loss_gan = tf.summary.scalar("g_loss_gan", tf.reduce_mean(DSs))
-        self.dscore = tf.summary.scalar("dscore", tf.reduce_mean(self.d_judge_F1))
-        self.g_loss_sum_1= tf.summary.merge([self.g_loss_all,self.g_loss_gan,self.dscore])
-        self.d_loss_sum = tf.summary.scalar("d_loss", tf.reduce_mean(self.d_loss))
+        self.g_loss_all= tf.summary.scalar("g_loss_cycle_A", tf.reduce_mean(L1bAAb))
+        self.g_loss_gan = tf.summary.scalar("g_loss_gan_A", tf.reduce_mean(DSA))
+        self.dscore = tf.summary.scalar("dscore_A", tf.reduce_mean(self.d_judge_AF))
+        self.g_loss_sum_1 = tf.summary.merge([self.g_loss_all, self.g_loss_gan, self.dscore])
+
+        self.g_loss_all2 = tf.summary.scalar("g_loss_cycle_B", tf.reduce_mean(L1B))
+        self.g_loss_gan2 = tf.summary.scalar("g_loss_gan_B", tf.reduce_mean(DSb))
+        self.dscore2 = tf.summary.scalar("dscore_B", tf.reduce_mean(self.d_judge_BF))
+        self.g_loss_sum_2 = tf.summary.merge([self.g_loss_all2, self.g_loss_gan2, self.dscore2])
+
+        self.d_loss_sumA = tf.summary.scalar("d_lossA", tf.reduce_mean(self.d_lossA))
+        self.d_loss_sumB = tf.summary.scalar("d_lossB", tf.reduce_mean(self.d_lossB))
+
         self.result=tf.placeholder(tf.float32, [1,1,160000], name="FB")
         self.fake_B_sum = tf.summary.audio("fake_B", tf.reshape(self.result,[1,160000,1]), 16000, 1)
         self.g_test_epo=tf.placeholder(tf.float32,name="g_test_epoch_end")
@@ -221,11 +262,6 @@ class Model:
             red=red.reshape((self.args["batch_size"],ipt))
             res = np.zeros(self.input_size_model)
 
-            # changing pitch
-            # ピッチ変更
-            for i in range(self.args["batch_size"]):
-                red[i] = shift(red[i] / 32767.0, self.args["pitch_rate"]).reshape(red[i].shape)
-
             # FFT
             # 短時間高速離散フーリエ変換
             for i in range(self.args["batch_size"]):
@@ -238,7 +274,7 @@ class Model:
             res[0,:,:,0]=np.einsum("ij,i->ij",res[0,:,:,0]-scl,mms)
             # running network
             # ネットワーク実行
-            res=self.sess.run(self.fake_B_image,feed_dict={ self.input_model:res,self.training:np.asarray([1.0])})
+            res=self.sess.run(self.fake_aB_image,feed_dict={ self.input_modela:res,self.training:np.asarray([1.0])})
             # resas = np.append(resas, res[0])
             a=res[0].copy()
             scales2 = np.sqrt(np.var(a[:, :, 0], axis=1) + 1e-64)
@@ -304,11 +340,12 @@ class Model:
 
 
         self.lod="[glr="+str(lr_g_opt)+",gb="+str(beta_g_opt)+",dlr="+str(lr_d_opt)+",db="+str(beta_d_opt)+"]"
-        g_optim_1 =tf.train.AdamOptimizer(lr_g_opt,beta_g_opt,beta_2_g_opt).minimize(self.g_loss_1, var_list=self.g_vars_1)
-        d_optim = tf.train.AdamOptimizer(lr_d_opt,beta_d_opt,beta_2_d_opt).minimize(self.d_loss_F, var_list=self.d_vars)
-        d_optim_R = tf.train.AdamOptimizer(lr_d_opt, beta_d_opt,beta_2_d_opt).minimize(self.d_loss_R, var_list=self.d_vars)
-        d_optim2 = tf.train.AdamOptimizer(lr_d_opt, beta_d_opt, beta_2_d_opt).minimize(self.d_loss,
-                                                                                      var_list=self.d_vars)
+        g_optim_bA =tf.train.AdamOptimizer(lr_g_opt,beta_g_opt,beta_2_g_opt).minimize(self.g_loss_bA, var_list=self.g_vars_bA)
+        d_optim_bA = tf.train.AdamOptimizer(lr_d_opt,beta_d_opt,beta_2_d_opt).minimize(self.d_lossA, var_list=self.d_vars_1)
+        g_optim_aB = tf.train.AdamOptimizer(lr_g_opt, beta_g_opt, beta_2_g_opt).minimize(self.g_loss_aB,
+                                                                                        var_list=self.g_vars_aB)
+        d_optim_aB = tf.train.AdamOptimizer(lr_d_opt, beta_d_opt, beta_2_d_opt).minimize(self.d_lossB,
+                                                                                        var_list=self.d_vars_2)
 
         time_of_epoch=np.zeros(1)
 
@@ -327,7 +364,6 @@ class Model:
         # initialize training info
         # 学習の情報の初期化
         start_time = time.time()
-        DS=1.0
         log_data_g = np.empty(0)
         log_data_d = np.empty(0)
         ti=0
@@ -436,7 +472,7 @@ class Model:
                 batch_sounds2= np.asarray([batch_sounds_t[ind] for ind in index_list[st:st+self.args["batch_size"]]])
                 # calculating one iteration repetation times
                 # 1イテレーション実行回数計算
-                times=int(batch_sounds1.shape[1])//self.input_size_model[1]
+                times=int(batch_sounds1.shape[1])//self.input_size_model[1]+1
                 if int(batch_sounds1.shape[1])%self.input_size_model[1]==0:
                     times-=1
                 # shuffle start time
@@ -461,45 +497,43 @@ class Model:
                     if r>0:
                         res_t=np.pad(res_t,((0,0),(r,0),(0,0),(0,0)),"constant")
                         tar = np.pad(tar,((0,0),(r,0),(0,0),(0,0)),"constant")
-
                     # Update G network
                     # G-netの学習
                     rate=1.0-0.5**(epoch//50+1)
-                    self.sess.run([g_optim_1,self.update_ops],feed_dict={ self.input_model:res_t, self.input_model_label:tar,self.training:np.asarray([rate])})
-
+                    self.sess.run([g_optim_aB,self.update_ops],feed_dict={ self.input_modela:res_t,self.input_modelb:tar, self.training:np.asarray([rate])})
+                    self.sess.run([g_optim_bA, self.update_ops],
+                                  feed_dict={self.input_modela: res_t,self.input_modelb:tar, self.training: np.asarray([rate])})
                     # Update D network (2times)
-                    # D-netの学習(2回)
-                    # if self.args["stop_argument"]:
-                    #     if DS>self.args["stop_value"] :
-                    #         nos=np.random.rand(self.args["batch_size"])*0.5
-                    #         self.sess.run([d_optim],feed_dict={self.input_model:res_t, self.input_model_label:tar ,self.noise:nos ,self.training:np.asarray([rate])})
-                    #     nos = np.random.rand(self.args["batch_size"]) * 0.5
-                    #     self.sess.run([d_optim_R],feed_dict={self.input_model: res_t, self.input_model_label: tar, self.noise: nos,self.training:np.asarray([rate])})
-                    # else :
-                    #     nos = np.random.rand(self.args["batch_size"]) * 0.5
-                    #     self.sess.run([d_optim2],
-                    #                   feed_dict={self.input_model: res_t, self.input_model_label: tar, self.noise: nos,self.training:np.asarray([rate])})
+                    nos = np.random.rand(self.args["batch_size"]) * 0.0
+                    self.sess.run([d_optim_bA],
+                                  feed_dict={self.input_modelb: tar, self.input_modela: res_t, self.noise: nos,self.training:np.asarray([rate])})
+                    nos = np.random.rand(self.args["batch_size"]) * 0.0
+                    self.sess.run([d_optim_bA],
+                                  feed_dict={self.input_modelb: tar, self.input_modela: res_t, self.noise: nos,self.training: np.asarray([rate])})
+                    nos = np.random.rand(self.args["batch_size"]) * 0.0
+                    self.sess.run([d_optim_aB],
+                                  feed_dict={self.input_modela: res_t, self.input_modelb: tar, self.noise: nos,self.training:np.asarray([rate])})
+                    nos = np.random.rand(self.args["batch_size"]) * 0.0
+                    self.sess.run([d_optim_aB],
+                                  feed_dict={self.input_modela: res_t, self.input_modelb: tar, self.noise: nos,self.training: np.asarray([rate])})
 
-                        # saving tensorboard
+            # saving tensorboard
                     # tensorboardの保存
                     if self.args["tensorboard"] and (counter+ti*epoch)%self.args["train_interval"]==0:
-                        nos = np.random.rand(self.args["batch_size"]) * 0.5
-                        hg,hd=self.sess.run([self.g_loss_sum_1,self.d_loss_sum],feed_dict={self.input_model:res_t, self.input_model_label:tar ,self.noise:nos ,self.training:np.asarray([1.0]) })
+                        nos = np.random.rand(self.args["batch_size"]) * 0.0
+                        hg,hd=self.sess.run([self.g_loss_sum_1,self.d_loss_sumA],feed_dict={self.input_modela:res_t, self.input_modelb:tar ,self.noise:nos ,self.training:np.asarray([1.0]) })
+                        self.writer.add_summary(hg, counter + ti * epoch)
+                        self.writer.add_summary(hd, counter + ti * epoch)
+                        hg, hd = self.sess.run([self.g_loss_sum_2, self.d_loss_sumB],
+                                               feed_dict={self.input_modelb: tar, self.input_modela: res_t,
+                                                          self.noise: nos, self.training: np.asarray([1.0])})
                         self.writer.add_summary(hg, counter+ti*epoch)
                         self.writer.add_summary(hd, counter+ti*epoch)
-                    if self.args["stop_argument"] and (counter+ti*epoch) % self.args["train_interval"] == 0:
-                        nos = np.random.rand(self.args["batch_size"]) * 0.5
-                        hg,hd = self.sess.run([self.g_loss_1,self.d_judge_F1], feed_dict={self.input_model: res_t, self.input_model_label: tar,self.noise:nos ,self.training:np.asarray([1.0])})
-                        log_data_g=np.append(log_data_g,np.mean(hg))
-                        log_data_d=np.append(log_data_d,np.mean(hd))
-                        DS=np.mean(hd)
                     counter+=1
 
             #saving model
             #モデルの保存
             self.save(self.args["checkpoint_dir"], epoch)
-
-
             if self.args["log"] and self.args["wave_otp_dir"]!="False":
                 with open(self.args["log_file"],"a") as f:
                     if self.args["stop_argument"]:
@@ -507,6 +541,7 @@ class Model:
                         epoch, float(np.mean(log_data_d)), float(np.mean(log_data_g)), float(test1)))
                     else:
                         f.write("%6d,%10.5f" % (epoch, float(test1)))
+                    f.write("\n")
                     f.flush()
             if self.args["hyperdash"] and self.args["stop_argument"] :
                 self.experiment.metric("ScoreD", np.mean(log_data_d))
@@ -542,7 +577,8 @@ class Model:
 
         if self.args["log"] and self.args["wave_otp_dir"] != "False":
             with open(self.args["log_file"], "a") as f:
-                f.write("\n \n time on 1 epoch:" +str(np.mean(time_of_epoch[::2]))+" preprocess :"+str(np.mean(time_of_epoch[1::2])))
+                f.write("\n time on 1 epoch:" +str(np.mean(time_of_epoch[::2]))+" preprocess :"+str(np.mean(time_of_epoch[1::2])))
+                f.write("\n")
                 f.flush()
         # hyperdash
         if self.args["hyperdash"]:
@@ -630,52 +666,6 @@ class Model:
         return spec,reds
 
 
-    def test(self):
-        self.load()
-        with open(self.args["log_file"], "w") as f:
-            f.write("name       :low-score    :meanscore")
-        target=imread(self.args["test_dir"]+"/target.wav").reshape(1,-1,1)
-        list_data=glob(self.args["test_dir"]+"/*")
-        ipt = self.args["SHIFT"] + self.args["input_size"]
-        times = target.shape[0] // (self.args["input_size"]) + 1
-        if target.shape[0] % (self.args["input_size"] * self.args["batch_size"]) == 0:
-            times -= 1
-
-        for i in list_data:
-            otp = np.array([], dtype=np.float32)
-            da=imread(i).reshape(1,-1,1)
-            for t in range(times):
-                # Preprocess
-                # 前処理
-                # Padiing
-                # サイズ合わせ
-                red = np.zeros((self.args["batch_size"] - 1, ipt))
-                start_pos = self.args["input_size"] * (t + 1)
-                resorce = np.reshape(da[0, max(0, start_pos - ipt):start_pos, 0], (1, -1))
-                r = max(0, ipt - resorce.shape[1])
-                if r > 0:
-                    resorce = np.pad(resorce, ((0, 0), (r, 0)), 'reflect')
-                red = np.append(resorce, red)
-                red = red.reshape((self.args["batch_size"], ipt))
-                targ = np.reshape(target[0, max(0, start_pos - ipt):start_pos, 0], (1, -1))
-                r = max(0, ipt - targ.shape[1])
-                if r > 0:
-                    targ = np.pad(targ, ((0, 0), (r, 0)), 'reflect')
-
-                res = np.zeros(self.input_size_model)
-                tar = np.zeros(self.input_size_model)
-                # FFT
-                # 短時間高速離散フーリエ変換
-                for imr in range(self.args["batch_size"]):
-                    n = self.fft(resorce[imr].reshape(-1)/ 32767.0)
-                    tar[imr] = (self.fft(targ[imr].reshape(-1))/ 32767.0)
-                    res[imr] = n
-                nos=np.zeros([1])
-                score=self.sess.run(self.d_judge_R,feed_dict={self.input_model:tar, self.input_model_label:res ,self.noise:nos,self.training:np.asarray([1.0])})
-                otp=np.append(otp,score)
-            with open(self.args["log_file"], "a") as f:
-                f.write("\n %10s : %5.5f  :%5.5f" % (i,float(np.min(otp)),float(np.mean(otp))))
-                f.flush()
 
 
 def discriminator(inp,reuse,f,s,depth,chs):
@@ -683,52 +673,36 @@ def discriminator(inp,reuse,f,s,depth,chs):
     for i in range(depth):
         ten = tf.layers.conv2d(current, chs[i], kernel_size=f, strides=s, padding="VALID",
                                kernel_initializer=tf.contrib.layers.xavier_initializer(), data_format="channels_last",name="disc_"+str(i),reuse=reuse)
+        ten=tf.layers.batch_normalization(ten,reuse=reuse,name="bn"+str(i))
         current = tf.nn.leaky_relu(ten)
     h4=tf.reshape(current, [current.shape[0],-1])
     ten=tf.layers.dense(h4,1,name="dence",reuse=reuse)
-    return tf.nn.sigmoid(ten),ten
+    return tf.nn.sigmoid(ten),h4
 def generator(current_outputs,reuse,depth,chs,f,s,rate):
-    if reuse:
-        tf.get_variable_scope().reuse_variables()
-    else:
-        assert tf.get_variable_scope().reuse == False
     current=current_outputs
-    ctr=[]
     output_shape=int(current.shape[3])
     #main process
     for i in range(depth):
         connections = current
-        ten=block(current,output_shape,chs,f,s,i)
-        # if i>1:
-            # ten=tf.nn.dropout(ten,rate[0]-((1-rate[0])*0.5*(i/depth)))
+        ten=block(current,output_shape,chs,f,s,i,reuse)
         current = ten + connections
-        ctr.append(current)
-    return ctr
-def block(current,output_shape,chs,f,s,depth):
+    return current
+def block(current,output_shape,chs,f,s,depth,reuses):
     ten=current
 
     ten = tf.layers.batch_normalization(ten, axis=3, training=True, trainable=True,
-                                        gamma_initializer=tf.ones_initializer())
+                                        gamma_initializer=tf.ones_initializer(),reuse=reuses,name="bn1"+str(depth))
 
     ten = tf.layers.conv2d(ten, chs, kernel_size=f, strides=s, padding="VALID",
-                           kernel_initializer=tf.contrib.layers.xavier_initializer(), data_format="channels_last")
-    ten = tf.nn.leaky_relu(ten)
+                           kernel_initializer=tf.contrib.layers.xavier_initializer(), data_format="channels_last",reuse=reuses,name="conv"+str(depth))
+    ten = tf.nn.leaky_relu(ten,name="lrelu"+str(depth))
 
-    # ten = tf.layers.batch_normalization(ten, axis=3, training=True, trainable=True,
-    #                                     gamma_initializer=tf.ones_initializer())
+    ten = tf.layers.batch_normalization(ten, axis=-1, training=True, trainable=True,
+                                        gamma_initializer=tf.ones_initializer(), reuse=reuses, name="bn2" + str(depth))
 
     ten = tf.layers.conv2d_transpose(ten, output_shape, kernel_size=f, strides=s, padding="VALID",
                                      kernel_initializer=tf.contrib.layers.xavier_initializer(),
-                                     data_format="channels_last")
-    cct = tf.layers.batch_normalization(tf.reshape(ten[:, :, :, 0],[ten.shape[0],ten.shape[1],ten.shape[2],1]), axis=-1, training=True, trainable=True,gamma_initializer=tf.ones_initializer())
-    cct2=tf.reshape(ten[:,:,:,1],[ten.shape[0],ten.shape[1],ten.shape[2],1])
-    ten=tf.concat([cct,cct2],axis=3)
-    # Add_filter_Layer
-    # with tf.variable_scope("add_layer_Layer_"+str(depth)):
-    #     sc=ten.shape[1:]
-    #     fig=tf.reshape(tf.get_variable("add_filter",sc,tf.float32,tf.zeros_initializer(),trainable=True),[1,sc[0],sc[1],sc[2]])
-    #     figs=tf.tile(fig,(ten.shape[0],1,1,1))
-    #     ten = ten + figs
+                                     data_format="channels_last",reuse=reuses,name="deconv"+str(depth))
 
     return ten
 
