@@ -691,24 +691,29 @@ def generator_flatnet(current_outputs,reuse,depth,chs,f,s,rate):
     #main process
     for i in range(depth):
         connections = current
-        ten=block(current,output_shape,chs,f,s,i,reuse)
+        fs=[f[0]+2*depth//4,f[1]+2*depth//4]
+        ten=block(current,output_shape,chs,fs,s,i,reuse,i!=depth-1)
         current = ten + connections
     return current
-def block(current,output_shape,chs,f,s,depth,reuses):
+def block(current,output_shape,chs,f,s,depth,reuses,relu):
     ten=current
 
-    ten = tf.layers.batch_normalization(ten, axis=3, training=False, trainable=False,
-                                        gamma_initializer=tf.ones_initializer(),reuse=reuses,name="bn1"+str(depth))
 
     ten = tf.layers.conv2d(ten, chs, kernel_size=f, strides=s, padding="VALID",
                            kernel_initializer=tf.contrib.layers.xavier_initializer(), data_format="channels_last",reuse=reuses,name="conv1"+str(depth))
+    ten = tf.layers.batch_normalization(ten, axis=3, training=False, trainable=False,
+                                        gamma_initializer=tf.ones_initializer(), reuse=reuses, name="bn1" + str(depth))
 
     ten = tf.nn.leaky_relu(ten,name="lrelu"+str(depth))
 
     ten = tf.layers.conv2d_transpose(ten, output_shape, kernel_size=f, strides=s, padding="VALID",
                                      kernel_initializer=tf.contrib.layers.xavier_initializer(),
                                      data_format="channels_last",reuse=reuses,name="deconv1"+str(depth))
-
+    if relu:
+        ten=tf.nn.relu(ten)
+        ten = tf.layers.batch_normalization(ten, axis=3, training=False, trainable=False,
+                                            gamma_initializer=tf.ones_initializer(), reuse=reuses,
+                                            name="bn2" + str(depth))
     return ten
 
 
@@ -723,7 +728,7 @@ def generator_unet(current_outputs,reuse,depth,chs,f,s):
         current=up_layer(current,chs*(depth-i-1) if (depth-i-1)!=0 else 2,f,s,i,i!=(depth-1),depth-i-1>2,reuse)
         if i!=depth-1:
             current += connections[depth - i -1]
-    return current
+    return tf.reshape(current,current_outputs.shape)
 
 def up_layer(current,output_shape,f,s,depth,bn=True,do=False,reuse=None):
     ten=tf.nn.leaky_relu(current)
