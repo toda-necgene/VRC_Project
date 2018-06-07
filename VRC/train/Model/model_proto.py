@@ -14,6 +14,7 @@ import json
 import shutil
 import cupy
 import dropbox
+import math
 import matplotlib.pyplot as plt
 class Model:
     def __init__(self,path):
@@ -213,24 +214,29 @@ class Model:
         self.update_ops=tf.get_collection(tf.GraphKeys.UPDATE_OPS)
         #tensorboard functions
         #tensorboard 表示用関数
-        self.g_loss_all= tf.summary.scalar("g_loss_cycle_A", tf.reduce_mean(L1bAAb))
-        self.g_loss_gan = tf.summary.scalar("g_loss_gan_A", tf.reduce_mean(DSA))
-        self.dscore = tf.summary.scalar("dscore_A", tf.reduce_mean(self.d_judge_AF))
+        self.g_loss_all= tf.summary.scalar("g_loss_cycle_A", tf.reduce_mean(L1bAAb),family="g_loss")
+        self.g_loss_gan = tf.summary.scalar("g_loss_gan_A", tf.reduce_mean(DSA),family="g_loss")
+        self.dscore = tf.summary.scalar("dscore_A", tf.reduce_mean(self.d_judge_AF),family="d_score")
         self.g_loss_sum_1 = tf.summary.merge([self.g_loss_all, self.g_loss_gan, self.dscore])
 
-        self.g_loss_all2 = tf.summary.scalar("g_loss_cycle_B", tf.reduce_mean(L1B))
-        self.g_loss_gan2 = tf.summary.scalar("g_loss_gan_B", tf.reduce_mean(DSb))
-        self.dscore2 = tf.summary.scalar("dscore_B", tf.reduce_mean(self.d_judge_BF))
+        self.g_loss_all2 = tf.summary.scalar("g_loss_cycle_B", tf.reduce_mean(L1B),family="g_loss")
+        self.g_loss_gan2 = tf.summary.scalar("g_loss_gan_B", tf.reduce_mean(DSb),family="g_loss")
+        self.dscore2 = tf.summary.scalar("dscore_B", tf.reduce_mean(self.d_judge_BF),family="d_score")
         self.g_loss_sum_2 = tf.summary.merge([self.g_loss_all2, self.g_loss_gan2, self.dscore2])
 
-        self.d_loss_sumA = tf.summary.scalar("d_lossA", tf.reduce_mean(self.d_lossA))
-        self.d_loss_sumB = tf.summary.scalar("d_lossB", tf.reduce_mean(self.d_lossB))
+        self.d_loss_sumA = tf.summary.scalar("d_lossA", tf.reduce_mean(self.d_lossA),family="d_loss")
+        self.d_loss_sumB = tf.summary.scalar("d_lossB", tf.reduce_mean(self.d_lossB),family="d_loss")
 
         self.result=tf.placeholder(tf.float32, [1,1,160000], name="FB")
+        self.result1 = tf.placeholder(tf.float32, [1,2540,128,2], name="FBI0")
+        im1=tf.transpose(self.result1[:,:,:,:1],[0,2,1,3])
+        im2 = tf.transpose(self.result1[:, :, :, 1:], [0, 2, 1, 3])
         self.fake_B_sum = tf.summary.audio("fake_B", tf.reshape(self.result,[1,160000,1]), 16000, 1)
+        self.fake_B_sum2 = tf.summary.image("fake_B_image01", im1, 1)
+        self.fake_B_sum3 = tf.summary.image("fake_B_image02", im2, 1)
         self.g_test_epo=tf.placeholder(tf.float32,name="g_test_epoch_end")
-        self.g_test_epoch = tf.summary.merge([tf.summary.scalar("g_test_epoch_end", self.g_test_epo)])
-        self.tb_results=tf.summary.merge([self.fake_B_sum,self.g_test_epoch])
+        self.g_test_epoch = tf.summary.merge([tf.summary.scalar("g_test_epoch_end", self.g_test_epo,family="test")])
+        self.tb_results=tf.summary.merge([self.fake_B_sum,self.fake_B_sum2,self.fake_B_sum3,self.g_test_epoch])
 
         #saver
         #保存の準備
@@ -425,8 +431,9 @@ class Model:
                 #testing
                 #テスト
                 out_puts,taken_time_test,im=self.convert(test.reshape(1,-1,1))
+                im = im.reshape([-1, self.args["NFFT"], 2])
+                otp_im=np.append(np.clip((im[:,:,0]+30)/40,0.0,1.0).reshape([1,-1,self.args["NFFT"],1]),np.clip((im[:,:,1]+3.15)/6.30,0.0,1.0).reshape([1,-1,self.args["NFFT"],1]),axis=3)
                 out_put=out_puts.astype(np.float32)/32767.0
-
                 # loss of tesing
                 #テストの誤差
                 test1=np.mean(np.abs(out_puts.reshape(1,-1,1)[0]-label.reshape(1,-1,1)[0]))
@@ -437,13 +444,12 @@ class Model:
                 #writing epoch-result into tensorboard
                 #tensorboardの書き込み
                 if self.args["tensorboard"]:
-                    rs=self.sess.run(self.tb_results,feed_dict={ self.result:out_put.reshape(1,1,-1),self.g_test_epo:test1})
+                    rs=self.sess.run(self.tb_results,feed_dict={ self.result:out_put.reshape(1,1,-1),self.result1:otp_im,self.g_test_epo:test1})
                     self.writer.add_summary(rs, epoch)
 
                 #saving test result
                 #テストの結果の保存
                 if os.path.exists(self.args["wave_otp_dir"]):
-                    im=im.reshape([-1,self.args["NFFT"],2])
                     plt.subplot(211)
                     ins=np.transpose(im[:,:,0],(1,0))
                     plt.imshow(ins,aspect="auto")
@@ -672,10 +678,12 @@ class Model:
 def discriminator(inp,reuse,f,s,depth,chs):
     current=tf.reshape(inp, [inp.shape[0],inp.shape[1],inp.shape[2],1])
     for i in range(depth):
+        stddevs=math.sqrt(2.0/(f[0]*f[1]*int(current.shape[3])))
         ten = tf.layers.conv2d(current, chs[i], kernel_size=f, strides=s, padding="VALID",
-                               kernel_initializer=tf.contrib.layers.xavier_initializer(), data_format="channels_last",name="disc_"+str(i),reuse=reuse)
-        ten=tf.layers.batch_normalization(ten,reuse=reuse,name="bn"+str(i))
-        current = tf.nn.leaky_relu(ten)
+                               kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), data_format="channels_last",name="disc_"+str(i),reuse=reuse)
+        ten=tf.layers.batch_normalization(ten,training=True,reuse=reuse,name="bn"+str(i))
+        if i!=depth-1:
+            current = tf.nn.leaky_relu(ten)
     print(" [*] bottom shape:"+str(current.shape))
     h4=tf.reshape(current, [current.shape[0],-1])
     ten=tf.layers.dense(h4,1,name="dence",reuse=reuse)
@@ -698,16 +706,18 @@ def generator_flatnet(current_outputs,reuse,depth,chs,f,s,rate):
 def block(current,output_shape,chs,f,s,depth,reuses,relu):
     ten=current
 
+    stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(ten.shape[3])))
 
     ten = tf.layers.conv2d(ten, chs, kernel_size=f, strides=s, padding="VALID",
-                           kernel_initializer=tf.contrib.layers.xavier_initializer(), data_format="channels_last",reuse=reuses,name="conv1"+str(depth))
+                           kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), data_format="channels_last",reuse=reuses,name="conv1"+str(depth))
     ten = tf.layers.batch_normalization(ten, axis=3, training=False, trainable=False,
                                         gamma_initializer=tf.ones_initializer(), reuse=reuses, name="bn1" + str(depth))
 
     ten = tf.nn.leaky_relu(ten,name="lrelu"+str(depth))
 
+    stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(ten.shape[3])))
     ten = tf.layers.conv2d_transpose(ten, output_shape, kernel_size=f, strides=s, padding="VALID",
-                                     kernel_initializer=tf.contrib.layers.xavier_initializer(),
+                                     kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
                                      data_format="channels_last",reuse=reuses,name="deconv1"+str(depth))
     if relu:
         ten=tf.nn.relu(ten)
