@@ -693,9 +693,11 @@ def discriminator(inp,reuse,f,s,depth,chs):
     return tf.nn.sigmoid(ten),ten
 def generator(current_outputs,reuse,depth,chs,f,s,rate,type):
     if type == "flatnet":
-        return generator_flatnet(current_outputs,reuse,depth,chs,f,s,False)
+        return generator_flatnet(current_outputs,reuse,depth,chs,f,s,0)
     elif type == "ps_flatnet":
-        return generator_flatnet(current_outputs, reuse, depth, chs, f, s, True)
+        return generator_flatnet(current_outputs, reuse, depth, chs, f, s, 1)
+    elif type == "hybrid_flatnet":
+        return generator_flatnet(current_outputs, reuse, depth, chs, f, s, 2)
     elif type == "ps_unet":
         return generator_unet(current_outputs, reuse, depth, chs, f, s, True)
     else :
@@ -707,11 +709,14 @@ def generator_flatnet(current_outputs,reuse,depth,chs,f,s,ps):
     for i in range(depth):
         connections = current
         fs=[2**(i//4+1),2**(i//4+1)]
-        if ps:
+        if ps==1:
             ten = block2(current, output_shape, fs, i, reuse,i!=depth-1)
+        elif ps==0 :
+            ten1=block(current,output_shape,chs,fs,s,i,reuse,i!=depth-1)
+            ten2 = block2(current, output_shape, fs, i, reuse, i != depth - 1)
+            ten=ten1+ten2
         else :
-            ten=block(current,output_shape,chs,fs,s,i,reuse,i!=depth-1)
-
+            ten = block(current, output_shape, chs, fs, s, i, reuse, i != depth - 1)
         current = ten + connections
     return current
 def block(current,output_shape,chs,f,s,depth,reuses,relu):
