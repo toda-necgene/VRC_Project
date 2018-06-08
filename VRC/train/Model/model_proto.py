@@ -199,7 +199,7 @@ class Model:
         L1B=saa+sbb
 
         # Gan lossA
-        DSb=tf.reduce_mean(-tf.log(self.d_judge_BF+ 1e-8))
+        DSb=tf.reduce_mean(-tf.log(self.d_judge_BF+ 1e-32))
         # generator lossA
         self.g_loss_aB = L1B * self.args["weight_Norm"]+DSb
         # L1 norm lossB
@@ -207,7 +207,7 @@ class Model:
         sb=tf.losses.mean_squared_error(labels=self.input_modelb[:,:,:,1] , predictions =self.fake_Ab_image[:,:,:,1])
         L1bAAb = sa+sb
         # Gan loss
-        DSA = tf.reduce_mean(-tf.log(self.d_judge_AF + 1e-8))
+        DSA = tf.reduce_mean(-tf.log(self.d_judge_AF + 1e-32))
         L1UBA =16.0/(tf.abs(self.fake_bA_image[:,:,:,0]-self.fake_aB_image[:,:,:,0])+1e-8)
         L1UBA =tf.maximum(L1UBA,tf.ones_like(L1UBA))
         # generator loss
@@ -517,18 +517,18 @@ class Model:
 
                     rate = 1.0 - 0.5 ** (epoch // 50 + 1)
                     # Update D network (1 time)
-                    nos = np.random.rand(self.args["batch_size"]) * 0.01
+                    nos = np.random.rand(self.args["batch_size"]) * 0.3
                     self.sess.run([d_optim],
                                   feed_dict={self.input_modelb: tar, self.input_modela: res_t, self.noise: nos,
                                              self.training: np.asarray([rate])})
                     # Update G network
                     # G-netの学習
-                    self.sess.run([g_optim],feed_dict={ self.input_modela:res_t,self.input_modelb:tar, self.training:np.asarray([rate])})
+                    self.sess.run([g_optim,self.update_ops],feed_dict={ self.input_modela:res_t,self.input_modelb:tar, self.training:np.asarray([rate])})
                     # Update D network (2times)
-                    nos = np.random.rand(self.args["batch_size"]) * 0.01
+                    nos = np.random.rand(self.args["batch_size"]) * 0.3
                     self.sess.run([d_optim],
                                   feed_dict={self.input_modelb: tar, self.input_modela: res_t, self.noise: nos,self.training:np.asarray([rate])})
-                    nos = np.random.rand(self.args["batch_size"]) * 0.01
+                    nos = np.random.rand(self.args["batch_size"]) * 0.3
                     self.sess.run([d_optim],
                                   feed_dict={self.input_modelb: tar, self.input_modela: res_t, self.noise: nos,self.training: np.asarray([rate])})
                     # saving tensorboard
@@ -709,16 +709,13 @@ def generator_flatnet(current_outputs,reuse,depth,chs,f,s,ps):
     for i in range(depth):
         connections = current
         fs=[2**(i//4+1),2**(i//4+1)]
-        fs2 = [2 ** (i // 4 + 1)+f[0], 2 ** (i // 4 + 1)+f[1]]
 
         if ps==1:
             ten = block2(current, output_shape, fs, i, reuse,i!=depth-1)
         elif ps==2 :
-            ten1=block(current,output_shape,chs,fs2,s,i,reuse,i!=depth-1)
-            ten2 = block2(current, output_shape, fs, i, reuse, i != depth - 1)
-            ten=ten1+ten2
+            ten=block3(current,output_shape,fs,i,reuse,i!=depth-1)
         else :
-            ten = block(current, output_shape, chs, fs2, s, i, reuse, i != depth - 1)
+            ten = block(current, output_shape, chs, f, s, i, reuse, i != depth - 1)
         current = ten + connections
     return current
 def block(current,output_shape,chs,f,s,depth,reuses,relu):
@@ -728,7 +725,7 @@ def block(current,output_shape,chs,f,s,depth,reuses,relu):
 
     ten = tf.layers.conv2d(ten, chs, kernel_size=f, strides=s, padding="VALID",
                            kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), data_format="channels_last",reuse=reuses,name="conv11"+str(depth))
-    ten = tf.layers.batch_normalization(ten, axis=3, training=False, trainable=False,
+    ten = tf.layers.batch_normalization(ten, axis=3, training=True, trainable=True,
                                         gamma_initializer=tf.ones_initializer(), reuse=reuses, name="bn11" + str(depth))
 
     ten = tf.nn.leaky_relu(ten,name="lrelu"+str(depth))
@@ -739,9 +736,6 @@ def block(current,output_shape,chs,f,s,depth,reuses,relu):
                                      data_format="channels_last",reuse=reuses,name="deconv11"+str(depth))
     if relu:
         ten=tf.nn.relu(ten)
-        ten = tf.layers.batch_normalization(ten, axis=3, training=False, trainable=False,
-                                            gamma_initializer=tf.ones_initializer(), reuse=reuses,
-                                            name="bn12" + str(depth))
     return ten
 def block2(current,output_shape,f,depth,reuses,relu):
     ten=current
@@ -751,13 +745,32 @@ def block2(current,output_shape,f,depth,reuses,relu):
     ten = tf.layers.conv2d(ten, chs_r, kernel_size=f, strides=f, padding="VALID",
                            kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), data_format="channels_last",reuse=reuses,name="conv21"+str(depth))
 
-    ten = tf.layers.batch_normalization(ten, axis=3, training=False, trainable=False,
+    ten = tf.layers.batch_normalization(ten, axis=3, training=True, trainable=True,
                                         gamma_initializer=tf.ones_initializer(), reuse=reuses, name="bn21" + str(depth))
 
     ten = tf.nn.leaky_relu(ten,name="lrelu"+str(depth))
     ten=deconve_with_ps(ten,f[0],output_shape,depth,reuses=reuses)
-    ten = tf.layers.batch_normalization(ten, axis=3, training=False, trainable=False,
-                                        gamma_initializer=tf.ones_initializer(), reuse=reuses, name="bn22" + str(depth))
+
+    if relu:
+        ten=tf.nn.relu(ten)
+    return ten
+def block3(current,output_shape,f,depth,reuses,relu):
+    ten=current
+
+    stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(ten.shape[3])))
+    chs_r=f[0]*f[1]*output_shape
+    ten = tf.layers.conv2d(ten, chs_r, kernel_size=f, strides=f, padding="VALID",
+                           kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), data_format="channels_last",reuse=reuses,name="conv21"+str(depth))
+
+    ten = tf.layers.batch_normalization(ten, axis=3, training=True, trainable=True,
+                                        gamma_initializer=tf.ones_initializer(), reuse=reuses, name="bn21" + str(depth))
+
+    ten = tf.nn.leaky_relu(ten,name="lrelu"+str(depth))
+    ten1=deconve_with_ps(ten,f[0],output_shape,depth,reuses=reuses)
+    ten2 =  tf.layers.conv2d_transpose(ten, output_shape, kernel_size=f, strides=f, padding="VALID",
+                                     kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
+                                     data_format="channels_last",reuse=reuses,name="deconv11"+str(depth))
+    ten=ten1+ten2
 
     if relu:
         ten=tf.nn.relu(ten)

@@ -19,20 +19,20 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="setting.json" pinned="false" current-in-tab="true">
+      <file leaf-file-name="setting.json" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/train/setting.json">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="258">
-              <caret line="19" column="26" selection-start-line="19" selection-start-column="26" selection-end-line="19" selection-end-column="26" />
+            <state relative-caret-position="354">
+              <caret line="25" column="20" selection-start-line="25" selection-start-column="20" selection-end-line="25" selection-end-column="20" />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="model_proto.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="model_proto.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="261">
-              <caret line="788" selection-start-line="788" selection-end-line="788" />
+            <state relative-caret-position="165">
+              <caret line="769" column="82" selection-start-line="769" selection-start-column="82" selection-end-line="769" selection-end-column="82" />
               <folding>
                 <element signature="e#0#21#0" expanded="true" />
               </folding>
@@ -97,8 +97,8 @@
         <option value="$PROJECT_DIR$/VRC/train/trained_models/wave2wave2.2.000_survey11/checkpoint" />
         <option value="$PROJECT_DIR$/VRC/train/__init__.py" />
         <option value="$PROJECT_DIR$/VRC/utils/voice_to_datasets.py" />
-        <option value="$PROJECT_DIR$/VRC/train/Model/model_proto.py" />
         <option value="$PROJECT_DIR$/VRC/train/setting.json" />
+        <option value="$PROJECT_DIR$/VRC/train/Model/model_proto.py" />
       </list>
     </option>
   </component>
@@ -130,13 +130,6 @@
               <item name="vrc" type="462c0819:PsiDirectoryNode" />
               <item name="VRC" type="462c0819:PsiDirectoryNode" />
               <item name="train" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
-              <item name="vrc" type="462c0819:PsiDirectoryNode" />
-              <item name="VRC" type="462c0819:PsiDirectoryNode" />
-              <item name="train" type="462c0819:PsiDirectoryNode" />
-              <item name="logs" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
@@ -483,7 +476,21 @@
       <option name="project" value="LOCAL" />
       <updated>1528463466086</updated>
     </task>
-    <option name="localTasksCounter" value="30" />
+    <task id="LOCAL-00030" summary="[update] h_flat update &lt;version 2.3.061&gt;&#10;&#10;[add] hybrid_flatnetの実装">
+      <created>1528464389840</created>
+      <option name="number" value="00030" />
+      <option name="presentableId" value="LOCAL-00030" />
+      <option name="project" value="LOCAL" />
+      <updated>1528464389840</updated>
+    </task>
+    <task id="LOCAL-00031" summary="[update] h_flat update &lt;version 2.3.063&gt;&#10;&#10;[add] hybrid_flatnetの実装">
+      <created>1528466316936</created>
+      <option name="number" value="00031" />
+      <option name="presentableId" value="LOCAL-00031" />
+      <option name="project" value="LOCAL" />
+      <updated>1528466316936</updated>
+    </task>
+    <option name="localTasksCounter" value="32" />
     <servers />
   </component>
   <component name="TodoView">
@@ -522,8 +529,6 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[update] objective update &lt;version 1.7.2&gt;&#10;&#10;[change] 畳み込みを時系列のつながりを弱くし、周波数同士のつながりを強めた" />
-    <MESSAGE value="[update] pitch shift update &lt;version 1.8.0&gt;&#10;&#10;[change] ピッチ変更機能を追加" />
     <MESSAGE value="[update] test update &lt;version 1.8.0&gt;&#10;&#10;[change] test機能の追加" />
     <MESSAGE value="[update] test update &lt;version 2.0.0&gt;&#10;&#10;[fix] test機能の修正" />
     <MESSAGE value="[update] test update &lt;version 2.1.0&gt;&#10;&#10;[add]    相対test機能の追加&#10;[change] Sigmoidを改めて導入" />
@@ -547,7 +552,9 @@
     <MESSAGE value="[update] initializer update &lt;version 2.3.035&gt;&#10;&#10;[add] Heの初期化を実装" />
     <MESSAGE value="[update] PS update &lt;version 2.3.035&gt;&#10;&#10;[add] PSを実装" />
     <MESSAGE value="[update] PS update &lt;version 2.3.060&gt;&#10;&#10;[add] PSをu_net実装" />
-    <option name="LAST_COMMIT_MESSAGE" value="[update] PS update &lt;version 2.3.060&gt;&#10;&#10;[add] PSをu_net実装" />
+    <MESSAGE value="[update] h_flat update &lt;version 2.3.061&gt;&#10;&#10;[add] hybrid_flatnetの実装" />
+    <MESSAGE value="[update] h_flat update &lt;version 2.3.063&gt;&#10;&#10;[add] hybrid_flatnetの実装" />
+    <option name="LAST_COMMIT_MESSAGE" value="[update] h_flat update &lt;version 2.3.063&gt;&#10;&#10;[add] hybrid_flatnetの実装" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -883,20 +890,20 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
+    <entry file="file://$PROJECT_DIR$/VRC/train/setting.json">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="261">
-          <caret line="788" selection-start-line="788" selection-end-line="788" />
-          <folding>
-            <element signature="e#0#21#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="354">
+          <caret line="25" column="20" selection-start-line="25" selection-start-column="20" selection-end-line="25" selection-end-column="20" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/train/setting.json">
+    <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="258">
-          <caret line="19" column="26" selection-start-line="19" selection-start-column="26" selection-end-line="19" selection-end-column="26" />
+        <state relative-caret-position="165">
+          <caret line="769" column="82" selection-start-line="769" selection-start-column="82" selection-end-line="769" selection-end-column="82" />
+          <folding>
+            <element signature="e#0#21#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
