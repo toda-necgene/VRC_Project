@@ -156,18 +156,18 @@ class Model:
         with tf.variable_scope("discrims"):
 
             with tf.variable_scope("discrimB"):
-                self.d_judge_BR, self.d_judge_BR_logits = discriminator(b_true_noised[:,:,:,0], None, self.args["filter_d"],
+                self.d_judge_BR, self.d_judge_BR_logits = discriminator(b_true_noised, None, self.args["filter_d"],
                                                                        self.args["strides_d"], self.args["d_depth"],
                                                                        self.args["D_channels"])
 
-                self.d_judge_BF, self.d_judge_BF_logits = discriminator(self.fake_aB_image[:,:,:,0], True, self.args["filter_d"],
+                self.d_judge_BF, self.d_judge_BF_logits = discriminator(self.fake_aB_image, True, self.args["filter_d"],
                                                                        self.args["strides_d"], self.args["d_depth"],
                                                                        self.args["D_channels"])
             with tf.variable_scope("discrimA"):
-                self.d_judge_AR, self.d_judge_AR_logits = discriminator(a_true_noised[:,:,:,0], None, self.args["filter_d"],
+                self.d_judge_AR, self.d_judge_AR_logits = discriminator(a_true_noised, None, self.args["filter_d"],
                                                                         self.args["strides_d"], self.args["d_depth"],
                                                                         self.args["D_channels"])
-                self.d_judge_AF, self.d_judge_AF_logits = discriminator(self.fake_bA_image[:,:,:,0], True, self.args["filter_d"],
+                self.d_judge_AF, self.d_judge_AF_logits = discriminator(self.fake_bA_image, True, self.args["filter_d"],
                                                                         self.args["strides_d"], self.args["d_depth"],
                                                                         self.args["D_channels"])
 
@@ -199,7 +199,7 @@ class Model:
         L1B=saa+sbb
 
         # Gan lossA
-        DSb=tf.reduce_mean(-tf.log(self.d_judge_BF+ 1e-32))
+        DSb=tf.reduce_mean(-tf.log(self.d_judge_BF+ 1e-8))
         # generator lossA
         self.g_loss_aB = L1B * self.args["weight_Norm"]+DSb
         # L1 norm lossB
@@ -207,11 +207,12 @@ class Model:
         sb=tf.losses.mean_squared_error(labels=self.input_modelb[:,:,:,1] , predictions =self.fake_Ab_image[:,:,:,1])
         L1bAAb = sa+sb
         # Gan loss
-        DSA = tf.reduce_mean(-tf.log(self.d_judge_AF + 1e-32))
-        L1UBA =13.23 / tf.reduce_mean(tf.abs(self.fake_aB_image[:,:,:,0]-self.fake_bA_image[:,:,:,0])+1e-8)
+        DSA = tf.reduce_mean(-tf.log(self.d_judge_AF + 1e-8))
+        L1UBA =16.0/(tf.abs(self.fake_bA_image[:,:,:,0]-self.fake_aB_image[:,:,:,0])+1e-8)
+        L1UBA =tf.maximum(L1UBA,tf.ones_like(L1UBA))
         # generator loss
         self.g_loss_bA = L1bAAb * self.args["weight_Norm"] + DSA
-        self.g_loss=self.g_loss_aB+self.g_loss_bA+tf.maximum(L1UBA,tf.ones_like(L1UBA))
+        self.g_loss=self.g_loss_aB+self.g_loss_bA+L1UBA
         #BN_UPDATE
         self.update_ops=tf.get_collection(tf.GraphKeys.UPDATE_OPS)
         #tensorboard functions
@@ -679,24 +680,24 @@ class Model:
 
 
 def discriminator(inp,reuse,f,s,depth,chs):
-    current=tf.reshape(inp, [inp.shape[0],inp.shape[1],inp.shape[2],1])
+    current=tf.reshape(inp, [inp.shape[0],inp.shape[1],inp.shape[2],2])
     for i in range(depth):
         stddevs=math.sqrt(2.0/(f[0]*f[1]*int(current.shape[3])))
         ten = tf.layers.conv2d(current, chs[i], kernel_size=f, strides=s, padding="VALID",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), data_format="channels_last",name="disc_"+str(i),reuse=reuse)
-        ten=tf.layers.batch_normalization(ten,training=True,reuse=reuse,name="bn"+str(i))
         if i!=depth-1:
             current = tf.nn.leaky_relu(ten)
     print(" [*] bottom shape:"+str(current.shape))
     h4=tf.reshape(current, [current.shape[0],-1])
     ten=tf.layers.dense(h4,1,name="dence",reuse=reuse)
-    return tf.nn.sigmoid(ten),h4
+    return tf.nn.sigmoid(ten),ten
 def generator(current_outputs,reuse,depth,chs,f,s,rate,type):
     if type == "flatnet":
-        return generator_flatnet(current_outputs,reuse,depth,chs,f,s,rate,False)
+        return generator_flatnet(current_outputs,reuse,depth,chs,f,s,False)
     elif type == "ps_flatnet":
         return generator_flatnet(current_outputs, reuse, depth, chs, f, s, True)
-
+    elif type == "ps_unet":
+        return generator_unet(current_outputs, reuse, depth, chs, f, s, True)
     else :
         return  generator_unet(current_outputs,reuse,depth,chs,f,s)
 def generator_flatnet(current_outputs,reuse,depth,chs,f,s,ps):
@@ -705,10 +706,9 @@ def generator_flatnet(current_outputs,reuse,depth,chs,f,s,ps):
     #main process
     for i in range(depth):
         connections = current
-        fs=[f[0]+2*depth//4,f[1]+2*depth//4]
+        fs=[2**(i//4+1),2**(i//4+1)]
         if ps:
-            ten = block2(current, output_shape, f, i, reuse)
-
+            ten = block2(current, output_shape, fs, i, reuse,i!=depth-1)
         else :
             ten=block(current,output_shape,chs,fs,s,i,reuse,i!=depth-1)
 
@@ -736,7 +736,7 @@ def block(current,output_shape,chs,f,s,depth,reuses,relu):
                                             gamma_initializer=tf.ones_initializer(), reuse=reuses,
                                             name="bn2" + str(depth))
     return ten
-def block2(current,output_shape,f,depth,reuses):
+def block2(current,output_shape,f,depth,reuses,relu):
     ten=current
 
     stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(ten.shape[3])))
@@ -748,21 +748,28 @@ def block2(current,output_shape,f,depth,reuses):
                                         gamma_initializer=tf.ones_initializer(), reuse=reuses, name="bn1" + str(depth))
 
     ten = tf.nn.leaky_relu(ten,name="lrelu"+str(depth))
+    ten=deconve_with_ps(ten,f[0],output_shape,depth,reuses=reuses)
+    ten = tf.layers.batch_normalization(ten, axis=3, training=False, trainable=False,
+                                        gamma_initializer=tf.ones_initializer(), reuse=reuses, name="bn2" + str(depth))
 
-    stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(ten.shape[3])))
-
-    b_size=ten.shape[0]
-    in_h=ten.shape[1]
-    in_w=ten.shape[2]
-    r=f[0]
-
-    ten=tf.reshape(ten,[b_size,r,r,in_h,in_w,output_shape])
-    ten=tf.transpose(ten,[0,2,3,4,1,5])
-    ten=tf.reshape(ten,[b_size,in_h*r,in_w*r,output_shape])
+    if relu:
+        ten=tf.nn.relu(ten)
+    return ten
+def deconve_with_ps(inp,r,otp_shape,depth,f=[1,1],reuses=None):
+    chs_r=(r**2)*otp_shape
+    stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(inp.shape[3])))
+    ten = tf.layers.conv2d(inp, chs_r, kernel_size=f, strides=f, padding="VALID",
+                           kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
+                           data_format="channels_last", reuse=reuses, name="deconv_ps1" + str(depth))
+    b_size = ten.shape[0]
+    in_h = ten.shape[1]
+    in_w = ten.shape[2]
+    ten = tf.reshape(ten, [b_size, r, r, in_h, in_w, otp_shape])
+    ten = tf.transpose(ten, [0, 2, 3, 4, 1, 5])
+    ten = tf.reshape(ten, [b_size, in_h * r, in_w * r, otp_shape])
     return ten
 
-
-def generator_unet(current_outputs,reuse,depth,chs,f,s):
+def generator_unet(current_outputs,reuse,depth,chs,f,s,ps=False):
     current=current_outputs
     connections=[ ]
     for i in range(depth):
@@ -770,14 +777,17 @@ def generator_unet(current_outputs,reuse,depth,chs,f,s):
         current = down_layer(current, chs*(i+1) ,f,s,reuse,i)
     print("shape of structure:"+str([[int(c.shape[0]),int(c.shape[1]),int(c.shape[2]),int(c.shape[3])] for c in connections]))
     for i in range(depth):
-        current=up_layer(current,chs*(depth-i-1) if (depth-i-1)!=0 else 2,f,s,i,i!=(depth-1),depth-i-1>2,reuse)
+        current=up_layer(current,chs*(depth-i-1) if (depth-i-1)!=0 else 2,f,s,i,i!=(depth-1),depth-i-1>2,reuse,ps)
         if i!=depth-1:
             current += connections[depth - i -1]
     return tf.reshape(current,current_outputs.shape)
 
-def up_layer(current,output_shape,f,s,depth,bn=True,do=False,reuse=None):
+def up_layer(current,output_shape,f,s,depth,bn=True,do=False,reuse=None,ps=False):
     ten=tf.nn.leaky_relu(current)
-    ten=tf.layers.conv2d_transpose(ten, output_shape,kernel_size=f ,strides=s, padding="SAME",kernel_initializer=tf.contrib.layers.xavier_initializer(),data_format="channels_last",name="deconv"+str(depth),reuse=reuse)
+    if ps:
+        ten = deconve_with_ps(ten, f[0], output_shape, depth, reuses=reuse)
+    else:
+        ten=tf.layers.conv2d_transpose(ten, output_shape,kernel_size=f ,strides=s, padding="SAME",kernel_initializer=tf.contrib.layers.xavier_initializer(),data_format="channels_last",name="deconv"+str(depth),reuse=reuse)
     if bn:
         ten=tf.layers.batch_normalization(ten,axis=3,training=True,gamma_initializer=tf.random_normal_initializer(1.0, 0.2),name="bn_u"+str(depth),reuse=reuse)
     return ten
