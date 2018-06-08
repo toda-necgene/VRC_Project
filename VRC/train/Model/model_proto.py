@@ -212,7 +212,7 @@ class Model:
         L1UBA =tf.maximum(L1UBA,tf.ones_like(L1UBA))
         # generator loss
         self.g_loss_bA = L1bAAb * self.args["weight_Norm"] + DSA
-        self.g_loss=self.g_loss_aB+self.g_loss_bA+L1UBA
+        self.g_loss=self.g_loss_aB+self.g_loss_bA
         #BN_UPDATE
         self.update_ops=tf.get_collection(tf.GraphKeys.UPDATE_OPS)
         #tensorboard functions
@@ -290,7 +290,7 @@ class Model:
             res[0,:,:,0]=np.einsum("ij,i->ij",res[0,:,:,0]-scl,mms)
             # running network
             # ネットワーク実行
-            res=self.sess.run(self.fake_aB_image,feed_dict={ self.input_modela:res,self.training:np.asarray([1.0])})
+            res=self.sess.run(self.fake_bA_image,feed_dict={ self.input_modelb:res,self.training:np.asarray([1.0])})
             # resas = np.append(resas, res[0])
             a=res[0].copy()
             scales2 = np.sqrt(np.var(a[:, :, 0], axis=1) + 1e-64)
@@ -766,12 +766,11 @@ def block3(current,output_shape,f,depth,reuses,relu):
                                         gamma_initializer=tf.ones_initializer(), reuse=reuses, name="bn21" + str(depth))
 
     ten = tf.nn.leaky_relu(ten,name="lrelu"+str(depth))
-    ten1=deconve_with_ps(ten,f[0],output_shape,depth,reuses=reuses)
-    ten2 =  tf.layers.conv2d_transpose(ten, output_shape, kernel_size=f, strides=f, padding="VALID",
+    ten1=deconve_with_ps(ten[:,:,:,:1],f[0],1,depth,reuses=reuses)
+    ten2 =  tf.layers.conv2d_transpose(ten[:,:,:,1:], 1, kernel_size=f, strides=f, padding="VALID",
                                      kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
                                      data_format="channels_last",reuse=reuses,name="deconv11"+str(depth))
-    ten=ten1+ten2
-
+    ten=tf.concat([ten1,ten2],axis=3)
     if relu:
         ten=tf.nn.relu(ten)
     return ten
