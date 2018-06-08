@@ -75,9 +75,9 @@ CHANNELS = 1        #モノラル
 RATE = 16000       #サンプルレート
 CHUNK = 1024     #データ点数
 RECORD_SECONDS = 5 #録音する時間の長さ
-WAVE_INPUT_FILENAME = "../train/Model/datasets/source/01"
+WAVE_INPUT_FILENAME = "../train/Model/datasets/source/02"
 files=glob.glob(WAVE_INPUT_FILENAME+"/*.wav")
-name="Source_data"
+name="Answer_data"
 cnt=0
 for file in files:
     print(file)

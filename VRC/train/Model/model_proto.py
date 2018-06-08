@@ -59,6 +59,7 @@ class Model:
         self.args["d_b2"] = 0.999
         self.args["train_d_scale"]=1.0
         self.args["train_interval"]=10
+        self.args["save_interval"]=1
         self.args["pitch_rate"] = 1.0
         self.args["pitch_res"]=563.0
         self.args["pitch_tar"]=563.0
@@ -193,8 +194,8 @@ class Model:
         # G-netの目的関数
 
         # L1 norm lossA
-        saa=tf.clip_by_value(tf.abs(self.input_modela[:,:,:,0] - self.fake_Ba_image[:,:,:,0])/6.4,0.0,50.0)
-        sbb=tf.clip_by_value(tf.abs(self.input_modela[:,:,:,1] - self.fake_Ba_image[:,:,:,1])/6.4,0.0,5.0)
+        saa=tf.losses.mean_squared_error(labels=self.input_modela[:,:,:,0],predictions =self.fake_Ba_image[:,:,:,0])
+        sbb=tf.losses.mean_squared_error(labels=self.input_modela[:,:,:,1] ,predictions = self.fake_Ba_image[:,:,:,1])
         L1B=saa+sbb
 
         # Gan lossA
@@ -202,14 +203,15 @@ class Model:
         # generator lossA
         self.g_loss_aB = L1B * self.args["weight_Norm"]+DSb
         # L1 norm lossB
-        sa=tf.clip_by_value(tf.abs(self.input_modelb[:,:,:,0] - self.fake_Ab_image[:,:,:,0]) / 6.4, 0.0,50.0)
-        sb=tf.clip_by_value(tf.abs(self.input_modelb[:,:,:,1] - self.fake_Ab_image[:,:,:,1]) / 6.2, 0.0,5.0)
+        sa=tf.losses.mean_squared_error(labels=self.input_modelb[:,:,:,0] ,predictions = self.fake_Ab_image[:,:,:,0])
+        sb=tf.losses.mean_squared_error(labels=self.input_modelb[:,:,:,1] , predictions =self.fake_Ab_image[:,:,:,1])
         L1bAAb = sa+sb
         # Gan loss
         DSA = tf.reduce_mean(-tf.log(self.d_judge_AF + 1e-32))
+        L1UBA =13.23 / tf.reduce_mean(tf.abs(self.fake_aB_image[:,:,:,0]-self.fake_bA_image[:,:,:,0])+1e-8)
         # generator loss
         self.g_loss_bA = L1bAAb * self.args["weight_Norm"] + DSA
-        self.g_loss=self.g_loss_aB+self.g_loss_bA
+        self.g_loss=self.g_loss_aB+self.g_loss_bA+tf.maximum(L1UBA,tf.ones_like(L1UBA))
         #BN_UPDATE
         self.update_ops=tf.get_collection(tf.GraphKeys.UPDATE_OPS)
         #tensorboard functions
@@ -222,7 +224,8 @@ class Model:
         self.g_loss_all2 = tf.summary.scalar("g_loss_cycle_B", tf.reduce_mean(L1B),family="g_loss")
         self.g_loss_gan2 = tf.summary.scalar("g_loss_gan_B", tf.reduce_mean(DSb),family="g_loss")
         self.dscore2 = tf.summary.scalar("dscore_B", tf.reduce_mean(self.d_judge_BF),family="d_score")
-        self.g_loss_sum_2 = tf.summary.merge([self.g_loss_all2, self.g_loss_gan2, self.dscore2])
+        self.g_loss_uba = tf.summary.scalar("g_loss_distAB", tf.reduce_mean(L1UBA), family="g_loss")
+        self.g_loss_sum_2 = tf.summary.merge([self.g_loss_all2, self.g_loss_gan2, self.dscore2,self.g_loss_uba])
 
         self.d_loss_sumA = tf.summary.scalar("d_lossA", tf.reduce_mean(self.d_lossA),family="d_loss")
         self.d_loss_sumB = tf.summary.scalar("d_lossB", tf.reduce_mean(self.d_lossB),family="d_loss")
@@ -426,7 +429,7 @@ class Model:
             ts = 0.0
             ipt = self.input_size_model[1]
             counter=0
-            if self.args["test"]:
+            if self.args["test"] and epoch%self.args["save_interval"]==0:
                 print(" [*] Epoch %3d testing" % epoch)
                 #testing
                 #テスト
@@ -690,17 +693,25 @@ def discriminator(inp,reuse,f,s,depth,chs):
     return tf.nn.sigmoid(ten),h4
 def generator(current_outputs,reuse,depth,chs,f,s,rate,type):
     if type == "flatnet":
-        return generator_flatnet(current_outputs,reuse,depth,chs,f,s,rate)
+        return generator_flatnet(current_outputs,reuse,depth,chs,f,s,rate,False)
+    elif type == "ps_flatnet":
+        return generator_flatnet(current_outputs, reuse, depth, chs, f, s, True)
+
     else :
         return  generator_unet(current_outputs,reuse,depth,chs,f,s)
-def generator_flatnet(current_outputs,reuse,depth,chs,f,s,rate):
+def generator_flatnet(current_outputs,reuse,depth,chs,f,s,ps):
     current=current_outputs
     output_shape=int(current.shape[3])
     #main process
     for i in range(depth):
         connections = current
         fs=[f[0]+2*depth//4,f[1]+2*depth//4]
-        ten=block(current,output_shape,chs,fs,s,i,reuse,i!=depth-1)
+        if ps:
+            ten = block2(current, output_shape, f, i, reuse)
+
+        else :
+            ten=block(current,output_shape,chs,fs,s,i,reuse,i!=depth-1)
+
         current = ten + connections
     return current
 def block(current,output_shape,chs,f,s,depth,reuses,relu):
@@ -724,6 +735,30 @@ def block(current,output_shape,chs,f,s,depth,reuses,relu):
         ten = tf.layers.batch_normalization(ten, axis=3, training=False, trainable=False,
                                             gamma_initializer=tf.ones_initializer(), reuse=reuses,
                                             name="bn2" + str(depth))
+    return ten
+def block2(current,output_shape,f,depth,reuses):
+    ten=current
+
+    stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(ten.shape[3])))
+    chs_r=f[0]*f[1]*output_shape
+    ten = tf.layers.conv2d(ten, chs_r, kernel_size=f, strides=f, padding="VALID",
+                           kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), data_format="channels_last",reuse=reuses,name="conv1"+str(depth))
+
+    ten = tf.layers.batch_normalization(ten, axis=3, training=False, trainable=False,
+                                        gamma_initializer=tf.ones_initializer(), reuse=reuses, name="bn1" + str(depth))
+
+    ten = tf.nn.leaky_relu(ten,name="lrelu"+str(depth))
+
+    stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(ten.shape[3])))
+
+    b_size=ten.shape[0]
+    in_h=ten.shape[1]
+    in_w=ten.shape[2]
+    r=f[0]
+
+    ten=tf.reshape(ten,[b_size,r,r,in_h,in_w,output_shape])
+    ten=tf.transpose(ten,[0,2,3,4,1,5])
+    ten=tf.reshape(ten,[b_size,in_h*r,in_w*r,output_shape])
     return ten
 
 
