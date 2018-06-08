@@ -709,14 +709,16 @@ def generator_flatnet(current_outputs,reuse,depth,chs,f,s,ps):
     for i in range(depth):
         connections = current
         fs=[2**(i//4+1),2**(i//4+1)]
+        fs2 = [2 ** (i // 4 + 1)+f[0], 2 ** (i // 4 + 1)+f[1]]
+
         if ps==1:
             ten = block2(current, output_shape, fs, i, reuse,i!=depth-1)
-        elif ps==0 :
-            ten1=block(current,output_shape,chs,fs,s,i,reuse,i!=depth-1)
+        elif ps==2 :
+            ten1=block(current,output_shape,chs,fs2,s,i,reuse,i!=depth-1)
             ten2 = block2(current, output_shape, fs, i, reuse, i != depth - 1)
             ten=ten1+ten2
         else :
-            ten = block(current, output_shape, chs, fs, s, i, reuse, i != depth - 1)
+            ten = block(current, output_shape, chs, fs2, s, i, reuse, i != depth - 1)
         current = ten + connections
     return current
 def block(current,output_shape,chs,f,s,depth,reuses,relu):
@@ -725,21 +727,21 @@ def block(current,output_shape,chs,f,s,depth,reuses,relu):
     stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(ten.shape[3])))
 
     ten = tf.layers.conv2d(ten, chs, kernel_size=f, strides=s, padding="VALID",
-                           kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), data_format="channels_last",reuse=reuses,name="conv1"+str(depth))
+                           kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), data_format="channels_last",reuse=reuses,name="conv11"+str(depth))
     ten = tf.layers.batch_normalization(ten, axis=3, training=False, trainable=False,
-                                        gamma_initializer=tf.ones_initializer(), reuse=reuses, name="bn1" + str(depth))
+                                        gamma_initializer=tf.ones_initializer(), reuse=reuses, name="bn11" + str(depth))
 
     ten = tf.nn.leaky_relu(ten,name="lrelu"+str(depth))
 
     stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(ten.shape[3])))
     ten = tf.layers.conv2d_transpose(ten, output_shape, kernel_size=f, strides=s, padding="VALID",
                                      kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
-                                     data_format="channels_last",reuse=reuses,name="deconv1"+str(depth))
+                                     data_format="channels_last",reuse=reuses,name="deconv11"+str(depth))
     if relu:
         ten=tf.nn.relu(ten)
         ten = tf.layers.batch_normalization(ten, axis=3, training=False, trainable=False,
                                             gamma_initializer=tf.ones_initializer(), reuse=reuses,
-                                            name="bn2" + str(depth))
+                                            name="bn12" + str(depth))
     return ten
 def block2(current,output_shape,f,depth,reuses,relu):
     ten=current
@@ -747,15 +749,15 @@ def block2(current,output_shape,f,depth,reuses,relu):
     stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(ten.shape[3])))
     chs_r=f[0]*f[1]*output_shape
     ten = tf.layers.conv2d(ten, chs_r, kernel_size=f, strides=f, padding="VALID",
-                           kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), data_format="channels_last",reuse=reuses,name="conv1"+str(depth))
+                           kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), data_format="channels_last",reuse=reuses,name="conv21"+str(depth))
 
     ten = tf.layers.batch_normalization(ten, axis=3, training=False, trainable=False,
-                                        gamma_initializer=tf.ones_initializer(), reuse=reuses, name="bn1" + str(depth))
+                                        gamma_initializer=tf.ones_initializer(), reuse=reuses, name="bn21" + str(depth))
 
     ten = tf.nn.leaky_relu(ten,name="lrelu"+str(depth))
     ten=deconve_with_ps(ten,f[0],output_shape,depth,reuses=reuses)
     ten = tf.layers.batch_normalization(ten, axis=3, training=False, trainable=False,
-                                        gamma_initializer=tf.ones_initializer(), reuse=reuses, name="bn2" + str(depth))
+                                        gamma_initializer=tf.ones_initializer(), reuse=reuses, name="bn22" + str(depth))
 
     if relu:
         ten=tf.nn.relu(ten)
