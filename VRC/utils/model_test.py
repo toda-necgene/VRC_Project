@@ -10,7 +10,7 @@ from datetime import datetime
 import glob
 
 Add_Effect=True
-NFFT=1024
+NFFT=128
 SHIFT=NFFT//2
 C1=32.703
 rate=16000
@@ -28,7 +28,7 @@ if not net.load():
 print(" [*] load success!!")
 def filter_clip(dd,f=1.5):
     dxf=np.maximum(dd,-f)+f+np.minimum(dd,f)-f
-    return -dxf*0.5
+    return dxf
 
 def filter_mean(dd):
     dxx1=np.roll(dd,1)
@@ -40,6 +40,11 @@ def filter_mean(dd):
     dxx4 = np.roll(dd, 4)
     dxx4[:4] = dd[:4]
     return (dd+dxx1+dxx2+dxx3+dxx4)/5.0
+
+def filter_pes(dd):
+    dxx1=np.roll(dd,-1)
+    dxx1[:1]=0
+    return dd-dxx1*0.59
 def mask_const(dd,f,t,power):
     dd[:,f:t,0]-=power
     # dd[:,:,1]=dd[:,:,1]*1.12
@@ -130,9 +135,9 @@ CHUNK = 1024     #データ点数
 RECORD_SECONDS = 5 #録音する時間の長さ
 WAVE_OUTPUT_FILENAME = "./B.wav"
 WAVE_OUTPUT_FILENAME2 = "./B2.wav"
+WAVE_OUTPUT_FILENAME3 = "./B3.wav"
 file_l="../train/Model/datasets/test/label.wav"
-file="../train/Model/datasets/test/label.wav"
-# file="../train/Model/datasets/test/test.wav"
+file="../train/Model/datasets/test/test.wav"
 
 index=0
 dms=[]
@@ -143,7 +148,7 @@ while dds != b'':
     dds = wf.readframes(CHUNK)
 dms = b''.join(dms)
 data = np.frombuffer(dms, 'int16')
-data_realA=data.reshape(1,-1,1).astype(np.float32)
+data_realA=data.reshape(-1).astype(np.float32)
 
 dms=[]
 wf = wave.open(file_l, 'rb')
@@ -156,8 +161,10 @@ data = np.frombuffer(dms, 'int16')
 data_realB=data.reshape(-1)
 
 tm=time.time()
+# data_realA=filter_pes(data_realA)
+data_realA=data_realA.reshape(1,-1,1)
 print(" [*] conversion start!!")
-data_C,data_D,data_E=net.convert(data_realA)
+data_C,data_D,data_E,data_F=net.convert(data_realA/32767.0)
 print(" [*] conversion finished in %3.3f!!" % (time.time()-tm))
 data_C=data_C.reshape(-1)
 
@@ -166,8 +173,9 @@ times=data_realB.shape[0]//timee
 
 rate=16000
 
-ab=np.zeros([1,1024,2])
-abc=np.zeros([1,1024,2])
+ab=np.zeros([1,128,2])
+abc=np.zeros([1,128,2])
+abb=np.zeros([1,128,2])
 term=8192
 times=data_C.shape[0]//term+1
 if data_C.shape[0]%term==0:
@@ -177,48 +185,47 @@ resp=np.zeros([NFFT//2])
 for i in range(times):
     ind=term+SHIFT
     startpos=term*i+data_realB.shape[0]%term
+    data_realAb = data_realA[max(startpos - ind, 0):startpos]
     data_realBb = data_realB[max(startpos - ind, 0):startpos]
     r=ind-data_realBb.shape[0]
     if r>0:
         data_realBb=np.pad(data_realBb,(r,0),"constant")
-    ddms=data_realBb/32767.0
+    ddms=data_realBb.astype(np.float32)/32767.0
     bss=fft(ddms)
     bss=complex_to_pp(bss)
     abc = np.append(abc, bss, axis=0)
-# print(a)
-bsd=data_D.astype(np.float32)/32767
 
-bsd=filter_clip(bsd,f=0.5)
-# bsd=filter_mean(bsd)
+bsd=data_D.astype(np.float32)/32767
 data_D=(bsd*32767).astype(np.int16)
 data_E=data_E.reshape([-1,NFFT,2])
+data_F=data_F.reshape([-1,NFFT,2])
 pl.subplot(6,1,5)
-aba=np.abs(abc[1:,:,0]-data_E[:,:,0]).transpose((1,0))
-pl.imshow(aba,aspect="auto",cmap="GnBu")
-pl.clim(0,6)
+aba=abc[1:,:,0].transpose((1,0))
+pl.imshow(aba,aspect="auto")
+pl.clim(-30,10)
 pl.colorbar()
-pl.subplot(6,1,2)
-abn=np.transpose(abc[1:,:,0],(1,0))
+pl.subplot(6,1,3)
+abn=np.transpose(data_F[1:,:,0],(1,0))
 pl.imshow(abn,aspect="auto")
 pl.clim(-30,10)
 pl.colorbar()
 pl.subplot(6,1,6)
-aba=np.abs(abc[1:,:,1]-data_E[:,:,1]).transpose((1,0))
-pl.imshow(aba,aspect="auto",cmap="GnBu")
-pl.clim(0,3.141592)
+aba=abc[1:,:,1].transpose((1,0))
+pl.imshow(aba,aspect="auto")
+pl.clim(-3.141592,3.141592)
 pl.colorbar()
 pl.subplot(6,1,4)
-abn=np.transpose(abc[1:,:,1],(1,0))
+abn=np.transpose(data_F[1:,:,1],(1,0))
 pl.imshow(abn,aspect="auto")
 pl.clim(-3.141592,3.141592)
 pl.colorbar()
 pl.subplot(6, 1, 1)
-data_E=data_E.reshape([-1,1024,2])
+data_E=data_E.reshape([-1,128,2])
 abn = np.transpose(data_E[1:, :, 0], (1, 0))
 pl.imshow(abn, aspect="auto")
 pl.clim(-30, 10)
 pl.colorbar()
-pl.subplot(6, 1, 3)
+pl.subplot(6, 1, 2)
 aba = data_E[:, :, 1].transpose((1, 0))
 pl.imshow(aba, aspect="auto")
 pl.clim(-3.141592, 3.141592)
@@ -241,22 +248,29 @@ ww.setframerate(RATE)
 ww.writeframes(data_D.tobytes())
 ww.close()
 
+
 L1_1=np.mean(np.abs(abc[1:,:,0]-data_E[:,:,0]).reshape(-1))
 L1_2=np.mean(np.abs(abc[1:,:,1]-data_E[:,:,1]).reshape(-1))
+L1_12=np.mean(np.abs(abc[1:,:,0]-data_F[:,:,0]).reshape(-1))
+L1_22=np.mean(np.abs(abc[1:,:,1]-data_F[:,:,1]).reshape(-1))
 
 print(" [*] Finished!!")
 
 def nowtime():
     return datetime.now().strftime("%Y_%m_%d %H_%M_%S")
 
-f=glob.glob(net.args["wave_otp_dir"]+"/*.wav")
-print(net.args["wave_otp_dir"]+"/*.wav")
+f=glob.glob(net.args["wave_otp_dir"]+"*.wav")
+print(net.args["wave_otp_dir"]+"*.wav")
 tm=os.path.basename(f[-1])
 print(" ______________________________________")
 print("|///      stats %18s ///|" % nowtime())
 print("|/// File_name  %18s ///|" % tm[0:19])
-print("|/// L1_norm_Loss_0    %1.4f       ///|" % L1_1)
-print("|/// L1_norm_Loss_1    %1.4f       ///|" % L1_2)
+print("|/// BF_norm_Loss_0    %1.4f       ///|" % L1_1)
+print("|/// BF_norm_Loss_1    %1.4f       ///|" % L1_2)
+print("|/// BF_norm_Loss      %1.4f       ///|" % ((L1_2+L1_1)/2))
+print("|/// BF_norm_Loss_02   %1.4f       ///|" % L1_12)
+print("|/// BF_norm_Loss_12   %1.4f       ///|" % L1_22)
+print("|/// BF_norm_Loss2     %1.4f       ///|" % ((L1_22+L1_12)/2))
 print(" ---------------------------------------")
 
 
@@ -264,9 +278,14 @@ with open("C://Users/C0116170/Desktop/results.txt","a") as f:
     f.write("\n")
     f.write(" ______________________________________\n")
     f.write("|///      tats  %18s ///|\n" % nowtime())
+    f.write("|/// Model_name %18s ///|\n" % net.args["version"])
     f.write("|/// File_name  %18s ///|\n" % tm[0:19])
-    f.write("|/// L1_norm_Loss_0    %1.4f       ///|\n" % L1_1)
-    f.write("|/// L1_norm_Loss_1    %1.4f       ///|\n" % L1_2)
+    f.write("|/// BF_norm_Loss_0    %1.4f       ///|\n" % L1_1)
+    f.write("|/// BF_norm_Loss_1    %1.4f       ///|\n" % L1_2)
+    f.write("|/// BF_norm_Loss      %1.4f       ///|\n" % ((L1_2+L1_1)/2))
+    f.write("|/// BF_norm_Loss_02   %1.4f       ///|\n" % L1_12)
+    f.write("|/// BF_norm_Loss_12   %1.4f       ///|\n" % L1_22)
+    f.write("|/// BF_norm_Loss2     %1.4f       ///|\n" % ((L1_22 + L1_12)/2))
     f.write(" ---------------------------------------\n")
 
 pl.show()

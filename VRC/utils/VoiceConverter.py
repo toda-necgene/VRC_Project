@@ -6,11 +6,10 @@ import wave
 from tensorflow.python import debug as tf_debug
 from tensorflow.python.debug.lib.debug_data import has_inf_or_nan
 import pyaudio
-from datetime import datetime
 import json
 import shutil
 import math
-BN_FLAG=False
+import time
 class Model:
     def __init__(self,path):
         self.args=dict()
@@ -134,11 +133,7 @@ class Model:
         times=in_put.shape[1]//(self.args["input_size"])+1
         if in_put.shape[1]%((self.args["input_size"])*self.args["batch_size"])==0:
             times-=1
-        otp=np.array([],dtype=np.int16)
         otp2=np.asarray([],dtype=np.int16)
-        otp3= np.asarray([[[]]], dtype=np.float32)
-        otp4 = np.asarray([[[]]], dtype=np.float32)
-        rss=np.zeros([self.input_size_model[2]//2])
         rss4=np.zeros([self.input_size_model[2]//2])
         for t in range(times):
             # Preprocess
@@ -148,7 +143,7 @@ class Model:
             # サイズ合わせ
             red=np.zeros((self.args["batch_size"]-1,ipt))
             start_pos=self.args["input_size"]*t+(in_put.shape[1]%self.args["input_size"])
-            resorce=np.reshape(in_put[0,max(0,start_pos-ipt):start_pos,0],(1,-1)).astype(np.float32)
+            resorce=np.reshape(in_put[0,max(0,start_pos-ipt):start_pos,0],(1,-1)).astype(np.float32)/32767.0
             r=max(0,ipt-resorce.shape[1])
             if r>0:
                 resorce=np.pad(resorce,((0,0),(r,0)),'constant')
@@ -178,23 +173,10 @@ class Model:
             a=res2[0].copy()
             scales2=np.sqrt(np.var(a[:,:,0],axis=1)+1e-8)
             means2 = np.mean(a[:, :, 0], axis=1)
-            scales_mask = scales.copy()
             means_mask = means.copy()
             ss=1/(scales2+1e-8)
             sm=np.tile((-means2).reshape(-1,1),(1,self.args["NFFT"]))
-            sm2 = np.tile((means_mask).reshape(-1, 1), (1, self.args["NFFT"]))
-            c=a[:,:,0]
-            c = c + sm
-            c = np.einsum("ij,i->ij", c, ss)
-            c = np.einsum("ij,i->ij", c, scales_mask)
-            c=c+sm2
-            a[:,:,0]=c
-            # print([np.mean(scales-np.sqrt(np.var(c, axis=1) + 1e-8)),np.mean(means-np.mean(c, axis=1))])
             b=res2[0].copy()
-            means_mask = means.copy()
-            filter = -4.75
-            means_mask[means_mask < filter] = -17
-            har=np.hamming(self.args["NFFT"])
             ssd=np.tile(means_mask.reshape(-1,1),(1,self.args["NFFT"]))
             sm3 = ssd[:]
             sm3[sm3 < -17] = -17
@@ -207,45 +189,24 @@ class Model:
             c = c + sm3
             b[:,:,0] = c
             b[:,:,0] = np.clip(b[:,:,0], -60.0, 10.0)
-            otp3 = np.append(otp3, a[:, :, :].copy())
-            otp4 = np.append(otp4, b[:, :, :].copy())
 
             # otp3 = np.append(otp3, a[ 2:, :, :])
 
             # IFFT
             # 短時間高速離散逆フーリエ変換
-            res2,rss=self.ifft(a,rss)
-            res2=np.clip(res2,-1.0,1.0)
-            res2=res2*32767
             res4, rss4 = self.ifft(b, rss4)
             res4 = np.clip(res4, -1.0, 1.0)
             res4 = res4 * 32767
             # chaching results
             # 結果の保存
-            res2=res2.reshape(-1).astype(np.int16)
             res4 = res4.reshape(-1).astype(np.int16)
             # print(res2.shape)
-            otp=np.append(otp,res2[-8192:])
             otp2 = np.append(otp2, res4[-8192:])
-        h=otp.shape[0]-in_put.shape[1]
-        if h>0:
-            otp=otp[h:]
         h = otp2.shape[0] - in_put.shape[1]
         if h > 0:
             otp2 = otp2[h:]
-        return otp.reshape(1,in_put.shape[1],in_put.shape[2]),otp2,otp3,otp4
+        return otp2.reshape(1,in_put.shape[1],in_put.shape[2])
 
-    def save(self, checkpoint_dir, step):
-        model_name = "wave2wave.model"
-        model_dir =  self.args["name_save"]
-        checkpoint_dir = os.path.join(checkpoint_dir, model_dir)
-
-        if not os.path.exists(checkpoint_dir):
-            os.makedirs(checkpoint_dir)
-
-        self.saver.save(self.sess,
-                        os.path.join(checkpoint_dir, model_name),
-                        global_step=step)
     def load(self):
         # initialize variables
         # 変数の初期化
@@ -375,7 +336,7 @@ def block3(current,output_shape,f,chs,depth,reuses,relu):
     ten = tf.layers.conv2d(ten, chs, kernel_size=f, strides=f, padding="VALID",
                            kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), data_format="channels_last",reuse=reuses,name="conv21"+str(depth))
 
-    ten = tf.layers.batch_normalization(ten, axis=3, training=BN_FLAG, trainable=True,
+    ten = tf.layers.batch_normalization(ten, axis=3, training=False, trainable=True,
                                         gamma_initializer=tf.ones_initializer(), reuse=reuses, name="bn21" + str(depth))
 
     ten = tf.nn.leaky_relu(ten,name="lrelu"+str(depth))
@@ -429,81 +390,46 @@ def down_layer(current,output_shape,f,s,reuse,depth):
     ten=tf.nn.leaky_relu(ten)
     return ten
 
-def shift(data_inps,pitch):
-    data_inp=data_inps.reshape(-1)
-    return scale(time_strech(data_inp,1/pitch),data_inp.shape[0])
-    # return time_strech(data_inp,1/pitch)
-    # return scale(data_inp,data_inp.shape[0]/2)
+CHANNELS = 1        #モノラル
+RATE = 16000       #サンプルレート
+CHUNK = 1024     #データ点数
+RECORD_SECONDS = 5 #録音する時間の長さ
+WAVE_OUTPUT_FILENAME = "./Converted.wav"
+file="../train/Model/datasets/test/B2.wav"
 
-def scale(inputs,len_wave):
-    x=np.linspace(0.0,inputs.shape[0]-1,len_wave)
-    ref_x_n=(x+0.5).astype(int)
-    spec=inputs[ref_x_n[...]]
-    return spec.reshape(-1)
-def time_strech(datanum,speed):
-    term_s = int(16000 * 0.05)
-    fade=term_s//2
-    pulus=int(term_s*speed)
-    data_s=datanum.reshape(-1)
-    spec=np.zeros(1)
-    ifs=np.zeros(fade)
-    for i_s in np.arange(0.0,data_s.shape[0],pulus):
-        st=int(i_s)
-        fn=min(int(i_s+term_s+fade),data_s.shape[0])
-        dd=data_s[st:fn]
-        if i_s + pulus >= data_s.shape[0]:
-            spec = np.append(spec, dd)
-        else:
-            ds_in = np.linspace(0, 1, fade)
-            ds_out = np.linspace(1, 0, fade)
-            stock = dd[:fade]
-            dd[:fade] = dd[:fade] * ds_in
-            if st != 0:
-                dd[:fade] += ifs[:fade]
-            else:
-                dd[:fade] += stock * np.linspace(1, 0, fade)
-            if fn!=data_s.shape[0]:
-                ifs = dd[-fade:] * ds_out
-            spec=np.append(spec,dd[:-fade])
-    return spec[1:]
-
-def nowtime():
-    return datetime.now().strftime("%Y_%m_%d %H_%M_%S")
-
-def upload(voice,to,comment=""):
-    voiced=voice.astype(np.int16)
-    p=pyaudio.PyAudio()
-    FORMAT = pyaudio.paInt16
-    ww = wave.open(to+nowtime()+comment+".wav", 'wb')
-    ww.setnchannels(1)
-    ww.setsampwidth(p.get_sample_size(FORMAT))
-    ww.setframerate(16000)
-    ww.writeframes(voiced.reshape(-1).tobytes())
-    ww.close()
-    p.terminate()
-
-def isread(path):
-    wf=wave.open(path,"rb")
-    ans=np.zeros([1],dtype=np.int16)
-    dds=wf.readframes(1024)
-    while dds != b'':
-        ans=np.append(ans,np.frombuffer(dds,"int16"))
-        dds = wf.readframes(1024)
-    wf.close()
-    ans=ans[1:]
-    i=160000-ans.shape[0]
-    if i>0:
-        ans=np.pad(ans,(0,i),"constant")
-    else:
-        ans=ans[:160000]
-    return ans
-def imread(path):
-    return np.load(path)
-def mask_scale(dd,f,t,power):
-    dd[:,f:t,0]-=(power/100*dd[:,f:t,0])
-
-    return dd
-def mask_const(dd,f,t,power):
-    dd[:,f:t,0]-=power
-    # dd[:,:,1]=dd[:,:,1]*1.12
-    return dd
+index=0
+dms=[]
+wf = wave.open(file, 'rb')
+dds = wf.readframes(CHUNK)
+while dds != b'':
+    dms.append(dds)
+    dds = wf.readframes(CHUNK)
+dms = b''.join(dms)
+data = np.frombuffer(dms, 'int16')
+data_realA=data.reshape(-1).astype(np.float32)
+data_realA=data_realA.reshape(1,-1,1)
+source_time=data_realA.shape[1]/16000
+path="../setting.json"
+net=Model(path)
+net.build_model()
+if not net.load():
+    print(" [x] load failed...")
+    exit(-1)
+print(" [*] load success!!")
+print(" [*] conversion start!!")
+tm=time.time()
+data_C=net.convert(data_realA)
+take_time=time.time()-tm
+print(" [*] conversion finished in %3.3f!!" % (take_time))
+fr=take_time/source_time
+print(" [i] cost per sec :",str(fr))
+data_C=data_C.reshape(-1)
+FORMAT=pyaudio.paInt16
+p=pyaudio.PyAudio()
+ww = wave.open(WAVE_OUTPUT_FILENAME, 'wb')
+ww.setnchannels(1)
+ww.setsampwidth(p.get_sample_size(FORMAT))
+ww.setframerate(RATE)
+ww.writeframes(data_C.tobytes())
+ww.close()
+print(" [*] finished successfully!!")
