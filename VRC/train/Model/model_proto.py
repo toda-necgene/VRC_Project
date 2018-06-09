@@ -66,6 +66,7 @@ class Model:
         self.args["test_dir"] = "./test"
         self.args["dropbox"]="False"
         self.args["architect"] = "flatnet"
+        self.args["label_noise"]=0.0
 
         if os.path.exists(path):
             try:
@@ -238,7 +239,7 @@ class Model:
         self.d_loss_sumB = tf.summary.scalar("d_lossB", tf.reduce_mean(self.d_lossB),family="d_loss")
 
         self.result=tf.placeholder(tf.float32, [1,1,160000], name="FB")
-        self.result1 = tf.placeholder(tf.float32, [1,23,1024,2], name="FBI0")
+        self.result1 = tf.placeholder(tf.float32, [1,1280,256,2], name="FBI0")
         im1=tf.transpose(self.result1[:,:,:,:1],[0,2,1,3])
         im2 = tf.transpose(self.result1[:, :, :, 1:], [0, 2, 1, 3])
         self.fake_B_sum = tf.summary.audio("fake_B", tf.reshape(self.result,[1,160000,1]), 16000, 1)
@@ -270,7 +271,7 @@ class Model:
         if in_put.shape[1]%((self.args["input_size"])*self.args["batch_size"])==0:
             times-=1
         otp=np.array([],dtype=np.int16)
-        res2 = np.zeros([1,self.args["NFFT"],2], dtype=np.float32)
+        res3 = np.zeros([1,self.args["NFFT"],2], dtype=np.float32)
         rss=np.zeros([self.input_size_model[2]],dtype=np.float64)
         for t in range(times):
             # Preprocess
@@ -318,7 +319,7 @@ class Model:
             c = np.einsum("ij,i->ij", c, scales)
             c=c+sm2
             a[:, :, 0] = c
-            res2 = np.append(res2, a).reshape(-1,self.args["NFFT"],2)
+            res3 = np.append(res3, a).reshape(-1,self.args["NFFT"],2)
 
 
             # Postprocess
@@ -340,7 +341,7 @@ class Model:
         if h>0:
             otp=otp[h:]
 
-        return otp.reshape(1,in_put.shape[1],in_put.shape[2]),time.time()-tt,res2[1:]
+        return otp.reshape(1,in_put.shape[1],in_put.shape[2]),time.time()-tt,res3[1:]
 
 
 
@@ -434,10 +435,9 @@ class Model:
                 #testing
                 #テスト
                 out_puts,taken_time_test,im=self.convert(test.reshape(1,-1,1))
-                print(im.shape)
                 im = im.reshape([-1, self.args["NFFT"], 2])
+                print(im.shape)
                 otp_im=np.append(np.clip((im[:,:,0]+30)/40,0.0,1.0).reshape([1,-1,self.args["NFFT"],1]),np.clip((im[:,:,1]+3.15)/6.30,0.0,1.0).reshape([1,-1,self.args["NFFT"],1]),axis=3)
-                print(otp_im.shape)
                 out_put=out_puts.astype(np.float32)/32767.0
                 # loss of tesing
                 #テストの誤差
@@ -515,7 +515,7 @@ class Model:
                     ts+=time.time()-tm
                     rate = 1.0 - 0.5 ** (epoch // 50 + 1)
                     # Update D network (1 time)
-                    nos = np.random.rand(self.args["batch_size"]) * 0.3
+                    nos = np.random.rand(self.args["batch_size"]) * self.args["label_noise"]
                     self.sess.run([d_optim],
                                   feed_dict={self.input_modelb: tar, self.input_modela: res_t, self.noise: nos,
                                              self.training: np.asarray([rate])})
@@ -523,10 +523,10 @@ class Model:
                     # G-netの学習
                     self.sess.run([g_optim,self.update_ops],feed_dict={ self.input_modela:res_t,self.input_modelb:tar, self.training:np.asarray([rate])})
                     # Update D network (2times)
-                    nos = np.random.rand(self.args["batch_size"]) * 0.3
+                    nos = np.random.rand(self.args["batch_size"]) * self.args["label_noise"]
                     self.sess.run([d_optim],
                                   feed_dict={self.input_modelb: tar, self.input_modela: res_t, self.noise: nos,self.training:np.asarray([rate])})
-                    nos = np.random.rand(self.args["batch_size"]) * 0.3
+                    nos = np.random.rand(self.args["batch_size"]) * self.args["label_noise"]
                     self.sess.run([d_optim],
                                   feed_dict={self.input_modelb: tar, self.input_modela: res_t, self.noise: nos,self.training: np.asarray([rate])})
                     # saving tensorboard
@@ -757,10 +757,11 @@ def block3(current,f,chs,depth,reuses,relu,train):
 
     ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True,
                                         gamma_initializer=tf.ones_initializer(), reuse=reuses, name="bn21" + str(depth))
-
+    n=(depth%2)*2-1
+    ten=tf.manip.roll(ten,shift=[2*n,2*n],axis=[1,2])
     ten = tf.nn.leaky_relu(ten,name="lrelu"+str(depth))
-    ten1=deconve_with_ps(ten[:,:,:,1:],f[0],1,depth,reuses=reuses)
-    ten2 =  tf.layers.conv2d_transpose(ten[:,:,:,:1], 1, kernel_size=f, strides=f, padding="VALID",
+    ten1=deconve_with_ps(ten[:,:,:,:],f[0],1,depth,reuses=reuses)
+    ten2 =  tf.layers.conv2d_transpose(ten[:,:,:,:], 1, kernel_size=f, strides=f, padding="VALID",
                                      kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
                                      data_format="channels_last",reuse=reuses,name="deconv11"+str(depth))
     ten=tf.concat([ten2,ten1],axis=3)

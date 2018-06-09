@@ -4,7 +4,7 @@ import wave
 import matplotlib.pyplot as pl
 import matplotlib.cm as cm
 import time
-NFFT=1024
+NFFT=256
 SHIFT=NFFT//2
 C1=32.703
 rate=16000
