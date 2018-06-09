@@ -5,13 +5,14 @@ import time
 import glob
 import cupy
 import matplotlib.pyplot as plt
-NFFT=128
+NFFT=1024
 SHIFT=NFFT//2
 C1=32.703
 rate=16000
 Hz=C1*(2**0)
 now=317.6
 target=563.666
+term = 8192
 upidx=target/now
 
 def fft(data):
@@ -75,9 +76,9 @@ CHANNELS = 1        #モノラル
 RATE = 16000       #サンプルレート
 CHUNK = 1024     #データ点数
 RECORD_SECONDS = 5 #録音する時間の長さ
-WAVE_INPUT_FILENAME = "../train/Model/datasets/source/02"
+WAVE_INPUT_FILENAME = "../train/Model/datasets/source/01"
 files=glob.glob(WAVE_INPUT_FILENAME+"/*.wav")
-name="Answer_data"
+name="Source_data"
 cnt=0
 for file in files:
     print(file)
@@ -100,14 +101,13 @@ for file in files:
     ab=np.zeros([1,128,2])
     abc=np.zeros([1,128,2])
 
-    term=8192
     times=data_realA.shape[0]//term+1
     if data_realA.shape[0]%term==0:
         times-=1
     ttm=time.time()
     resp=np.zeros([NFFT//2])
     for i in range(times):
-        ind=term
+        ind=term+SHIFT
         startpos=term*i+data_realA.shape[0]%term
         data_realAb = data_realA[max(startpos-ind,0):startpos]
         r=ind-data_realAb.shape[0]
@@ -118,15 +118,17 @@ for file in files:
         if r!=SHIFT:
             dmn=np.pad(dmn,(0,r),"reflect")
         a=fft(dmn)
-        a=complex_to_pp(a)
+        a=complex_to_pp(a[:,:SHIFT])
+        print(a.shape)
         c=a[:,:,0]
         v=1/np.sqrt(np.var(c,axis=1)+1e-36)
-        a[:, :, 0] -= np.tile(np.mean(c, axis=1).reshape(-1, 1), (1, NFFT))
+        a[:, :, 0] -= np.tile(np.mean(c, axis=1).reshape(-1, 1), (1, SHIFT))
         a[:, :, 0]= np.einsum("ij,i->ij",a[:, :, 0],v)
         bb=np.isnan(np.mean(a))
         if bb:
             print("NAN!!")
         np.save("../train/Model/datasets/train/"+str(name)+"/"+str(cnt) +".data", a)
+        print(a.shape)
         cnt+=1
 plt.subplot(211)
 plt.imshow(a[:,:,0],aspect="auto")

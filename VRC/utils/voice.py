@@ -4,7 +4,7 @@ import wave
 import matplotlib.pyplot as pl
 import matplotlib.cm as cm
 import time
-NFFT=128
+NFFT=1024
 SHIFT=NFFT//2
 C1=32.703
 rate=16000
@@ -154,8 +154,8 @@ times=data_realA.shape[0]//timee
 rate=16000
 
 b=np.zeros([1])
-ab=np.zeros([1,128,2])
-abc=np.zeros([1,128,2])
+ab=np.zeros([1,NFFT,2])
+abc=np.zeros([1,NFFT,2])
 
 term=8192
 times=data_realA.shape[0]//term+1

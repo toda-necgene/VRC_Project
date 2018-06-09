@@ -1,13 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="BookmarkManager">
-    <bookmark url="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py" line="663" />
+    <bookmark url="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py" line="660" />
   </component>
   <component name="ChangeListManager">
     <list default="true" id="22fa9a76-09a0-4f62-a2d8-6f3210b56f42" name="Default" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/VRC/train/Model/model_proto.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/train/Model/model_proto.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/VRC/train/setting.json" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/train/setting.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/VRC/utils/voice.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/utils/voice.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/VRC/utils/voice_to_datasets.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/utils/voice_to_datasets.py" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/VRC/Network/to/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -23,7 +25,7 @@
         <entry file="file://$PROJECT_DIR$/VRC/train/setting.json">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="400">
-              <caret line="25" column="20" selection-start-line="25" selection-start-column="20" selection-end-line="25" selection-end-column="20" />
+              <caret line="25" column="22" selection-start-line="25" selection-start-column="22" selection-end-line="25" selection-end-column="22" />
             </state>
           </provider>
         </entry>
@@ -31,11 +33,20 @@
       <file leaf-file-name="model_proto.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1153">
-              <caret line="772" column="28" selection-start-line="772" selection-start-column="28" selection-end-line="772" selection-end-column="28" />
+            <state relative-caret-position="197">
+              <caret line="305" column="26" lean-forward="true" selection-start-line="305" selection-start-column="26" selection-end-line="305" selection-end-column="26" />
               <folding>
                 <element signature="e#0#21#0" expanded="true" />
               </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="voice.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/VRC/utils/voice.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="133">
+              <caret line="156" column="19" selection-start-line="156" selection-start-column="19" selection-end-line="156" selection-end-column="19" />
             </state>
           </provider>
         </entry>
@@ -45,6 +56,18 @@
           <provider selected="true" editor-type-id="text-editor">
             <state>
               <caret line="1" column="10" selection-start-line="1" selection-start-column="10" selection-end-line="1" selection-end-column="10" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="voice_to_datasets.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="320">
+              <caret line="119" column="18" selection-start-line="119" selection-start-column="18" selection-end-line="119" selection-end-column="18" />
+              <folding>
+                <element signature="e#0#14#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -93,12 +116,12 @@
         <option value="$PROJECT_DIR$/VRC/train/main.py" />
         <option value="$PROJECT_DIR$/VRC/train/Model/model_unet.py" />
         <option value="$PROJECT_DIR$/VRC/train/test.py" />
-        <option value="$PROJECT_DIR$/VRC/utils/voice.py" />
         <option value="$PROJECT_DIR$/VRC/train/trained_models/wave2wave2.2.000_survey11/checkpoint" />
         <option value="$PROJECT_DIR$/VRC/train/__init__.py" />
         <option value="$PROJECT_DIR$/VRC/utils/voice_to_datasets.py" />
-        <option value="$PROJECT_DIR$/VRC/train/Model/model_proto.py" />
         <option value="$PROJECT_DIR$/VRC/train/setting.json" />
+        <option value="$PROJECT_DIR$/VRC/utils/voice.py" />
+        <option value="$PROJECT_DIR$/VRC/train/Model/model_proto.py" />
       </list>
     </option>
   </component>
@@ -143,6 +166,14 @@
               <item name="vrc" type="462c0819:PsiDirectoryNode" />
               <item name="VRC" type="462c0819:PsiDirectoryNode" />
               <item name="train" type="462c0819:PsiDirectoryNode" />
+              <item name="logs" type="462c0819:PsiDirectoryNode" />
+              <item name="[glr=0.0002,gb=0.5,dlr=0.0002,db=0.5]wave2wave2.3.085" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
+              <item name="vrc" type="462c0819:PsiDirectoryNode" />
+              <item name="VRC" type="462c0819:PsiDirectoryNode" />
+              <item name="train" type="462c0819:PsiDirectoryNode" />
               <item name="Model" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
@@ -179,6 +210,10 @@
     <property name="settings.editor.selected.configurable" value="preferences.keymap" />
   </component>
   <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\tadop\git\vrc\VRC\train\Model\datasets\test" />
+      <recent name="C:\Users\tadop\git\vrc\VRC\utils" />
+    </key>
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\Users\tadop\git\vrc\VRC\train\logs" />
       <recent name="C:\Users\tadop\git\vrc\VRC\utils" />
@@ -186,9 +221,130 @@
       <recent name="C:\Users\tadop\git\vrc\VRC\Data" />
       <recent name="C:\Users\tadop\git\vrc\VRC\utils\logs" />
     </key>
-    <key name="MoveFile.RECENT_KEYS">
-      <recent name="C:\Users\tadop\git\vrc\VRC\utils" />
-    </key>
+  </component>
+  <component name="RestoreUpdateTree" date="Moments ago" ActionInfo="_Update">
+    <UpdatedFiles>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Updated from server" />
+        <option name="myStatusName" value="Changed on server" />
+        <option name="mySupportsDeletion" value="false" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="CHANGED_ON_SERVER" />
+        <FILE-GROUP>
+          <option name="myUpdateName" value="Updated" />
+          <option name="myStatusName" value="Changed" />
+          <option name="mySupportsDeletion" value="false" />
+          <option name="myCanBeAbsent" value="false" />
+          <option name="myId" value="UPDATED" />
+          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/.idea/workspace.xml</PATH>
+          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/run/Converter.py</PATH>
+          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/run/VRC.py</PATH>
+          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/run/VRC_cpu.py</PATH>
+          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/train/Model/datasets/test/label.wav</PATH>
+          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/train/Model/datasets/test/test.wav</PATH>
+          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/utils/Converter.py</PATH>
+          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/utils/model_proto_cpu.py</PATH>
+          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/utils/model_test.py</PATH>
+          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/utils/testing.py</PATH>
+          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/utils/voice.py</PATH>
+          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/utils/wordchecker.py</PATH>
+        </FILE-GROUP>
+        <FILE-GROUP>
+          <option name="myUpdateName" value="Created" />
+          <option name="myStatusName" value="Created" />
+          <option name="mySupportsDeletion" value="false" />
+          <option name="myCanBeAbsent" value="false" />
+          <option name="myId" value="CREATED" />
+          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/setting.json</PATH>
+          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/train/Model/colab.py</PATH>
+          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/utils/VoiceConverter.py</PATH>
+        </FILE-GROUP>
+        <FILE-GROUP>
+          <option name="myUpdateName" value="Deleted" />
+          <option name="myStatusName" value="Deleted" />
+          <option name="mySupportsDeletion" value="false" />
+          <option name="myCanBeAbsent" value="true" />
+          <option name="myId" value="REMOVED_FROM_REPOSITORY" />
+        </FILE-GROUP>
+        <FILE-GROUP>
+          <option name="myUpdateName" value="Restored" />
+          <option name="myStatusName" value="Will be restored" />
+          <option name="mySupportsDeletion" value="false" />
+          <option name="myCanBeAbsent" value="false" />
+          <option name="myId" value="RESTORED" />
+        </FILE-GROUP>
+      </FILE-GROUP>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Modified" />
+        <option name="myStatusName" value="Modified" />
+        <option name="mySupportsDeletion" value="false" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="MODIFIED" />
+      </FILE-GROUP>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Skipped" />
+        <option name="myStatusName" value="Skipped" />
+        <option name="mySupportsDeletion" value="false" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="SKIPPED" />
+      </FILE-GROUP>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Merged with conflicts" />
+        <option name="myStatusName" value="Will be merged with conflicts" />
+        <option name="mySupportsDeletion" value="false" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="MERGED_WITH_CONFLICTS" />
+      </FILE-GROUP>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Merged with tree conflicts" />
+        <option name="myStatusName" value="Merged with tree conflicts" />
+        <option name="mySupportsDeletion" value="false" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="MERGED_WITH_TREE_CONFLICT" />
+      </FILE-GROUP>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Merged with property conflicts" />
+        <option name="myStatusName" value="Will be merged with property conflicts" />
+        <option name="mySupportsDeletion" value="false" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="MERGED_WITH_PROPERTY_CONFLICT" />
+      </FILE-GROUP>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Merged" />
+        <option name="myStatusName" value="Will be merged" />
+        <option name="mySupportsDeletion" value="false" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="MERGED" />
+      </FILE-GROUP>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Not in repository" />
+        <option name="myStatusName" value="Not in repository" />
+        <option name="mySupportsDeletion" value="true" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="UNKNOWN" />
+      </FILE-GROUP>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Locally added" />
+        <option name="myStatusName" value="Locally added" />
+        <option name="mySupportsDeletion" value="false" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="LOCALLY_ADDED" />
+      </FILE-GROUP>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Locally removed" />
+        <option name="myStatusName" value="Locally removed" />
+        <option name="mySupportsDeletion" value="false" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="LOCALLY_REMOVED" />
+      </FILE-GROUP>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Switched" />
+        <option name="myStatusName" value="Switched" />
+        <option name="mySupportsDeletion" value="false" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="SWITCHED" />
+      </FILE-GROUP>
+    </UpdatedFiles>
   </component>
   <component name="RunDashboard">
     <option name="ruleStates">
@@ -239,6 +395,24 @@
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
     </configuration>
+    <configuration name="voice" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="vrc" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/VRC/utils" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/VRC/utils/voice.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+    </configuration>
     <configuration name="voice_to_datasets" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="vrc" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -261,10 +435,12 @@
       <item itemvalue="Python.main debug" />
       <item itemvalue="Python.main" />
       <item itemvalue="Python.voice_to_datasets" />
+      <item itemvalue="Python.voice" />
     </list>
     <recent_temporary>
       <list>
         <item itemvalue="Python.main" />
+        <item itemvalue="Python.voice" />
         <item itemvalue="Python.voice_to_datasets" />
       </list>
     </recent_temporary>
@@ -511,7 +687,14 @@
       <option name="project" value="LOCAL" />
       <updated>1528500697949</updated>
     </task>
-    <option name="localTasksCounter" value="34" />
+    <task id="LOCAL-00034" summary="[update] h_flat update &lt;version 2.3.081&gt;&#10;&#10;[change] hybrid_flatnet改造3">
+      <created>1528504441568</created>
+      <option name="number" value="00034" />
+      <option name="presentableId" value="LOCAL-00034" />
+      <option name="project" value="LOCAL" />
+      <updated>1528504441568</updated>
+    </task>
+    <option name="localTasksCounter" value="35" />
     <servers />
   </component>
   <component name="TodoView">
@@ -550,7 +733,6 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[update] test update &lt;version 2.1.0&gt;&#10;&#10;[add]    相対test機能の追加&#10;[change] Sigmoidを改めて導入" />
     <MESSAGE value="[update] test update &lt;version 2.2.0&gt;&#10;&#10;[change] tanhを位相スペクトラムにのみかけるようにした。また、PI倍している&#10;[]" />
     <MESSAGE value="[update] test update &lt;version 2.2.0&gt;&#10;&#10;[change] tanhを廃止&#10;[change] split network 廃止" />
     <MESSAGE value="[update] speedup update &lt;version 2.2.003&gt;&#10;&#10;[add] 学習データを事前用意できる形に&#10;[fix] FFTのバグを修正" />
@@ -575,7 +757,8 @@
     <MESSAGE value="[update] h_flat update &lt;version 2.3.063&gt;&#10;&#10;[add] hybrid_flatnetの実装" />
     <MESSAGE value="[update] h_flat update &lt;version 2.3.078&gt;&#10;&#10;[change] hybrid_flatnet改造" />
     <MESSAGE value="[update] h_flat update &lt;version 2.3.081&gt;&#10;&#10;[change] hybrid_flatnet改造2" />
-    <option name="LAST_COMMIT_MESSAGE" value="[update] h_flat update &lt;version 2.3.081&gt;&#10;&#10;[change] hybrid_flatnet改造2" />
+    <MESSAGE value="[update] h_flat update &lt;version 2.3.081&gt;&#10;&#10;[change] hybrid_flatnet改造3" />
+    <option name="LAST_COMMIT_MESSAGE" value="[update] h_flat update &lt;version 2.3.081&gt;&#10;&#10;[change] hybrid_flatnet改造3" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -823,13 +1006,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/utils/voice.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="465">
-          <caret line="78" column="19" selection-start-line="78" selection-start-column="19" selection-end-line="78" selection-end-column="19" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/VRC/train/test.py">
       <provider selected="true" editor-type-id="text-editor">
         <state>
@@ -887,16 +1063,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="160">
-          <caret line="79" column="12" selection-start-line="79" selection-start-column="12" selection-end-line="79" selection-end-column="12" />
-          <folding>
-            <element signature="e#0#14#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_unet.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="144">
@@ -911,17 +1077,34 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="320">
+          <caret line="119" column="18" selection-start-line="119" selection-start-column="18" selection-end-line="119" selection-end-column="18" />
+          <folding>
+            <element signature="e#0#14#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/VRC/train/setting.json">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="400">
-          <caret line="25" column="20" selection-start-line="25" selection-start-column="20" selection-end-line="25" selection-end-column="20" />
+          <caret line="25" column="22" selection-start-line="25" selection-start-column="22" selection-end-line="25" selection-end-column="22" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/VRC/utils/voice.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="133">
+          <caret line="156" column="19" selection-start-line="156" selection-start-column="19" selection-end-line="156" selection-end-column="19" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1153">
-          <caret line="772" column="28" selection-start-line="772" selection-start-column="28" selection-end-line="772" selection-end-column="28" />
+        <state relative-caret-position="197">
+          <caret line="305" column="26" lean-forward="true" selection-start-line="305" selection-start-column="26" selection-end-line="305" selection-end-column="26" />
           <folding>
             <element signature="e#0#21#0" expanded="true" />
           </folding>
