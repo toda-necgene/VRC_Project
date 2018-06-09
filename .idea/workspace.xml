@@ -22,7 +22,7 @@
       <file leaf-file-name="setting.json" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/train/setting.json">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="354">
+            <state relative-caret-position="400">
               <caret line="25" column="20" selection-start-line="25" selection-start-column="20" selection-end-line="25" selection-end-column="20" />
             </state>
           </provider>
@@ -31,8 +31,8 @@
       <file leaf-file-name="model_proto.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="165">
-              <caret line="769" column="82" selection-start-line="769" selection-start-column="82" selection-end-line="769" selection-end-column="82" />
+            <state relative-caret-position="1153">
+              <caret line="772" column="28" selection-start-line="772" selection-start-column="28" selection-end-line="772" selection-end-column="28" />
               <folding>
                 <element signature="e#0#21#0" expanded="true" />
               </folding>
@@ -97,8 +97,8 @@
         <option value="$PROJECT_DIR$/VRC/train/trained_models/wave2wave2.2.000_survey11/checkpoint" />
         <option value="$PROJECT_DIR$/VRC/train/__init__.py" />
         <option value="$PROJECT_DIR$/VRC/utils/voice_to_datasets.py" />
-        <option value="$PROJECT_DIR$/VRC/train/setting.json" />
         <option value="$PROJECT_DIR$/VRC/train/Model/model_proto.py" />
+        <option value="$PROJECT_DIR$/VRC/train/setting.json" />
       </list>
     </option>
   </component>
@@ -130,6 +130,13 @@
               <item name="vrc" type="462c0819:PsiDirectoryNode" />
               <item name="VRC" type="462c0819:PsiDirectoryNode" />
               <item name="train" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
+              <item name="vrc" type="462c0819:PsiDirectoryNode" />
+              <item name="VRC" type="462c0819:PsiDirectoryNode" />
+              <item name="train" type="462c0819:PsiDirectoryNode" />
+              <item name="logs" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
@@ -490,7 +497,21 @@
       <option name="project" value="LOCAL" />
       <updated>1528466316936</updated>
     </task>
-    <option name="localTasksCounter" value="32" />
+    <task id="LOCAL-00032" summary="[update] h_flat update &lt;version 2.3.078&gt;&#10;&#10;[change] hybrid_flatnet改造">
+      <created>1528470259118</created>
+      <option name="number" value="00032" />
+      <option name="presentableId" value="LOCAL-00032" />
+      <option name="project" value="LOCAL" />
+      <updated>1528470259118</updated>
+    </task>
+    <task id="LOCAL-00033" summary="[update] h_flat update &lt;version 2.3.081&gt;&#10;&#10;[change] hybrid_flatnet改造2">
+      <created>1528500697949</created>
+      <option name="number" value="00033" />
+      <option name="presentableId" value="LOCAL-00033" />
+      <option name="project" value="LOCAL" />
+      <updated>1528500697949</updated>
+    </task>
+    <option name="localTasksCounter" value="34" />
     <servers />
   </component>
   <component name="TodoView">
@@ -529,8 +550,6 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[update] test update &lt;version 1.8.0&gt;&#10;&#10;[change] test機能の追加" />
-    <MESSAGE value="[update] test update &lt;version 2.0.0&gt;&#10;&#10;[fix] test機能の修正" />
     <MESSAGE value="[update] test update &lt;version 2.1.0&gt;&#10;&#10;[add]    相対test機能の追加&#10;[change] Sigmoidを改めて導入" />
     <MESSAGE value="[update] test update &lt;version 2.2.0&gt;&#10;&#10;[change] tanhを位相スペクトラムにのみかけるようにした。また、PI倍している&#10;[]" />
     <MESSAGE value="[update] test update &lt;version 2.2.0&gt;&#10;&#10;[change] tanhを廃止&#10;[change] split network 廃止" />
@@ -554,7 +573,9 @@
     <MESSAGE value="[update] PS update &lt;version 2.3.060&gt;&#10;&#10;[add] PSをu_net実装" />
     <MESSAGE value="[update] h_flat update &lt;version 2.3.061&gt;&#10;&#10;[add] hybrid_flatnetの実装" />
     <MESSAGE value="[update] h_flat update &lt;version 2.3.063&gt;&#10;&#10;[add] hybrid_flatnetの実装" />
-    <option name="LAST_COMMIT_MESSAGE" value="[update] h_flat update &lt;version 2.3.063&gt;&#10;&#10;[add] hybrid_flatnetの実装" />
+    <MESSAGE value="[update] h_flat update &lt;version 2.3.078&gt;&#10;&#10;[change] hybrid_flatnet改造" />
+    <MESSAGE value="[update] h_flat update &lt;version 2.3.081&gt;&#10;&#10;[change] hybrid_flatnet改造2" />
+    <option name="LAST_COMMIT_MESSAGE" value="[update] h_flat update &lt;version 2.3.081&gt;&#10;&#10;[change] hybrid_flatnet改造2" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -892,15 +913,15 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/train/setting.json">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="354">
+        <state relative-caret-position="400">
           <caret line="25" column="20" selection-start-line="25" selection-start-column="20" selection-end-line="25" selection-end-column="20" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="165">
-          <caret line="769" column="82" selection-start-line="769" selection-start-column="82" selection-end-line="769" selection-end-column="82" />
+        <state relative-caret-position="1153">
+          <caret line="772" column="28" selection-start-line="772" selection-start-column="28" selection-end-line="772" selection-end-column="28" />
           <folding>
             <element signature="e#0#21#0" expanded="true" />
           </folding>

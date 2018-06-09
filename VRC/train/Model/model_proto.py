@@ -766,11 +766,11 @@ def block3(current,output_shape,f,depth,reuses,relu):
                                         gamma_initializer=tf.ones_initializer(), reuse=reuses, name="bn21" + str(depth))
 
     ten = tf.nn.leaky_relu(ten,name="lrelu"+str(depth))
-    ten1=deconve_with_ps(ten[:,:,:,:1],f[0],1,depth,reuses=reuses)
-    ten2 =  tf.layers.conv2d_transpose(ten[:,:,:,1:], 1, kernel_size=f, strides=f, padding="VALID",
+    ten1=deconve_with_ps(ten[:,:,:,1:],f[0],1,depth,reuses=reuses)
+    ten2 =  tf.layers.conv2d_transpose(ten[:,:,:,:1], 1, kernel_size=f, strides=f, padding="VALID",
                                      kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
                                      data_format="channels_last",reuse=reuses,name="deconv11"+str(depth))
-    ten=tf.concat([ten1,ten2],axis=3)
+    ten=tf.concat([ten2,ten1],axis=3)
     if relu:
         ten=tf.nn.relu(ten)
     return ten
