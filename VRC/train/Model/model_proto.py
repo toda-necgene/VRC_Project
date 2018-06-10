@@ -131,15 +131,17 @@ class Model:
                 self.fake_aB_image = generator(tf.reshape(self.input_modela, self.input_size_model), reuse=None,
                                               chs=self.args["G_channel"], depth=self.args["depth"], f=self.args["filter_g"],
                                               s=self.args["strides_g"], rate=self.training,type=self.args["architect"],train=True)
+                self.fake_aB_image_test = generator(tf.reshape(self.input_modelb, self.input_size_model), reuse=True,
+                                                chs=self.args["G_channel"], depth=self.args["depth"],
+                                                f=self.args["filter_g"],
+                                                s=self.args["strides_g"], rate=self.training,
+                                                type=self.args["architect"],
+                                                train=False)
+
             with tf.variable_scope("generator_2"):
                 self.fake_bA_image = generator(tf.reshape(self.input_modelb, self.input_size_model), reuse=None,
                                               chs=self.args["G_channel"], depth=self.args["depth"], f=self.args["filter_g"],
                                               s=self.args["strides_g"], rate=self.training,type=self.args["architect"],train=True)
-                self.fake_bA_image_test = generator(tf.reshape(self.input_modelb, self.input_size_model), reuse=True,
-                                               chs=self.args["G_channel"], depth=self.args["depth"],
-                                               f=self.args["filter_g"],
-                                               s=self.args["strides_g"], rate=self.training, type=self.args["architect"],
-                                               train=False)
 
             with tf.variable_scope("generator_2"):
                 self.fake_Ba_image = generator(tf.reshape(self.fake_aB_image, self.input_size_model), reuse=True,
@@ -301,7 +303,7 @@ class Model:
             # running network
             # ネットワーク実行
             res=res[:,:self.args["SHIFT"],:]
-            res=self.sess.run(self.fake_bA_image_test,feed_dict={ self.input_modelb:res,self.training:np.asarray([1.0])})
+            res=self.sess.run(self.fake_aB_image_test,feed_dict={ self.input_modelb:res,self.training:np.asarray([1.0])})
             res2=res.copy()[:,:,::-1,:]
             res=np.append(res,res2,axis=2)
             res[:,:,self.args["SHIFT"]:,1]*=-1
@@ -803,13 +805,15 @@ def generator_unet(current_outputs,reuse,depth,chs,f,s,ps=0):
 def up_layer(current,output_shape,f,s,depth,bn=True,do=False,reuse=None,ps=0):
     ten=tf.nn.leaky_relu(current)
     if ps==0:
-        ten = deconve_with_ps(ten, f[0], output_shape, depth, reuses=reuse)
+        ten=tf.layers.conv2d_transpose(ten, output_shape, kernel_size=f, strides=s, padding="VALID",
+                         kernel_initializer=tf.contrib.layers.xavier_initializer(), data_format="channels_last",
+                         name="deconv" + str(depth), reuse=reuse)
     elif ps==1:
         ten=deconve_with_ps(ten,f[0],output_shape,depth,reuses=reuse)
     else:
-        ten1 = tf.layers.conv2d(ten, output_shape, kernel_size=f, strides=s, padding="SAME",
+        ten1 = tf.layers.conv2d_transpose(ten, output_shape, kernel_size=f, strides=s, padding="VALID",
                                kernel_initializer=tf.contrib.layers.xavier_initializer(), data_format="channels_last",
-                               name="conv" + str(depth), reuse=reuse)
+                               name="deconv" + str(depth), reuse=reuse)
         ten2 = deconve_with_ps(ten, f[0], output_shape, depth, reuses=reuse)
         ten = ten1 + ten2
     if bn:
@@ -817,7 +821,7 @@ def up_layer(current,output_shape,f,s,depth,bn=True,do=False,reuse=None,ps=0):
     return ten
 def down_layer(current,output_shape,f,s,reuse,depth):
     ten=tf.layers.batch_normalization(current,axis=3,training=True,gamma_initializer=tf.random_normal_initializer(1.0, 0.2),name="bn_d"+str(depth),reuse=reuse)
-    ten=tf.layers.conv2d(ten, output_shape,kernel_size=f ,strides=s, padding="SAME",kernel_initializer=tf.contrib.layers.xavier_initializer(),data_format="channels_last",name="conv"+str(depth),reuse=reuse)
+    ten=tf.layers.conv2d(ten, output_shape,kernel_size=f ,strides=s, padding="VALID",kernel_initializer=tf.contrib.layers.xavier_initializer(),data_format="channels_last",name="conv"+str(depth),reuse=reuse)
     ten=tf.nn.leaky_relu(ten)
     return ten
 

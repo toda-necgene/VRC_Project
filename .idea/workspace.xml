@@ -1,14 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="BookmarkManager">
-    <bookmark url="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py" line="658" />
+    <bookmark url="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py" line="665" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="22fa9a76-09a0-4f62-a2d8-6f3210b56f42" name="Default" comment="">
+    <list default="true" id="22fa9a76-09a0-4f62-a2d8-6f3210b56f42" name="Default" comment="[update] shuffle update &lt;version 2.3.130&gt;&#10;&#10;[add] hybrid_unetを追加">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/VRC/train/Model/model_proto.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/train/Model/model_proto.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/train/setting.json" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/train/setting.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/utils/voice.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/utils/voice.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/VRC/utils/voice_to_datasets.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/utils/voice_to_datasets.py" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/VRC/Network/to/" />
@@ -24,17 +22,8 @@
       <file leaf-file-name="setting.json" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/VRC/train/setting.json">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="400">
-              <caret line="25" column="20" selection-start-line="25" selection-start-column="20" selection-end-line="25" selection-end-column="20" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="session.py" pinned="false" current-in-tab="false">
-        <entry file="file://$USER_HOME$/AppData/Local/Programs/Python/Python36/Lib/site-packages/tensorflow/python/client/session.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="165">
-              <caret line="1110" selection-start-line="1110" selection-end-line="1110" />
+            <state relative-caret-position="128">
+              <caret line="8" column="11" selection-start-line="8" selection-start-column="11" selection-end-line="8" selection-end-column="11" />
             </state>
           </provider>
         </entry>
@@ -42,8 +31,8 @@
       <file leaf-file-name="model_proto.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="208">
-              <caret line="760" column="51" selection-start-line="760" selection-start-column="51" selection-end-line="760" selection-end-column="51" />
+            <state relative-caret-position="112">
+              <caret line="813" column="41" selection-start-line="813" selection-start-column="41" selection-end-line="813" selection-end-column="41" />
               <folding>
                 <element signature="e#0#21#0" expanded="true" />
               </folding>
@@ -72,8 +61,8 @@
       <file leaf-file-name="voice_to_datasets.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="224">
-              <caret line="80" column="12" selection-start-line="80" selection-start-column="12" selection-end-line="80" selection-end-column="12" />
+            <state relative-caret-position="128">
+              <caret line="80" column="21" selection-start-line="80" selection-start-column="21" selection-end-line="80" selection-end-column="21" />
               <folding>
                 <element signature="e#0#14#0" expanded="true" />
               </folding>
@@ -127,10 +116,10 @@
         <option value="$PROJECT_DIR$/VRC/train/test.py" />
         <option value="$PROJECT_DIR$/VRC/train/trained_models/wave2wave2.2.000_survey11/checkpoint" />
         <option value="$PROJECT_DIR$/VRC/train/__init__.py" />
-        <option value="$PROJECT_DIR$/VRC/utils/voice_to_datasets.py" />
         <option value="$PROJECT_DIR$/VRC/utils/voice.py" />
-        <option value="$PROJECT_DIR$/VRC/train/setting.json" />
+        <option value="$PROJECT_DIR$/VRC/utils/voice_to_datasets.py" />
         <option value="$PROJECT_DIR$/VRC/train/Model/model_proto.py" />
+        <option value="$PROJECT_DIR$/VRC/train/setting.json" />
       </list>
     </option>
   </component>
@@ -184,15 +173,6 @@
               <item name="train" type="462c0819:PsiDirectoryNode" />
               <item name="Model" type="462c0819:PsiDirectoryNode" />
               <item name="datasets" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
-              <item name="vrc" type="462c0819:PsiDirectoryNode" />
-              <item name="VRC" type="462c0819:PsiDirectoryNode" />
-              <item name="train" type="462c0819:PsiDirectoryNode" />
-              <item name="Model" type="462c0819:PsiDirectoryNode" />
-              <item name="datasets" type="462c0819:PsiDirectoryNode" />
-              <item name="train" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
@@ -702,7 +682,21 @@
       <option name="project" value="LOCAL" />
       <updated>1528542434339</updated>
     </task>
-    <option name="localTasksCounter" value="36" />
+    <task id="LOCAL-00036" summary="[update] shuffle update &lt;version 2.3.090&gt;&#10;&#10;[add] rollを追加">
+      <created>1528552144058</created>
+      <option name="number" value="00036" />
+      <option name="presentableId" value="LOCAL-00036" />
+      <option name="project" value="LOCAL" />
+      <updated>1528552144058</updated>
+    </task>
+    <task id="LOCAL-00037" summary="[update] shuffle update &lt;version 2.3.090&gt;&#10;&#10;[add] rollを追加">
+      <created>1528617861439</created>
+      <option name="number" value="00037" />
+      <option name="presentableId" value="LOCAL-00037" />
+      <option name="project" value="LOCAL" />
+      <updated>1528617861439</updated>
+    </task>
+    <option name="localTasksCounter" value="38" />
     <servers />
   </component>
   <component name="TodoView">
@@ -721,6 +715,7 @@
       <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.2496474" />
       <window_info anchor="bottom" id="TODO" order="6" weight="0.3292683" />
       <window_info anchor="bottom" id="Event Log" order="8" sideWeight="0.5014104" side_tool="true" weight="0.2615176" />
+      <window_info anchor="bottom" id="Find" order="1" weight="0.3292683" />
       <window_info anchor="bottom" id="Version Control" order="10" weight="0.3292683" />
       <window_info anchor="bottom" id="Python Console" order="7" weight="0.3292683" />
       <window_info active="true" anchor="bottom" id="Run" order="2" sideWeight="0.49858958" visible="true" weight="0.2615176" />
@@ -734,14 +729,12 @@
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
-      <window_info anchor="bottom" id="Find" order="1" weight="0.3292683" />
     </layout>
   </component>
   <component name="VcsContentAnnotationSettings">
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[update] test update &lt;version 2.2.0&gt;&#10;&#10;[change] tanhを廃止&#10;[change] split network 廃止" />
     <MESSAGE value="[update] speedup update &lt;version 2.2.003&gt;&#10;&#10;[add] 学習データを事前用意できる形に&#10;[fix] FFTのバグを修正" />
     <MESSAGE value="[update] speedup update &lt;version 2.2.003&gt;&#10;&#10;[add] 安定化" />
     <MESSAGE value="[update] speedup update &lt;version 2.2.004&gt;&#10;&#10;[add] add_filter_layerを実装し、試験運用" />
@@ -766,11 +759,12 @@
     <MESSAGE value="[update] h_flat update &lt;version 2.3.081&gt;&#10;&#10;[change] hybrid_flatnet改造2" />
     <MESSAGE value="[update] h_flat update &lt;version 2.3.081&gt;&#10;&#10;[change] hybrid_flatnet改造3" />
     <MESSAGE value="[update] input update &lt;version 2.3.090&gt;&#10;&#10;[change] 入力を変更" />
-    <option name="LAST_COMMIT_MESSAGE" value="[update] input update &lt;version 2.3.090&gt;&#10;&#10;[change] 入力を変更" />
+    <MESSAGE value="[update] shuffle update &lt;version 2.3.090&gt;&#10;&#10;[add] rollを追加" />
+    <option name="LAST_COMMIT_MESSAGE" value="[update] shuffle update &lt;version 2.3.090&gt;&#10;&#10;[add] rollを追加" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
-      <option name="time" value="10" />
+      <option name="time" value="11" />
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
@@ -1078,13 +1072,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets.py">
+    <entry file="file://$USER_HOME$/AppData/Local/Programs/Python/Python36/Lib/site-packages/tensorflow/python/client/session.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="224">
-          <caret line="80" column="12" selection-start-line="80" selection-start-column="12" selection-end-line="80" selection-end-column="12" />
-          <folding>
-            <element signature="e#0#14#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="165">
+          <caret line="1110" selection-start-line="1110" selection-end-line="1110" />
         </state>
       </provider>
     </entry>
@@ -1095,17 +1086,20 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$USER_HOME$/AppData/Local/Programs/Python/Python36/Lib/site-packages/tensorflow/python/client/session.py">
+    <entry file="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="165">
-          <caret line="1110" selection-start-line="1110" selection-end-line="1110" />
+        <state relative-caret-position="128">
+          <caret line="80" column="21" selection-start-line="80" selection-start-column="21" selection-end-line="80" selection-end-column="21" />
+          <folding>
+            <element signature="e#0#14#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="208">
-          <caret line="760" column="51" selection-start-line="760" selection-start-column="51" selection-end-line="760" selection-end-column="51" />
+        <state relative-caret-position="112">
+          <caret line="813" column="41" selection-start-line="813" selection-start-column="41" selection-end-line="813" selection-end-column="41" />
           <folding>
             <element signature="e#0#21#0" expanded="true" />
           </folding>
@@ -1114,8 +1108,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/train/setting.json">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="400">
-          <caret line="25" column="20" selection-start-line="25" selection-start-column="20" selection-end-line="25" selection-end-column="20" />
+        <state relative-caret-position="128">
+          <caret line="8" column="11" selection-start-line="8" selection-start-column="11" selection-end-line="8" selection-end-column="11" />
         </state>
       </provider>
     </entry>
