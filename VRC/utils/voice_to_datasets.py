@@ -5,14 +5,14 @@ import time
 import glob
 import cupy
 import matplotlib.pyplot as plt
-NFFT=256
+NFFT=128
 SHIFT=NFFT//2
 C1=32.703
 rate=16000
 Hz=C1*(2**0)
 now=317.6
 target=563.666
-term = 8192
+term = 4096
 upidx=target/now
 
 def fft(data):
@@ -78,7 +78,7 @@ CHUNK = 1024     #データ点数
 RECORD_SECONDS = 5 #録音する時間の長さ
 WAVE_INPUT_FILENAME = "../train/Model/datasets/source/02"
 files=glob.glob(WAVE_INPUT_FILENAME+"/*.wav")
-name="Answer_data"
+name="4096-128/Answer_data"
 cnt=0
 for file in files:
     print(file)

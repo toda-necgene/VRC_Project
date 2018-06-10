@@ -67,7 +67,7 @@ class Model:
         self.args["dropbox"]="False"
         self.args["architect"] = "flatnet"
         self.args["label_noise"]=0.0
-
+        self.args["train_data_path"]="./train/Model/datasets/train/"
         if os.path.exists(path):
             try:
                 with open(path,"r") as f:
@@ -304,6 +304,7 @@ class Model:
             res=self.sess.run(self.fake_bA_image_test,feed_dict={ self.input_modelb:res,self.training:np.asarray([1.0])})
             res2=res.copy()[:,:,::-1,:]
             res=np.append(res,res2,axis=2)
+            res[:,:,self.args["SHIFT"]:,1]*=-1
             # resas = np.append(resas, res[0])
             a=res[0].copy()
             scales2 = np.sqrt(np.var(a[:, :, 0], axis=1) + 1e-64)
@@ -393,7 +394,8 @@ class Model:
 
         # loading training data directory
         # トレーニングデータの格納ディレクトリの読み込み
-        data = glob('./Model/datasets/train/Source_data/*')
+        data = glob(self.args["train_data_path"]+'/Source_data/*')
+        data2 = glob(self.args["train_data_path"] + '/Answer_data/*')
 
         # loading test data
         # テストデータの読み込み
@@ -403,13 +405,15 @@ class Model:
         # times of one epoch
         # 回数計算
         train_data_num = min(len(data), self.args["train_data_num"])
+        train_data_num2 = min(len(data2), self.args["train_data_num"])
+
         batch_idxs = train_data_num // self.args["batch_size"]
         index_list=[h for h in range(train_data_num)]
-
+        index_list2 = [h for h in range(train_data_num2)]
 
         #　学習データをメモリに乗っける
-        batch_files2 = data[:train_data_num]
-        batch_files = ["./Model/datasets/train/Answer_data/" + os.path.basename(bn) for bn in data[0:train_data_num]]
+        batch_files = data[:train_data_num]
+        batch_files2 = data2[:train_data_num]
         batch_sounds_r = np.asarray([(imread(batch_file)) for batch_file in batch_files])
         batch_sounds_t = np.asarray([(imread(batch_file)) for batch_file in batch_files2])
 
@@ -426,6 +430,7 @@ class Model:
             # shuffling training data
             # トレーニングデータのシャッフル
             np.random.shuffle(index_list)
+            np.random.shuffle(index_list2)
             test1=0.0
             ts = 0.0
             ipt = self.input_size_model[1]
@@ -490,7 +495,7 @@ class Model:
                 # トレーニングデータの読み込み
                 st=self.args["batch_size"]*idx
                 batch_sounds1 = np.asarray([batch_sounds_r[ind] for ind in index_list[st:st+self.args["batch_size"]]])
-                batch_sounds2= np.asarray([batch_sounds_t[ind] for ind in index_list[st:st+self.args["batch_size"]]])
+                batch_sounds2= np.asarray([batch_sounds_t[ind] for ind in index_list2[st:st+self.args["batch_size"]]])
                 # calculating one iteration repetation times
                 # 1イテレーション実行回数計算
                 times=int(batch_sounds1.shape[1])//self.input_size_model[1]+1
@@ -693,7 +698,9 @@ def generator(current_outputs,reuse,depth,chs,f,s,rate,type,train):
     elif type == "hybrid_flatnet":
         return generator_flatnet(current_outputs, reuse, depth, chs, f, s, 2,train)
     elif type == "ps_unet":
-        return generator_unet(current_outputs, reuse, depth, chs, f, s, True)
+        return generator_unet(current_outputs, reuse, depth, chs, f, s, 1)
+    elif type == "hybrid_unet":
+        return generator_unet(current_outputs, reuse, depth, chs, f, s, 2)
     else :
         return  generator_unet(current_outputs,reuse,depth,chs,f,s)
 def generator_flatnet(current_outputs,reuse,depth,chs,f,s,ps,train):
@@ -702,14 +709,13 @@ def generator_flatnet(current_outputs,reuse,depth,chs,f,s,ps,train):
     #main process
     for i in range(depth):
         connections = current
-        fs=[2**(i//4+1),2**(i//4+1)]
-
+        fss=[f[0]*(2**((depth-i-1)//2+1)),f[1]*(2**((depth-i-1)//2+1))]
         if ps==1:
-            ten = block2(current, output_shape, fs, i, reuse,i!=depth-1)
+            ten = block2(current, output_shape, fss, i, reuse,i!=depth-1)
         elif ps==2 :
-            ten=block3(current,f,chs,i,reuse,i!=depth-1,train)
+            ten=block3(current,fss,chs,i,reuse,i!=depth-1,train)
         else :
-            ten = block(current, output_shape, chs, f, s, i, reuse, i != depth - 1)
+            ten = block(current, output_shape, chs, fss, s, i, reuse, i != depth - 1)
         current = ten + connections
     return current
 def block(current,output_shape,chs,f,s,depth,reuses,relu):
@@ -757,14 +763,13 @@ def block3(current,f,chs,depth,reuses,relu,train):
 
     ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True,
                                         gamma_initializer=tf.ones_initializer(), reuse=reuses, name="bn21" + str(depth))
-    n=(depth%2)*2-1
-    ten=tf.manip.roll(ten,shift=[2*n,2*n],axis=[1,2])
     ten = tf.nn.leaky_relu(ten,name="lrelu"+str(depth))
-    ten1=deconve_with_ps(ten[:,:,:,:],f[0],1,depth,reuses=reuses)
-    ten2 =  tf.layers.conv2d_transpose(ten[:,:,:,:], 1, kernel_size=f, strides=f, padding="VALID",
+    ten1=deconve_with_ps(ten,f[0],2,depth,reuses=reuses)
+    ten2 =  tf.layers.conv2d_transpose(ten, 2, kernel_size=f, strides=f, padding="VALID",
                                      kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
-                                     data_format="channels_last",reuse=reuses,name="deconv11"+str(depth))
-    ten=tf.concat([ten2,ten1],axis=3)
+                                       data_format="channels_last", reuse=reuses, name="deconv11" + str(depth))
+
+    ten=ten1+ten2
     if relu:
         ten=tf.nn.relu(ten)
     return ten
@@ -780,9 +785,9 @@ def deconve_with_ps(inp,r,otp_shape,depth,f=[1,1],reuses=None):
     ten = tf.reshape(ten, [b_size, r, r, in_h, in_w, otp_shape])
     ten = tf.transpose(ten, [0, 2, 3, 4, 1, 5])
     ten = tf.reshape(ten, [b_size, in_h * r, in_w * r, otp_shape])
-    return ten
+    return ten[:,:,:,:]
 
-def generator_unet(current_outputs,reuse,depth,chs,f,s,ps=False):
+def generator_unet(current_outputs,reuse,depth,chs,f,s,ps=0):
     current=current_outputs
     connections=[ ]
     for i in range(depth):
@@ -790,17 +795,23 @@ def generator_unet(current_outputs,reuse,depth,chs,f,s,ps=False):
         current = down_layer(current, chs*(i+1) ,f,s,reuse,i)
     print("shape of structure:"+str([[int(c.shape[0]),int(c.shape[1]),int(c.shape[2]),int(c.shape[3])] for c in connections]))
     for i in range(depth):
-        current=up_layer(current,chs*(depth-i-1) if (depth-i-1)!=0 else 2,f,s,i,i!=(depth-1),depth-i-1>2,reuse,ps)
+        current=up_layer(current,chs*(depth-i-1) if (depth-i-1)!=0 else 2,f,s,i,i!=(depth-1),depth-i-1>2,reuse,ps=ps)
         if i!=depth-1:
             current += connections[depth - i -1]
     return tf.reshape(current,current_outputs.shape)
 
-def up_layer(current,output_shape,f,s,depth,bn=True,do=False,reuse=None,ps=False):
+def up_layer(current,output_shape,f,s,depth,bn=True,do=False,reuse=None,ps=0):
     ten=tf.nn.leaky_relu(current)
-    if ps:
+    if ps==0:
         ten = deconve_with_ps(ten, f[0], output_shape, depth, reuses=reuse)
+    elif ps==1:
+        ten=deconve_with_ps(ten,f[0],output_shape,depth,reuses=reuse)
     else:
-        ten=tf.layers.conv2d_transpose(ten, output_shape,kernel_size=f ,strides=s, padding="SAME",kernel_initializer=tf.contrib.layers.xavier_initializer(),data_format="channels_last",name="deconv"+str(depth),reuse=reuse)
+        ten1 = tf.layers.conv2d(ten, output_shape, kernel_size=f, strides=s, padding="SAME",
+                               kernel_initializer=tf.contrib.layers.xavier_initializer(), data_format="channels_last",
+                               name="conv" + str(depth), reuse=reuse)
+        ten2 = deconve_with_ps(ten, f[0], output_shape, depth, reuses=reuse)
+        ten = ten1 + ten2
     if bn:
         ten=tf.layers.batch_normalization(ten,axis=3,training=True,gamma_initializer=tf.random_normal_initializer(1.0, 0.2),name="bn_u"+str(depth),reuse=reuse)
     return ten
