@@ -241,7 +241,7 @@ class Model:
         self.d_loss_sumB = tf.summary.scalar("d_lossB", tf.reduce_mean(self.d_lossB),family="d_loss")
 
         self.result=tf.placeholder(tf.float32, [1,1,160000], name="FB")
-        self.result1 = tf.placeholder(tf.float32, [1,1280,256,2], name="FBI0")
+        self.result1 = tf.placeholder(tf.float32, [1,1280,128,2], name="FBI0")
         im1=tf.transpose(self.result1[:,:,:,:1],[0,2,1,3])
         im2 = tf.transpose(self.result1[:, :, :, 1:], [0, 2, 1, 3])
         self.fake_B_sum = tf.summary.audio("fake_B", tf.reshape(self.result,[1,160000,1]), 16000, 1)
