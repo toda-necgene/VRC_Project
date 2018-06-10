@@ -398,7 +398,6 @@ class Model:
         # トレーニングデータの格納ディレクトリの読み込み
         data = glob(self.args["train_data_path"]+'/Source_data/*')
         data2 = glob(self.args["train_data_path"] + '/Answer_data/*')
-
         # loading test data
         # テストデータの読み込み
         test=isread('./Model/datasets/test/test.wav')[0:160000].astype(np.float32)

@@ -2,7 +2,7 @@
   "checkpoint_dir":"Z://models/",
   "train_data_num":552,
   "wave_otp_dir":"Z://waves/",
-  "train_data_path":"./train/Model/datasets/train/4096-128",
+  "train_data_path":"./Model/datasets/train/4096-128",
   "pitch_res":317.6,
   "pitch_tar":563.666,
   "batch_size":4,
