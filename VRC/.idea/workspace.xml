@@ -5,11 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="118ef545-7803-4684-8710-61ccd65f9b8d" name="Default" comment="">
+      <change beforePath="$PROJECT_DIR$/../.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/../.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/run/Converter.py" beforeDir="false" afterPath="$PROJECT_DIR$/run/Converter.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/setting.json" beforeDir="false" afterPath="$PROJECT_DIR$/setting.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/utils/model_proto_cpu.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/model_proto_cpu.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils/model_test.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/model_test.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -20,11 +18,11 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="375">
-      <file leaf-file-name="model_proto_cpu.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="model_proto_cpu.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/utils/model_proto_cpu.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="272">
-              <caret line="270" lean-forward="true" selection-start-line="270" selection-end-line="270" />
+            <state relative-caret-position="289">
+              <caret line="278" column="42" selection-start-line="278" selection-start-column="42" selection-end-line="278" selection-end-column="42" />
               <folding>
                 <element signature="e#0#23#0" expanded="true" />
               </folding>
@@ -35,13 +33,13 @@
       <file leaf-file-name="model_test.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/utils/model_test.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="17">
+            <state relative-caret-position="-1003">
               <caret line="177" column="24" selection-start-line="177" selection-start-column="24" selection-end-line="177" selection-end-column="24" />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="setting.json" pinned="false" current-in-tab="true">
+      <file leaf-file-name="setting.json" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/setting.json">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="612">
@@ -115,12 +113,12 @@
         <option value="$PROJECT_DIR$/utils/voice.py" />
         <option value="$PROJECT_DIR$/run/VRC_cpu.py" />
         <option value="$PROJECT_DIR$/setting.ini" />
-        <option value="$PROJECT_DIR$/../.gitignore" />
         <option value="$PROJECT_DIR$/run/Converter.py" />
         <option value="$PROJECT_DIR$/utils/testing.py" />
         <option value="$PROJECT_DIR$/utils/model_test.py" />
-        <option value="$PROJECT_DIR$/utils/model_proto_cpu.py" />
         <option value="$PROJECT_DIR$/setting.json" />
+        <option value="$PROJECT_DIR$/../.gitignore" />
+        <option value="$PROJECT_DIR$/utils/model_proto_cpu.py" />
       </list>
     </option>
   </component>
@@ -403,19 +401,26 @@
       <option name="project" value="LOCAL" />
       <updated>1528693644814</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="[update] update &lt;version 2.3.145&gt;&#10;&#10;    [add] 修正">
+      <created>1528734070423</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1528734070424</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="ToolWindowManager">
     <frame x="-7" y="-7" width="1550" height="838" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.2504957" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.2504957" />
       <window_info anchor="bottom" id="TODO" order="6" />
       <window_info anchor="bottom" id="Event Log" order="7" side_tool="true" weight="0.32952183" />
       <window_info anchor="bottom" id="Version Control" order="8" weight="0.32831737" />
       <window_info anchor="bottom" id="Python Console" order="9" weight="0.31907895" />
-      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.33050847" />
+      <window_info anchor="bottom" id="Run" order="2" visible="true" weight="0.33050847" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info anchor="bottom" id="Terminal" order="10" weight="0.34039548" />
       <window_info id="Favorites" order="2" side_tool="true" />
@@ -442,7 +447,8 @@
     <MESSAGE value="[update] training  update &lt;version 2.2.009&gt;&#10;&#10;[add] testに比較用の画像を追加" />
     <MESSAGE value="[update] config  update &lt;version 2.2.009&gt;&#10;&#10;[add] 設定ファイルを読みやすく変更" />
     <MESSAGE value="[update] config update &lt;version 2.3.100&gt;&#10;&#10;    [add] 除外ファイルを変更" />
-    <option name="LAST_COMMIT_MESSAGE" value="[update] config update &lt;version 2.3.100&gt;&#10;&#10;    [add] 除外ファイルを変更" />
+    <MESSAGE value="[update] update &lt;version 2.3.145&gt;&#10;&#10;    [add] 修正" />
+    <option name="LAST_COMMIT_MESSAGE" value="[update] update &lt;version 2.3.145&gt;&#10;&#10;    [add] 修正" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -635,13 +641,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/../.gitignore">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1717">
-          <caret line="101" column="10" selection-start-line="101" selection-start-column="10" selection-end-line="101" selection-end-column="10" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/roll.txt">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="17">
@@ -653,6 +652,9 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="4214">
           <caret line="532" column="13" selection-start-line="532" selection-start-column="13" selection-end-line="532" selection-end-column="13" />
+          <folding>
+            <element signature="e#0#23#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -663,20 +665,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/utils/model_proto_cpu.py">
+    <entry file="file://$PROJECT_DIR$/../.gitignore">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="272">
-          <caret line="270" lean-forward="true" selection-start-line="270" selection-end-line="270" />
-          <folding>
-            <element signature="e#0#23#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/utils/model_test.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="17">
-          <caret line="177" column="24" selection-start-line="177" selection-start-column="24" selection-end-line="177" selection-end-column="24" />
+        <state relative-caret-position="327">
+          <caret line="85" column="6" selection-start-line="85" selection-start-column="6" selection-end-line="85" selection-end-column="6" />
         </state>
       </provider>
     </entry>
@@ -684,6 +676,23 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="612">
           <caret line="36" lean-forward="true" selection-start-line="36" selection-end-line="36" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/utils/model_test.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-1003">
+          <caret line="177" column="24" selection-start-line="177" selection-start-column="24" selection-end-line="177" selection-end-column="24" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/utils/model_proto_cpu.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="289">
+          <caret line="278" column="42" selection-start-line="278" selection-start-column="42" selection-end-line="278" selection-end-column="42" />
+          <folding>
+            <element signature="e#0#23#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>

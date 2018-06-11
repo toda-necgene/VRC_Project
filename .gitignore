@@ -83,6 +83,7 @@
 *.class
 *.meta
 *.wav
+*.json
 VRC/logs/*
 VRC/datasets/*
 VRC/Network/*

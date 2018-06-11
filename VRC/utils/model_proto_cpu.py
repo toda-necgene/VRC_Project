@@ -276,6 +276,7 @@ class Model:
             self.epoch=self.saver
             return True
         else:
+            print(" [x] %s is not found." % checkpoint_dir)
             return False
 
     def fft(self,data):
