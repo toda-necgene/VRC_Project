@@ -175,7 +175,7 @@ data = np.frombuffer(dms, 'int16')
 data_realB=data.reshape(-1)
 
 tm=time.time()
-# data_realA=filter_pes(data_realA)
+# data_realA=filter_pes (data_realA)
 data_realA=data_realA.reshape(1,-1,1)
 print(" [*] conversion start!!")
 data_C,data_D,data_E,data_F=net.convert(data_realA/32767.0)

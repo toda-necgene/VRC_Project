@@ -143,6 +143,8 @@ class Model:
         otp=np.array([],dtype=np.int16)
         otp2=np.asarray([],dtype=np.int16)
         otp3= np.asarray([[[]]], dtype=np.float32)
+        rest = np.asarray([[[]]], dtype=np.float32)
+
         otp4 = np.asarray([[[]]], dtype=np.float32)
         rss=np.zeros([self.args["SHIFT"]])
         rss4=np.zeros([self.args["SHIFT"]])
@@ -165,12 +167,13 @@ class Model:
             # 短時間高速離散フーリエ変換
             for i in range(self.args["batch_size"]):
                 n=self.fft(red[i].reshape(-1))
+                rest = np.append(rest, n[:, :, :].copy())
                 res[i]=n[:,:self.args["SHIFT"],:]
-            # scales = np.sqrt(np.var(res[0, :, :, 0], axis=1) + 1e-8)
-            # means = np.mean(res[0, :, :, 0], axis=1)
-            # mms = 1/scales
-            # scl = np.tile(np.reshape(means, (-1, 1)), (1, self.args["SHIFT"]))
-            # res[0, :, :, 0] = np.einsum("ij,i->ij",res[0, :, :, 0]- scl,mms)
+            scales = np.sqrt(np.var(res[0, :, :, 0], axis=1) + 1e-8)
+            means = np.mean(res[0, :, :, 0], axis=1)
+            mms = 1/scales
+            scl = np.tile(np.reshape(means, (-1, 1)), (1, self.args["SHIFT"]))
+            res[0, :, :, 0] = np.einsum("ij,i->ij",res[0, :, :, 0]- scl,mms)
             # filter = -4.75
             # means[means < filter] = -17.0
             # scl = np.tile(np.reshape(means, (-1, 1)), (1, self.args["SHIFT"]))
@@ -188,37 +191,35 @@ class Model:
             # 後処理
 
             a=res2[0].copy()
-            # scales2=np.sqrt(np.var(a[:,:,0],axis=1)+1e-8)
-            # means2 = np.mean(a[:, :, 0], axis=1)
-            # scales_mask = scales.copy()
-            # means_mask = means.copy()
-            # ss=1/(scales2+1e-8)
-            # sm=np.tile((-means2).reshape(-1,1),(1,self.args["NFFT"]))
-            # sm2 = np.tile((means_mask).reshape(-1, 1), (1, self.args["NFFT"]))
-            # c=a[:,:,0]
-            # c = c + sm
-            # c = np.einsum("ij,i->ij", c, ss)
-            # c = np.einsum("ij,i->ij", c, scales_mask)
-            # c=c+sm2
-            # a[:,:,0]=c
-            # # print([np.mean(scales-np.sqrt(np.var(c, axis=1) + 1e-8)),np.mean(means-np.mean(c, axis=1))])
+            scales2=np.sqrt(np.var(a[:,:,0],axis=1)+1e-8)
+            means2 = np.mean(a[:, :, 0], axis=1)
+            scales_mask = scales.copy()
+            means_mask = means.copy()
+            ss=1/(scales2+1e-8)
+            sm=np.tile((-means2).reshape(-1,1),(1,self.args["NFFT"]))
+            sm2 = np.tile((means_mask).reshape(-1, 1), (1, self.args["NFFT"]))
+            c=a[:,:,0]
+            c = c + sm
+            c = np.einsum("ij,i->ij", c, ss)
+            c = np.einsum("ij,i->ij", c, scales_mask)
+            c=c+sm2
+            a[:,:,0]=c
 
             b=res2[0].copy()
-            # means_mask = means.copy()
-            # filter = -4.75
-            # means_mask[means_mask < filter] = -17.0
-            # # fil = np.hamming(self.args["NFFT"])*-7
-            # # ssd2 = np.tile(fil.reshape(1,-1), (means_mask.shape[0], 1))
-            # ssd=np.tile(means_mask.reshape(-1,1),(1,self.args["NFFT"]))
-            # scales_mask = scales.copy()
-            #
-            # print(np.max(scales_mask**2))
-            # c = b[:, :, 0]
-            # c = c + sm
-            # c = np.einsum("ij,i->ij", c, ss)
-            # c = np.einsum("ij,i->ij", c, scales_mask)
-            # c = c + ssd
-            # b[:,:,0] = c
+            means_mask = means.copy()
+            filter = -4.75
+            means_mask[means_mask < filter] = -17.0
+            # fil = np.hamming(self.args["NFFT"])*-7
+            # ssd2 = np.tile(fil.reshape(1,-1), (means_mask.shape[0], 1))
+            ssd=np.tile(means_mask.reshape(-1,1),(1,self.args["NFFT"]))
+            scales_mask = scales.copy()
+
+            c = b[:, :, 0]
+            c = c + sm
+            c = np.einsum("ij,i->ij", c, ss)
+            c = np.einsum("ij,i->ij", c, scales_mask)
+            c = c + ssd
+            b[:,:,0] = c
             b[:,:,0] = np.clip(b[:,:,0], -60.0, 3.0)
             otp3 = np.append(otp3, a[:, :, :].copy())
             otp4 = np.append(otp4, b[:, :, :].copy())
@@ -246,7 +247,7 @@ class Model:
         h = otp2.shape[0] - in_put.shape[1]
         if h > 0:
             otp2 = otp2[h:]
-        return otp.reshape(1,in_put.shape[1],in_put.shape[2]),otp2,otp3,otp4
+        return otp.reshape(1,in_put.shape[1],in_put.shape[2]),otp2,(rest-otp3),otp4
 
     def save(self, checkpoint_dir, step):
         model_name = "wave2wave.model"
@@ -388,18 +389,21 @@ def block3(current,f,chs,depth,reuses,relu):
     ten = tf.layers.conv2d(ten, chs, kernel_size=f, strides=f, padding="VALID",
                            kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), data_format="channels_last",reuse=reuses,name="conv21"+str(depth))
 
-    ten = tf.layers.batch_normalization(ten, axis=3, training=BN_FLAG, trainable=False,
+    ten = tf.layers.batch_normalization(ten, axis=3, training=False, trainable=False,
                                         gamma_initializer=tf.ones_initializer(), reuse=reuses, name="bn11" + str(depth))
-    ten = tf.manip.roll(ten, 1, 2)
     ten = tf.nn.leaky_relu(ten, name="lrelu" + str(depth))
-
-    ten1=deconve_with_ps(ten[:,:,:,:],f[0],2,depth,reuses=reuses)
-    ten2 =  tf.layers.conv2d_transpose(ten[:,:,:,:], 2, kernel_size=f, strides=f, padding="VALID",
+    n=(depth%2)*2-1
+    ten1 = tf.manip.roll(ten, n*4, 2)
+    ten1=deconve_with_ps(ten1[:,:,:,:],f[0],2,depth,reuses=reuses)
+    ten2 = tf.manip.roll(ten, -n*4, 1)
+    ten2 =  tf.layers.conv2d_transpose(ten2[:,:,:,:], 2, kernel_size=f, strides=f, padding="VALID",
                                      kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
                                      data_format="channels_last",reuse=reuses,name="deconv11"+str(depth))
-    ten=ten2+ten1
+
     if relu:
-        ten=tf.nn.relu(ten)
+        ten1 = tf.nn.leaky_relu(ten1)
+        ten2 = tf.nn.relu(ten2)
+    ten=(ten2+ten1)*0.5
     return ten
 def deconve_with_ps(inp,r,otp_shape,depth,f=[1,1],reuses=None):
     chs_r=(r**2)*otp_shape
