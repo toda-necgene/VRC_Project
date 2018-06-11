@@ -8,6 +8,7 @@ path_to_networks = './Network'
 graph_filename = './graph'
 NFFT=128
 SHIFT=64
+TERM=4096
 ac=1
 ab=0
 
@@ -29,9 +30,6 @@ def fft(data):
     c = np.log(np.power(re, 2) + np.power(im, 2) + 1e-24).reshape(time_ruler, -1, 1)
     d = np.arctan2(im, re).reshape(time_ruler, -1, 1)
     spec = np.concatenate((c, d), 2)
-    ac = max([NFFT - spec.shape[0], 0])
-    ab = max([NFFT - spec.shape[1], 0])
-    spec = np.pad(spec, ((ac, 0), (ab, 0), (0, 0)), "constant",constant_values=-32)
     return spec
 
 
@@ -51,21 +49,8 @@ def ifft(datanum_in, red):
     lats = np.roll(fft_data[:, NFFT // 2:], 1, axis=0)
     lats[0, :] = red
     spec = np.reshape(v + lats, (-1))
-    spec=np.append(spec,reds)
     return spec, reds
 
-def filter_fft(inp,means,scales):
-    a = inp.copy()
-    scales2 = np.sqrt(np.var(a[:, :, 0], axis=1) + 1e-8)
-    means2 = np.mean(a[:, :, 0], axis=1)
-    ss = scales / (scales2 + 1e-32)
-    means_mask=means.copy()
-    means_mask[means_mask<-4.5]=-60.0
-    sm = np.tile((means_mask-1.0 - means2).reshape(-1, 1), (1, NFFT))
-    c = a[:, :, 0]
-    c = np.einsum("ij,i->ij",c+ sm , ss)
-    a[:, :, 0] = c
-    return a
 
 net=Model("../setting.json")
 net.build_model()
@@ -74,9 +59,8 @@ p_in = pa.PyAudio()
 py_format = p_in.get_format_from_width(2)
 fs = 16000
 channels = 1
-chunk = 8000
 use_device_index = 0
-data=np.zeros(chunk)
+data=np.zeros(TERM)
 
 #Process Of guess
 def process(data):
@@ -89,7 +73,7 @@ print(inf)
 stream=p_in.open(format = pa.paInt16,
 		channels = 1,
 		rate = fs,
-		frames_per_buffer = chunk,
+		frames_per_buffer = TERM,
 		input = True,
 		output = True)
 rdd=np.zeros(SHIFT)
@@ -101,32 +85,37 @@ def terminate():
     print("Stream Stop")
 la=np.zeros([5])
 atexit.register(terminate)
-las=np.zeros([192])
+las=np.zeros([SHIFT])
 while stream.is_active():
-    inputs = np.frombuffer(stream.read(chunk),dtype=np.int16).reshape(8000).astype(np.float32)/32767.0
+    inputs = np.frombuffer(stream.read(TERM),dtype=np.int16).reshape(TERM).astype(np.float32)/32767.0
     tt = time.time()
-    inp=np.append(las,inputs).reshape(1,8192,1)
-    las = inputs[-192:]
-    res = np.zeros([1, 128, 128, 2])
-    n = fft(inp.reshape(-1))
-    # scales = np.sqrt(np.var(n[ :, :, 0], axis=1) + 1e-8)
+    inp=np.append(las,inputs).reshape(1,TERM+SHIFT,1)
+    las = inputs[-SHIFT:]
+    res = np.zeros([1, TERM//SHIFT, SHIFT, 2])
+    n = fft(inp.reshape(-1))[:,:SHIFT,:]
+    scales = np.sqrt(np.var(n[ :, :, 0], axis=1) + 1e-8)
     means = np.mean(n[:, :, 0], axis=1)
-    scales=np.tile([0.2],(NFFT))
+    # scales=np.var(n[:, :, 0], axis=1)
     mms = 1 / scales
-    scl = np.tile(np.reshape(means, (-1, 1)), (1, NFFT))
+    scl = np.tile(np.reshape(means, (-1, 1)), (1, SHIFT))
     n[ :, :, 0] = np.einsum("ij,i->ij", n[ :, :, 0] - scl, mms)
 
     res[0] = n.astype(np.float32)
     res = process(res)
+    filter=-5.0
+    means[means < filter] = -32.0
+    scales[means < filter] = 0.1
+
     res[0,:, :, 0] = np.einsum("ij,i->ij", res[0,:, :, 0] , scales)
     res[0,:, :, 0]+= scl
 
-    scales2 = np.sqrt(np.var(res[0,:, :, 0], axis=1) + 1e-8)
-    means2 = np.mean(res[0,:, :, 0], axis=1)
-    res,rdd = ifft(res[0],rdd)
-    res = res.reshape(-1)*32767
+    res2 = res.copy()[:, :, ::-1, :]
+    res = np.append(res, res2, axis=2)
 
-    vs=(res[-8000:].astype(np.int16)).tobytes()
+    res,rdd = ifft(res[0],rdd)
+    res = np.clip(res,-0.8,0.8).reshape(-1)*32767
+
+    vs=(res[-TERM:].astype(np.int16)).tobytes()
     la=np.append(la,time.time() - tt)
     la=la[-5:]
     print("CPS:%1.3f" % (np.mean(la)))

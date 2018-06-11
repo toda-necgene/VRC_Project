@@ -17,6 +17,7 @@ rate=16000
 Hz=C1*(2**0)
 now=317.6
 target=563.666
+term=4096
 upidx=target/now
 upidx=1.0
 path="../setting.json"
@@ -26,6 +27,18 @@ if not net.load():
     print(" [x] load failed...")
     exit(-1)
 print(" [*] load success!!")
+def ank(x,y):
+    return  np.mean(np.abs(x-y),axis=0)
+def search(x,y,num=51):
+    x0=x[:,:,:].copy()
+    ys = [y[:,:,:].copy()]
+    for i in range(-(num-1)//2,0):
+        ys.append(np.roll(y[:,:,:],i))
+    for i in range(0, (num - 1) // 2):
+        ys.append(np.roll(y[:,:,:], i))
+    a=np.asarray([ank(x0,c) for c in ys]).reshape(num,NFFT,2)
+    b=np.min(a, axis=0)
+    return b
 def filter_clip(dd,f=1.5):
     dxf=np.maximum(dd,-f)+f+np.minimum(dd,f)-f
     return dxf
@@ -128,6 +141,7 @@ def ifft(data,inp):
     lats = np.roll(fft_data[:,NFFT//2:],1,axis=0)
     lats[0,:]=inp
     spec=np.reshape(v+lats,(-1))
+
     return spec,res
 CHANNELS = 1        #モノラル
 RATE = 16000       #サンプルレート
@@ -173,15 +187,16 @@ times=data_realB.shape[0]//timee
 
 rate=16000
 
-ab=np.zeros([1,128,2])
-abc=np.zeros([1,128,2])
-abb=np.zeros([1,128,2])
-term=8192
+ab=np.zeros([NFFT,2])
+abc=np.zeros([1,NFFT,2])
+abb=np.zeros([1,NFFT,2])
+vvr=np.zeros([1])
 times=data_C.shape[0]//term+1
 if data_C.shape[0]%term==0:
     times-=1
 ttm=time.time()
 resp=np.zeros([NFFT//2])
+print("----------------------------------------------------------------")
 for i in range(times):
     ind=term+SHIFT
     startpos=term*i+data_realB.shape[0]%term
@@ -194,7 +209,6 @@ for i in range(times):
     bss=fft(ddms)
     bss=complex_to_pp(bss)
     abc = np.append(abc, bss, axis=0)
-
 bsd=data_D.astype(np.float32)/32767
 data_D=(bsd*32767).astype(np.int16)
 data_E=data_E.reshape([-1,NFFT,2])
@@ -220,7 +234,7 @@ pl.imshow(abn,aspect="auto")
 pl.clim(-3.141592,3.141592)
 pl.colorbar()
 pl.subplot(6, 1, 1)
-data_E=data_E.reshape([-1,128,2])
+data_E=data_E.reshape([-1,NFFT,2])
 abn = np.transpose(data_E[1:, :, 0], (1, 0))
 pl.imshow(abn, aspect="auto")
 pl.clim(-30, 10)
@@ -249,10 +263,10 @@ ww.writeframes(data_D.tobytes())
 ww.close()
 
 
-L1_1=np.mean(np.abs(abc[1:,:,0]-data_E[:,:,0]).reshape(-1))
-L1_2=np.mean(np.abs(abc[1:,:,1]-data_E[:,:,1]).reshape(-1))
-L1_12=np.mean(np.abs(abc[1:,:,0]-data_F[:,:,0]).reshape(-1))
-L1_22=np.mean(np.abs(abc[1:,:,1]-data_F[:,:,1]).reshape(-1))
+L1_1=np.mean(np.abs(abc[65:,:,:]-data_E[64:,:,:]).reshape(-1))
+L1_2=np.mean(np.abs(abc[65:,:,:]-data_F[64:,:,:]).reshape(-1))
+L1_12=np.mean(search(abc[65:,:,:],data_E[64:,:,:]).reshape(-1))
+L1_22=np.mean(search(abc[65:,:,:],data_F[64:,:,:]).reshape(-1))
 
 print(" [*] Finished!!")
 
@@ -263,29 +277,28 @@ f=glob.glob(net.args["wave_otp_dir"]+"*.wav")
 print(net.args["wave_otp_dir"]+"*.wav")
 tm=os.path.basename(f[-1])
 print(" ______________________________________")
-print("|///      stats %18s ///|" % nowtime())
+print("|///     stats  %18s ///|" % nowtime())
 print("|/// File_name  %18s ///|" % tm[0:19])
-print("|/// BF_norm_Loss_0    %1.4f       ///|" % L1_1)
-print("|/// BF_norm_Loss_1    %1.4f       ///|" % L1_2)
-print("|/// BF_norm_Loss      %1.4f       ///|" % ((L1_2+L1_1)/2))
-print("|/// BF_norm_Loss_02   %1.4f       ///|" % L1_12)
-print("|/// BF_norm_Loss_12   %1.4f       ///|" % L1_22)
-print("|/// BF_norm_Loss2     %1.4f       ///|" % ((L1_22+L1_12)/2))
+print("|/// BF_norm_Loss_str  %1.4f       ///|" % L1_1)
+print("|/// BF_filt_Loss_str  %1.4f       ///|" % L1_2)
+print("|/// BF_norm_Loss_best %1.4f       ///|" % L1_12)
+print("|/// BF_filt_Loss_best %1.4f       ///|" % L1_22)
 print(" ---------------------------------------")
+if not os.path.exists("Z://data/"+str(net.args["name_save"])+"-results.txt"):
+    f=open("Z://data/"+str(net.args["name_save"])+"-results.txt","w")
+    f.write("\n")
+    f.close()
 
-
-with open("C://Users/C0116170/Desktop/results.txt","a") as f:
+with open("Z://data/"+str(net.args["name_save"])+"-results.txt","a") as f:
     f.write("\n")
     f.write(" ______________________________________\n")
     f.write("|///      tats  %18s ///|\n" % nowtime())
     f.write("|/// Model_name %18s ///|\n" % net.args["version"])
     f.write("|/// File_name  %18s ///|\n" % tm[0:19])
-    f.write("|/// BF_norm_Loss_0    %1.4f       ///|\n" % L1_1)
-    f.write("|/// BF_norm_Loss_1    %1.4f       ///|\n" % L1_2)
-    f.write("|/// BF_norm_Loss      %1.4f       ///|\n" % ((L1_2+L1_1)/2))
-    f.write("|/// BF_norm_Loss_02   %1.4f       ///|\n" % L1_12)
-    f.write("|/// BF_norm_Loss_12   %1.4f       ///|\n" % L1_22)
-    f.write("|/// BF_norm_Loss2     %1.4f       ///|\n" % ((L1_22 + L1_12)/2))
+    f.write("|/// BF_norm_Loss_str   %1.4f       ///|\n" % L1_1)
+    f.write("|/// BF_filt_Loss_srt   %1.4f       ///|\n" % L1_2)
+    f.write("|/// BF_norm_Loss_best  %1.4f       ///|\n" % L1_12)
+    f.write("|/// BF_filt_Loss_best  %1.4f       ///|\n" % L1_22)
     f.write(" ---------------------------------------\n")
 
 pl.show()
