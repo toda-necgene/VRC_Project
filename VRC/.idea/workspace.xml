@@ -5,13 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="118ef545-7803-4684-8710-61ccd65f9b8d" name="Default" comment="">
+      <change beforePath="$PROJECT_DIR$/../.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/../.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/run/Converter.py" beforeDir="false" afterPath="$PROJECT_DIR$/run/Converter.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/run/VRC_cpu.py" beforeDir="false" afterPath="$PROJECT_DIR$/run/VRC_cpu.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/setting.json" beforeDir="false" afterPath="$PROJECT_DIR$/setting.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils/VoiceConverter.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/VoiceConverter.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils/model_proto_cpu.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/model_proto_cpu.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils/model_test.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/model_test.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -22,7 +17,7 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="375">
-      <file leaf-file-name="model_proto_cpu.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="model_proto_cpu.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/utils/model_proto_cpu.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="202">
@@ -34,10 +29,28 @@
           </provider>
         </entry>
       </file>
+      <file leaf-file-name="gitignore" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/../gitignore">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="340">
+              <caret line="20" column="10" lean-forward="true" selection-end-line="20" selection-end-column="10" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name=".gitignore" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/../.gitignore">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="412">
+              <caret line="101" column="10" selection-start-line="101" selection-start-column="10" selection-end-line="101" selection-end-column="10" />
+            </state>
+          </provider>
+        </entry>
+      </file>
       <file leaf-file-name="setting.json" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/setting.json">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="140">
+            <state relative-caret-position="578">
               <caret line="34" column="19" selection-start-line="34" selection-start-column="19" selection-end-line="34" selection-end-column="19" />
             </state>
           </provider>
@@ -131,6 +144,7 @@
         <option value="$PROJECT_DIR$/setting.ini" />
         <option value="$PROJECT_DIR$/setting.json" />
         <option value="$PROJECT_DIR$/utils/model_proto_cpu.py" />
+        <option value="$PROJECT_DIR$/../.gitignore" />
       </list>
     </option>
   </component>
@@ -399,20 +413,27 @@
       <option name="project" value="LOCAL" />
       <updated>1528541826265</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="[update] config  update &lt;version 2.2.009&gt;&#10;&#10;[add] 設定ファイルを読みやすく変更">
+      <created>1528693474172</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1528693474172</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="ToolWindowManager">
     <frame x="-7" y="-7" width="1550" height="838" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.2504957" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.2504957" />
       <window_info anchor="bottom" id="TODO" order="6" />
       <window_info anchor="bottom" id="Event Log" order="7" side_tool="true" weight="0.32952183" />
       <window_info anchor="bottom" id="Find" order="1" weight="0.32768363" />
       <window_info anchor="bottom" id="Version Control" order="8" weight="0.32831737" />
       <window_info anchor="bottom" id="Python Console" order="9" weight="0.31907895" />
-      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.33050847" />
+      <window_info anchor="bottom" id="Run" order="2" visible="true" weight="0.33050847" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info anchor="bottom" id="Terminal" order="10" weight="0.34039548" />
       <window_info id="Favorites" order="2" side_tool="true" />
@@ -436,7 +457,8 @@
     <MESSAGE value="[update] training speedup update &lt;version 2.2.005&gt;&#10;&#10;[add] Convertの修正" />
     <MESSAGE value="[update] training speedup update &lt;version 2.2.006&gt;&#10;&#10;[add] Convertの音量処理の変更" />
     <MESSAGE value="[update] training  update &lt;version 2.2.009&gt;&#10;&#10;[add] testに比較用の画像を追加" />
-    <option name="LAST_COMMIT_MESSAGE" value="[update] training  update &lt;version 2.2.009&gt;&#10;&#10;[add] testに比較用の画像を追加" />
+    <MESSAGE value="[update] config  update &lt;version 2.2.009&gt;&#10;&#10;[add] 設定ファイルを読みやすく変更" />
+    <option name="LAST_COMMIT_MESSAGE" value="[update] config  update &lt;version 2.2.009&gt;&#10;&#10;[add] 設定ファイルを読みやすく変更" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -444,8 +466,6 @@
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/train/Model/model2.py" />
-    <entry file="file://$PROJECT_DIR$/VRC_cpu.py" />
     <entry file="file://$PROJECT_DIR$/Converter.py" />
     <entry file="file://$PROJECT_DIR$/VRC.py" />
     <entry file="file://$PROJECT_DIR$/Model/model2.py" />
@@ -654,7 +674,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/setting.json">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="140">
+        <state relative-caret-position="578">
           <caret line="34" column="19" selection-start-line="34" selection-start-column="19" selection-end-line="34" selection-end-column="19" />
         </state>
       </provider>
@@ -666,6 +686,20 @@
           <folding>
             <element signature="e#0#23#0" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../gitignore">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="340">
+          <caret line="20" column="10" lean-forward="true" selection-end-line="20" selection-end-column="10" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../.gitignore">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="412">
+          <caret line="101" column="10" selection-start-line="101" selection-start-column="10" selection-end-line="101" selection-end-column="10" />
         </state>
       </provider>
     </entry>
