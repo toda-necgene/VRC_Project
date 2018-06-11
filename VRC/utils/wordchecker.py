@@ -1,5 +1,7 @@
 import os
 import argparse
+import numpy as np
+import matplotlib.pyplot as plt
 word={ "あ": "a" , "い": "i","う": "u","え" : "e" ,"お" : "o" ,
        "か":"ka" , "き":"ki","く":"ku","け" :"ke" ,"こ" :"ko" ,
        "さ":"sa" , "し":"si","す":"su","せ" :"se" ,"そ" :"so" ,
@@ -70,8 +72,9 @@ if len(args.input_file)!=0:
     ss =" "
     ons=""
     ren=False
+    print(path)
     if os.path.exists(path):
-        f=open(path, "r" ,encoding='utf-8')
+        f=open(path, "r" ,encoding='cp932')
         #文字列の訂正
         ssss=f
         for b in ssss:
@@ -100,20 +103,22 @@ if len(args.input_file)!=0:
                     ren=True
         j=0
         ons_add=[" " for _ in range(len(que))]
-        print("不明な文字が%d見つかりましたj+=1" % (len(que)))
+        print("不明な文字が%d見つかりました" % (len(que)))
         print("読み方を教えてください。※文字でなければ「パス」と入力")
         print("ひとつ前に戻るときは「戻る」と入力")
         while j < len(que)+1:
             if j==len(que):
-                print("以上です。見直し大丈夫ですか？")
+                print("以上です。見直し大丈夫ですか？OKで終了。")
                 ms=str(input())
                 if ms=="OK" :
                     break
+                else :
+                    j=0
             i=que[j][0]
             m=que[j][1]
             print("\n---")
-            print(ss[max(0,i-20):i]+"\""+ss[i:m+1]+"\""+ss[m+1:min(m+20,len(ss))])
-
+            k=""+ss[max(0,i-20):i]+"\""+ss[i:m+1]+"\""+ss[m+1:min(m+20,len(ss))]
+            print(k)
             print("---\n")
             mm=str(input())
             if mm!="パス":
@@ -246,6 +251,8 @@ if len(args.input_file)!=0:
         uu=[]
         uuu=[]
         used=[]
+        lis=[]
+        keys=[]
         i=0
         for i in ld.keys():
             if ld[i]!=0:
@@ -265,6 +272,8 @@ if len(args.input_file)!=0:
                     uuu.append(i)
                 else :
                     uu.append(i)
+            lis.append(ld[i])
+            keys.append(i)
         print("SUCCESS_カウント完了")
         #スタッツ表示
         print("使っていない音素列")
@@ -272,12 +281,16 @@ if len(args.input_file)!=0:
         print("使用率")
         per=len(used)/(len(uu)+len(used))
         print("%f (%d/%d)" % (per,len(used),(len(uu)+len(used))))
-        f=open("result.txt", "wb")
+        f=open("result.txt", "w")
         f.write(sst)
         f.write("\n_________________________________________________________\n")
         f.write(after)
         f.flush()
         f.close()
-
+        ll=np.asarray(lis)
+        print(np.max(lis))
+        print(np.mean(lis))
+        plt.hist(lis,bins=100)
+        plt.show()
     else:
         print("ファイルが存在しません")

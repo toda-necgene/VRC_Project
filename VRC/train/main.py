@@ -4,7 +4,7 @@ debug=False
 if __name__ == '__main__':
     pass
 from .Model.model_proto import Model  as model
-path="./setting.json"
+path="../setting.json"
 if len(sys.argv)!=0 and sys.argv.__contains__("--debug"):
     debug=True
 if len(sys.argv)!=0 and sys.argv.__contains__("--path"):
