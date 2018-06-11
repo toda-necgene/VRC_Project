@@ -20,7 +20,7 @@ target=563.666
 term=4096
 upidx=target/now
 upidx=1.0
-path="../setting.json"
+path="./setting.json"
 net=model(path)
 net.build_model()
 if not net.load():
@@ -150,8 +150,8 @@ RECORD_SECONDS = 5 #録音する時間の長さ
 WAVE_OUTPUT_FILENAME = "./B.wav"
 WAVE_OUTPUT_FILENAME2 = "./B2.wav"
 WAVE_OUTPUT_FILENAME3 = "./B3.wav"
-file_l="../train/Model/datasets/test/label.wav"
-file="../train/Model/datasets/test/test.wav"
+file_l="./train/Model/datasets/test/label.wav"
+file="./train/Model/datasets/test/test.wav"
 
 index=0
 dms=[]
