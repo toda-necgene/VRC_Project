@@ -191,7 +191,7 @@ class Model:
 
         self.d_vars_1=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"discrims")
         self.d_vars_2=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"discrims")
-        val=1-self.noise[0]
+        val=(1-self.noise[0])*100
         #objective-functions of discriminator
         #D-netの目的関数
         self.d_loss_AR = tf.reduce_mean(tf.squared_difference(self.d_judge_AR_logits,tf.fill(self.d_judge_AR_logits.shape,val)))
@@ -212,21 +212,21 @@ class Model:
 
         # Gan lossA
         # DSb=tf.reduce_mean(-tf.log(self.d_judge_BF+1e-32))
-        DSb=tf.reduce_mean(tf.squared_difference(self.d_judge_BF,1))
+        DSb=tf.squared_difference(self.d_judge_BF,100)
         # generator lossA
-        self.g_loss_aB = L1B * self.args["weight_Cycle"]+DSb* self.args["weight_GAN"]
+        self.g_loss_aB = L1B * self.args["weight_Cycle"]+tf.reduce_mean(self.args["weight_GAN"]*DSb)
         # L1 norm lossB
         sa=tf.abs(self.fake_Ab_image[:,:,:,0]-self.input_modelb[:,:,:,0] )
         sb=tf.abs(self.fake_Ab_image[:,:,:,1]-self.input_modelb[:,:,:,1] )
         L1bAAb = sa+sb
         # Gan loss
         # DSA = tf.reduce_mean(-tf.log(self.d_judge_AF+1e-32))
-        DSA = tf.reduce_mean(tf.squared_difference(self.d_judge_AF,1))
+        DSA = tf.squared_difference(self.d_judge_AF,100)
 
         # L1UBA =16.0/(tf.abs(self.fake_bA_image[:,:,:,0]-self.fake_aB_image[:,:,:,0])+1e-8)
         # L1UBA =tf.maximum(L1UBA,tf.ones_like(L1UBA))
         # generator loss
-        self.g_loss_bA = L1bAAb * self.args["weight_Cycle"] + DSA * self.args["weight_GAN"]
+        self.g_loss_bA = L1bAAb * self.args["weight_Cycle"] + tf.reduce_mean( self.args["weight_GAN"]*DSA)
         self.g_loss=self.g_loss_aB+self.g_loss_bA
         #BN_UPDATE
         self.update_ops=tf.get_collection(tf.GraphKeys.UPDATE_OPS)
@@ -700,8 +700,7 @@ def generator(current_outputs,reuse,depth,chs,f,s,rate,type,train):
     else :
         return  generator_unet(current_outputs,reuse,depth,chs,f,s)
 def generator_flatnet(current_outputs,reuse,depth,chs,f,s,ps,train):
-    current=tf.layers.batch_normalization(current_outputs, training=True, trainable=False)
-
+    current=current_outputs
     output_shape=int(current.shape[3])
     #main process
     for i in range(depth):
@@ -709,11 +708,13 @@ def generator_flatnet(current_outputs,reuse,depth,chs,f,s,ps,train):
         if ps==1:
             ten = block2(current, output_shape, f, i, reuse,i!=depth-1)
         elif ps==2 :
-            ten=block3(current,f,chs,i,reuse,i!=depth-1,train)
+            ten=block3(current,f,chs,i,reuse,i!=depth-1,)
         else :
             ten = block(current, output_shape, chs, f, s, i, reuse, i != depth - 1)
-        current = ten + connections
-    current=tf.layers.batch_normalization(current, training=True, trainable=True)
+        if i!=depth-1:
+            current = ten + connections
+        else:
+            current=ten
     return current
 def block(current,output_shape,chs,f,s,depth,reuses,relu):
     ten=current
@@ -750,7 +751,7 @@ def block2(current,output_shape,f,depth,reuses,relu):
     if relu:
         ten=tf.nn.relu(ten)
     return ten
-def block3(current,f,chs,depth,reuses,relu,train):
+def block3(current,f,chs,depth,reuses,shake):
     ten=current
 
     stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(ten.shape[3])))
@@ -762,15 +763,19 @@ def block3(current,f,chs,depth,reuses,relu,train):
 
     ten = tf.nn.leaky_relu(ten,name="lrelu"+str(depth))
     n=(depth%2)*2-1
-    ten1 = tf.manip.roll(ten, n*4, 2)
+
+    ten1 = ten
+    ten2 = ten
+    if shake:
+        ten1 = tf.manip.roll(ten, n*4, 2)
+        ten2 = tf.manip.roll(ten, -n * 4, 1)
     stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(ten.shape[3])))
     ten1=deconve_with_ps(ten1,f[0],2,depth,reuses=reuses)
-    ten2 = tf.manip.roll(ten, -n*4, 1)
     ten2 =  tf.layers.conv2d_transpose(ten2, 2, kernel_size=f, strides=f, padding="VALID",
                                      kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
                                        data_format="channels_last", reuse=reuses, name="deconv11" + str(depth))
 
-    if relu:
+    if shake:
         ten1 = tf.nn.leaky_relu(ten1)
         ten2 = tf.nn.relu(ten2)
     ten=(ten1+ten2)*0.5
