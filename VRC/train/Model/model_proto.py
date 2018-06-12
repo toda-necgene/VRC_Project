@@ -91,9 +91,9 @@ class Model:
                  print(' [x] JSONDecodeError: ', e)
         else:
             print( " [!] Setting file is not found")
-        if len(self.args["D_channels"]) != (self.args['d_depth'] + 1):
-            print(" [!] Channels length and depth+1 must be equal ." + str(len(self.args["D_channels"])) + "vs" + str(self.args['d_depth'] + 1))
-            self.args["D_channels"] = [min([2 ** (i + 1) - 2, 254]) for i in range(self.args['d_depth'] + 1)]
+        if len(self.args["D_channels"]) != (self.args['d_depth']):
+            print(" [!] Channels length and depth+1 must be equal ." + str(len(self.args["D_channels"])) + "vs" + str(self.args['d_depth']))
+            self.args["D_channels"] = [min([2 ** (i + 1) - 2, 254]) for i in range(self.args['d_depth'])]
         self.args["SHIFT"] = self.args["NFFT"]//2
         self.args["name_save"] = self.args["model_name"] + self.args["version"]
         ss=self.args["input_size"]//self.args["SHIFT"]
@@ -194,32 +194,35 @@ class Model:
         val=1-self.noise[0]
         #objective-functions of discriminator
         #D-netの目的関数
-        self.d_loss_AR = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.fill(self.d_judge_AR.shape,val),predictions=self.d_judge_AR))
-        self.d_loss_AF = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.zeros(self.d_judge_AF.shape),predictions=self.d_judge_AF))
-        self.d_loss_BR = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.fill(self.d_judge_BR.shape,val), predictions=self.d_judge_BR))
-        self.d_loss_BF = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.zeros(self.d_judge_BF.shape),predictions=self.d_judge_BF))
+        self.d_loss_AR = tf.reduce_mean(tf.squared_difference(self.d_judge_AR_logits,tf.fill(self.d_judge_AR_logits.shape,val)))
+        self.d_loss_AF = tf.reduce_mean(tf.squared_difference(self.d_judge_AF_logits,tf.zeros_like(self.d_judge_AF_logits)))
+        self.d_loss_BR = tf.reduce_mean(tf.squared_difference(self.d_judge_BR_logits,tf.fill(self.d_judge_BR_logits.shape,val)))
+        self.d_loss_BF = tf.reduce_mean(tf.squared_difference(self.d_judge_BF_logits,tf.zeros_like(self.d_judge_BF_logits)))
 
-        self.d_lossA=(self.d_loss_AR+self.d_loss_AF)
-        self.d_lossB= (self.d_loss_BR + self.d_loss_BF)
+        self.d_lossA=(self.d_loss_AR+self.d_loss_AF)/2.0
+        self.d_lossB= (self.d_loss_BR + self.d_loss_BF)/2.0
         self.d_loss=self.d_lossA+self.d_lossB
         # objective-functions of generator
         # G-netの目的関数
 
         # L1 norm lossA
-        saa=tf.losses.mean_squared_error(labels=self.input_modela[:,:,:,0],predictions =self.fake_Ba_image[:,:,:,0])
-        sbb=tf.losses.mean_squared_error(labels=self.input_modela[:,:,:,1] ,predictions = self.fake_Ba_image[:,:,:,1])
+        saa=tf.abs(self.fake_Ba_image[:,:,:,0]-self.input_modela[:,:,:,0])
+        sbb=tf.abs(self.fake_Ba_image[:,:,:,1]-self.input_modela[:,:,:,1])
         L1B=saa+sbb
 
         # Gan lossA
-        DSb=tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.ones_like(self.d_judge_BF),predictions=self.d_judge_BF))
+        # DSb=tf.reduce_mean(-tf.log(self.d_judge_BF+1e-32))
+        DSb=tf.reduce_mean(tf.squared_difference(self.d_judge_BF,1))
         # generator lossA
         self.g_loss_aB = L1B * self.args["weight_Cycle"]+DSb* self.args["weight_GAN"]
         # L1 norm lossB
-        sa=tf.losses.mean_squared_error(labels=self.input_modelb[:,:,:,0] ,predictions = self.fake_Ab_image[:,:,:,0])
-        sb=tf.losses.mean_squared_error(labels=self.input_modelb[:,:,:,1] , predictions =self.fake_Ab_image[:,:,:,1])
+        sa=tf.abs(self.fake_Ab_image[:,:,:,0]-self.input_modelb[:,:,:,0] )
+        sb=tf.abs(self.fake_Ab_image[:,:,:,1]-self.input_modelb[:,:,:,1] )
         L1bAAb = sa+sb
         # Gan loss
-        DSA = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.ones_like(self.d_judge_AF),predictions=self.d_judge_AF))
+        # DSA = tf.reduce_mean(-tf.log(self.d_judge_AF+1e-32))
+        DSA = tf.reduce_mean(tf.squared_difference(self.d_judge_AF,1))
+
         # L1UBA =16.0/(tf.abs(self.fake_bA_image[:,:,:,0]-self.fake_aB_image[:,:,:,0])+1e-8)
         # L1UBA =tf.maximum(L1UBA,tf.ones_like(L1UBA))
         # generator loss
@@ -298,11 +301,12 @@ class Model:
             for i in range(self.args["batch_size"]):
                 n=self.fft(red[i].reshape(-1)/32767.0)
                 res[i]=n[:,:self.args["SHIFT"]]
-            # scales = np.sqrt(np.var(res[0, :, :, 0], axis=1) + 1e-64)
-            # means = np.mean(res[0, :, :, 0], axis=1)
-            # mms=1/scales
-            # scl = np.tile(np.reshape(means, (-1, 1)), (1, self.args["SHIFT"]))
-            # res[0,:,:,0]=np.einsum("ij,i->ij",res[0,:,:,0]-scl,mms)
+            means = np.mean(res[0, :, :, 0], axis=1)
+            scl = np.tile(np.reshape(means, (-1, 1)), (1, self.args["SHIFT"]))
+            res[0, :, :, 0] = res[0, :, :, 0] - scl
+            scales = np.sqrt(np.var(res[0, :, :, 0], axis=1) + 1e-64)
+            mms=1/scales
+            res[0,:,:,0]=np.einsum("ij,i->ij",res[0,:,:,0],mms)
             # running network
             # ネットワーク実行
             res=res[:,:self.args["SHIFT"],:]
@@ -312,19 +316,13 @@ class Model:
             res[:,:,self.args["SHIFT"]:,1]*=-1
             # resas = np.append(resas, res[0])
             a=res[0].copy()
-            # scales2 = np.sqrt(np.var(a[:, :, 0], axis=1) + 1e-64)
-            # means2 = np.mean(a[:, :, 0], axis=1)
-            # means_mask=means.copy()
-            # means_mask[means_mask<-6.2]=-14.0
-            # ss = 1 / (scales2+1e-8)
-            # sm = np.tile( (-means2).reshape(-1,1), (1, self.args["NFFT"]))
-            # sm2=np.tile( means_mask.reshape(-1,1), (1, self.args["NFFT"]))
-            # c = a[:, :, 0]
-            # c = c + sm
-            # c = np.einsum("ij,i->ij", c, ss)
-            # c = np.einsum("ij,i->ij", c, scales)
-            # c=c+sm2
-            # a[:, :, 0] = c
+            means_mask=means.copy()
+            means_mask[means_mask<-6.2]=-14.0
+            sm2=np.tile( means_mask.reshape(-1,1), (1, self.args["NFFT"]))
+            c = a[:, :, 0]
+            c = np.einsum("ij,i->ij", c, scales)
+            c=c+sm2
+            a[:, :, 0] = c
             res3 = np.append(res3, a).reshape(-1,self.args["NFFT"],2)
 
 
@@ -367,8 +365,14 @@ class Model:
 
 
         self.lod="[glr="+str(lr_g_opt)+",gb="+str(beta_g_opt)+",dlr="+str(lr_d_opt)+",db="+str(beta_d_opt)+"]"
-        g_optim =tf.train.AdamOptimizer(lr_g_opt,beta_g_opt,beta_2_g_opt).minimize(self.g_loss, var_list=self.g_vars_bA)
-        d_optim = tf.train.AdamOptimizer(lr_d_opt,beta_d_opt,beta_2_d_opt).minimize(self.d_loss, var_list=self.d_vars_1)
+
+        lr_g_opt3 = lr_g_opt
+        lr_d_opt3 = lr_g_opt
+
+        g_optim = tf.train.AdamOptimizer(lr_g_opt3, beta_g_opt, beta_2_g_opt).minimize(self.g_loss,
+                                                                                       var_list=self.g_vars_bA)
+        d_optim = tf.train.AdamOptimizer(lr_d_opt3, beta_d_opt, beta_2_d_opt).minimize(self.d_loss,
+                                                                                       var_list=self.d_vars_1)
 
         time_of_epoch=np.zeros(1)
 
@@ -445,7 +449,6 @@ class Model:
                 #テスト
                 out_puts,taken_time_test,im=self.convert(test.reshape(1,-1,1))
                 im = im.reshape([-1, self.args["NFFT"], 2])
-                print(im.shape)
                 otp_im=np.append(np.clip((im[:,:,0]+30)/40,0.0,1.0).reshape([1,-1,self.args["NFFT"],1]),np.clip((im[:,:,1]+3.15)/6.30,0.0,1.0).reshape([1,-1,self.args["NFFT"],1]),axis=3)
                 out_put=out_puts.astype(np.float32)/32767.0
                 # loss of tesing
@@ -523,22 +526,12 @@ class Model:
                     tar=batch_sounds2[:,max(0,start_pos-ipt):start_pos]
                     ts+=time.time()-tm
                     rate = 1.0 - 0.5 ** (epoch // 50 + 1)
-                    # Update D network (1 time)
-                    nos = np.random.rand(self.args["batch_size"]) * self.args["label_noise"]
-                    self.sess.run([d_optim],
-                                  feed_dict={self.input_modelb: tar, self.input_modela: res_t, self.noise: nos,
-                                             self.training: np.asarray([rate])})
-                    # Update G network
                     # G-netの学習
                     self.sess.run([g_optim,self.update_ops],feed_dict={ self.input_modela:res_t,self.input_modelb:tar, self.training:np.asarray([rate])})
                     # Update D network (2times)
                     nos = np.random.rand(self.args["batch_size"]) * self.args["label_noise"]
                     self.sess.run([d_optim],
                                   feed_dict={self.input_modelb: tar, self.input_modela: res_t, self.noise: nos,self.training:np.asarray([rate])})
-                    nos = np.random.rand(self.args["batch_size"]) * self.args["label_noise"]
-                    self.sess.run([d_optim],
-                                  feed_dict={self.input_modelb: tar, self.input_modela: res_t, self.noise: nos,self.training: np.asarray([rate])})
-                    # saving tensorboard
                     # tensorboardの保存
                     if self.args["tensorboard"] and (counter+ti*epoch)%self.args["train_interval"]==0:
                         nos = np.random.rand(self.args["batch_size"]) * 0.0
@@ -589,7 +582,6 @@ class Model:
                 ft=taken_time*(self.args["train_epoch"]-epoch-1)
                 print(" [*] Epoch %5d (iterations: %10d)finished in %.2f (preprocess %.3f) ETA: %3d:%2d:%2.1f" % (epoch,count,taken_time,ts,ft//3600,ft//60%60,ft%60))
                 time_of_epoch=np.append(time_of_epoch,np.asarray([taken_time,ts]))
-
 
         print(" [*] Finished!! in "+ str(np.sum(time_of_epoch[::2])))
 
@@ -693,7 +685,6 @@ def discriminator(inp,reuse,f,s,depth,chs):
             current = tf.nn.leaky_relu(ten)
     print(" [*] bottom shape:"+str(current.shape))
     h4=tf.reshape(current, [current.shape[0],-1])
-    ten=tf.layers.dense(h4,1,name="dence",reuse=reuse)
     return ten,ten
 def generator(current_outputs,reuse,depth,chs,f,s,rate,type,train):
     if type == "flatnet":
@@ -709,7 +700,8 @@ def generator(current_outputs,reuse,depth,chs,f,s,rate,type,train):
     else :
         return  generator_unet(current_outputs,reuse,depth,chs,f,s)
 def generator_flatnet(current_outputs,reuse,depth,chs,f,s,ps,train):
-    current=current_outputs
+    current=tf.layers.batch_normalization(current_outputs, training=True, trainable=False)
+
     output_shape=int(current.shape[3])
     #main process
     for i in range(depth):
@@ -721,6 +713,7 @@ def generator_flatnet(current_outputs,reuse,depth,chs,f,s,ps,train):
         else :
             ten = block(current, output_shape, chs, f, s, i, reuse, i != depth - 1)
         current = ten + connections
+    current=tf.layers.batch_normalization(current, training=True, trainable=True)
     return current
 def block(current,output_shape,chs,f,s,depth,reuses,relu):
     ten=current
@@ -768,15 +761,19 @@ def block3(current,f,chs,depth,reuses,relu,train):
                                         name="bn11" + str(depth))
 
     ten = tf.nn.leaky_relu(ten,name="lrelu"+str(depth))
-    ten = tf.manip.roll(ten, 2, 2)
-    ten1=deconve_with_ps(ten,f[0],2,depth,reuses=reuses)
-    ten2 =  tf.layers.conv2d_transpose(ten, 2, kernel_size=f, strides=f, padding="VALID",
+    n=(depth%2)*2-1
+    ten1 = tf.manip.roll(ten, n*4, 2)
+    stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(ten.shape[3])))
+    ten1=deconve_with_ps(ten1,f[0],2,depth,reuses=reuses)
+    ten2 = tf.manip.roll(ten, -n*4, 1)
+    ten2 =  tf.layers.conv2d_transpose(ten2, 2, kernel_size=f, strides=f, padding="VALID",
                                      kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
                                        data_format="channels_last", reuse=reuses, name="deconv11" + str(depth))
 
-    ten=ten1+ten2
     if relu:
-        ten=tf.nn.relu(ten)
+        ten1 = tf.nn.leaky_relu(ten1)
+        ten2 = tf.nn.relu(ten2)
+    ten=(ten1+ten2)*0.5
     return ten
 def deconve_with_ps(inp,r,otp_shape,depth,f=[1,1],reuses=None):
     chs_r=(r**2)*otp_shape

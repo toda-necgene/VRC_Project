@@ -76,9 +76,9 @@ CHANNELS = 1        #モノラル
 RATE = 16000       #サンプルレート
 CHUNK = 1024     #データ点数
 RECORD_SECONDS = 5 #録音する時間の長さ
-WAVE_INPUT_FILENAME = "../train/Model/datasets/source/02"
+WAVE_INPUT_FILENAME = "../train/Model/datasets/source/01"
 files=glob.glob(WAVE_INPUT_FILENAME+"/*.wav")
-name="4096-128-2/Answer_data"
+name="4096-128/Source_data"
 cnt=0
 for file in files:
     print(file)
@@ -120,9 +120,9 @@ for file in files:
         a=fft(dmn)
         a=complex_to_pp(a[:,:SHIFT])
         c=a[:,:,0]
-        v=1/np.sqrt(np.var(c,axis=1)+1e-36)
-        # a[:, :, 0] -= np.tile(np.mean(c, axis=1).reshape(-1, 1), (1, SHIFT))
-        # a[:, :, 0]= np.einsum("ij,i->ij",a[:, :, 0],v)
+        a[:, :, 0] -= np.tile(np.mean(c, axis=1).reshape(-1, 1), (1, SHIFT))
+        v = 1 / np.sqrt(np.var(c, axis=1) + 1e-36)
+        a[:, :, 0]= np.einsum("ij,i->ij",a[:, :, 0],v)
         bb=np.isnan(np.mean(a))
         if bb:
             print("NAN!!")
