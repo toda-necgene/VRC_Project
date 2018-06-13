@@ -765,9 +765,9 @@ def block3(current,f,chs,depth,reuses,shake):
     ten = tf.nn.leaky_relu(ten,name="lrelu"+str(depth))
     n=(depth%2)*2-1
 
-    pos=tf.constant(np.linspace(0.0,1.0,int(ten.shape[2])),dtype=tf.float32,shape=ten.shape)
-    ten1 = ten+pos
-    ten2 = ten+pos
+    pos=tf.constant(np.linspace(1.0,0.1,int(ten.shape[2])),dtype=tf.float32,shape=ten.shape)
+    ten1 = ten*pos
+    ten2 = ten*pos
     if shake:
         ten1 = tf.manip.roll(ten, n*4, 2)
         ten2 = tf.manip.roll(ten, -n * 4, 1)
