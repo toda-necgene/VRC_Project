@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="BookmarkManager">
-    <bookmark url="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py" line="659" />
+    <bookmark url="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py" line="660" />
   </component>
   <component name="ChangeListManager">
     <list default="true" id="22fa9a76-09a0-4f62-a2d8-6f3210b56f42" name="Default" comment="">
@@ -28,7 +28,7 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="setting.json" pinned="false" current-in-tab="false">
+      <file leaf-file-name="setting.json" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/VRC/setting.json">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="64">
@@ -37,25 +37,13 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="model_proto.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="model_proto.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="309">
-              <caret line="228" column="106" selection-start-line="228" selection-start-column="106" selection-end-line="228" selection-end-column="106" />
+            <state relative-caret-position="208">
+              <caret line="769" selection-start-line="769" selection-end-line="769" />
               <folding>
                 <element signature="e#0#21#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="voice_to_datasets.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="960">
-              <caret line="69" column="52" lean-forward="true" selection-start-line="69" selection-start-column="52" selection-end-line="69" selection-end-column="52" />
-              <folding>
-                <element signature="e#0#14#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -112,8 +100,8 @@
         <option value="$PROJECT_DIR$/VRC/train/main.py" />
         <option value="$PROJECT_DIR$/VRC/utils/model_proto_cpu.py" />
         <option value="$PROJECT_DIR$/VRC/utils/voice_to_datasets.py" />
-        <option value="$PROJECT_DIR$/VRC/setting.json" />
         <option value="$PROJECT_DIR$/VRC/train/Model/model_proto.py" />
+        <option value="$PROJECT_DIR$/VRC/setting.json" />
       </list>
     </option>
   </component>
@@ -601,7 +589,14 @@
       <option name="project" value="LOCAL" />
       <updated>1528778718616</updated>
     </task>
-    <option name="localTasksCounter" value="44" />
+    <task id="LOCAL-00044" summary="[update] output update &lt;version 2.3.172&gt;&#10;&#10;[add] 方式を変更">
+      <created>1528795780686</created>
+      <option name="number" value="00044" />
+      <option name="presentableId" value="LOCAL-00044" />
+      <option name="project" value="LOCAL" />
+      <updated>1528795780686</updated>
+    </task>
+    <option name="localTasksCounter" value="45" />
     <servers />
   </component>
   <component name="TodoView">
@@ -620,7 +615,6 @@
       <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.2496474" />
       <window_info anchor="bottom" id="TODO" order="5" weight="0.3292683" />
       <window_info anchor="bottom" id="Event Log" order="8" sideWeight="0.5014104" side_tool="true" weight="0.2615176" />
-      <window_info anchor="bottom" id="Find" order="1" weight="0.3292683" />
       <window_info anchor="bottom" id="Version Control" order="10" weight="0.3292683" />
       <window_info anchor="bottom" id="Python Console" order="7" weight="0.3292683" />
       <window_info active="true" anchor="bottom" id="Run" order="6" sideWeight="0.49858958" visible="true" weight="0.2615176" />
@@ -630,17 +624,17 @@
       <window_info anchor="bottom" id="Debug" order="2" weight="0.39972898" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="4" weight="0.4" />
+      <window_info anchor="bottom" id="Cvs" order="3" weight="0.25" />
       <window_info anchor="right" id="Commander" order="0" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
+      <window_info anchor="bottom" id="Find" order="1" weight="0.3292683" />
       <window_info anchor="bottom" id="Message" order="0" />
-      <window_info anchor="bottom" id="Cvs" order="3" weight="0.25" />
     </layout>
   </component>
   <component name="VcsContentAnnotationSettings">
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[update] speedup update &lt;version 2.2.005&gt;&#10;&#10;[add] 間が空く問題の修正" />
     <MESSAGE value="[update] speedup update &lt;version 2.2.006&gt;&#10;&#10;[add] L1誤差の修正" />
     <MESSAGE value="[update] アライメント update &lt;version 2.2.008&gt;&#10;&#10;[change]　入力データの正規分布化" />
     <MESSAGE value="[update] data update &lt;version 2.2.010&gt;&#10;&#10;[fix]　入力データの誤りを修正" />
@@ -665,7 +659,8 @@
     <MESSAGE value="[update] shuffle update &lt;version 2.3.109&gt;&#10;&#10;[add] hybrid_unetを追加" />
     <MESSAGE value="[update] setting update &lt;version 2.3.131&gt;&#10;&#10;[add] 設定ファイルに対応" />
     <MESSAGE value="[update] output update &lt;version 2.3.170&gt;&#10;&#10;[add] 出力方式を変更" />
-    <option name="LAST_COMMIT_MESSAGE" value="[update] output update &lt;version 2.3.170&gt;&#10;&#10;[add] 出力方式を変更" />
+    <MESSAGE value="[update] output update &lt;version 2.3.172&gt;&#10;&#10;[add] 方式を変更" />
+    <option name="LAST_COMMIT_MESSAGE" value="[update] output update &lt;version 2.3.172&gt;&#10;&#10;[add] 方式を変更" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -947,12 +942,29 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$USER_HOME$/AppData/Local/Programs/Python/Python36/Lib/site-packages/tensorflow/python/framework/ops.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="173">
+          <caret line="1569" selection-start-line="1569" selection-end-line="1569" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="960">
-          <caret line="69" column="52" lean-forward="true" selection-start-line="69" selection-start-column="52" selection-end-line="69" selection-end-column="52" />
+        <state relative-caret-position="-240">
+          <caret line="69" column="52" selection-start-line="69" selection-start-column="52" selection-end-line="69" selection-end-column="52" />
           <folding>
             <element signature="e#0#14#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="208">
+          <caret line="769" selection-start-line="769" selection-end-line="769" />
+          <folding>
+            <element signature="e#0#21#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -964,27 +976,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$USER_HOME$/AppData/Local/Programs/Python/Python36/Lib/site-packages/tensorflow/python/framework/ops.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="173">
-          <caret line="1569" selection-start-line="1569" selection-end-line="1569" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/VRC/setting.json">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="64">
           <caret line="4" column="26" selection-start-line="4" selection-start-column="26" selection-end-line="4" selection-end-column="26" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="309">
-          <caret line="228" column="106" selection-start-line="228" selection-start-column="106" selection-end-line="228" selection-end-column="106" />
-          <folding>
-            <element signature="e#0#21#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>

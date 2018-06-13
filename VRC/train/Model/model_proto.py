@@ -186,12 +186,9 @@ class Model:
 
         #getting individual variabloes
         #それぞれの変数取得
-        self.g_vars_aB=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"generators")
-        self.g_vars_bA = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, "generators")
-
-        self.d_vars_1=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"discrims")
-        self.d_vars_2=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"discrims")
-        val=(1-self.noise[0])*100
+        self.g_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"generators")
+        self.d_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"discrims")
+        val=(1-self.noise[0])*1
         #objective-functions of discriminator
         #D-netの目的関数
         self.d_loss_AR = tf.reduce_mean(tf.squared_difference(self.d_judge_AR_logits,tf.fill(self.d_judge_AR_logits.shape,val)))
@@ -212,21 +209,25 @@ class Model:
 
         # Gan lossA
         # DSb=tf.reduce_mean(-tf.log(self.d_judge_BF+1e-32))
-        DSb=tf.squared_difference(self.d_judge_BF,100)
+        DSb=tf.squared_difference(self.d_judge_BF,1)
         # generator lossA
         self.g_loss_aB = L1B * self.args["weight_Cycle"]+tf.reduce_mean(self.args["weight_GAN"]*DSb)
+        # self.g_loss_aB =  tf.reduce_mean(self.args["weight_GAN"] * DSb)
+
         # L1 norm lossB
         sa=tf.abs(self.fake_Ab_image[:,:,:,0]-self.input_modelb[:,:,:,0] )
         sb=tf.abs(self.fake_Ab_image[:,:,:,1]-self.input_modelb[:,:,:,1] )
         L1bAAb = sa+sb
         # Gan loss
         # DSA = tf.reduce_mean(-tf.log(self.d_judge_AF+1e-32))
-        DSA = tf.squared_difference(self.d_judge_AF,100)
+        DSA = tf.squared_difference(self.d_judge_AF,1)
 
         # L1UBA =16.0/(tf.abs(self.fake_bA_image[:,:,:,0]-self.fake_aB_image[:,:,:,0])+1e-8)
         # L1UBA =tf.maximum(L1UBA,tf.ones_like(L1UBA))
         # generator loss
         self.g_loss_bA = L1bAAb * self.args["weight_Cycle"] + tf.reduce_mean( self.args["weight_GAN"]*DSA)
+        # self.g_loss_bA =  tf.reduce_mean( self.args["weight_GAN"]*DSA)
+
         self.g_loss=self.g_loss_aB+self.g_loss_bA
         #BN_UPDATE
         self.update_ops=tf.get_collection(tf.GraphKeys.UPDATE_OPS)
@@ -370,9 +371,9 @@ class Model:
         lr_d_opt3 = lr_g_opt
 
         g_optim = tf.train.AdamOptimizer(lr_g_opt3, beta_g_opt, beta_2_g_opt).minimize(self.g_loss,
-                                                                                       var_list=self.g_vars_bA)
+                                                                                       var_list=self.g_vars)
         d_optim = tf.train.AdamOptimizer(lr_d_opt3, beta_d_opt, beta_2_d_opt).minimize(self.d_loss,
-                                                                                       var_list=self.d_vars_1)
+                                                                                       var_list=self.d_vars)
 
         time_of_epoch=np.zeros(1)
 
@@ -528,7 +529,7 @@ class Model:
                     rate = 1.0 - 0.5 ** (epoch // 50 + 1)
                     # G-netの学習
                     self.sess.run([g_optim,self.update_ops],feed_dict={ self.input_modela:res_t,self.input_modelb:tar, self.training:np.asarray([rate])})
-                    # Update D network (2times)
+                    # Update D network (1time)
                     nos = np.random.rand(self.args["batch_size"]) * self.args["label_noise"]
                     self.sess.run([d_optim],
                                   feed_dict={self.input_modelb: tar, self.input_modela: res_t, self.noise: nos,self.training:np.asarray([rate])})
@@ -680,7 +681,7 @@ def discriminator(inp,reuse,f,s,depth,chs):
         stddevs=math.sqrt(2.0/(f[0]*f[1]*int(current.shape[3])))
         ten = tf.layers.conv2d(current, chs[i], kernel_size=f, strides=s, padding="VALID",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), data_format="channels_last",name="disc_"+str(i),reuse=reuse)
-        ten = tf.layers.batch_normalization(ten,axis=3,trainable=False,training=True)
+        # ten = tf.layers.batch_normalization(ten,axis=3,trainable=False,training=True)
         if i!=depth-1:
             current = tf.nn.leaky_relu(ten)
     print(" [*] bottom shape:"+str(current.shape))
@@ -764,8 +765,9 @@ def block3(current,f,chs,depth,reuses,shake):
     ten = tf.nn.leaky_relu(ten,name="lrelu"+str(depth))
     n=(depth%2)*2-1
 
-    ten1 = ten
-    ten2 = ten
+    pos=tf.constant(np.linspace(0.0,1.0,int(ten.shape[2])),dtype=tf.float32,shape=ten.shape)
+    ten1 = ten+pos
+    ten2 = ten+pos
     if shake:
         ten1 = tf.manip.roll(ten, n*4, 2)
         ten2 = tf.manip.roll(ten, -n * 4, 1)
