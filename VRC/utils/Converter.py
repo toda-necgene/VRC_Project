@@ -162,6 +162,7 @@ def block(current, output_shape, chs, f, s, depth):
     ten = leaky_relu(ten)
     ten = batch_norm(ten, depth, 0)
 
+
     ten = deconv2d(ten,depth, output_shape,f,s)
     cct = batch_norm(tf.reshape(ten[:, :, :, 0], [ten.shape[0], ten.shape[1], ten.shape[2], 1]))
     cct2 = tf.reshape(ten[:, :, :, 1], [ten.shape[0], ten.shape[1], ten.shape[2], 1])

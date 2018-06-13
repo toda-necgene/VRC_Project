@@ -147,10 +147,11 @@ CHANNELS = 1        #モノラル
 RATE = 16000       #サンプルレート
 CHUNK = 1024     #データ点数
 RECORD_SECONDS = 5 #録音する時間の長さ
-WAVE_OUTPUT_FILENAME = "./B.wav"
-WAVE_OUTPUT_FILENAME2 = "./B2.wav"
-WAVE_OUTPUT_FILENAME3 = "./B3.wav"
+WAVE_OUTPUT_FILENAME = "./テスト.wav"
+WAVE_OUTPUT_FILENAME2 = "./テスト-2.wav"
+WAVE_OUTPUT_FILENAME3 = "./天才.wav"
 file_l="./train/Model/datasets/test/label.wav"
+file3="./train/Model/datasets/test/B2.wav"
 file="./train/Model/datasets/test/test.wav"
 
 index=0
@@ -163,6 +164,18 @@ while dds != b'':
 dms = b''.join(dms)
 data = np.frombuffer(dms, 'int16')
 data_realA=data.reshape(-1).astype(np.float32)
+
+
+dms=[]
+wf = wave.open(file3, 'rb')
+dds = wf.readframes(CHUNK)
+while dds != b'':
+    dms.append(dds)
+    dds = wf.readframes(CHUNK)
+dms = b''.join(dms)
+data = np.frombuffer(dms, 'int16')
+data_realC=data.reshape(-1).astype(np.float32)
+
 
 dms=[]
 wf = wave.open(file_l, 'rb')
@@ -177,8 +190,11 @@ data_realB=data.reshape(-1)
 tm=time.time()
 # data_realA=filter_pes (data_realA)
 data_realA=data_realA.reshape(1,-1,1)
+data_realC=data_realC.reshape(1,-1,1)
 print(" [*] conversion start!!")
 data_C,data_D,data_E,data_F=net.convert(data_realA/32767.0)
+data_G,_,_,_=net.convert(data_realC/32767.0)
+
 print(" [*] conversion finished in %3.3f!!" % (time.time()-tm))
 data_C=data_C.reshape(-1)
 
@@ -234,15 +250,15 @@ pl.imshow(abn,aspect="auto")
 pl.clim(-3.141592,3.141592)
 pl.colorbar()
 pl.subplot(6, 1, 1)
-data_E=data_E.reshape([-1,NFFT,2])
+data_E=data_E.reshape([-1,NFFT//2   ,2])
 abn = np.transpose(data_E[1:, :, 0], (1, 0))
 pl.imshow(abn, aspect="auto")
-pl.clim(-30, 10)
+pl.clim(0, 10)
 pl.colorbar()
 pl.subplot(6, 1, 2)
 aba = data_E[:, :, 1].transpose((1, 0))
 pl.imshow(aba, aspect="auto")
-pl.clim(-3.141592, 3.141592)
+pl.clim(0, 3.141592)
 pl.colorbar()
 
 FORMAT=pyaudio.paInt16
@@ -262,10 +278,14 @@ ww.setframerate(RATE)
 ww.writeframes(data_D.tobytes())
 ww.close()
 
+ww = wave.open(WAVE_OUTPUT_FILENAME3, 'wb')
+ww.setnchannels(1)
+ww.setsampwidth(p.get_sample_size(FORMAT))
+ww.setframerate(RATE)
+ww.writeframes(data_G.tobytes())
+ww.close()
 
-L1_1=np.mean(np.abs(abc[65:,:,:]-data_E[64:,:,:]).reshape(-1))
 L1_2=np.mean(np.abs(abc[65:,:,:]-data_F[64:,:,:]).reshape(-1))
-L1_12=np.mean(search(abc[65:,:,:],data_E[64:,:,:]).reshape(-1))
 L1_22=np.mean(search(abc[65:,:,:],data_F[64:,:,:]).reshape(-1))
 
 print(" [*] Finished!!")
@@ -279,9 +299,7 @@ tm=os.path.basename(f[-1])
 print(" ______________________________________")
 print("|///     stats  %18s ///|" % nowtime())
 print("|/// File_name  %18s ///|" % tm[0:19])
-print("|/// BF_norm_Loss_str  %1.4f       ///|" % L1_1)
 print("|/// BF_filt_Loss_str  %1.4f       ///|" % L1_2)
-print("|/// BF_norm_Loss_best %1.4f       ///|" % L1_12)
 print("|/// BF_filt_Loss_best %1.4f       ///|" % L1_22)
 print(" ---------------------------------------")
 if not os.path.exists("Z://data/"+str(net.args["name_save"])+"-results.txt"):
@@ -295,9 +313,7 @@ with open("Z://data/"+str(net.args["name_save"])+"-results.txt","a") as f:
     f.write("|///      tats  %18s ///|\n" % nowtime())
     f.write("|/// Model_name %18s ///|\n" % net.args["version"])
     f.write("|/// File_name  %18s ///|\n" % tm[0:19])
-    f.write("|/// BF_norm_Loss_str   %1.4f       ///|\n" % L1_1)
     f.write("|/// BF_filt_Loss_srt   %1.4f       ///|\n" % L1_2)
-    f.write("|/// BF_norm_Loss_best  %1.4f       ///|\n" % L1_12)
     f.write("|/// BF_filt_Loss_best  %1.4f       ///|\n" % L1_22)
     f.write(" ---------------------------------------\n")
 

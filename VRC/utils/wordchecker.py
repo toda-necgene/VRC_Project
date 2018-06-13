@@ -22,7 +22,7 @@ word={ "あ": "a" , "い": "i","う": "u","え" : "e" ,"お" : "o" ,
        "ちゃ":"tHa" , "ちぃ":"tHi","ちゅ":"tHu","ちぇ" :"tHe" ,"ちょ" :"tHo" ,
        "にゃ":"nHa" , "にぃ":"nHi","にゅ":"nHu","にぇ" :"nHe" ,"にょ" :"nHo" ,
        "ひゃ":"hHa" , "ひぃ":"hHi","ひゅ":"hHu","ひぇ" :"hHe" ,"ひょ" :"hHo" ,
-       "ふぁ":"fa" , "ふぃ":"fi","ふ":"hu","ふぇ" :"fe" ,"ふぉ" :"fo" ,
+       "ふぁ":"fa" , "ふぃ":"fi","ふゅ":"hu","ふぇ" :"fe" ,"ふぉ" :"fo" ,
        "みゃ":"mHa" , "みぃ":"mHi","みゅ":"mHu","みぇ" :"mHe" ,"みょ" :"mHo" ,
        "りゃ":"rHa" , "りぃ":"rHi","りゅ":"rHu","りぇ" :"rHe" ,"りょ" :"rHo" ,
        "ぎゃ":"gHa" , "ぎぃ":"gHi","ぎゅ":"gHu","ぎぇ" :"gHe" ,"ぎょ" :"gHo" ,
@@ -50,7 +50,7 @@ word={ "あ": "a" , "い": "i","う": "u","え" : "e" ,"お" : "o" ,
        "チャ":"tHa" , "チィ":"tHi","チュ":"tHu","チェ" :"tHe" ,"チョ" :"tHo" ,
        "ニャ":"nHa" , "ニィ":"nHi","ニュ":"nHu","ニェ" :"nHe" ,"ニョ" :"nHo" ,
        "ヒャ":"hHa" , "ヒィ":"hHi","ヒュ":"hHu","ヒェ" :"hHe" ,"ヒョ" :"hHo" ,
-       "ファ":"fa" , "フィ":"fi","フ":"hu","ふぇ" :"fe" ,"フォ" :"fo" ,
+       "ファ":"fa" , "フィ":"fi","フュ":"fu","ふぇ" :"fe" ,"フォ" :"fo" ,
        "ミャ":"mHa" , "ミィ":"mHi","ミュ":"mHu","ミェ" :"mHe" ,"ミョ" :"mHo" ,
        "リャ":"rHa" , "リィ":"rHi","ヂュ":"rHu","リェ" :"rHe" ,"リョ" :"rHo" ,
        "ギャ":"gHa" , "ギィ":"gHi","ギュ":"gHu","ギェ" :"gHe" ,"ギョ" :"gHo" ,
@@ -74,7 +74,7 @@ if len(args.input_file)!=0:
     ren=False
     print(path)
     if os.path.exists(path):
-        f=open(path, "r" ,encoding='cp932')
+        f=open(path, "r" ,encoding='utf-8')
         #文字列の訂正
         ssss=f
         for b in ssss:
@@ -103,49 +103,50 @@ if len(args.input_file)!=0:
                     ren=True
         j=0
         ons_add=[" " for _ in range(len(que))]
-        print("不明な文字が%d見つかりました" % (len(que)))
-        print("読み方を教えてください。※文字でなければ「パス」と入力")
-        print("ひとつ前に戻るときは「戻る」と入力")
-        while j < len(que)+1:
-            if j==len(que):
-                print("以上です。見直し大丈夫ですか？OKで終了。")
-                ms=str(input())
-                if ms=="OK" :
-                    break
-                else :
-                    j=0
-            i=que[j][0]
-            m=que[j][1]
-            print("\n---")
-            k=""+ss[max(0,i-20):i]+"\""+ss[i:m+1]+"\""+ss[m+1:min(m+20,len(ss))]
-            print(k)
-            print("---\n")
-            mm=str(input())
-            if mm!="パス":
-                w=0
-                ons2=""
-                c=True
-                while w<len(mm):
-                    if (w+1)<len(mm) and word.__contains__(mm[w:w+2]):
-                        ons2+=(word[mm[w:w+2]])
-                        sst+=mm[w:w+2]
-                        w+=2
-                    elif word.__contains__(mm[w]):
-                        ons2+=(word[mm[w]])
-                        sst+=mm[w:w+2]
-                        w+=1
-                    else:
-                        print("不明な文字があります。やり直します。")
-                        c=False
+        if len(que)!=0:
+            print("不明な文字が%d見つかりました" % (len(que)))
+            print("読み方を教えてください。※文字でなければ「パス」と入力")
+            print("ひとつ前に戻るときは「戻る」と入力")
+            while j < len(que)+1:
+                if j==len(que):
+                    print("以上です。見直し大丈夫ですか？OKで終了。")
+                    ms=str(input())
+                    if ms=="OK" :
                         break
-                if c:
-                    ons_add[j]=ons2
-                    j+=1
-            elif mm!="戻る":
-                if j!=0:
-                    j-=1
-            else:
-                ons+="?"
+                    else :
+                        j=0
+                i=que[j][0]
+                m=que[j][1]
+                print("\n---")
+                k=""+ss[max(0,i-20):i]+"\""+ss[i:m+1]+"\""+ss[m+1:min(m+20,len(ss))]
+                print(k)
+                print("---\n")
+                mm=str(input())
+                if mm!="パス":
+                    w=0
+                    ons2=""
+                    c=True
+                    while w<len(mm):
+                        if (w+1)<len(mm) and word.__contains__(mm[w:w+2]):
+                            ons2+=(word[mm[w:w+2]])
+                            sst+=mm[w:w+2]
+                            w+=2
+                        elif word.__contains__(mm[w]):
+                            ons2+=(word[mm[w]])
+                            sst+=mm[w:w+2]
+                            w+=1
+                        else:
+                            print("不明な文字があります。やり直します。")
+                            c=False
+                            break
+                    if c:
+                        ons_add[j]=ons2
+                        j+=1
+                elif mm!="戻る":
+                    if j!=0:
+                        j-=1
+                else:
+                    ons+="?"
         cn=0
         for i in que:
             ons=ons[0:i]+ons_add[cn]+ons[i+1:-1]
@@ -227,6 +228,8 @@ if len(args.input_file)!=0:
         ld[bs]=0
         bs="?f"
         ld[bs]=0
+        bs="Qf"
+        ld[bs]=0
         print("SUCCESS_２連音素配列の生成に成功")
         #文字列を音素に変換
         i=0
@@ -266,9 +269,9 @@ if len(args.input_file)!=0:
                     uuu.append(i)
                 elif i.startswith("dH"):
                     uuu.append(i)
-                elif i==("di")or i==("ji") or i==("wu")or i==("gHe")or i==("mHe")or i==("rHe"):
+                elif i==("di")or i==("ji") or i==("wu")or i==("gHe")or i==("mHe")or i==("rHe") or i==("pHe")or i==("kHe")or i==("bHe")or i==("je"):
                     uuu.append(i)
-                elif i==("?Q") or i==("?N") or i==("Q?") or i==("Qn") :
+                elif i==("?Q") or i==("?N") or i==("Q?") or i==("Qn") or i==("Qw"):
                     uuu.append(i)
                 else :
                     uu.append(i)
@@ -288,9 +291,14 @@ if len(args.input_file)!=0:
         f.flush()
         f.close()
         ll=np.asarray(lis)
-        print(np.max(lis))
-        print(np.mean(lis))
+        ks=np.asarray(keys)
+        print("%d(%d) sample:%s" % ( np.max(ll),len(ll[ll==np.max(lis)]),ks[ll==np.max(lis)]))
+
+        print(np.mean(ll))
+        plt.subplot(2,1,1)
         plt.hist(lis,bins=100)
+        plt.subplot(2, 1, 2)
+        plt.plot(ll)
         plt.show()
     else:
         print("ファイルが存在しません")
