@@ -17,19 +17,19 @@ word={ "あ": "a" , "い": "i","う": "u","え" : "e" ,"お" : "o" ,
        "ぱ":"pa" , "ぴ":"pi","ぷ":"pu","ぺ" :"pe" ,"ぽ" :"po" ,
        "や":"ja" , "ぃ":"ii","ゆ":"ju","いぇ" :"je" ,"よ" :"jo" ,
        "わ":"wa" , "うぃ":"wi","ぅ":"wu","うぇ" :"we" ,"を" :"wo" ,
-       "きゃ":"kHa" , "きぃ":"kHi","きゅ":"kHu","きぇ" :"kHe" ,"きょ" :"kHo" ,
-       "しゃ":"sHa" , "しぃ":"sHi","しゅ":"sHu","しぇ" :"sHe" ,"しょ" :"sHo" ,
-       "ちゃ":"tHa" , "ちぃ":"tHi","ちゅ":"tHu","ちぇ" :"tHe" ,"ちょ" :"tHo" ,
-       "にゃ":"nHa" , "にぃ":"nHi","にゅ":"nHu","にぇ" :"nHe" ,"にょ" :"nHo" ,
-       "ひゃ":"hHa" , "ひぃ":"hHi","ひゅ":"hHu","ひぇ" :"hHe" ,"ひょ" :"hHo" ,
+       "きゃ":"kRa" , "きぃ":"kRi","きゅ":"kRu","きぇ" :"kRe" ,"きょ" :"kRo" ,
+       "しゃ":"sRa" , "しぃ":"sRi","しゅ":"sRu","しぇ" :"sRe" ,"しょ" :"sRo" ,
+       "ちゃ":"tRa" , "ちぃ":"tRi","ちゅ":"tRu","ちぇ" :"tRe" ,"ちょ" :"tRo" ,
+       "にゃ":"nRa" , "にぃ":"nRi","にゅ":"nRu","にぇ" :"nRe" ,"にょ" :"nRo" ,
+       "ひゃ":"hRa" , "ひぃ":"hRi","ひゅ":"hRu","ひぇ" :"hRe" ,"ひょ" :"hRo" ,
        "ふぁ":"fa" , "ふぃ":"fi","ふゅ":"hu","ふぇ" :"fe" ,"ふぉ" :"fo" ,
-       "みゃ":"mHa" , "みぃ":"mHi","みゅ":"mHu","みぇ" :"mHe" ,"みょ" :"mHo" ,
-       "りゃ":"rHa" , "りぃ":"rHi","りゅ":"rHu","りぇ" :"rHe" ,"りょ" :"rHo" ,
-       "ぎゃ":"gHa" , "ぎぃ":"gHi","ぎゅ":"gHu","ぎぇ" :"gHe" ,"ぎょ" :"gHo" ,
-       "じゃ":"zHa" , "じぃ":"zHi","じゅ":"zHu","じぇ" :"zHe" ,"じょ" :"zHo" ,
-       "ぢゃ":"dHa" , "ぢぃ":"dHi","ぢゅ":"dHu","ぢぇ" :"dHe" ,"ぢょ" :"dHo" ,
-       "びゃ":"bHa" , "びぃ":"bHi","びゅ":"bHu","びぇ" :"bHe" ,"びょ" :"bHo" ,
-       "ぴゃ":"pHa" , "ぴぃ":"pHi","ぴゅ":"pHu","ぴぇ" :"pHe" ,"ぴょ" :"pHo" ,
+       "みゃ":"mRa" , "みぃ":"mRi","みゅ":"mRu","みぇ" :"mRe" ,"みょ" :"mRo" ,
+       "りゃ":"rRa" , "りぃ":"rRi","りゅ":"rRu","りぇ" :"rRe" ,"りょ" :"rRo" ,
+       "ぎゃ":"gRa" , "ぎぃ":"gRi","ぎゅ":"gRu","ぎぇ" :"gRe" ,"ぎょ" :"gRo" ,
+       "じゃ":"zRa" , "じぃ":"zRi","じゅ":"zRu","じぇ" :"zRe" ,"じょ" :"zRo" ,
+       "ぢゃ":"dRa" , "ぢぃ":"dRi","ぢゅ":"dRu","ぢぇ" :"dRe" ,"ぢょ" :"dRo" ,
+       "びゃ":"bRa" , "びぃ":"bRi","びゅ":"bRu","びぇ" :"bRe" ,"びょ" :"bRo" ,
+       "ぴゃ":"pRa" , "ぴぃ":"pRi","ぴゅ":"pRu","ぴぇ" :"pRe" ,"ぴょ" :"pRo" ,
        "ア": "a" , "イ": "i","ウ": "u","エ" : "e" ,"オ" : "o" ,
        "カ":"ka" , "キ":"ki","ク":"ku","ケ" :"ke" ,"コ" :"ko" ,
        "サ":"sa" , "シ":"si","ス":"su","セ" :"se" ,"ソ" :"so" ,
@@ -45,20 +45,20 @@ word={ "あ": "a" , "い": "i","う": "u","え" : "e" ,"お" : "o" ,
        "パ":"pa" , "ピ":"pi","プ":"pu","ペ" :"pe" ,"ポ" :"po" ,
        "ヤ":"ja" , "ィ":"ji","ユ":"ju","イェ" :"je" ,"ヨ" :"jo" ,
        "ワ":"wa" , "ウィ":"wi","ッ":"wu","ウェ" :"we" ,"ヲ" :"wo" ,
-       "キャ":"kHa" , "キィ":"kHi","キュ":"kHu","キェ" :"kHe" ,"キョ" :"kHo" ,
-       "シャ":"sHa" , "シィ":"sHi","シュ":"sHu","シェ" :"sHe" ,"ショ" :"sHo" ,
-       "チャ":"tHa" , "チィ":"tHi","チュ":"tHu","チェ" :"tHe" ,"チョ" :"tHo" ,
-       "ニャ":"nHa" , "ニィ":"nHi","ニュ":"nHu","ニェ" :"nHe" ,"ニョ" :"nHo" ,
-       "ヒャ":"hHa" , "ヒィ":"hHi","ヒュ":"hHu","ヒェ" :"hHe" ,"ヒョ" :"hHo" ,
+       "キャ":"kRa" , "キィ":"kRi","キュ":"kRu","キェ" :"kRe" ,"キョ" :"kRo" ,
+       "シャ":"sRa" , "シィ":"sRi","シュ":"sRu","シェ" :"sRe" ,"ショ" :"sRo" ,
+       "チャ":"tRa" , "チィ":"tRi","チュ":"tRu","チェ" :"tRe" ,"チョ" :"tRo" ,
+       "ニャ":"nRa" , "ニィ":"nRi","ニュ":"nRu","ニェ" :"nRe" ,"ニョ" :"nRo" ,
+       "ヒャ":"hRa" , "ヒィ":"hRRi","ヒュ":"hRu","ヒェ" :"hRe" ,"ヒョ" :"hRo" ,
        "ファ":"fa" , "フィ":"fi","フュ":"fu","ふぇ" :"fe" ,"フォ" :"fo" ,
-       "ミャ":"mHa" , "ミィ":"mHi","ミュ":"mHu","ミェ" :"mHe" ,"ミョ" :"mHo" ,
-       "リャ":"rHa" , "リィ":"rHi","ヂュ":"rHu","リェ" :"rHe" ,"リョ" :"rHo" ,
-       "ギャ":"gHa" , "ギィ":"gHi","ギュ":"gHu","ギェ" :"gHe" ,"ギョ" :"gHo" ,
-       "ジャ":"zHa" , "ジィ":"zHi","ジュ":"zHu","ジェ" :"zHe" ,"ジョ" :"zHo" ,
-       "ヂャ":"dHa" , "ヂィ":"dHi","ヂュ":"dHu","ヂェ" :"dHe" ,"ヂョ" :"dHo" ,
-       "ビャ":"bHa" , "ビィ":"bHi","ビュ":"bHu","ビェ" :"bHe" ,"ビョ" :"bHo" ,
-       "ピャ":"pHa" , "ピィ":"pHi","ピュ":"pHu","ピェ" :"pHe" ,"ピョ" :"pHo" ,
-       "ッ":"Q","ン":"N","っ":"Q","ん":"N","\n":"?","、":"?","。":"?"," ":"?","　":"?"}
+       "ミャ":"mRa" , "ミィ":"mRi","ミュ":"mRu","ミェ" :"mRe" ,"ミョ" :"mRo" ,
+       "リャ":"rRa" , "リィ":"rRi","ヂュ":"rRu","リェ" :"rRe" ,"リョ" :"rRo" ,
+       "ギャ":"gRa" , "ギィ":"gRi","ギュ":"gRu","ギェ" :"gRe" ,"ギョ" :"gRo" ,
+       "ジャ":"zRa" , "ジィ":"zRi","ジュ":"zRu","ジェ" :"zRe" ,"ジョ" :"zRo" ,
+       "ヂャ":"dRa" , "ヂィ":"dRi","ヂュ":"dRu","ヂェ" :"dRe" ,"ヂョ" :"dRo" ,
+       "ビャ":"bRa" , "ビィ":"bRi","ビュ":"bRu","ビェ" :"bRe" ,"ビョ" :"bRo" ,
+       "ピャ":"pRa" , "ピィ":"pRi","ピュ":"pRu","ピェ" :"pRe" ,"ピョ" :"pRo" ,
+       "ッ":"H","ー":"Q","ン":"N","っ":"Q","ん":"N","\n":"?","、":"?","。":"?"," ":"?","　":"?","":"?"}
 bo=["a","i","u","e","o"]
 si=["k","s","t","n","h","m","r","g","z","d","b","p"]
 hl=["w","j"]
@@ -82,7 +82,7 @@ if len(args.input_file)!=0:
         i=0
         f.close()
         que=[]
-        while i<len(ss):
+        while i<len(ss) :
             if (i+1)<len(ss) and word.__contains__(ss[i:i+2]):
                 ons+=(word[ss[i:i+2]])
                 sst+=ss[i:i+2]
@@ -94,7 +94,9 @@ if len(args.input_file)!=0:
                 i+=1
                 ren=False
             else:
-                if ren:
+                if ren == b"\xef\xbb\xbf".decode("utf-8"):
+                    pass
+                elif ren:
                     que[-1][1]=i
                     i+=1
                 else:
@@ -120,6 +122,7 @@ if len(args.input_file)!=0:
                 print("\n---")
                 k=""+ss[max(0,i-20):i]+"\""+ss[i:m+1]+"\""+ss[m+1:min(m+20,len(ss))]
                 print(k)
+                print(ss[i:m+1].encode('utf-8'))
                 print("---\n")
                 mm=str(input())
                 if mm!="パス":
@@ -163,11 +166,11 @@ if len(args.input_file)!=0:
             for i in si:
                 bs=j+i
                 ld[bs]=0
-                bs=j+i+"H"
+                bs=j+i+"R"
                 ld[bs]=0
                 bs=i+j
                 ld[bs]=0
-                bs=i+"H"+j
+                bs=i+"R"+j
                 ld[bs]=0
             for i in hl:
                 bs=j+i
@@ -182,6 +185,10 @@ if len(args.input_file)!=0:
             ld[bs]=0
             bs="Q"+j
             ld[bs]=0
+            bs=j+"H"
+            ld[bs]=0
+            bs="H"+j
+            ld[bs]=0
             bs=j+"?"
             ld[bs]=0
             bs="?"+j
@@ -192,6 +199,8 @@ if len(args.input_file)!=0:
             bs="Q"+i
             ld[bs]=0
             bs="?"+i
+            ld[bs]=0
+            bs="H"+i
             ld[bs]=0
         for i in hl:
             bs="N"+i
@@ -245,7 +254,7 @@ if len(args.input_file)!=0:
             elif ons[i:i+2]=="??":
                 i+=1
             else:
-                if ons[i:i+2].startswith("H"):
+                if ons[i:i+2].startswith("R"):
                     i+=1
                 else:
                     print(ons[i:i+2])
@@ -269,7 +278,7 @@ if len(args.input_file)!=0:
                     uuu.append(i)
                 elif i.startswith("dH"):
                     uuu.append(i)
-                elif i==("di")or i==("ji") or i==("wu")or i==("gHe")or i==("mHe")or i==("rHe") or i==("pHe")or i==("kHe")or i==("bHe")or i==("je"):
+                elif i==("di")or i==("ji") or i==("wu")or i==("gRe")or i==("mRe")or i==("rRe") or i==("pRe")or i==("kRe")or i==("bRe")or i==("je"):
                     uuu.append(i)
                 elif i==("?Q") or i==("?N") or i==("Q?") or i==("Qn") or i==("Qw"):
                     uuu.append(i)
@@ -285,9 +294,8 @@ if len(args.input_file)!=0:
         per=len(used)/(len(uu)+len(used))
         print("%f (%d/%d)" % (per,len(used),(len(uu)+len(used))))
         f=open("result.txt", "w")
-        f.write(sst)
-        f.write("\n_________________________________________________________\n")
-        f.write(after)
+        for r in ons:
+            f.writelines(r)
         f.flush()
         f.close()
         ll=np.asarray(lis)

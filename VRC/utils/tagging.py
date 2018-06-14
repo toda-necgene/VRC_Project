@@ -3,7 +3,6 @@ import numpy as np
 import wave
 import time
 import glob
-import cupy
 import os
 import matplotlib.pyplot as plt
 NFFT=128
@@ -23,7 +22,7 @@ upidx=target/now
 p=pyaudio.PyAudio()
 stream=p.open(format=pyaudio.paInt16,channels=1,rate=16000,output=True)
 print(stream.is_active())
-lss={"a":0,"i":1,"u":2,"e":3,"o":4,"k":5,"s":6,"t":7,"n":8,"h":9,"m":10,"y":11,"r":12,"w":13,"g":14,"z":15,"d":16,"b":17,"p":18,"H":19,"Q":20,"N":21,"f":22,"?":23}
+lss={"a":0,"i":1,"u":2,"e":3,"o":4,"k":5,"s":6,"t":7,"n":8,"h":9,"m":10,"y":11,"r":12,"w":13,"g":14,"z":15,"d":16,"b":17,"p":18,"H":19,"Q":20,"N":21,"f":22,"R":23,"?":24}
 def fft(data):
     time_ruler=data.shape[0]//SHIFT
     if data.shape[0]%SHIFT==0:
@@ -35,9 +34,7 @@ def fft(data):
         frame=data[pos:pos+NFFT]
         wined[fft_index]=frame*window
         pos += NFFT // 2
-    wined=cupy.asarray(wined, dtype=cupy.float64)
-    fft_rs=cupy.fft.fft(wined,n=NFFT,axis=-1)
-    fft_rs=cupy.asnumpy(fft_rs)
+    fft_rs=np.fft.fft(wined,n=NFFT,axis=-1)
     return fft_rs.reshape(time_ruler, -1)
 def scale(inputs,len_wave):
     x=np.linspace(0.0,inputs.shape[0]-1,len_wave)
@@ -90,7 +87,7 @@ WAVE_INPUT_FILENAME = "../train/Model/datasets/source/02/"
 files=glob.glob(WAVE_INPUT_FILENAME+"*.wav")
 filestri=glob.glob(WAVE_INPUT_FILENAME+"*.str")
 stri=""
-name="answerdata"
+name="Answer_data"
 cnt=0
 for file in files:
     print(file)
@@ -152,31 +149,28 @@ for file in files:
             stridatra=np.zeros([length-cutoff,24],dtype=np.float32)
             flag=True
             tts=0
-            segs=seg
+            segs=seg-1
             while True:
                 print("play"+str(startpos))
                 play(dddd)
-                print("言葉を音素で入力 %d/%d"%(i+1,times))
+                print("きこえた言葉をアルファベットで入力 %d/%d"%(i+1,times))
+                print(stri[max(seg-1,0):min(seg+5,len(stri))])
                 ins=input().encode("utf-8").decode("utf-8")
+                deins=""
                 if ins=="":
                     flag=False
                 for n in ins:
-                    if n in lss  :
-                        seg+=1
-                    elif n == "?":
-                        pass
+                    if n=="?":
+                        deins += "?"
+                    elif n in lss:
+                        deins += n
+                        segs+=1
                     else:
-                        if not n in lss:
-                            print("存在しない文字です")
-                        else:
-                            print(stri[max(seg-2,0):min(seg+2,len(stri))])
-                            print(ins[seg-segs],seg,ins)
                         flag=False
-                        seg=segs
                 if flag:
-                    pss=(length-cutoff)//(len(ins)+1)
+                    pss=(length-cutoff)//(len(deins)+1)
                     r=1
-                    for n in ins:
+                    for n in deins:
                         ff=lss[n]
                         mainpos=pss*r
                         ts=np.linspace(0.1,1.0,ttm_pp)
@@ -194,7 +188,10 @@ for file in files:
                         if e>=stridatra.shape[0]:
                             e=stridatra.shape[0]
                             se=stridatra.shape[0]-e
-                        stridatra[s:e,ff]+=filt[sk:se]
+                        if ff!=24:
+                            stridatra[s:e,ff]+=filt[sk:se]
+                        else:
+                            stridatra[s:e, :]=0.0
                         r+=1
                     seg+=len(ins)
                     break

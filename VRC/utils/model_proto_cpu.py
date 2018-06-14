@@ -116,7 +116,7 @@ class Model:
         #G-net（生成側）の作成
         with tf.variable_scope("generators"):
             with tf.variable_scope("generator_1"):
-                self.fake_B_image =generator(tf.reshape(self.input_model,self.input_size_model), reuse=False,chs=self.args["G_channel"],depth=self.args["depth"],f=self.args["filter_g"],s=self.args["strides_g"],type=self.args["architect"],rate=1.0)
+                self.fake_B_image =generator(tf.reshape(self.input_model,self.input_size_model), reuse=False,chs=self.args["G_channel"],depth=self.args["depth"],f=self.args["filter_g"],s=self.args["strides_g"],type=self.args["architect"],rate=1.0,name="1")
             self.noise = tf.placeholder(tf.float32, [self.args["batch_size"]], "inputs_Noise")
 
         #getting individual variabloes
@@ -312,37 +312,37 @@ class Model:
         return spec,reds
 
 
-def generator(current_outputs,reuse,depth,chs,f,s,rate,type):
+def generator(current_outputs,reuse,depth,chs,f,s,rate,type,name):
     if type == "flatnet":
-        return generator_flatnet(current_outputs,reuse,depth,chs,f,s,0)
+        return generator_flatnet(current_outputs,reuse,depth,chs,f,s,0,name)
     elif type == "ps_flatnet":
-        return generator_flatnet(current_outputs, reuse, depth, chs, f, s, 1)
+        return generator_flatnet(current_outputs, reuse, depth, chs, f, s, 1,name)
     elif type == "hybrid_flatnet":
-        return generator_flatnet(current_outputs, reuse, depth, chs, f, s, 2)
+        return generator_flatnet(current_outputs, reuse, depth, chs, f, s, 2,name)
     elif type == "ps_unet":
         return generator_unet(current_outputs, reuse, depth, chs, f, s, 1)
     elif type == "hybrid_unet":
         return generator_unet(current_outputs, reuse, depth, chs, f, s, 2)
     else :
         return  generator_unet(current_outputs,reuse,depth,chs,f,s)
-def generator_flatnet(current_outputs,reuse,depth,chs,f,s,ps):
+def generator_flatnet(current_outputs,reuse,depth,chs,f,s,ps,name):
     current=current_outputs
     output_shape=int(current.shape[3])
     #main process
     for i in range(depth):
         connections = current
         if ps==1:
-            ten = block2(current, output_shape, f, i, reuse,i!=depth-1)
+            ten = block2(current, output_shape, f, i, reuse,i!=depth-1,name)
         elif ps==2 :
-            ten=block3(current,f,chs,depth=i,reuses=reuse,shake=i!=depth-1)
+            ten=block3(current,f,chs,depth=i,reuses=reuse,shake=i!=depth-1,name)
         else :
-            ten = block(current, output_shape, chs, f, s, i, reuse, i != depth - 1)
+            ten = block(current, output_shape, chs, f, s, i, reuse, i != depth - 1,name)
         if i!=depth-1:
             current = ten + connections
         else:
             current=ten
     return current
-def block(current,output_shape,chs,f,s,depth,reuses,relu):
+def block(current,output_shape,chs,f,s,depth,reuses,relu,name):
     ten=current
 
     stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(ten.shape[3])))
@@ -361,7 +361,7 @@ def block(current,output_shape,chs,f,s,depth,reuses,relu):
     if relu:
         ten=tf.nn.relu(ten)
     return ten
-def block2(current,output_shape,f,depth,reuses,relu):
+def block2(current,output_shape,f,depth,reuses,relu,name):
     ten=current
 
     stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(ten.shape[3])))
@@ -380,14 +380,14 @@ def block2(current,output_shape,f,depth,reuses,relu):
     if relu:
         ten=tf.nn.relu(ten)
     return ten
-def block3(current,f,chs,depth,reuses,shake):
+def block3(current,f,chs,depth,reuses,shake,name):
     ten=current
 
     stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(ten.shape[3])))
     ten = tf.layers.conv2d(ten, chs, kernel_size=f, strides=f, padding="VALID",
                            kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), data_format="channels_last",reuse=reuses,name="conv21"+str(depth))
 
-    ten = tf.contrib.layers.instance_norm(ten)
+    ten = tf.contrib.layers.instance_norm(ten,reuse=tf.AUTO_REUSE,scope="g_net"+name)
 
     ten = tf.nn.leaky_relu(ten,name="lrelu"+str(depth))
     n=(depth%2)*2-1
