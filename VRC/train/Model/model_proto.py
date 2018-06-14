@@ -98,6 +98,11 @@ class Model:
         self.args["name_save"] = self.args["model_name"] + self.args["version"]
         ss=self.args["input_size"]//self.args["SHIFT"]
         self.input_size_model=[self.args["batch_size"],ss,self.args["NFFT"]//2,2]
+        sd=self.args["input_size"]//self.args["SHIFT"]
+        for i in range(self.args["d_depth"]):
+            sd=(sd-self.args["filter_d"][0])//self.args["strides_d"][0]+1
+        self.input_size_label=[self.args["batch_size"],sd,24]
+        print(self.input_size_label)
         print("model input size:"+str(self.input_size_model))
         self.sess=tf.InteractiveSession(config=tf.ConfigProto(gpu_options=tf.GPUOptions()))
         if bool(self.args["debug"]):
@@ -121,9 +126,10 @@ class Model:
 
         #inputs place holder
         #入力
-        self.input_modela=tf.placeholder(tf.float32, self.input_size_model, "inputs_G-net_A")
-        self.input_modelb = tf.placeholder(tf.float32, self.input_size_model, "inputs_G-net_B")
-
+        self.input_modela=tf.placeholder(tf.float32, self.input_size_model, "input_A")
+        self.input_modelb = tf.placeholder(tf.float32, self.input_size_model, "input_B")
+        self.label_modela = tf.placeholder(tf.float32, self.input_size_label, "label_A")
+        self.label_modelb = tf.placeholder(tf.float32, self.input_size_label, "label_B")
 
         self.training=tf.placeholder(tf.float32,[1],name="Training")
         #creating generator
@@ -133,28 +139,28 @@ class Model:
             with tf.variable_scope("generator_1"):
                 self.fake_aB_image = generator(tf.reshape(self.input_modela, self.input_size_model), reuse=None,
                                               chs=self.args["G_channel"], depth=self.args["depth"], f=self.args["filter_g"],
-                                              s=self.args["strides_g"], rate=self.training,type=self.args["architect"],train=True)
+                                              s=self.args["strides_g"], rate=self.training,type=self.args["architect"],train=True,name="1")
                 self.fake_aB_image_test = generator(tf.reshape(self.input_modelb, self.input_size_model), reuse=True,
                                                 chs=self.args["G_channel"], depth=self.args["depth"],
                                                 f=self.args["filter_g"],
                                                 s=self.args["strides_g"], rate=self.training,
                                                 type=self.args["architect"],
-                                                train=False)
+                                                train=False,name="1")
 
             with tf.variable_scope("generator_2"):
                 self.fake_bA_image = generator(tf.reshape(self.input_modelb, self.input_size_model), reuse=None,
                                               chs=self.args["G_channel"], depth=self.args["depth"], f=self.args["filter_g"],
-                                              s=self.args["strides_g"], rate=self.training,type=self.args["architect"],train=True)
+                                              s=self.args["strides_g"], rate=self.training,type=self.args["architect"],train=True,name="2")
 
             with tf.variable_scope("generator_2"):
                 self.fake_Ba_image = generator(tf.reshape(self.fake_aB_image, self.input_size_model), reuse=True,
                                               chs=self.args["G_channel"], depth=self.args["depth"], f=self.args["filter_g"],
-                                              s=self.args["strides_g"], rate=self.training,type=self.args["architect"],train=True)
+                                              s=self.args["strides_g"], rate=self.training,type=self.args["architect"],train=True,name="2")
             with tf.variable_scope("generator_1"):
                 self.fake_Ab_image = generator(tf.reshape(self.fake_bA_image, self.input_size_model), reuse=True,
                                                chs=self.args["G_channel"], depth=self.args["depth"],
                                                f=self.args["filter_g"],
-                                               s=self.args["strides_g"], rate=self.training,type=self.args["architect"],train=True)
+                                               s=self.args["strides_g"], rate=self.training,type=self.args["architect"],train=True,name="1")
         self.noise = tf.placeholder(tf.float32, [self.args["batch_size"]], "inputs_Noise")
 
         a_true_noised=self.input_modela+tf.random_normal(self.input_modela.shape,0,self.noise[0])
@@ -170,18 +176,18 @@ class Model:
             with tf.variable_scope("discrimB"):
                 self.d_judge_BR, self.d_judge_BR_logits = discriminator(b_true_noised, None, self.args["filter_d"],
                                                                        self.args["strides_d"], self.args["d_depth"],
-                                                                       self.args["D_channels"])
+                                                                       self.args["D_channels"],"B")
 
                 self.d_judge_BF, self.d_judge_BF_logits = discriminator(self.fake_aB_image, True, self.args["filter_d"],
                                                                        self.args["strides_d"], self.args["d_depth"],
-                                                                       self.args["D_channels"])
+                                                                       self.args["D_channels"],"B")
             with tf.variable_scope("discrimA"):
                 self.d_judge_AR, self.d_judge_AR_logits = discriminator(a_true_noised, None, self.args["filter_d"],
                                                                         self.args["strides_d"], self.args["d_depth"],
-                                                                        self.args["D_channels"])
+                                                                        self.args["D_channels"],"A")
                 self.d_judge_AF, self.d_judge_AF_logits = discriminator(self.fake_bA_image, True, self.args["filter_d"],
                                                                         self.args["strides_d"], self.args["d_depth"],
-                                                                        self.args["D_channels"])
+                                                                        self.args["D_channels"],"A")
 
 
         #getting individual variabloes
@@ -191,10 +197,10 @@ class Model:
         val=(1-self.noise[0])*1
         #objective-functions of discriminator
         #D-netの目的関数
-        self.d_loss_AR = tf.reduce_mean(tf.squared_difference(self.d_judge_AR_logits,tf.fill(self.d_judge_AR_logits.shape,val)))
-        self.d_loss_AF = tf.reduce_mean(tf.squared_difference(self.d_judge_AF_logits,tf.zeros_like(self.d_judge_AF_logits)))
-        self.d_loss_BR = tf.reduce_mean(tf.squared_difference(self.d_judge_BR_logits,tf.fill(self.d_judge_BR_logits.shape,val)))
-        self.d_loss_BF = tf.reduce_mean(tf.squared_difference(self.d_judge_BF_logits,tf.zeros_like(self.d_judge_BF_logits)))
+        self.d_loss_AR = tf.reduce_mean(tf.squared_difference(self.d_judge_AR_logits,self.label_modela))
+        self.d_loss_AF = tf.reduce_mean(tf.squared_difference(self.d_judge_AF_logits,self.label_modela*0))
+        self.d_loss_BR = tf.reduce_mean(tf.squared_difference(self.d_judge_BR_logits,self.label_modelb))
+        self.d_loss_BF = tf.reduce_mean(tf.squared_difference(self.d_judge_BF_logits,self.label_modelb*0))
 
         self.d_lossA=(self.d_loss_AR+self.d_loss_AF)/2.0
         self.d_lossB= (self.d_loss_BR + self.d_loss_BF)/2.0
@@ -209,7 +215,7 @@ class Model:
 
         # Gan lossA
         # DSb=tf.reduce_mean(-tf.log(self.d_judge_BF+1e-32))
-        DSb=tf.squared_difference(self.d_judge_BF,1)
+        DSb=tf.squared_difference(self.d_judge_BF,self.label_modelb)
         # generator lossA
         self.g_loss_aB = L1B * self.args["weight_Cycle"]+tf.reduce_mean(self.args["weight_GAN"]*DSb)
         # self.g_loss_aB =  tf.reduce_mean(self.args["weight_GAN"] * DSb)
@@ -220,7 +226,7 @@ class Model:
         L1bAAb = sa+sb
         # Gan loss
         # DSA = tf.reduce_mean(-tf.log(self.d_judge_AF+1e-32))
-        DSA = tf.squared_difference(self.d_judge_AF,1)
+        DSA = tf.squared_difference(self.d_judge_AF,self.label_modela)
 
         # L1UBA =16.0/(tf.abs(self.fake_bA_image[:,:,:,0]-self.fake_aB_image[:,:,:,0])+1e-8)
         # L1UBA =tf.maximum(L1UBA,tf.ones_like(L1UBA))
@@ -404,8 +410,11 @@ class Model:
 
         # loading training data directory
         # トレーニングデータの格納ディレクトリの読み込み
-        data = glob(self.args["train_data_path"]+'/Source_data/*')
-        data2 = glob(self.args["train_data_path"] + '/Answer_data/*')
+        data = glob(self.args["train_data_path"]+'/Source_data/*-wave.npy')
+        datal = glob(self.args["train_data_path"] + '/Source_data/*-stri.npy')
+        data2 = glob(self.args["train_data_path"] + '/Answer_data/*-wave.npy')
+        data2l = glob(self.args["train_data_path"] + '/Answer_data/*-stri.npy')
+
         # loading test data
         # テストデータの読み込み
         test=isread('./Model/datasets/test/test.wav')[0:160000].astype(np.float32)
@@ -423,8 +432,13 @@ class Model:
         #　学習データをメモリに乗っける
         batch_files = data[:train_data_num]
         batch_files2 = data2[:train_data_num]
+        batch_files_l = datal[:train_data_num]
+        batch_files2_l = data2l[:train_data_num]
+
         batch_sounds_r = np.asarray([(imread(batch_file)) for batch_file in batch_files])
         batch_sounds_t = np.asarray([(imread(batch_file)) for batch_file in batch_files2])
+        batch_label_r = np.asarray([(imread(batch_file)) for batch_file in batch_files_l])
+        batch_label_t = np.asarray([(imread(batch_file)) for batch_file in batch_files2_l])
 
         # hyperdash
         if self.args["hyperdash"]:
@@ -442,8 +456,8 @@ class Model:
             np.random.shuffle(index_list2)
             test1=0.0
             ts = 0.0
-            ipt = self.input_size_model[1]
             counter=0
+            ti=batch_idxs
             if self.args["test"] and epoch%self.args["save_interval"]==0:
                 print(" [*] Epoch %3d testing" % epoch)
                 #testing
@@ -502,46 +516,29 @@ class Model:
                 # loading trainig data
                 # トレーニングデータの読み込み
                 st=self.args["batch_size"]*idx
-                batch_sounds1 = np.asarray([batch_sounds_r[ind] for ind in index_list[st:st+self.args["batch_size"]]])
-                batch_sounds2= np.asarray([batch_sounds_t[ind] for ind in index_list2[st:st+self.args["batch_size"]]])
-                # calculating one iteration repetation times
-                # 1イテレーション実行回数計算
-                times=int(batch_sounds1.shape[1])//self.input_size_model[1]+1
-                if int(batch_sounds1.shape[1])%self.input_size_model[1]==0:
-                    times-=1
-                # shuffle start time
-                # 開始タイミングのシャッフル
-                time_set=[j for j in range(times)]
-                np.random.shuffle(time_set)
+                # getting training data
+                # トレーニングデータの取得
+                res_t=np.asarray([batch_sounds_r[ind] for ind in index_list[st:st+self.args["batch_size"]]])
+                tar=np.asarray([batch_sounds_t[ind] for ind in index_list2[st:st+self.args["batch_size"]]])
+                res_l=np.asarray([batch_label_t[ind] for ind in index_list2[st:st+self.args["batch_size"]]])
+                tar_l = np.asarray([batch_label_r[ind] for ind in index_list2[st:st + self.args["batch_size"]]])
 
-                ti=(batch_idxs*times)
-                for t in time_set:
-                    tm = time.time()
-                    # calculating starting position
-                    # 開始位置の計算
-                    start_pos=self.input_size_model[1]*(t+1)
-
-                    # getting training data
-                    # トレーニングデータの取得
-                    res_t=batch_sounds1[:,max(0,start_pos-ipt):start_pos]
-                    tar=batch_sounds2[:,max(0,start_pos-ipt):start_pos]
-                    ts+=time.time()-tm
-                    rate = 1.0 - 0.5 ** (epoch // 50 + 1)
-                    # G-netの学習
-                    self.sess.run([g_optim,self.update_ops],feed_dict={ self.input_modela:res_t,self.input_modelb:tar, self.training:np.asarray([rate])})
-                    # Update D network (1time)
-                    nos = np.random.rand(self.args["batch_size"]) * self.args["label_noise"]
-                    self.sess.run([d_optim],
-                                  feed_dict={self.input_modelb: tar, self.input_modela: res_t, self.noise: nos,self.training:np.asarray([rate])})
-                    # tensorboardの保存
-                    if self.args["tensorboard"] and (counter+ti*epoch)%self.args["train_interval"]==0:
-                        nos = np.random.rand(self.args["batch_size"]) * 0.0
-                        hg,hd,hg2, hd2=self.sess.run([self.g_loss_sum_1,self.d_loss_sumA,self.g_loss_sum_2, self.d_loss_sumB],feed_dict={self.input_modela:res_t, self.input_modelb:tar ,self.noise:nos ,self.training:np.asarray([1.0]) })
-                        self.writer.add_summary(hg, counter + ti * epoch)
-                        self.writer.add_summary(hd, counter + ti * epoch)
-                        self.writer.add_summary(hg2, counter+ti*epoch)
-                        self.writer.add_summary(hd2, counter+ti*epoch)
-                    counter+=1
+                rate = 1.0 - 0.5 ** (epoch // 50 + 1)
+                # G-netの学習
+                self.sess.run([g_optim,self.update_ops],feed_dict={ self.input_modela:res_t,self.label_modela:res_l,self.input_modelb:tar,self.label_modelb:tar_l, self.training:np.asarray([rate])})
+                # Update D network (1time)
+                nos = np.random.rand(self.args["batch_size"]) * self.args["label_noise"]
+                self.sess.run([d_optim],
+                              feed_dict={self.input_modelb: tar, self.input_modela: res_t,self.label_modela:res_l,self.label_modelb:tar_l, self.noise: nos,self.training:np.asarray([rate])})
+                # tensorboardの保存
+                if self.args["tensorboard"] and (counter+ti*epoch)%self.args["train_interval"]==0:
+                    nos = np.random.rand(self.args["batch_size"]) * 0.0
+                    hg,hd,hg2, hd2=self.sess.run([self.g_loss_sum_1,self.d_loss_sumA,self.g_loss_sum_2, self.d_loss_sumB],feed_dict={self.input_modela:res_t,self.label_modela:res_l, self.label_modelb:tar_l,self.input_modelb:tar ,self.noise:nos ,self.training:np.asarray([1.0]) })
+                    self.writer.add_summary(hg, counter + ti * epoch)
+                    self.writer.add_summary(hd, counter + ti * epoch)
+                    self.writer.add_summary(hg2, counter+ti*epoch)
+                    self.writer.add_summary(hd2, counter+ti*epoch)
+                counter+=1
 
             #saving model
             #モデルの保存
@@ -675,56 +672,60 @@ class Model:
 
 
 
-def discriminator(inp,reuse,f,s,depth,chs):
+def discriminator(inp,reuse,f,s,depth,chs,a):
     current=tf.reshape(inp, [inp.shape[0],inp.shape[1],inp.shape[2],2])
     for i in range(depth):
         stddevs=math.sqrt(2.0/(f[0]*f[1]*int(current.shape[3])))
         ten = tf.layers.conv2d(current, chs[i], kernel_size=f, strides=s, padding="VALID",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), data_format="channels_last",name="disc_"+str(i),reuse=reuse)
-        # ten = tf.layers.batch_normalization(ten,axis=3,trainable=False,training=True)
+        ten = tf.contrib.layers.instance_norm(ten,reuse=tf.AUTO_REUSE,scope="d_net"+a+str(i))
         if i!=depth-1:
             current = tf.nn.leaky_relu(ten)
+        else:
+            current=ten
     print(" [*] bottom shape:"+str(current.shape))
-    h4=tf.reshape(current, [current.shape[0],-1])
-    return ten,ten
-def generator(current_outputs,reuse,depth,chs,f,s,rate,type,train):
+    current=current[:,:,:,0]
+    tens=tf.layers.dense(current,24)
+    #出力サイズB*H*24
+    return tens,tens
+def generator(current_outputs,reuse,depth,chs,f,s,rate,type,train,name):
     if type == "flatnet":
-        return generator_flatnet(current_outputs,reuse,depth,chs,f,s,0,train)
+        return generator_flatnet(current_outputs,reuse,depth,chs,f,s,0,train,name)
     elif type == "ps_flatnet":
-        return generator_flatnet(current_outputs, reuse, depth, chs, f, s, 1,train)
+        return generator_flatnet(current_outputs, reuse, depth, chs, f, s, 1,train,name)
     elif type == "hybrid_flatnet":
-        return generator_flatnet(current_outputs, reuse, depth, chs, f, s, 2,train)
+        return generator_flatnet(current_outputs, reuse, depth, chs, f, s, 2,train,name)
     elif type == "ps_unet":
         return generator_unet(current_outputs, reuse, depth, chs, f, s, 1)
     elif type == "hybrid_unet":
         return generator_unet(current_outputs, reuse, depth, chs, f, s, 2)
     else :
         return  generator_unet(current_outputs,reuse,depth,chs,f,s)
-def generator_flatnet(current_outputs,reuse,depth,chs,f,s,ps,train):
+def generator_flatnet(current_outputs,reuse,depth,chs,f,s,ps,train,name):
     current=current_outputs
     output_shape=int(current.shape[3])
     #main process
     for i in range(depth):
         connections = current
         if ps==1:
-            ten = block2(current, output_shape, f, i, reuse,i!=depth-1)
+            ten = block2(current, output_shape, f, i, reuse,i!=depth-1,name)
         elif ps==2 :
-            ten=block3(current,f,chs,i,reuse,i!=depth-1,)
+            ten=block3(current,f,chs,i,reuse,i!=depth-1,name)
         else :
-            ten = block(current, output_shape, chs, f, s, i, reuse, i != depth - 1)
+            ten = block(current, output_shape, chs, f, s, i, reuse, i != depth - 1,name)
         if i!=depth-1:
             current = ten + connections
         else:
             current=ten
     return current
-def block(current,output_shape,chs,f,s,depth,reuses,relu):
+def block(current,output_shape,chs,f,s,depth,reuses,relu,name):
     ten=current
 
     stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(ten.shape[3])))
 
     ten = tf.layers.conv2d(ten, chs, kernel_size=f, strides=s, padding="VALID",
                            kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), data_format="channels_last",reuse=reuses,name="conv11"+str(depth))
-    ten = tf.layers.batch_normalization(ten, axis=1, training=False, trainable=False, reuse=reuses, name="bn11" + str(depth))
+    ten = tf.contrib.layers.instance_norm(ten,reuse=reuses)
     ten = tf.manip.roll(ten,2,2)
     ten = tf.nn.leaky_relu(ten,name="lrelu"+str(depth))
 
@@ -735,7 +736,7 @@ def block(current,output_shape,chs,f,s,depth,reuses,relu):
     if relu:
         ten=tf.nn.relu(ten)
     return ten
-def block2(current,output_shape,f,depth,reuses,relu):
+def block2(current,output_shape,f,depth,reuses,relu,name):
     ten=current
 
     stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(ten.shape[3])))
@@ -752,15 +753,14 @@ def block2(current,output_shape,f,depth,reuses,relu):
     if relu:
         ten=tf.nn.relu(ten)
     return ten
-def block3(current,f,chs,depth,reuses,shake):
+def block3(current,f,chs,depth,reuses,shake,name):
     ten=current
 
     stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(ten.shape[3])))
     ten = tf.layers.conv2d(ten, chs, kernel_size=f, strides=f, padding="VALID",
                            kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), data_format="channels_last",reuse=reuses,name="conv21"+str(depth))
 
-    ten = tf.layers.batch_normalization(ten, axis=3, training=False, trainable=False, reuse=reuses,
-                                        name="bn11" + str(depth))
+    ten = tf.contrib.layers.instance_norm(ten,reuse=tf.AUTO_REUSE,scope="g_net"+name)
 
     ten = tf.nn.leaky_relu(ten,name="lrelu"+str(depth))
     n=(depth%2)*2-1

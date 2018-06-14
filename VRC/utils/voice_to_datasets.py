@@ -4,6 +4,7 @@ import wave
 import time
 import glob
 import cupy
+import os
 import matplotlib.pyplot as plt
 NFFT=128
 SHIFT=NFFT//2
@@ -13,8 +14,16 @@ Hz=C1*(2**0)
 now=317.6
 target=563.666
 term = 4096
+length=term//SHIFT+1
+cutoff=5
+effect_ranges=1024
+align=True
+eef=1200
 upidx=target/now
-
+p=pyaudio.PyAudio()
+stream=p.open(format=pyaudio.paInt16,channels=1,rate=16000,output=True)
+print(stream.is_active())
+lss={"a":0,"i":1,"u":2,"e":3,"o":4,"k":5,"s":6,"t":7,"n":8,"h":9,"m":10,"j":11,"r":12,"w":13,"g":14,"z":15,"d":16,"b":17,"p":18,"H":19,"Q":20,"N":21,"f":22,"?":23}
 def fft(data):
     time_ruler=data.shape[0]//SHIFT
     if data.shape[0]%SHIFT==0:
@@ -70,15 +79,18 @@ def complex_to_pp(fft_r):
     d = np.arctan2(im, re).reshape(time_ruler, -1, 1)
     spec = np.concatenate((c, d), 2)
     return spec
-
+def play(d):
+    stream.write(d.tobytes())
 FORMAT = pyaudio.paInt16
 CHANNELS = 1        #モノラル
 RATE = 16000       #サンプルレート
 CHUNK = 1024     #データ点数
 RECORD_SECONDS = 5 #録音する時間の長さ
-WAVE_INPUT_FILENAME = "../train/Model/datasets/source/01"
-files=glob.glob(WAVE_INPUT_FILENAME+"/*.wav")
-name="4096-128/Source_data"
+WAVE_INPUT_FILENAME = "../train/Model/datasets/source/02/"
+files=glob.glob(WAVE_INPUT_FILENAME+"*.wav")
+filestri=glob.glob(WAVE_INPUT_FILENAME+"*.str")
+stri=""
+name="answerdata"
 cnt=0
 for file in files:
     print(file)
@@ -90,30 +102,38 @@ for file in files:
         dms.append(dds)
         dds = wf.readframes(CHUNK)
     dms = b''.join(dms)
-    data = np.frombuffer(dms, 'int16')
+    data = np.frombuffer(dms, np.int16)
     data_real=data.reshape(-1)
     data_realA=data_real
+    print(np.max(data_realA[0:8192]))
     timee=data_realA.shape[0]
+    ppt=file+".txt"
+    seg = 0
 
+    with open(ppt,"rb") as fos:
+        b=fos.readline()
+        while b is not b'':
+            stri+=b.decode('utf-8')
+            b=fos.readline()
     rate=16000
-
     b=np.zeros([1])
     ab=np.zeros([1,128,2])
     abc=np.zeros([1,128,2])
-
     times=data_realA.shape[0]//term+1
     if data_realA.shape[0]%term==0:
         times-=1
     ttm=time.time()
+    mod=data_realA.shape[0]%term
     resp=np.zeros([NFFT//2])
     for i in range(times):
         ind=term+SHIFT
-        startpos=term*i+data_realA.shape[0]%term
+        startpos=term*i+mod
         data_realAb = data_realA[max(startpos-ind,0):startpos]
         r=ind-data_realAb.shape[0]
         if r>0:
             data_realAb=np.pad(data_realAb,(r,0),"constant")
-        dmn=data_realAb/32767.0
+        dddd = data_realAb.copy()
+        dmn=data_realAb.copy()/32767.0
         r=SHIFT-dmn.shape[0]%SHIFT
         if r!=SHIFT:
             dmn=np.pad(dmn,(0,r),"reflect")
@@ -124,9 +144,67 @@ for file in files:
         v = 1 / np.sqrt(np.var(c, axis=1) + 1e-36)
         a[:, :, 0]= np.einsum("ij,i->ij",a[:, :, 0],v)
         bb=np.isnan(np.mean(a))
+        #音素アラインメントの実行
+        ttms=600//SHIFT
+        ttm_pp = int(ttms * 0.2)
+        ttm_main=ttms*2-ttm_pp*2
+        if align and not os.path.exists("../train/Model/datasets/train/" + str(name) + "/" + str(cnt) + "-stri.npy"):
+            stridatra=np.zeros([length-cutoff,24],dtype=np.float32)
+            flag=True
+            tts=0
+            segs=seg
+            while True:
+                print("play"+str(startpos))
+                play(dddd)
+                print("言葉を音素で入力 %d/%d"%(i+1,times))
+                ins=input().encode("utf-8").decode("utf-8")
+                if ins=="":
+                    flag=False
+                for n in ins:
+                    if n in lss  :
+                        seg+=1
+                    elif n == "?":
+                        pass
+                    else:
+                        if not n in lss:
+                            print("存在しない文字です")
+                        else:
+                            print(stri[max(seg-2,0):min(seg+2,len(stri))])
+                            print(ins[seg-segs],seg,ins)
+                        flag=False
+                        seg=segs
+                if flag:
+                    pss=(length-cutoff)//(len(ins)+1)
+                    r=1
+                    for n in ins:
+                        ff=lss[n]
+                        mainpos=pss*r
+                        ts=np.linspace(0.1,1.0,ttm_pp)
+                        tm=np.ones([ttm_main])
+                        te=np.linspace(1.0,0.1,ttm_pp)
+                        filt=np.append(ts,tm).reshape(-1)
+                        filt=np.append(filt,te).reshape(-1)
+                        s=mainpos-ttms
+                        e=mainpos+ttms
+                        sk=0
+                        se=ttms*2
+                        if s<0:
+                            s=0
+                            sk=-s-1
+                        if e>=stridatra.shape[0]:
+                            e=stridatra.shape[0]
+                            se=stridatra.shape[0]-e
+                        stridatra[s:e,ff]+=filt[sk:se]
+                        r+=1
+                    seg+=len(ins)
+                    break
+                print("しっぱい")
+                flag = True
+                seg = segs
+            np.save("../train/Model/datasets/train/" + str(name) + "/" + str(cnt) + "-stri", stridatra)
         if bb:
             print("NAN!!")
-        np.save("../train/Model/datasets/train/"+str(name)+"/"+str(cnt) +".data", a)
+        np.save("../train/Model/datasets/train/"+str(name)+"/"+str(cnt) +"-wave", a)
         cnt+=1
 plt.subplot(211)
 plt.imshow(a[:,:,0],aspect="auto")
