@@ -5,12 +5,10 @@
     <bookmark url="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets.py" line="190" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="22fa9a76-09a0-4f62-a2d8-6f3210b56f42" name="Default" comment="[update] output update &lt;version 2.4.000&gt;&#10;&#10;[add] 発話情報の追加">
-      <change afterPath="$PROJECT_DIR$/VRC/utils/size_fitter.py" afterDir="false" />
+    <list default="true" id="22fa9a76-09a0-4f62-a2d8-6f3210b56f42" name="Default" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/VRC/setting.json" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/setting.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/VRC/train/Model/model_proto.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/train/Model/model_proto.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/gitignore" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/VRC/Network/to/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -55,8 +53,8 @@
       <file leaf-file-name="model_proto.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="243">
-              <caret line="680" column="21" selection-start-line="680" selection-start-column="21" selection-end-line="680" selection-end-column="21" />
+            <state relative-caret-position="177">
+              <caret line="715" column="82" selection-start-line="715" selection-start-column="82" selection-end-line="715" selection-end-column="82" />
               <folding>
                 <element signature="e#0#21#0" expanded="true" />
               </folding>
@@ -159,30 +157,6 @@
               <item name="VRC" type="462c0819:PsiDirectoryNode" />
               <item name="train" type="462c0819:PsiDirectoryNode" />
               <item name="logs" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
-              <item name="vrc" type="462c0819:PsiDirectoryNode" />
-              <item name="VRC" type="462c0819:PsiDirectoryNode" />
-              <item name="train" type="462c0819:PsiDirectoryNode" />
-              <item name="logs" type="462c0819:PsiDirectoryNode" />
-              <item name="[glr=0.0002,gb=0.5,dlr=0.0002,db=0.5]wave2wave2.3.188" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
-              <item name="vrc" type="462c0819:PsiDirectoryNode" />
-              <item name="VRC" type="462c0819:PsiDirectoryNode" />
-              <item name="train" type="462c0819:PsiDirectoryNode" />
-              <item name="logs" type="462c0819:PsiDirectoryNode" />
-              <item name="[glr=0.0002,gb=0.5,dlr=0.0002,db=0.5]wave2wave2.4.006" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
-              <item name="vrc" type="462c0819:PsiDirectoryNode" />
-              <item name="VRC" type="462c0819:PsiDirectoryNode" />
-              <item name="train" type="462c0819:PsiDirectoryNode" />
-              <item name="logs" type="462c0819:PsiDirectoryNode" />
-              <item name="[glr=0.0002,gb=0.5,dlr=0.0002,db=0.5]wave2wave2.4.007" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
@@ -808,7 +782,21 @@
       <option name="project" value="LOCAL" />
       <updated>1528940516363</updated>
     </task>
-    <option name="localTasksCounter" value="47" />
+    <task id="LOCAL-00047" summary="[update] output update &lt;version 2.4.000&gt;&#10;&#10;[add] 発話情報の追加">
+      <created>1528963111596</created>
+      <option name="number" value="00047" />
+      <option name="presentableId" value="LOCAL-00047" />
+      <option name="project" value="LOCAL" />
+      <updated>1528963111596</updated>
+    </task>
+    <task id="LOCAL-00048" summary="[update] doubleblock update &lt;version 2.4.011&gt;&#10;&#10;[add] ダブルブロックの追加">
+      <created>1529015730672</created>
+      <option name="number" value="00048" />
+      <option name="presentableId" value="LOCAL-00048" />
+      <option name="project" value="LOCAL" />
+      <updated>1529015730672</updated>
+    </task>
+    <option name="localTasksCounter" value="49" />
     <servers />
   </component>
   <component name="TodoView">
@@ -822,15 +810,16 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1456" height="876" extended-state="6" />
+    <editor active="true" />
     <layout>
       <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.2496474" />
       <window_info anchor="bottom" id="TODO" order="5" weight="0.3292683" />
-      <window_info anchor="bottom" id="Event Log" order="8" sideWeight="0.5014104" side_tool="true" weight="0.2615176" />
-      <window_info anchor="bottom" id="Version Control" order="10" weight="0.3292683" />
+      <window_info anchor="bottom" id="Event Log" order="10" sideWeight="0.50211567" side_tool="true" weight="0.2615176" />
+      <window_info anchor="bottom" id="Version Control" order="9" weight="0.3292683" />
       <window_info anchor="bottom" id="Python Console" order="7" weight="0.3292683" />
-      <window_info active="true" anchor="bottom" id="Run" order="6" sideWeight="0.49858958" visible="true" weight="0.2615176" />
+      <window_info active="true" anchor="bottom" id="Run" order="6" sideWeight="0.49788433" visible="true" weight="0.2615176" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
-      <window_info anchor="bottom" id="Terminal" order="9" weight="0.3292683" />
+      <window_info anchor="bottom" id="Terminal" order="8" weight="0.3292683" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Debug" order="2" weight="0.39972898" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
@@ -846,7 +835,6 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[update] data update &lt;version 2.2.010&gt;&#10;&#10;[fix]　入力データの誤りを修正" />
     <MESSAGE value="[update] filter update &lt;version 2.2.016&gt;&#10;&#10;[fix] 出力のフィルター" />
     <MESSAGE value="[update] filter update &lt;version 2.2.018&gt;&#10;&#10;[fix] 入出力を正方形に変更" />
     <MESSAGE value="[update] filter update &lt;version 2.2.020&gt;&#10;&#10;[fix] 動くように修正" />
@@ -871,7 +859,8 @@
     <MESSAGE value="[update] output update &lt;version 2.3.172&gt;&#10;&#10;[add] 方式を変更" />
     <MESSAGE value="[update] output update &lt;version 2.3.181&gt;&#10;&#10;[add] 方式を変更" />
     <MESSAGE value="[update] output update &lt;version 2.4.000&gt;&#10;&#10;[add] 発話情報の追加" />
-    <option name="LAST_COMMIT_MESSAGE" value="[update] output update &lt;version 2.4.000&gt;&#10;&#10;[add] 発話情報の追加" />
+    <MESSAGE value="[update] doubleblock update &lt;version 2.4.011&gt;&#10;&#10;[add] ダブルブロックの追加" />
+    <option name="LAST_COMMIT_MESSAGE" value="[update] doubleblock update &lt;version 2.4.011&gt;&#10;&#10;[add] ダブルブロックの追加" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -1136,13 +1125,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/train/main.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="80">
-          <caret line="6" column="8" selection-start-line="6" selection-start-column="8" selection-end-line="6" selection-end-column="8" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="224">
@@ -1167,6 +1149,9 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/VRC/train/logs/[glr=0.0002,gb=0.5,dlr=0.0002,db=0.5]wave2wave2.4.007/events.out.tfevents.1528956129.DESKTOP-QFC16G3">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
     <entry file="file://$PROJECT_DIR$/VRC/utils/size_fitter.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="368">
@@ -1177,18 +1162,22 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/VRC/train/main.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="80">
+          <caret line="6" column="8" selection-start-line="6" selection-start-column="8" selection-end-line="6" selection-end-column="8" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="243">
-          <caret line="680" column="21" selection-start-line="680" selection-start-column="21" selection-end-line="680" selection-end-column="21" />
+        <state relative-caret-position="177">
+          <caret line="715" column="82" selection-start-line="715" selection-start-column="82" selection-end-line="715" selection-end-column="82" />
           <folding>
             <element signature="e#0#21#0" expanded="true" />
           </folding>
         </state>
       </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/train/logs/[glr=0.0002,gb=0.5,dlr=0.0002,db=0.5]wave2wave2.4.007/events.out.tfevents.1528956129.DESKTOP-QFC16G3">
-      <provider selected="true" editor-type-id="text-editor" />
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/setting.json">
       <provider selected="true" editor-type-id="text-editor">

@@ -713,10 +713,10 @@ def generator_flatnet(current_outputs,reuse,depth,chs,f,s,ps,train,name):
         elif ps==2 :
             ten=block_hybrid(current,f,chs,i,reuse,i!=depth-1,name)
         elif ps == 3:
-            ten = block_double(current, f,s, chs, i, reuse, i != depth - 1, pixs=2 )
+            ten = block_double(current, f,s, chs, i, reuse, i != depth - 1, pixs=4 )
         else :
             ten = block_dc(current, output_shape, chs, f, s, i, reuses=reuse, shake=i != depth - 1,name=name)
-        if i!=depth-1:
+        if i!=depth-1 and ps!=3:
             current = ten + connections
         else:
             current=ten
@@ -814,6 +814,8 @@ def block_double(current,f,s,chs,depth,reuses,shake,pixs=2):
     ten1 = tf.nn.leaky_relu(ten1)
     ten2 = tf.nn.relu(ten2)
     ten=(ten1+ten2)*0.5
+    current=ten+current
+    ten=current
     ps_f=[pixs,pixs]
     ten = tf.layers.conv2d(ten, chs, kernel_size=ps_f, strides=ps_f, padding="VALID",
                            kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
@@ -824,6 +826,7 @@ def block_double(current,f,s,chs,depth,reuses,shake,pixs=2):
     ten = deconve_with_ps(ten, pixs, 2, depth, reuses=reuses)
     if shake:
         ten=tf.nn.leaky_relu(ten)
+        ten=ten+current
     return ten
 
 def deconve_with_ps(inp,r,otp_shape,depth,f=[1,1],reuses=None):

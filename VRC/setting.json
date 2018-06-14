@@ -2,7 +2,7 @@
     "saving_config":{
         "checkpoint_dir":"Z://models/",
         "wave_otp_dir":"Z://waves/",
-        "version":"2.4.011"
+        "version":"2.4.012"
     },
     "network_architecture":{
         "architect":"double_flatnet",
