@@ -407,7 +407,7 @@ class Model:
             print(" [*] Load SUCCESS")
         else:
             print(" [!] Load failed...")
-
+        print(" [*] reading data path :"+self.args["train_data_path"]+'/Source_data/')
         # loading training data directory
         # トレーニングデータの格納ディレクトリの読み込み
         data = glob(self.args["train_data_path"]+'/Source_data/*-wave.npy')
@@ -424,7 +424,7 @@ class Model:
         # 回数計算
         train_data_num = min(len(data), self.args["train_data_num"])
         train_data_num2 = min(len(data2), self.args["train_data_num"])
-
+        print(" [*] data found",len(data),len(data2))
         batch_idxs = train_data_num // self.args["batch_size"]
         index_list=[h for h in range(train_data_num)]
         index_list2 = [h for h in range(train_data_num2)]
@@ -678,14 +678,13 @@ def discriminator(inp,reuse,f,s,depth,chs,a):
         stddevs=math.sqrt(2.0/(f[0]*f[1]*int(current.shape[3])))
         ten = tf.layers.conv2d(current, chs[i], kernel_size=f, strides=s, padding="VALID",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), data_format="channels_last",name="disc_"+str(i),reuse=reuse)
-        ten = tf.contrib.layers.instance_norm(ten,reuse=tf.AUTO_REUSE,scope="d_net"+a+str(i))
         if i!=depth-1:
             current = tf.nn.leaky_relu(ten)
         else:
             current=ten
     print(" [*] bottom shape:"+str(current.shape))
-    current=current[:,:,:,0]
-    tens=tf.layers.dense(current,24)
+    current=tf.reshape(current,[inp.shape[0],inp.shape[1]-depth,-1])
+    tens=tf.layers.conv1d(current,24,1)
     #出力サイズB*H*24
     return tens,tens
 def generator(current_outputs,reuse,depth,chs,f,s,rate,type,train,name):
@@ -712,7 +711,7 @@ def generator_flatnet(current_outputs,reuse,depth,chs,f,s,ps,train,name):
         elif ps==2 :
             ten=block3(current,f,chs,i,reuse,i!=depth-1,name)
         else :
-            ten = block(current, output_shape, chs, f, s, i, reuse, i != depth - 1,name)
+            ten = block(current, output_shape, chs, f, s, i, reuses=reuse, shake=i != depth - 1,name=name)
         if i!=depth-1:
             current = ten + connections
         else:
@@ -759,9 +758,9 @@ def block3(current,f,chs,depth,reuses,shake,name):
     stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(ten.shape[3])))
     ten = tf.layers.conv2d(ten, chs, kernel_size=f, strides=f, padding="VALID",
                            kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), data_format="channels_last",reuse=reuses,name="conv21"+str(depth))
-
-    ten = tf.contrib.layers.instance_norm(ten,reuse=tf.AUTO_REUSE,scope="g_net"+name)
-
+    # ten = tf.contrib.layers.instance_norm(ten,reuse=reuses,scope="g_net"+name+str(depth))
+    ten = tf.layers.batch_normalization(ten, axis=1, training=True, trainable=True, reuse=reuses,
+                                        name="bn11" + str(depth))
     ten = tf.nn.leaky_relu(ten,name="lrelu"+str(depth))
     n=(depth%2)*2-1
 
@@ -770,7 +769,7 @@ def block3(current,f,chs,depth,reuses,shake,name):
     ten2 = ten*pos
     if shake:
         ten1 = tf.manip.roll(ten, n*4, 2)
-        ten2 = tf.manip.roll(ten, -n * 4, 1)
+        # ten2 = tf.manip.roll(ten, -n * 4, 1)
     stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(ten.shape[3])))
     ten1=deconve_with_ps(ten1,f[0],2,depth,reuses=reuses)
     ten2 =  tf.layers.conv2d_transpose(ten2, 2, kernel_size=f, strides=f, padding="VALID",
