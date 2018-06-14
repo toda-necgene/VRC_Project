@@ -93,18 +93,20 @@ while stream.is_active():
     las = inputs[-SHIFT:]
     res = np.zeros([1, TERM//SHIFT, SHIFT, 2])
     n = fft(inp.reshape(-1))[:,:SHIFT,:]
-    scales = np.sqrt(np.var(n[ :, :, 0], axis=1) + 1e-8)
     means = np.mean(n[:, :, 0], axis=1)
+    filter = -6.5
+    means[means < filter] = -32.0
     # scales=np.var(n[:, :, 0], axis=1)
-    mms = 1 / scales
     scl = np.tile(np.reshape(means, (-1, 1)), (1, SHIFT))
-    n[ :, :, 0] = np.einsum("ij,i->ij", n[ :, :, 0] - scl, mms)
+    n[:, :, 0]=n[ :, :, 0]  - scl
+    scales = np.sqrt(np.var(n[:, :, 0], axis=1) + 1e-8)
+    scales[means < filter] = 0.001
+    mms = 1 / scales
+
+    n[ :, :, 0] = np.einsum("ij,i->ij", n[ :, :, 0] , mms)
 
     res[0] = n.astype(np.float32)
     res = process(res)
-    filter=-5.0
-    means[means < filter] = -32.0
-    scales[means < filter] = 0.1
 
     res[0,:, :, 0] = np.einsum("ij,i->ij", res[0,:, :, 0] , scales)
     res[0,:, :, 0]+= scl
