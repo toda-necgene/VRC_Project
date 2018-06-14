@@ -829,7 +829,6 @@ def block_double(current,f,s,chs,depth,reuses,shake,pixs=2):
     if shake:
         ten=tf.nn.leaky_relu(ten)
         ten=ten+current
-    print(ten.shape)
 
     return ten
 
