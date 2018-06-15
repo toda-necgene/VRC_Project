@@ -797,7 +797,10 @@ def block_double(current,f,s,chs,depth,reuses,shake,pixs=2):
                            kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), data_format="channels_last",reuse=reuses,name="conv11"+str(depth))
     tenA = tf.nn.leaky_relu(tenA,name="lrelu"+str(depth))
 
-    ten1=tenA
+    sc=np.linspace(1.0,0.0,int(tenA.shape[2]))
+    sc=np.tile(sc.reshape(1,-1),(int(tenA.shape[1]),1))
+    pos=tf.constant(sc,dtype=tf.float32,shape=tenA.shape)
+    ten1=tenA*pos
     ten1 = tf.pad(ten1, ((0,0),(0,0),(2,0),(0,0)))
     ten1=ten1[:,:,:-2,:]
     stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(tenA.shape[3])))

@@ -5,7 +5,7 @@
     <bookmark url="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets.py" line="190" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="22fa9a76-09a0-4f62-a2d8-6f3210b56f42" name="Default" comment="[update] doubleblock update &lt;version 2.4.013&gt;&#10;&#10;[add] ダブルブロックの調整">
+    <list default="true" id="22fa9a76-09a0-4f62-a2d8-6f3210b56f42" name="Default" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/VRC/setting.json" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/setting.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/VRC/train/Model/model_proto.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/train/Model/model_proto.py" afterDir="false" />
@@ -29,7 +29,7 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="setting.json" pinned="false" current-in-tab="false">
+      <file leaf-file-name="setting.json" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/VRC/setting.json">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="64">
@@ -50,11 +50,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="model_proto.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="model_proto.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="357">
-              <caret line="827" column="24" selection-start-line="827" selection-start-column="24" selection-end-line="827" selection-end-column="29" />
+            <state relative-caret-position="245">
+              <caret line="801" column="56" selection-start-line="801" selection-start-column="56" selection-end-line="801" selection-end-column="56" />
               <folding>
                 <element signature="e#0#21#0" expanded="true" />
               </folding>
@@ -115,8 +115,8 @@
         <option value="$PROJECT_DIR$/VRC/utils/voice_to_datasets.py" />
         <option value="$PROJECT_DIR$/gitignore" />
         <option value="$PROJECT_DIR$/VRC/utils/size_fitter.py" />
-        <option value="$PROJECT_DIR$/VRC/setting.json" />
         <option value="$PROJECT_DIR$/VRC/train/Model/model_proto.py" />
+        <option value="$PROJECT_DIR$/VRC/setting.json" />
       </list>
     </option>
   </component>
@@ -460,27 +460,6 @@
       <option name="presentableId" value="Default" />
       <updated>1520153808625</updated>
     </task>
-    <task id="LOCAL-00001" summary="[fix] ignorefile">
-      <created>1526339184730</created>
-      <option name="number" value="00001" />
-      <option name="presentableId" value="LOCAL-00001" />
-      <option name="project" value="LOCAL" />
-      <updated>1526339184730</updated>
-    </task>
-    <task id="LOCAL-00002" summary="[update] tuning update &lt;version 1.6.0&gt;&#10;&#10;[add] 外部ファイルによるパラメーターの調整を可能に">
-      <created>1526435316994</created>
-      <option name="number" value="00002" />
-      <option name="presentableId" value="LOCAL-00002" />
-      <option name="project" value="LOCAL" />
-      <updated>1526435316994</updated>
-    </task>
-    <task id="LOCAL-00003" summary="[update] tuning update &lt;version 1.6.5&gt;&#10;&#10;[fix] L1Lossの重さを100から5に変更。&#10;[fix]">
-      <created>1526467678285</created>
-      <option name="number" value="00003" />
-      <option name="presentableId" value="LOCAL-00003" />
-      <option name="project" value="LOCAL" />
-      <updated>1526467678285</updated>
-    </task>
     <task id="LOCAL-00004" summary="[update] objective update &lt;version 1.7.0&gt;&#10;&#10;[change] 入力、出力をパワースペクトラムと位相スペクトラムに変更">
       <created>1526517029372</created>
       <option name="number" value="00004" />
@@ -803,7 +782,28 @@
       <option name="project" value="LOCAL" />
       <updated>1529016638312</updated>
     </task>
-    <option name="localTasksCounter" value="50" />
+    <task id="LOCAL-00050" summary="[update] doubleblock update &lt;version 2.4.013&gt;&#10;&#10;[add] ダブルブロックの調整">
+      <created>1529019553813</created>
+      <option name="number" value="00050" />
+      <option name="presentableId" value="LOCAL-00050" />
+      <option name="project" value="LOCAL" />
+      <updated>1529019553814</updated>
+    </task>
+    <task id="LOCAL-00051" summary="[update] doubleblock update &lt;version 2.4.013&gt;&#10;&#10;[add] ダブルブロックの調整">
+      <created>1529019567592</created>
+      <option name="number" value="00051" />
+      <option name="presentableId" value="LOCAL-00051" />
+      <option name="project" value="LOCAL" />
+      <updated>1529019567592</updated>
+    </task>
+    <task id="LOCAL-00052" summary="[update] doubleblock update &lt;version 2.4.016&gt;&#10;&#10;[add] ダブルブロックの調整2">
+      <created>1529036031775</created>
+      <option name="number" value="00052" />
+      <option name="presentableId" value="LOCAL-00052" />
+      <option name="project" value="LOCAL" />
+      <updated>1529036031775</updated>
+    </task>
+    <option name="localTasksCounter" value="53" />
     <servers />
   </component>
   <component name="TodoView">
@@ -842,8 +842,6 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[update] filter update &lt;version 2.2.018&gt;&#10;&#10;[fix] 入出力を正方形に変更" />
-    <MESSAGE value="[update] filter update &lt;version 2.2.020&gt;&#10;&#10;[fix] 動くように修正" />
     <MESSAGE value="[update] BN update &lt;version 2.2.025&gt;&#10;&#10;[fix] BNの修正" />
     <MESSAGE value="[update] Cycle GAN update &lt;version 2.3.000&gt;&#10;&#10;[change] Cycle GANの実装" />
     <MESSAGE value="[update] Double Flat update &lt;version 2.3.024&gt;&#10;&#10;[change] 2層構造の実験" />
@@ -867,7 +865,9 @@
     <MESSAGE value="[update] output update &lt;version 2.4.000&gt;&#10;&#10;[add] 発話情報の追加" />
     <MESSAGE value="[update] doubleblock update &lt;version 2.4.011&gt;&#10;&#10;[add] ダブルブロックの追加" />
     <MESSAGE value="[update] doubleblock update &lt;version 2.4.012&gt;&#10;&#10;[add] ダブルブロックの調整" />
-    <option name="LAST_COMMIT_MESSAGE" value="[update] doubleblock update &lt;version 2.4.012&gt;&#10;&#10;[add] ダブルブロックの調整" />
+    <MESSAGE value="[update] doubleblock update &lt;version 2.4.013&gt;&#10;&#10;[add] ダブルブロックの調整" />
+    <MESSAGE value="[update] doubleblock update &lt;version 2.4.016&gt;&#10;&#10;[add] ダブルブロックの調整2" />
+    <option name="LAST_COMMIT_MESSAGE" value="[update] doubleblock update &lt;version 2.4.016&gt;&#10;&#10;[add] ダブルブロックの調整2" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -1152,17 +1152,17 @@
     <entry file="file://$PROJECT_DIR$/VRC/train/logs/[glr=0.0002,gb=0.5,dlr=0.0002,db=0.5]wave2wave2.4.007/events.out.tfevents.1528956129.DESKTOP-QFC16G3">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/train/main.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="80">
-          <caret line="6" column="8" selection-start-line="6" selection-start-column="8" selection-end-line="6" selection-end-column="8" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$USER_HOME$/AppData/Local/Programs/Python/Python36/Lib/site-packages/tensorflow/python/ops/gen_array_ops.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="173">
           <caret line="7322" selection-start-line="7322" selection-end-line="7322" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/VRC/train/main.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="80">
+          <caret line="6" column="8" selection-start-line="6" selection-start-column="8" selection-end-line="6" selection-end-column="8" />
         </state>
       </provider>
     </entry>
@@ -1176,20 +1176,20 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="245">
+          <caret line="801" column="56" selection-start-line="801" selection-start-column="56" selection-end-line="801" selection-end-column="56" />
+          <folding>
+            <element signature="e#0#21#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/VRC/setting.json">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="64">
           <caret line="4" column="26" selection-start-line="4" selection-start-column="26" selection-end-line="4" selection-end-column="26" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="357">
-          <caret line="827" column="24" selection-start-line="827" selection-start-column="24" selection-end-line="827" selection-end-column="29" />
-          <folding>
-            <element signature="e#0#21#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
