@@ -854,7 +854,8 @@ def block_double(current,f,s,chs,depth,reuses,shake,pixs=2):
 
     tenA = tf.nn.leaky_relu(tenA,name="lrelu"+str(depth))
 
-    ten1=tenA
+    tt=tf.pad(tenA,((0,0),(0,0),(4,0),(0,0)),"reflect")
+    ten1=tt[:,:,:-4,:]
     stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(tenA.shape[3])))
     tenA = tf.layers.conv2d_transpose(ten1, 2, kernel_size=f, strides=s, padding="VALID",
                                       kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),

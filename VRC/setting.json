@@ -2,7 +2,7 @@
     "saving_config":{
         "checkpoint_dir":"Z://models/",
         "wave_otp_dir":"Z://waves/",
-        "version":"2.4.037"
+        "version":"2.4.038"
     },
     "network_architecture":{
         "architect":"double_flatnet",
@@ -29,7 +29,7 @@
         "d_b1":0.5,
         "train_d_scale":1.0,
         "train_interval":250,
-        "save_interval":1,
+        "save_interval":5,
         "weight_Cycle":10.0,
         "weight_GAN1":1.0,
         "weight_GAN2":1.0,
