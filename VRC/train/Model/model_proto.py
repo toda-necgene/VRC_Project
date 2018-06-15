@@ -36,7 +36,8 @@ class Model:
         self.args["stop_value"] = 0.5
         self.args["input_size"] = 8192
         self.args["weight_Cycle"]=1.0
-        self.args["weight_GAN"] = 1.0
+        self.args["weight_GAN1"] = 1.0
+        self.args["weight_GAN2"] = 1.0
         self.args["NFFT"]=128
         self.args["debug"] = False
         self.args["noise"] = False
@@ -174,20 +175,35 @@ class Model:
         with tf.variable_scope("discrims"):
 
             with tf.variable_scope("discrimB"):
-                self.d_judge_BR, self.d_judge_BR_logits = discriminator(b_true_noised, None, self.args["filter_d"],
+                self.d_judge_BR = discriminator(b_true_noised[:,:,:,1:], None, self.args["filter_d"],
                                                                        self.args["strides_d"], self.args["d_depth"],
-                                                                       self.args["D_channels"],"B")
+                                                                       self.args["D_channels"],a="B")
 
-                self.d_judge_BF, self.d_judge_BF_logits = discriminator(self.fake_aB_image, True, self.args["filter_d"],
+                self.d_judge_BF = discriminator(self.fake_aB_image[:,:,:,1:], True, self.args["filter_d"],
                                                                        self.args["strides_d"], self.args["d_depth"],
-                                                                       self.args["D_channels"],"B")
+                                                                       self.args["D_channels"],a="B")
             with tf.variable_scope("discrimA"):
-                self.d_judge_AR, self.d_judge_AR_logits = discriminator(a_true_noised, None, self.args["filter_d"],
+                self.d_judge_AR = discriminator(a_true_noised[:,:,:,1:], None, self.args["filter_d"],
                                                                         self.args["strides_d"], self.args["d_depth"],
                                                                         self.args["D_channels"],"A")
-                self.d_judge_AF, self.d_judge_AF_logits = discriminator(self.fake_bA_image, True, self.args["filter_d"],
+                self.d_judge_AF = discriminator(self.fake_bA_image[:,:,:,1:], True, self.args["filter_d"],
                                                                         self.args["strides_d"], self.args["d_depth"],
-                                                                        self.args["D_channels"],"A")
+                                                                        self.args["D_channels"],a="A")
+            with tf.variable_scope("discrimB2"):
+                self.d_judge_BR0 = discriminator(b_true_noised[:,:,:,:1], None, self.args["filter_d"],
+                                                                       self.args["strides_d"], self.args["d_depth"],
+                                                                       self.args["D_channels"],a="B2")
+
+                self.d_judge_BF0 = discriminator(self.fake_aB_image[:,:,:,:1], True, self.args["filter_d"],
+                                                                       self.args["strides_d"], self.args["d_depth"],
+                                                                       self.args["D_channels"],a="B2")
+            with tf.variable_scope("discrimA2"):
+                self.d_judge_AR0 = discriminator(a_true_noised[:,:,:,:1], None, self.args["filter_d"],
+                                                                        self.args["strides_d"], self.args["d_depth"],
+                                                                        self.args["D_channels"],a="A2")
+                self.d_judge_AF0 = discriminator(self.fake_bA_image[:,:,:,:1], True, self.args["filter_d"],
+                                                                        self.args["strides_d"], self.args["d_depth"],
+                                                                        self.args["D_channels"],a="A2")
 
 
         #getting individual variabloes
@@ -197,13 +213,28 @@ class Model:
         val=(1-self.noise[0])*1
         #objective-functions of discriminator
         #D-netの目的関数
-        self.d_loss_AR = tf.reduce_mean(tf.squared_difference(self.d_judge_AR_logits,self.label_modela))
-        self.d_loss_AF = tf.reduce_mean(tf.squared_difference(self.d_judge_AF_logits,self.label_modela*0))
-        self.d_loss_BR = tf.reduce_mean(tf.squared_difference(self.d_judge_BR_logits,self.label_modelb))
-        self.d_loss_BF = tf.reduce_mean(tf.squared_difference(self.d_judge_BF_logits,self.label_modelb*0))
+        # self.d_loss_AR = tf.reduce_mean(tf.squared_difference(self.d_judge_AR_logits,tf.ones_like(self.label_modela)))
+        # self.d_loss_AF = tf.reduce_mean(tf.squared_difference(self.d_judge_AF_logits,tf.zeros_like(self.label_modela)))
+        # self.d_loss_BR = tf.reduce_mean(tf.squared_difference(self.d_judge_BR_logits,tf.ones_like(self.label_modelb)))
+        # self.d_loss_BF = tf.reduce_mean(tf.squared_difference(self.d_judge_BF_logits,tf.zeros_like(self.label_modelb)))
+        #
+        # self.d_loss_AR0 = tf.reduce_mean(tf.squared_difference(self.d_judge_AR0, self.label_modela))
+        # self.d_loss_AF0 = tf.reduce_mean(tf.squared_difference(self.d_judge_AF0, self.label_modela * 0))
+        # self.d_loss_BR0 = tf.reduce_mean(tf.squared_difference(self.d_judge_BR0, self.label_modelb))
+        # self.d_loss_BF0 = tf.reduce_mean(tf.squared_difference(self.d_judge_BF0, self.label_modelb * 0))
 
-        self.d_lossA=(self.d_loss_AR+self.d_loss_AF)/2.0
-        self.d_lossB= (self.d_loss_BR + self.d_loss_BF)/2.0
+        self.d_loss_AR = tf.reduce_mean(tf.squared_difference(self.d_judge_AR, tf.ones_like(self.d_judge_AR)))
+        self.d_loss_AF = tf.reduce_mean(tf.squared_difference(self.d_judge_AF, tf.zeros_like(self.d_judge_AF)))
+        self.d_loss_BR = tf.reduce_mean(tf.squared_difference(self.d_judge_BR, tf.ones_like(self.d_judge_BR)))
+        self.d_loss_BF = tf.reduce_mean(tf.squared_difference(self.d_judge_BF, tf.zeros_like(self.d_judge_BF)))
+
+        self.d_loss_AR0 = tf.reduce_mean(tf.squared_difference(self.d_judge_AR0, tf.ones_like(self.d_judge_AR0)))
+        self.d_loss_AF0 = tf.reduce_mean(tf.squared_difference(self.d_judge_AF0, tf.zeros_like(self.d_judge_AF0)))
+        self.d_loss_BR0 = tf.reduce_mean(tf.squared_difference(self.d_judge_BR0, tf.ones_like(self.d_judge_BR0)))
+        self.d_loss_BF0 = tf.reduce_mean(tf.squared_difference(self.d_judge_BF0, tf.zeros_like(self.d_judge_BF0)))
+
+        self.d_lossA=(self.d_loss_AR+self.d_loss_AF+self.d_loss_AR0+self.d_loss_AF0)/2.0
+        self.d_lossB= (self.d_loss_BR + self.d_loss_BF+self.d_loss_BR0 + self.d_loss_BF0)/2.0
         self.d_loss=self.d_lossA+self.d_lossB
         # objective-functions of generator
         # G-netの目的関数
@@ -215,9 +246,13 @@ class Model:
 
         # Gan lossA
         # DSb=tf.reduce_mean(-tf.log(self.d_judge_BF+1e-32))
-        DSb=tf.squared_difference(self.d_judge_BF,self.label_modelb)
+        DSA1 = tf.reduce_mean(tf.squared_difference(self.d_judge_AF0, tf.ones_like(self.d_judge_AF0)))
+        DSA2 = tf.reduce_mean(tf.squared_difference(self.d_judge_AF, tf.ones_like(self.d_judge_AF)))
+        DSB1 = tf.reduce_mean(tf.squared_difference(self.d_judge_BF0, tf.ones_like(self.d_judge_BF0)))
+        DSB2 = tf.reduce_mean(tf.squared_difference(self.d_judge_BF, tf.ones_like(self.d_judge_BF)))
+
         # generator lossA
-        self.g_loss_aB = L1B * self.args["weight_Cycle"]+tf.reduce_mean(self.args["weight_GAN"]*DSb)
+        self.g_loss_aB = L1B * self.args["weight_Cycle"]+tf.reduce_mean(self.args["weight_GAN1"]*DSB1+self.args["weight_GAN2"]*DSB2)
         # self.g_loss_aB =  tf.reduce_mean(self.args["weight_GAN"] * DSb)
 
         # L1 norm lossB
@@ -226,12 +261,11 @@ class Model:
         L1bAAb = sa+sb
         # Gan loss
         # DSA = tf.reduce_mean(-tf.log(self.d_judge_AF+1e-32))
-        DSA = tf.squared_difference(self.d_judge_AF,self.label_modela)
 
         # L1UBA =16.0/(tf.abs(self.fake_bA_image[:,:,:,0]-self.fake_aB_image[:,:,:,0])+1e-8)
         # L1UBA =tf.maximum(L1UBA,tf.ones_like(L1UBA))
         # generator loss
-        self.g_loss_bA = L1bAAb * self.args["weight_Cycle"] + tf.reduce_mean( self.args["weight_GAN"]*DSA)
+        self.g_loss_bA = L1bAAb * self.args["weight_Cycle"] + tf.reduce_mean( self.args["weight_GAN1"]*DSA1+self.args["weight_GAN2"]*DSA2)
         # self.g_loss_bA =  tf.reduce_mean( self.args["weight_GAN"]*DSA)
 
         self.g_loss=self.g_loss_aB+self.g_loss_bA
@@ -240,15 +274,17 @@ class Model:
         #tensorboard functions
         #tensorboard 表示用関数
         self.g_loss_all= tf.summary.scalar("g_loss_cycle_A", tf.reduce_mean(L1bAAb),family="g_loss")
-        self.g_loss_gan = tf.summary.scalar("g_loss_gan_A", tf.reduce_mean(DSA),family="g_loss")
+        self.g_loss_gan = tf.summary.scalar("g_loss_gan_A_0", tf.reduce_mean(DSA1),family="g_loss")
+        self.g_loss_gan2 = tf.summary.scalar("g_loss_gan_A_1", tf.reduce_mean(DSA2), family="g_loss")
         self.dscore = tf.summary.scalar("dscore_A", tf.reduce_mean(self.d_judge_AF),family="d_score")
-        self.g_loss_sum_1 = tf.summary.merge([self.g_loss_all, self.g_loss_gan, self.dscore])
+        self.g_loss_sum_1 = tf.summary.merge([self.g_loss_all, self.g_loss_gan, self.g_loss_gan2, self.dscore])
 
         self.g_loss_all2 = tf.summary.scalar("g_loss_cycle_B", tf.reduce_mean(L1B),family="g_loss")
-        self.g_loss_gan2 = tf.summary.scalar("g_loss_gan_B", tf.reduce_mean(DSb),family="g_loss")
+        self.g_loss_gan3 = tf.summary.scalar("g_loss_gan_B_0", tf.reduce_mean(DSB1),family="g_loss")
+        self.g_loss_gan4 = tf.summary.scalar("g_loss_gan_B_1", tf.reduce_mean(DSB2), family="g_loss")
         self.dscore2 = tf.summary.scalar("dscore_B", tf.reduce_mean(self.d_judge_BF),family="d_score")
         # self.g_loss_uba = tf.summary.scalar("g_loss_distAB", tf.reduce_mean(L1UBA), family="g_loss")
-        self.g_loss_sum_2 = tf.summary.merge([self.g_loss_all2, self.g_loss_gan2, self.dscore2])
+        self.g_loss_sum_2 = tf.summary.merge([self.g_loss_all2, self.g_loss_gan3, self.g_loss_gan4, self.dscore2])
 
         self.d_loss_sumA = tf.summary.scalar("d_lossA", tf.reduce_mean(self.d_lossA),family="d_loss")
         self.d_loss_sumB = tf.summary.scalar("d_lossB", tf.reduce_mean(self.d_lossB),family="d_loss")
@@ -525,15 +561,26 @@ class Model:
 
                 rate = 1.0 - 0.5 ** (epoch // 50 + 1)
                 # G-netの学習
-                self.sess.run([g_optim,self.update_ops],feed_dict={ self.input_modela:res_t,self.label_modela:res_l,self.input_modelb:tar,self.label_modelb:tar_l, self.training:np.asarray([rate])})
+                nos = np.random.rand(self.args["batch_size"]) * self.args["label_noise"]
+                # self.sess.run([g_optim,self.update_ops],feed_dict={ self.input_modela:res_t,self.label_modela:res_l,self.input_modelb:tar,self.label_modelb:tar_l, self.noise:nos,self.training:np.asarray([rate])})
+                self.sess.run([g_optim,self.update_ops],feed_dict={ self.input_modela:res_t,self.input_modelb:tar, self.noise:nos,self.training:np.asarray([rate])})
                 # Update D network (1time)
                 nos = np.random.rand(self.args["batch_size"]) * self.args["label_noise"]
+                #self.sess.run([d_optim],
+                 #             feed_dict={self.input_modelb: tar, self.input_modela: res_t, self.label_modela: res_l,
+                 #                        self.label_modelb: tar_l, self.noise: nos, self.training: np.asarray([rate])})
                 self.sess.run([d_optim],
-                              feed_dict={self.input_modelb: tar, self.input_modela: res_t,self.label_modela:res_l,self.label_modelb:tar_l, self.noise: nos,self.training:np.asarray([rate])})
+                              feed_dict={self.input_modelb: tar, self.input_modela: res_t,
+                                        self.noise: nos, self.training: np.asarray([rate])})
+
                 # tensorboardの保存
                 if self.args["tensorboard"] and (counter+ti*epoch)%self.args["train_interval"]==0:
                     nos = np.random.rand(self.args["batch_size"]) * 0.0
-                    hg,hd,hg2, hd2=self.sess.run([self.g_loss_sum_1,self.d_loss_sumA,self.g_loss_sum_2, self.d_loss_sumB],feed_dict={self.input_modela:res_t,self.label_modela:res_l, self.label_modelb:tar_l,self.input_modelb:tar ,self.noise:nos ,self.training:np.asarray([1.0]) })
+                    # hg,hd,hg2, hd2=self.sess.run([self.g_loss_sum_1,self.d_loss_sumA,self.g_loss_sum_2, self.d_loss_sumB],feed_dict={self.input_modela:res_t,self.label_modela:res_l, self.label_modelb:tar_l,self.input_modelb:tar ,self.noise:nos ,self.training:np.asarray([1.0]) })
+                    hg, hd, hg2, hd2 = self.sess.run(
+                        [self.g_loss_sum_1, self.d_loss_sumA, self.g_loss_sum_2, self.d_loss_sumB],
+                        feed_dict={self.input_modela: res_t,self.input_modelb: tar, self.noise: nos, self.training: np.asarray([1.0])})
+
                     self.writer.add_summary(hg, counter + ti * epoch)
                     self.writer.add_summary(hd, counter + ti * epoch)
                     self.writer.add_summary(hg2, counter+ti*epoch)
@@ -673,20 +720,20 @@ class Model:
 
 
 def discriminator(inp,reuse,f,s,depth,chs,a):
-    current=tf.reshape(inp, [inp.shape[0],inp.shape[1],inp.shape[2],2])
+    current=tf.reshape(inp, [inp.shape[0],inp.shape[1],inp.shape[2],1])
     for i in range(depth):
         stddevs=math.sqrt(2.0/(f[0]*f[1]*int(current.shape[3])))
         ten = tf.layers.conv2d(current, chs[i], kernel_size=f, strides=s, padding="VALID",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), data_format="channels_last",name="disc_"+str(i),reuse=reuse)
+        ten=tf.layers.batch_normalization(ten,training=True)
         if i!=depth-1:
             current = tf.nn.leaky_relu(ten)
         else:
             current=ten
-    print(" [*] bottom shape:"+str(current.shape))
-    current=tf.reshape(current,[inp.shape[0],inp.shape[1]-depth,-1])
-    tens=tf.layers.conv1d(current,24,1)
+    if a is "A" and reuse is not None:
+        print(" [*] bottom shape:"+str(current.shape))
     #出力サイズB*H*24
-    return tens,tens
+    return current
 def generator(current_outputs,reuse,depth,chs,f,s,rate,type,train,name):
     if type == "flatnet":
         return generator_flatnet(current_outputs,reuse,depth,chs,f,s,0,train,name)
@@ -785,24 +832,24 @@ def block_hybrid(current,f,chs,depth,reuses,shake,name):
     ten=(ten1+ten2)*0.5
     return ten
 def block_double(current,f,s,chs,depth,reuses,shake,pixs=2):
-
-    if depth!=0:
-        current = tf.layers.batch_normalization(current, axis=3, training=True, trainable=True, reuse=reuses,
-                                             name="bn21" + str(depth))
-
+    currenta=current
     tenA=current
 
     stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(tenA.shape[3])))
     tenA = tf.layers.conv2d(tenA, chs, kernel_size=f, strides=s, padding="VALID",
                            kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), data_format="channels_last",reuse=reuses,name="conv11"+str(depth))
+    tenA = tf.layers.batch_normalization(tenA, axis=3, training=True, trainable=True, reuse=reuses,
+                                            name="bn11" + str(depth))
+
     tenA = tf.nn.leaky_relu(tenA,name="lrelu"+str(depth))
 
-    sc=np.linspace(1.0,0.0,int(tenA.shape[2]))
-    sc=np.tile(sc.reshape(1,-1),(int(tenA.shape[1]),1))
-    pos=tf.constant(sc,dtype=tf.float32,shape=tenA.shape)
-    ten1=tenA*pos
-    ten1 = tf.pad(ten1, ((0,0),(0,0),(2,0),(0,0)))
-    ten1=ten1[:,:,:-2,:]
+    if shake:
+        sc=np.linspace(1.0,0.0,int(tenA.shape[2]))
+        sc=np.tile(sc.reshape(1,-1),(int(tenA.shape[1]),1))
+        pos=tf.constant(sc,dtype=tf.float32,shape=tenA.shape)
+        ten1=tenA*pos
+    else:
+        ten1=tenA
     stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(tenA.shape[3])))
     tenA = tf.layers.conv2d_transpose(ten1, 2, kernel_size=f, strides=s, padding="VALID",
                                       kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
@@ -813,13 +860,16 @@ def block_double(current,f,s,chs,depth,reuses,shake,pixs=2):
     tenB = tf.layers.conv2d(tenB, chs, kernel_size=ps_f, strides=ps_f, padding="VALID",
                            kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
                            data_format="channels_last", reuse=reuses, name="conv21" + str(depth))
+    tenB = tf.layers.batch_normalization(tenB, axis=3, training=True, trainable=True, reuse=reuses,
+                                         name="bn21" + str(depth))
+
     tenB = tf.nn.leaky_relu(tenB, name="lrelu" + str(depth))
     tenB = deconve_with_ps(tenB, pixs, 2, depth, reuses=reuses)
 
     ten = (tenA + tenB) * 0.5
     if shake:
         ten=tf.nn.leaky_relu(ten)
-        ten=ten+current
+        ten=ten+currenta
 
     return ten
 
@@ -946,6 +996,17 @@ def isread(path):
     else:
         ans=ans[:160000]
     return ans
+def bn(ten,depth):
+    # return tf.layers.batch_normalization(inp,axis=3, training=False, trainable=True,
+    #                                     gamma_initializer=tf.ones_initializer())
+    name = "batch_normalization"
+    with tf.variable_scope(name+str(depth)):
+        sc = ten.shape[3]
+        gamma = tf.get_variable("gamma", sc, tf.float32, tf.zeros_initializer(), trainable=True)
+        beta = tf.get_variable("beta", sc, tf.float32, tf.zeros_initializer(), trainable=True)
+        m,v=tf.nn.moments(ten,[0,1,2])
+    return tf.nn.batch_normalization(ten, m, v, beta, gamma, 1e-8)
+
 def imread(path):
     return np.load(path)
 def mask_scale(dd,f,t,power):
