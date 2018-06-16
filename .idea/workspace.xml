@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="BookmarkManager">
-    <bookmark url="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py" line="715" />
+    <bookmark url="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py" line="719" />
     <bookmark url="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets.py" line="190" />
   </component>
   <component name="ChangeListManager">
@@ -29,34 +29,22 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="setting.json" pinned="false" current-in-tab="false">
+      <file leaf-file-name="setting.json" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/VRC/setting.json">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="160">
-              <caret line="10" column="17" selection-start-line="10" selection-start-column="17" selection-end-line="10" selection-end-column="17" />
+            <state relative-caret-position="64">
+              <caret line="4" column="26" selection-start-line="4" selection-start-column="26" selection-end-line="4" selection-end-column="26" />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="model_proto.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="model_proto.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="325">
-              <caret line="815" column="107" selection-start-line="815" selection-start-column="107" selection-end-line="815" selection-end-column="107" />
+            <state relative-caret-position="101">
+              <caret line="764" column="4" selection-start-line="764" selection-start-column="4" selection-end-line="764" selection-end-column="4" />
               <folding>
                 <element signature="e#0#21#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="voice_to_datasets.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-957">
-              <caret line="19" column="10" selection-start-line="19" selection-start-column="10" selection-end-line="19" selection-end-column="10" />
-              <folding>
-                <element signature="e#0#14#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -116,8 +104,8 @@
         <option value="$PROJECT_DIR$/gitignore" />
         <option value="$PROJECT_DIR$/VRC/utils/size_fitter.py" />
         <option value="$PROJECT_DIR$/VRC/utils/tagging.py" />
-        <option value="$PROJECT_DIR$/VRC/setting.json" />
         <option value="$PROJECT_DIR$/VRC/train/Model/model_proto.py" />
+        <option value="$PROJECT_DIR$/VRC/setting.json" />
       </list>
     </option>
   </component>
@@ -501,20 +489,6 @@
       <option name="presentableId" value="Default" />
       <updated>1520153808625</updated>
     </task>
-    <task id="LOCAL-00009" summary="[update] test update &lt;version 2.1.0&gt;&#10;&#10;[add]    相対test機能の追加&#10;[change] Sigmoidを改めて導入">
-      <created>1527066622835</created>
-      <option name="number" value="00009" />
-      <option name="presentableId" value="LOCAL-00009" />
-      <option name="project" value="LOCAL" />
-      <updated>1527066622835</updated>
-    </task>
-    <task id="LOCAL-00010" summary="[update] test update &lt;version 2.2.0&gt;&#10;&#10;[change] tanhを位相スペクトラムにのみかけるようにした。また、PI倍している&#10;[]">
-      <created>1527172534893</created>
-      <option name="number" value="00010" />
-      <option name="presentableId" value="LOCAL-00010" />
-      <option name="project" value="LOCAL" />
-      <updated>1527172534893</updated>
-    </task>
     <task id="LOCAL-00011" summary="[update] test update &lt;version 2.2.0&gt;&#10;&#10;[change] tanhを廃止&#10;[change] split network 廃止">
       <created>1527330336712</created>
       <option name="number" value="00011" />
@@ -844,7 +818,21 @@
       <option name="project" value="LOCAL" />
       <updated>1529130004781</updated>
     </task>
-    <option name="localTasksCounter" value="58" />
+    <task id="LOCAL-00058" summary="[update] doubleblock update &lt;version 2.4.045&gt;&#10;&#10;[add] psブロックの調整7">
+      <created>1529152310612</created>
+      <option name="number" value="00058" />
+      <option name="presentableId" value="LOCAL-00058" />
+      <option name="project" value="LOCAL" />
+      <updated>1529152310612</updated>
+    </task>
+    <task id="LOCAL-00059" summary="[update] doubleblock update &lt;version 2.4.047&gt;&#10;&#10;[add] psブロックの調整2">
+      <created>1529154156279</created>
+      <option name="number" value="00059" />
+      <option name="presentableId" value="LOCAL-00059" />
+      <option name="project" value="LOCAL" />
+      <updated>1529154156279</updated>
+    </task>
+    <option name="localTasksCounter" value="60" />
     <servers />
   </component>
   <component name="TodoView">
@@ -883,8 +871,6 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[update] relu update &lt;version 2.3.035&gt;&#10;&#10;[change] flatnetにreluレイヤーの追加" />
-    <MESSAGE value="[update] initializer update &lt;version 2.3.035&gt;&#10;&#10;[add] Heの初期化を実装" />
     <MESSAGE value="[update] PS update &lt;version 2.3.035&gt;&#10;&#10;[add] PSを実装" />
     <MESSAGE value="[update] PS update &lt;version 2.3.060&gt;&#10;&#10;[add] PSをu_net実装" />
     <MESSAGE value="[update] h_flat update &lt;version 2.3.061&gt;&#10;&#10;[add] hybrid_flatnetの実装" />
@@ -908,7 +894,9 @@
     <MESSAGE value="[update] doubleblock update &lt;version 2.4.034&gt;&#10;&#10;[add] ダブルブロックの調整4" />
     <MESSAGE value="[update] doubleblock update &lt;version 2.4.034&gt;&#10;&#10;[add] ダブルブロックの調整5" />
     <MESSAGE value="[update] doubleblock update &lt;version 2.4.038&gt;&#10;&#10;[add] ダブルブロックの調整6" />
-    <option name="LAST_COMMIT_MESSAGE" value="[update] doubleblock update &lt;version 2.4.038&gt;&#10;&#10;[add] ダブルブロックの調整6" />
+    <MESSAGE value="[update] doubleblock update &lt;version 2.4.045&gt;&#10;&#10;[add] psブロックの調整7" />
+    <MESSAGE value="[update] doubleblock update &lt;version 2.4.047&gt;&#10;&#10;[add] psブロックの調整2" />
+    <option name="LAST_COMMIT_MESSAGE" value="[update] doubleblock update &lt;version 2.4.047&gt;&#10;&#10;[add] psブロックの調整2" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -1179,13 +1167,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$USER_HOME$/AppData/Local/Programs/Python/Python36/Lib/site-packages/tensorflow/python/framework/ops.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="173">
-          <caret line="438" selection-start-line="438" selection-end-line="438" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/VRC/utils/tagging.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="51">
@@ -1206,16 +1187,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-957">
-          <caret line="19" column="10" selection-start-line="19" selection-start-column="10" selection-end-line="19" selection-end-column="10" />
-          <folding>
-            <element signature="e#0#14#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/VRC/train/main.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="208">
@@ -1223,20 +1194,37 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/setting.json">
+    <entry file="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="160">
-          <caret line="10" column="17" selection-start-line="10" selection-start-column="17" selection-end-line="10" selection-end-column="17" />
+        <state relative-caret-position="195">
+          <caret line="19" column="10" selection-start-line="19" selection-start-column="10" selection-end-line="19" selection-end-column="10" />
+          <folding>
+            <element signature="e#0#14#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/AppData/Local/Programs/Python/Python36/Lib/site-packages/tensorflow/python/framework/ops.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="173">
+          <caret line="1569" selection-start-line="1569" selection-end-line="1569" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="325">
-          <caret line="815" column="107" selection-start-line="815" selection-start-column="107" selection-end-line="815" selection-end-column="107" />
+        <state relative-caret-position="101">
+          <caret line="764" column="4" selection-start-line="764" selection-start-column="4" selection-end-line="764" selection-end-column="4" />
           <folding>
             <element signature="e#0#21#0" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/VRC/setting.json">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="64">
+          <caret line="4" column="26" selection-start-line="4" selection-start-column="26" selection-end-line="4" selection-end-column="26" />
         </state>
       </provider>
     </entry>

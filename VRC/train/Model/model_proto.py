@@ -760,6 +760,8 @@ def generator(current_outputs,reuse,depth,chs,chs2,f,s,type,train,name):
         return generator_flatnet(current_outputs, reuse, depth, chs, f, s, 3, train, name)
     elif type == "ps_decay_flatnet":
         return generator_flatnet_decay(current_outputs, reuse, depth, chs2, f, s, 1, name)
+    elif type == "decay_flatnet":
+        return generator_flatnet_decay(current_outputs, reuse, depth, chs2, f, s, 0, name)
     elif type == "ps_unet":
         return generator_unet(current_outputs, reuse, depth, chs, f, s, 1)
     elif type == "hybrid_unet":
