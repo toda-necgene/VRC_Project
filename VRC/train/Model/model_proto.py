@@ -779,23 +779,25 @@ def generator_flatnet(current_outputs,reuse,depth,chs,f,s,ps,train,name):
         else:
             current=ten
     return current
-def block_dc(current,output_shape,chs,f,s,depth,reuses,relu,name):
+def block_dc(current,output_shape,chs,f,s,depth,reuses,shake,name):
     ten=current
 
     stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(ten.shape[3])))
 
     ten = tf.layers.conv2d(ten, chs, kernel_size=f, strides=s, padding="VALID",
                            kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), data_format="channels_last",reuse=reuses,name="conv11"+str(depth))
-    ten = tf.contrib.layers.instance_norm(ten,reuse=reuses)
-    ten = tf.manip.roll(ten,2,2)
+    ten = tf.layers.batch_normalization(ten, axis=3, training=False, trainable=False, reuse=reuses,
+                                        name="bn11" + str(depth))
+    tt = tf.pad(ten, ((0, 0), (0, 0), (4, 0), (0, 0)), "reflect")
+    ten = tt[:, :, :-4, :]
     ten = tf.nn.leaky_relu(ten,name="lrelu"+str(depth))
 
     stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(ten.shape[3])))
     ten = tf.layers.conv2d_transpose(ten, output_shape, kernel_size=f, strides=s, padding="VALID",
                                      kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
                                      data_format="channels_last",reuse=reuses,name="deconv11"+str(depth))
-    if relu:
-        ten=tf.nn.relu(ten)
+    if shake:
+        ten=tf.nn.leaky_relu(ten)
     return ten
 def block_ps(current,output_shape,f,depth,reuses,relu,name):
     ten=current
@@ -805,7 +807,7 @@ def block_ps(current,output_shape,f,depth,reuses,relu,name):
     ten = tf.layers.conv2d(ten, chs_r, kernel_size=f, strides=f, padding="VALID",
                            kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), data_format="channels_last",reuse=reuses,name="conv21"+str(depth))
 
-    ten = tf.layers.batch_normalization(ten, axis=1, training=False, trainable=False, reuse=reuses,
+    ten = tf.layers.batch_normalization(ten, axis=3, training=False, trainable=False, reuse=reuses,
                                         name="bn11" + str(depth))
     ten = tf.manip.roll(ten, 1, 2)
     ten = tf.nn.leaky_relu(ten,name="lrelu"+str(depth))
