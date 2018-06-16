@@ -417,8 +417,8 @@ class Model:
 
         self.lod="[glr="+str(lr_g_opt)+",gb="+str(beta_g_opt)+",dlr="+str(lr_d_opt)+",db="+str(beta_d_opt)+"]"
 
-        lr_g_opt3 = lr_g_opt*(0.1**(self.args["start_epoch"]//100))
-        lr_d_opt3 = lr_g_opt*(0.1**(self.args["start_epoch"]//100))
+        lr_g_opt3 = lr_g_opt*(0.1**(self.args["start_epoch"]//400))
+        lr_d_opt3 = lr_g_opt*(0.1**(self.args["start_epoch"]//400))
         lr_g=tf.placeholder(tf.float32,None,name="g_lr")
         lr_d=tf.placeholder(tf.float32,None,name="d_lr")
         g_optim = tf.train.AdamOptimizer(lr_g, beta_g_opt, beta_2_g_opt).minimize(self.g_loss,
@@ -636,9 +636,9 @@ class Model:
                 ft=taken_time*(self.args["train_epoch"]-epoch-1)
                 print(" [*] Epoch %5d (iterations: %10d)finished in %.2f (preprocess %.3f) ETA: %3d:%2d:%2.1f" % (epoch,count,taken_time,ts,ft//3600,ft//60%60,ft%60))
                 time_of_epoch=np.append(time_of_epoch,np.asarray([taken_time,ts]))
-            if epoch%100==0:
-                lr_g_opt3 = lr_g_opt * (0.1 ** (epoch // 100))
-                lr_d_opt3 = lr_g_opt * (0.1 ** (epoch // 100))
+            if epoch%400==0:
+                lr_g_opt3 = lr_g_opt * (0.1 ** (epoch // 400))
+                lr_d_opt3 = lr_g_opt * (0.1 ** (epoch // 400))
         print(" [*] Finished!! in "+ str(np.sum(time_of_epoch[::2])))
 
         if self.args["log"] and self.args["wave_otp_dir"] != "False":
@@ -807,12 +807,13 @@ def block_ps(current,output_shape,f,depth,reuses,relu,name):
     ten = tf.layers.conv2d(ten, chs_r, kernel_size=f, strides=f, padding="VALID",
                            kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), data_format="channels_last",reuse=reuses,name="conv21"+str(depth))
 
-    ten = tf.layers.batch_normalization(ten, axis=3, training=False, trainable=False, reuse=reuses,
+    ten = tf.layers.batch_normalization(ten, axis=3, training=True, trainable=True, reuse=reuses,
                                         name="bn11" + str(depth))
-    ten = tf.manip.roll(ten, 1, 2)
+    tt = tf.pad(ten, ((0, 0), (0, 0), (4, 0), (0, 0)), "reflect")
+    ten = tt[:, :, :-4, :]
     ten = tf.nn.leaky_relu(ten,name="lrelu"+str(depth))
     ten=deconve_with_ps(ten,f[0],output_shape,depth,reuses=reuses)
-
+    ten = tf.layers.batch_normalization(ten, axis=3, training=True, trainable=True, reuse=reuses,name="bn12" + str(depth))
     if relu:
         ten=tf.nn.relu(ten)
     return ten

@@ -2,17 +2,17 @@
     "saving_config":{
         "checkpoint_dir":"Z://models/",
         "wave_otp_dir":"Z://waves/",
-        "version":"2.4.040"
+        "version":"2.4.045"
     },
     "network_architecture":{
-        "architect":"flatnet",
+        "architect":"ps_flatnet",
         "input_size":4096,
         "batch_size":1,
         "depth":8,
         "d_depth":6,
         "D_channels":[16,16,16,32,64,1],
-        "G_channel":64,
-        "strides_g":[4,4],
+        "G_channel":32,
+        "strides_g":[8,8],
         "strides_d":[2,2],
         "filter_g":[8,8],
         "filter_d":[2,2]
@@ -24,7 +24,7 @@
         "train_data_num":552,
         "stop_argument":false,
         "stop_value":0.1,
-        "g_lr":2e-4,
+        "g_lr":2e-6,
         "g_b1":0.5,
         "d_b1":0.5,
         "train_d_scale":1.0,

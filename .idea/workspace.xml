@@ -29,20 +29,20 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="setting.json" pinned="false" current-in-tab="true">
+      <file leaf-file-name="setting.json" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/setting.json">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="64">
-              <caret line="4" column="26" selection-start-line="4" selection-start-column="26" selection-end-line="4" selection-end-column="26" />
+            <state relative-caret-position="160">
+              <caret line="10" column="17" selection-start-line="10" selection-start-column="17" selection-end-line="10" selection-end-column="17" />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="model_proto.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="model_proto.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1013">
-              <caret line="790" column="19" lean-forward="true" selection-start-line="790" selection-start-column="19" selection-end-line="790" selection-end-column="19" />
+            <state relative-caret-position="325">
+              <caret line="815" column="107" selection-start-line="815" selection-start-column="107" selection-end-line="815" selection-end-column="107" />
               <folding>
                 <element signature="e#0#21#0" expanded="true" />
               </folding>
@@ -53,7 +53,7 @@
       <file leaf-file-name="voice_to_datasets.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-909">
+            <state relative-caret-position="-957">
               <caret line="19" column="10" selection-start-line="19" selection-start-column="10" selection-end-line="19" selection-end-column="10" />
               <folding>
                 <element signature="e#0#14#0" expanded="true" />
@@ -116,8 +116,8 @@
         <option value="$PROJECT_DIR$/gitignore" />
         <option value="$PROJECT_DIR$/VRC/utils/size_fitter.py" />
         <option value="$PROJECT_DIR$/VRC/utils/tagging.py" />
-        <option value="$PROJECT_DIR$/VRC/train/Model/model_proto.py" />
         <option value="$PROJECT_DIR$/VRC/setting.json" />
+        <option value="$PROJECT_DIR$/VRC/train/Model/model_proto.py" />
       </list>
     </option>
   </component>
@@ -221,6 +221,7 @@
   </component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\tadop\git\vrc\VRC\train\logs\1-2" />
       <recent name="C:\Users\tadop\git\vrc\VRC\train\Model\datasets\source\01" />
       <recent name="C:\Users\tadop\git\vrc\VRC" />
       <recent name="C:\Users\tadop\git\vrc\VRC\train\Model\datasets\test" />
@@ -362,7 +363,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.tagging">
+  <component name="RunManager" selected="Python.main">
     <configuration name="main debug" type="PythonConfigurationType" factoryName="Python">
       <module name="vrc" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -499,13 +500,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1520153808625</updated>
-    </task>
-    <task id="LOCAL-00008" summary="[update] test update &lt;version 2.0.0&gt;&#10;&#10;[fix] test機能の修正">
-      <created>1527016374040</created>
-      <option name="number" value="00008" />
-      <option name="presentableId" value="LOCAL-00008" />
-      <option name="project" value="LOCAL" />
-      <updated>1527016374040</updated>
     </task>
     <task id="LOCAL-00009" summary="[update] test update &lt;version 2.1.0&gt;&#10;&#10;[add]    相対test機能の追加&#10;[change] Sigmoidを改めて導入">
       <created>1527066622835</created>
@@ -843,7 +837,14 @@
       <option name="project" value="LOCAL" />
       <updated>1529073013537</updated>
     </task>
-    <option name="localTasksCounter" value="57" />
+    <task id="LOCAL-00057" summary="[update] doubleblock update &lt;version 2.4.038&gt;&#10;&#10;[add] ダブルブロックの調整6">
+      <created>1529130004780</created>
+      <option name="number" value="00057" />
+      <option name="presentableId" value="LOCAL-00057" />
+      <option name="project" value="LOCAL" />
+      <updated>1529130004781</updated>
+    </task>
+    <option name="localTasksCounter" value="58" />
     <servers />
   </component>
   <component name="TodoView">
@@ -1205,16 +1206,9 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/train/main.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="208">
-          <caret line="14" selection-start-line="14" selection-end-line="14" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-909">
+        <state relative-caret-position="-957">
           <caret line="19" column="10" selection-start-line="19" selection-start-column="10" selection-end-line="19" selection-end-column="10" />
           <folding>
             <element signature="e#0#14#0" expanded="true" />
@@ -1222,20 +1216,27 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
+    <entry file="file://$PROJECT_DIR$/VRC/train/main.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1013">
-          <caret line="790" column="19" lean-forward="true" selection-start-line="790" selection-start-column="19" selection-end-line="790" selection-end-column="19" />
-          <folding>
-            <element signature="e#0#21#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="208">
+          <caret line="14" selection-start-line="14" selection-end-line="14" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/setting.json">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="64">
-          <caret line="4" column="26" selection-start-line="4" selection-start-column="26" selection-end-line="4" selection-end-column="26" />
+        <state relative-caret-position="160">
+          <caret line="10" column="17" selection-start-line="10" selection-start-column="17" selection-end-line="10" selection-end-column="17" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="325">
+          <caret line="815" column="107" selection-start-line="815" selection-start-column="107" selection-end-line="815" selection-end-column="107" />
+          <folding>
+            <element signature="e#0#21#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
