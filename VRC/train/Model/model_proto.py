@@ -836,7 +836,9 @@ def block_ps(current,output_shape,chs,f,depth,reuses,relu,name):
 
     ten = tf.layers.batch_normalization(ten, axis=3, training=True, trainable=True, reuse=reuses,
                                         name="bn11" + str(depth))
-    tt = tf.pad(ten, ((0, 0), (0, 0), (2, 0), (0, 0)), "reflect")
+    tst=np.tile(np.linspace(1.0, 0.1, int(ten.shape[2])).reshape(1,-1),(int(ten.shape[1]),1))
+    pos = tf.constant(tst, dtype=tf.float32, shape=ten.shape)
+    tt = tf.pad(ten*pos, ((0, 0), (0, 0), (2, 0), (0, 0)), "reflect")
     ten = tt[:, :, :-2, :]
     ten = tf.nn.leaky_relu(ten,name="lrelu"+str(depth))
     ten=deconve_with_ps(ten,f[0],output_shape,depth,reuses=reuses)

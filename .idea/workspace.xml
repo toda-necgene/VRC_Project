@@ -29,7 +29,7 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="setting.json" pinned="false" current-in-tab="true">
+      <file leaf-file-name="setting.json" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/setting.json">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="64">
@@ -38,11 +38,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="model_proto.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="model_proto.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="101">
-              <caret line="764" column="4" selection-start-line="764" selection-start-column="4" selection-end-line="764" selection-end-column="4" />
+            <state relative-caret-position="165">
+              <caret line="838" column="92" selection-start-line="838" selection-start-column="92" selection-end-line="838" selection-end-column="92" />
               <folding>
                 <element signature="e#0#21#0" expanded="true" />
               </folding>
@@ -104,8 +104,8 @@
         <option value="$PROJECT_DIR$/gitignore" />
         <option value="$PROJECT_DIR$/VRC/utils/size_fitter.py" />
         <option value="$PROJECT_DIR$/VRC/utils/tagging.py" />
-        <option value="$PROJECT_DIR$/VRC/train/Model/model_proto.py" />
         <option value="$PROJECT_DIR$/VRC/setting.json" />
+        <option value="$PROJECT_DIR$/VRC/train/Model/model_proto.py" />
       </list>
     </option>
   </component>
@@ -489,20 +489,6 @@
       <option name="presentableId" value="Default" />
       <updated>1520153808625</updated>
     </task>
-    <task id="LOCAL-00011" summary="[update] test update &lt;version 2.2.0&gt;&#10;&#10;[change] tanhを廃止&#10;[change] split network 廃止">
-      <created>1527330336712</created>
-      <option name="number" value="00011" />
-      <option name="presentableId" value="LOCAL-00011" />
-      <option name="project" value="LOCAL" />
-      <updated>1527330336712</updated>
-    </task>
-    <task id="LOCAL-00012" summary="[update] speedup update &lt;version 2.2.003&gt;&#10;&#10;[add] 学習データを事前用意できる形に&#10;[fix] FFTのバグを修正">
-      <created>1527506506627</created>
-      <option name="number" value="00012" />
-      <option name="presentableId" value="LOCAL-00012" />
-      <option name="project" value="LOCAL" />
-      <updated>1527506506627</updated>
-    </task>
     <task id="LOCAL-00013" summary="[update] speedup update &lt;version 2.2.003&gt;&#10;&#10;[add] 安定化">
       <created>1527548821691</created>
       <option name="number" value="00013" />
@@ -832,7 +818,21 @@
       <option name="project" value="LOCAL" />
       <updated>1529154156279</updated>
     </task>
-    <option name="localTasksCounter" value="60" />
+    <task id="LOCAL-00060" summary="[update] doubleblock update &lt;version 2.4.047&gt;&#10;&#10;[add] decayFlatnet">
+      <created>1529154433179</created>
+      <option name="number" value="00060" />
+      <option name="presentableId" value="LOCAL-00060" />
+      <option name="project" value="LOCAL" />
+      <updated>1529154433180</updated>
+    </task>
+    <task id="LOCAL-00061" summary="[update] doubleblock update &lt;version 2.4.061&gt;&#10;&#10;[add] decayFlatnet">
+      <created>1529162567778</created>
+      <option name="number" value="00061" />
+      <option name="presentableId" value="LOCAL-00061" />
+      <option name="project" value="LOCAL" />
+      <updated>1529162567778</updated>
+    </task>
+    <option name="localTasksCounter" value="62" />
     <servers />
   </component>
   <component name="TodoView">
@@ -871,8 +871,6 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[update] PS update &lt;version 2.3.035&gt;&#10;&#10;[add] PSを実装" />
-    <MESSAGE value="[update] PS update &lt;version 2.3.060&gt;&#10;&#10;[add] PSをu_net実装" />
     <MESSAGE value="[update] h_flat update &lt;version 2.3.061&gt;&#10;&#10;[add] hybrid_flatnetの実装" />
     <MESSAGE value="[update] h_flat update &lt;version 2.3.063&gt;&#10;&#10;[add] hybrid_flatnetの実装" />
     <MESSAGE value="[update] h_flat update &lt;version 2.3.078&gt;&#10;&#10;[change] hybrid_flatnet改造" />
@@ -896,7 +894,9 @@
     <MESSAGE value="[update] doubleblock update &lt;version 2.4.038&gt;&#10;&#10;[add] ダブルブロックの調整6" />
     <MESSAGE value="[update] doubleblock update &lt;version 2.4.045&gt;&#10;&#10;[add] psブロックの調整7" />
     <MESSAGE value="[update] doubleblock update &lt;version 2.4.047&gt;&#10;&#10;[add] psブロックの調整2" />
-    <option name="LAST_COMMIT_MESSAGE" value="[update] doubleblock update &lt;version 2.4.047&gt;&#10;&#10;[add] psブロックの調整2" />
+    <MESSAGE value="[update] doubleblock update &lt;version 2.4.047&gt;&#10;&#10;[add] decayFlatnet" />
+    <MESSAGE value="[update] doubleblock update &lt;version 2.4.061&gt;&#10;&#10;[add] decayFlatnet" />
+    <option name="LAST_COMMIT_MESSAGE" value="[update] doubleblock update &lt;version 2.4.061&gt;&#10;&#10;[add] decayFlatnet" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -1187,13 +1187,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/train/main.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="208">
-          <caret line="14" selection-start-line="14" selection-end-line="14" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="195">
@@ -1211,13 +1204,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
+    <entry file="file://$PROJECT_DIR$/VRC/train/main.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="101">
-          <caret line="764" column="4" selection-start-line="764" selection-start-column="4" selection-end-line="764" selection-end-column="4" />
-          <folding>
-            <element signature="e#0#21#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="208">
+          <caret line="14" selection-start-line="14" selection-end-line="14" />
         </state>
       </provider>
     </entry>
@@ -1225,6 +1215,16 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="64">
           <caret line="4" column="26" selection-start-line="4" selection-start-column="26" selection-end-line="4" selection-end-column="26" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="165">
+          <caret line="838" column="92" selection-start-line="838" selection-start-column="92" selection-end-line="838" selection-end-column="92" />
+          <folding>
+            <element signature="e#0#21#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
