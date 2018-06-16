@@ -44,7 +44,7 @@ class Model:
         self.args["cupy"] = False
         self.args["D_channels"] =[2]
         self.args["G_channel"] = 32
-        self.args["G_channel2"] = 32
+        self.args["G_channels"] = [32]
         self.args["strides_g"] = [2,2]
         self.args["strides_g2"] = [1, 1]
         self.args["strides_d"] = [2,2]
@@ -95,6 +95,10 @@ class Model:
         if len(self.args["D_channels"]) != (self.args['d_depth']):
             print(" [!] Channels length and depth+1 must be equal ." + str(len(self.args["D_channels"])) + "vs" + str(self.args['d_depth']))
             self.args["D_channels"] = [min([2 ** (i + 1) - 2, 254]) for i in range(self.args['d_depth'])]
+        if len(self.args["G_channels"]) != (self.args['depth']*2):
+            print(" [!] Channels length and depth*2 must be equal ." + str(len(self.args["G_channels"])) + "vs" + str(
+                self.args['gepth']*2))
+            self.args["D_channels"] = [min([2 ** (i + 1) - 2, 254]) for i in range(self.args['depth']*2)]
         self.args["SHIFT"] = self.args["NFFT"]//2
         self.args["name_save"] = self.args["model_name"] + self.args["version"]
         ss=self.args["input_size"]//self.args["SHIFT"]
@@ -140,28 +144,28 @@ class Model:
             with tf.variable_scope("generator_1"):
                 self.fake_aB_image = generator(tf.reshape(self.input_modela, self.input_size_model), reuse=None,
                                               chs=self.args["G_channel"], depth=self.args["depth"], f=self.args["filter_g"],
-                                              s=self.args["strides_g"], rate=self.training,type=self.args["architect"],train=True,name="1")
+                                              s=self.args["strides_g"], chs2=self.args["G_channels"],type=self.args["architect"],train=True,name="1")
                 self.fake_aB_image_test = generator(tf.reshape(self.input_modelb, self.input_size_model), reuse=True,
                                                 chs=self.args["G_channel"], depth=self.args["depth"],
                                                 f=self.args["filter_g"],
-                                                s=self.args["strides_g"], rate=self.training,
+                                                s=self.args["strides_g"],
                                                 type=self.args["architect"],
-                                                train=False,name="1")
+                                                train=False,name="1", chs2=self.args["G_channels"])
 
             with tf.variable_scope("generator_2"):
                 self.fake_bA_image = generator(tf.reshape(self.input_modelb, self.input_size_model), reuse=None,
                                               chs=self.args["G_channel"], depth=self.args["depth"], f=self.args["filter_g"],
-                                              s=self.args["strides_g"], rate=self.training,type=self.args["architect"],train=True,name="2")
+                                              s=self.args["strides_g"], chs2=self.args["G_channels"],type=self.args["architect"],train=True,name="2")
 
             with tf.variable_scope("generator_2"):
                 self.fake_Ba_image = generator(tf.reshape(self.fake_aB_image, self.input_size_model), reuse=True,
                                               chs=self.args["G_channel"], depth=self.args["depth"], f=self.args["filter_g"],
-                                              s=self.args["strides_g"], rate=self.training,type=self.args["architect"],train=True,name="2")
+                                              s=self.args["strides_g"], chs2=self.args["G_channels"],type=self.args["architect"],train=True,name="2")
             with tf.variable_scope("generator_1"):
                 self.fake_Ab_image = generator(tf.reshape(self.fake_bA_image, self.input_size_model), reuse=True,
                                                chs=self.args["G_channel"], depth=self.args["depth"],
                                                f=self.args["filter_g"],
-                                               s=self.args["strides_g"], rate=self.training,type=self.args["architect"],train=True,name="1")
+                                               s=self.args["strides_g"], chs2=self.args["G_channels"],type=self.args["architect"],train=True,name="1")
         self.noise = tf.placeholder(tf.float32, [self.args["batch_size"]], "inputs_Noise")
 
         a_true_noised=self.input_modela+tf.random_normal(self.input_modela.shape,0,self.noise[0])
@@ -745,7 +749,7 @@ def discriminator(inp,reuse,f,s,depth,chs,a):
         print(" [*] bottom shape:"+str(current.shape))
     #出力サイズB*H*24
     return current
-def generator(current_outputs,reuse,depth,chs,f,s,rate,type,train,name):
+def generator(current_outputs,reuse,depth,chs,chs2,f,s,type,train,name):
     if type == "flatnet":
         return generator_flatnet(current_outputs,reuse,depth,chs,f,s,0,train,name)
     elif type == "ps_flatnet":
@@ -754,6 +758,8 @@ def generator(current_outputs,reuse,depth,chs,f,s,rate,type,train,name):
         return generator_flatnet(current_outputs, reuse, depth, chs, f, s, 2,train,name)
     elif type == "double_flatnet":
         return generator_flatnet(current_outputs, reuse, depth, chs, f, s, 3, train, name)
+    elif type == "ps_decay_flatnet":
+        return generator_flatnet_decay(current_outputs, reuse, depth, chs2, f, s, 1, name)
     elif type == "ps_unet":
         return generator_unet(current_outputs, reuse, depth, chs, f, s, 1)
     elif type == "hybrid_unet":
@@ -767,7 +773,7 @@ def generator_flatnet(current_outputs,reuse,depth,chs,f,s,ps,train,name):
     for i in range(depth):
         connections = current
         if ps==1:
-            ten = block_ps(current, output_shape, f, i, reuse,i!=depth-1,name)
+            ten = block_ps(current, output_shape,chs, f, i, reuse,i!=depth-1,name)
         elif ps==2 :
             ten=block_hybrid(current,f,chs,i,reuse,i!=depth-1,name)
         elif ps == 3:
@@ -779,6 +785,27 @@ def generator_flatnet(current_outputs,reuse,depth,chs,f,s,ps,train,name):
         else:
             current=ten
     return current
+def generator_flatnet_decay(current_outputs,reuse,depth,chs,f,s,ps,name):
+    current=current_outputs
+    output_shape=chs
+    #main process
+    for i in range(depth):
+        connections = current
+        if ps==1:
+            ten = block_ps(current, chs[i*2+1],chs[i*2],f, i, reuse,i!=depth-1,name)
+        else :
+            ten = block_dc(current,chs[i*2+1],chs[i*2], f, s, i, reuses=reuse, shake=i != depth - 1,name=name)
+        if i!=depth-1 and ps!=3:
+            ims=ten.shape[3]//connections.shape[3]
+            if ims!=0:
+                connections=tf.tile(connections,[1,1,1,ims])
+            elif connections.shape[3]>ten.shape[3]:
+                connections = connections[:,:,:,:ten.shape[3]]
+            current = ten + connections
+        else:
+            current=ten
+    return current
+
 def block_dc(current,output_shape,chs,f,s,depth,reuses,shake,name):
     ten=current
 
@@ -799,12 +826,11 @@ def block_dc(current,output_shape,chs,f,s,depth,reuses,shake,name):
     if shake:
         ten=tf.nn.leaky_relu(ten)
     return ten
-def block_ps(current,output_shape,f,depth,reuses,relu,name):
+def block_ps(current,output_shape,chs,f,depth,reuses,relu,name):
     ten=current
 
     stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(ten.shape[3])))
-    chs_r=f[0]*f[1]*output_shape
-    ten = tf.layers.conv2d(ten, chs_r, kernel_size=f, strides=f, padding="VALID",
+    ten = tf.layers.conv2d(ten, chs, kernel_size=f, strides=f, padding="VALID",
                            kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), data_format="channels_last",reuse=reuses,name="conv21"+str(depth))
 
     ten = tf.layers.batch_normalization(ten, axis=3, training=True, trainable=True, reuse=reuses,
@@ -813,9 +839,8 @@ def block_ps(current,output_shape,f,depth,reuses,relu,name):
     ten = tt[:, :, :-4, :]
     ten = tf.nn.leaky_relu(ten,name="lrelu"+str(depth))
     ten=deconve_with_ps(ten,f[0],output_shape,depth,reuses=reuses)
-    ten = tf.layers.batch_normalization(ten, axis=3, training=True, trainable=True, reuse=reuses,name="bn12" + str(depth))
     if relu:
-        ten=tf.nn.relu(ten)
+        ten=tf.nn.leaky_relu(ten)
     return ten
 def block_hybrid(current,f,chs,depth,reuses,shake,name):
     ten=current
