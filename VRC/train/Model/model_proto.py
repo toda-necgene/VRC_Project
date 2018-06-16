@@ -789,7 +789,6 @@ def generator_flatnet(current_outputs,reuse,depth,chs,f,s,ps,train,name):
     return current
 def generator_flatnet_decay(current_outputs,reuse,depth,chs,f,s,ps,name):
     current=current_outputs
-    output_shape=chs
     #main process
     for i in range(depth):
         connections = current
@@ -837,8 +836,8 @@ def block_ps(current,output_shape,chs,f,depth,reuses,relu,name):
 
     ten = tf.layers.batch_normalization(ten, axis=3, training=True, trainable=True, reuse=reuses,
                                         name="bn11" + str(depth))
-    tt = tf.pad(ten, ((0, 0), (0, 0), (4, 0), (0, 0)), "reflect")
-    ten = tt[:, :, :-4, :]
+    tt = tf.pad(ten, ((0, 0), (0, 0), (2, 0), (0, 0)), "reflect")
+    ten = tt[:, :, :-2, :]
     ten = tf.nn.leaky_relu(ten,name="lrelu"+str(depth))
     ten=deconve_with_ps(ten,f[0],output_shape,depth,reuses=reuses)
     if relu:

@@ -2,17 +2,17 @@
     "saving_config":{
         "checkpoint_dir":"Z://models/",
         "wave_otp_dir":"Z://waves/",
-        "version":"2.4.049"
+        "version":"2.4.061"
     },
     "network_architecture":{
-        "architect":"decay_flatnet",
+        "architect":"ps_decay_flatnet",
         "input_size":4096,
         "batch_size":1,
         "depth":8,
         "d_depth":6,
         "D_channels":[16,16,16,32,64,1],
         "G_channel":512,
-        "G_channels":[512,256,256,128,128,64,64,32,16,16,8,8,4,4,2,2],
+        "G_channels":[256,256,128,128,64,64,32,32,16,16,8,8,4,4,2,2],
         "strides_g":[8,8],
         "strides_d":[2,2],
         "filter_g":[8,8],
@@ -25,13 +25,13 @@
         "train_data_num":552,
         "stop_argument":false,
         "stop_value":0.1,
-        "g_lr":2e-6,
+        "g_lr":2e-4,
         "g_b1":0.5,
         "d_b1":0.5,
         "train_d_scale":1.0,
         "train_interval":250,
         "save_interval":5,
-        "weight_Cycle":10.0,
+        "weight_Cycle":1.0,
         "weight_GAN1":1.0,
         "weight_GAN2":1.0,
         "label_noise":0.01
