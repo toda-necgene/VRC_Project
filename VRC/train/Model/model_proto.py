@@ -141,7 +141,7 @@ class Model:
         #G-net（生成側）の作成
         with tf.variable_scope("generators"):
 
-            with tf.variable_scope("generator_1"):
+            with tf.variable_scope("generator_1",reuse=tf.AUTO_REUSE):
                 self.fake_aB_image = generator(tf.reshape(self.input_modela, self.input_size_model), reuse=None,
                                               chs=self.args["G_channel"], depth=self.args["depth"], f=self.args["filter_g"],
                                               s=self.args["strides_g"], chs2=self.args["G_channels"],type=self.args["architect"],train=True,name="1")
@@ -152,16 +152,16 @@ class Model:
                                                 type=self.args["architect"],
                                                 train=False,name="1", chs2=self.args["G_channels"])
 
-            with tf.variable_scope("generator_2"):
+            with tf.variable_scope("generator_2",reuse=tf.AUTO_REUSE):
                 self.fake_bA_image = generator(tf.reshape(self.input_modelb, self.input_size_model), reuse=None,
                                               chs=self.args["G_channel"], depth=self.args["depth"], f=self.args["filter_g"],
                                               s=self.args["strides_g"], chs2=self.args["G_channels"],type=self.args["architect"],train=True,name="2")
 
-            with tf.variable_scope("generator_2"):
+            with tf.variable_scope("generator_2",reuse=tf.AUTO_REUSE):
                 self.fake_Ba_image = generator(tf.reshape(self.fake_aB_image, self.input_size_model), reuse=True,
                                               chs=self.args["G_channel"], depth=self.args["depth"], f=self.args["filter_g"],
                                               s=self.args["strides_g"], chs2=self.args["G_channels"],type=self.args["architect"],train=True,name="2")
-            with tf.variable_scope("generator_1"):
+            with tf.variable_scope("generator_1",reuse=tf.AUTO_REUSE):
                 self.fake_Ab_image = generator(tf.reshape(self.fake_bA_image, self.input_size_model), reuse=True,
                                                chs=self.args["G_channel"], depth=self.args["depth"],
                                                f=self.args["filter_g"],
@@ -641,7 +641,7 @@ class Model:
                 ft=taken_time*(self.args["train_epoch"]-epoch-1)
                 print(" [*] Epoch %5d (iterations: %10d)finished in %.2f (preprocess %.3f) ETA: %3d:%2d:%2.1f" % (epoch,count,taken_time,ts,ft//3600,ft//60%60,ft%60))
                 time_of_epoch=np.append(time_of_epoch,np.asarray([taken_time,ts]))
-            if epoch%100==0:
+            if epoch%500==0:
                 lr_g_opt3 = lr_g_opt * (0.1 ** (epoch // 100))
                 lr_d_opt3 = lr_g_opt * (0.1 ** (epoch // 100))
         print(" [*] Finished!! in "+ str(np.sum(time_of_epoch[::2])))
@@ -792,13 +792,22 @@ def generator_flatnet(current_outputs,reuse,depth,chs,f,s,ps,train,name):
     return current
 def generator_flatnet_decay(current_outputs,reuse,depth,chs,f,s,ps,train):
     current=current_outputs
+    c=current.shape
+    m,v=tf.nn.moments(current,[2])
+    m=tf.reshape(m,[c[0],c[1],1,c[3]])
+    v=tf.reshape(v,[c[0],c[1],1,c[3]])
+    m=tf.tile(m,[1,1,c[2],1])
+    v = tf.tile(v, [1, 1, c[2], 1])
+    current=tf.multiply(tf.add(current,-m),(v+1e-8))
+    mn=m*tf.get_variable("means_t",m.shape,trainable=True)+tf.get_variable("means_b",m.shape,trainable=True)
+    vn=v*tf.get_variable("vars_t",v.shape,trainable=True)+tf.get_variable("vars_b",v.shape,trainable=True)
     #main process
     for i in range(depth):
         connections = current
         if ps==1:
             ten = block_ps(current, chs[i*2+1],chs[i*2],f, i, reuse,i!=depth-1,train)
         elif ps == 3:
-                ten = block_double(current, chs[i * 2 + 1], chs[i * 2], f,s, i, reuse, i != depth - 1,pixs=8, train=train)
+                ten = block_double(current, chs[i * 2 + 1], chs[i * 2], f,s, i, reuse, i != depth - 1,pixs=4, train=train)
         else :
             ten = block_dc(current,chs[i*2+1],chs[i*2], f, s, i, reuses=reuse, shake=i != depth - 1,train=train)
         if i!=depth-1 and ps!=3:
@@ -810,6 +819,9 @@ def generator_flatnet_decay(current_outputs,reuse,depth,chs,f,s,ps,train):
             current = ten + connections
         else:
             current=ten
+    m, v = tf.nn.moments(current, [2])
+    current = (current- m) / (v + 1e-8)
+    current=current*vn+mn
     return current
 
 def block_dc(current,output_shape,chs,f,s,depth,reuses,shake,train):

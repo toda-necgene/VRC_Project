@@ -2,7 +2,7 @@
     "saving_config":{
         "checkpoint_dir":"Z://models/",
         "wave_otp_dir":"Z://waves/",
-        "version":"2.4.074"
+        "version":"2.4.080"
     },
     "network_architecture":{
         "architect":"double_decay_flatnet",
@@ -12,7 +12,7 @@
         "d_depth":5,
         "D_channels":[32,64,128,256,1],
         "G_channel":512,
-        "G_channels":[64,64,64,64,64,64,64,2],
+        "G_channels":[32,32,32,64,64,64,64,2],
         "strides_g":[2,2],
         "strides_d":[2,2],
         "filter_g":[4,4],
@@ -31,9 +31,9 @@
         "train_d_scale":1.0,
         "train_interval":250,
         "save_interval":5,
-        "weight_Cycle":0.1,
-        "weight_GAN1":1.0,
-        "weight_GAN2":1.0,
+        "weight_Cycle":0.01,
+        "weight_GAN1":100.0,
+        "weight_GAN2":100.0,
         "label_noise":0.01
   },
 
