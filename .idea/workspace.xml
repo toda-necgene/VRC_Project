@@ -7,7 +7,6 @@
   <component name="ChangeListManager">
     <list default="true" id="22fa9a76-09a0-4f62-a2d8-6f3210b56f42" name="Default" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/setting.json" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/setting.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/VRC/train/Model/model_proto.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/train/Model/model_proto.py" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/VRC/Network/to/" />
@@ -41,8 +40,8 @@
       <file leaf-file-name="model_proto.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-71">
-              <caret line="163" column="68" selection-start-line="163" selection-start-column="68" selection-end-line="163" selection-end-column="68" />
+            <state relative-caret-position="421">
+              <caret line="918" column="35" selection-start-line="918" selection-start-column="35" selection-end-line="918" selection-end-column="35" />
               <folding>
                 <element signature="e#0#21#0" expanded="true" />
               </folding>
@@ -365,13 +364,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1520153808625</updated>
-    </task>
-    <task id="LOCAL-00016" summary="[update] speedup update &lt;version 2.2.006&gt;&#10;&#10;[add] L1誤差の修正">
-      <created>1527657833331</created>
-      <option name="number" value="00016" />
-      <option name="presentableId" value="LOCAL-00016" />
-      <option name="project" value="LOCAL" />
-      <updated>1527657833331</updated>
     </task>
     <task id="LOCAL-00017" summary="[update] アライメント update &lt;version 2.2.008&gt;&#10;&#10;[change]　入力データの正規分布化">
       <created>1527807658876</created>
@@ -709,7 +701,14 @@
       <option name="project" value="LOCAL" />
       <updated>1529197121420</updated>
     </task>
-    <option name="localTasksCounter" value="65" />
+    <task id="LOCAL-00065" summary="[update] training update &lt;version 2.4.080&gt;&#10;&#10;[add] 白色化の追加">
+      <created>1529276834788</created>
+      <option name="number" value="00065" />
+      <option name="presentableId" value="LOCAL-00065" />
+      <option name="project" value="LOCAL" />
+      <updated>1529276834788</updated>
+    </task>
+    <option name="localTasksCounter" value="66" />
     <servers />
   </component>
   <component name="TodoView">
@@ -748,7 +747,6 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[update] h_flat update &lt;version 2.3.081&gt;&#10;&#10;[change] hybrid_flatnet改造2" />
     <MESSAGE value="[update] h_flat update &lt;version 2.3.081&gt;&#10;&#10;[change] hybrid_flatnet改造3" />
     <MESSAGE value="[update] input update &lt;version 2.3.090&gt;&#10;&#10;[change] 入力を変更" />
     <MESSAGE value="[update] shuffle update &lt;version 2.3.090&gt;&#10;&#10;[add] rollを追加" />
@@ -773,7 +771,8 @@
     <MESSAGE value="[update] doubleblock update &lt;version 2.4.062&gt;&#10;&#10;[add] decayFlatnet_pos" />
     <MESSAGE value="[update] training update &lt;version 2.4.068&gt;&#10;&#10;[add] 学習の設定更新" />
     <MESSAGE value="[update] training update &lt;version 2.4.074&gt;&#10;&#10;[add] double_decay_flatnetの追加" />
-    <option name="LAST_COMMIT_MESSAGE" value="[update] training update &lt;version 2.4.074&gt;&#10;&#10;[add] double_decay_flatnetの追加" />
+    <MESSAGE value="[update] training update &lt;version 2.4.080&gt;&#10;&#10;[add] 白色化の追加" />
+    <option name="LAST_COMMIT_MESSAGE" value="[update] training update &lt;version 2.4.080&gt;&#10;&#10;[add] 白色化の追加" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -1086,8 +1085,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-71">
-          <caret line="163" column="68" selection-start-line="163" selection-start-column="68" selection-end-line="163" selection-end-column="68" />
+        <state relative-caret-position="421">
+          <caret line="918" column="35" selection-start-line="918" selection-start-column="35" selection-end-line="918" selection-end-column="35" />
           <folding>
             <element signature="e#0#21#0" expanded="true" />
           </folding>

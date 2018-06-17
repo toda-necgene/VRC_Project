@@ -912,7 +912,12 @@ def block_double(current,output_shape,chs,f,s,depth,reuses,shake,pixs=2,train=Tr
                            data_format="channels_last", reuse=reuses, name="conv21" + str(depth))
     tenB = tf.layers.batch_normalization(tenB, axis=3, training=train, trainable=True, reuse=reuses,
                                          name="bn21" + str(depth))
-    tt = tf.pad(tenB, ((0, 0), (0, 0), (2, 0), (0, 0)), "reflect")
+    inl=tf.random_normal_initializer(mean=0.5,stddev=0.01)
+
+    nas = tf.get_variable("pos_gate"+str(depth),shape=[1,1,tenB.shape[2],1],trainable=True,initializer=inl)
+    nas = tf.tile(nas,[tenB.shape[0],tenB.shape[1],1,tenB.shape[3]])
+    nas = tf.clip_by_value(nas,0.0,1.0)
+    tt = tf.pad(tenB*nas, ((0, 0), (0, 0), (2, 0), (0, 0)), "reflect")
     tenB = tt[:, :, :-2, :]
     tenB = tf.nn.leaky_relu(tenB, name="lrelu" + str(depth))
     tenB = deconve_with_ps(tenB, pixs, output_shape, depth, reuses=reuses)
