@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="BookmarkManager">
-    <bookmark url="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py" line="719" />
+    <bookmark url="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py" line="720" />
     <bookmark url="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets.py" line="190" />
   </component>
   <component name="ChangeListManager">
@@ -41,8 +41,8 @@
       <file leaf-file-name="model_proto.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="165">
-              <caret line="838" column="92" selection-start-line="838" selection-start-column="92" selection-end-line="838" selection-end-column="92" />
+            <state relative-caret-position="245">
+              <caret line="800" column="76" selection-start-line="800" selection-start-column="76" selection-end-line="800" selection-end-column="76" />
               <folding>
                 <element signature="e#0#21#0" expanded="true" />
               </folding>
@@ -139,13 +139,6 @@
               <item name="vrc" type="462c0819:PsiDirectoryNode" />
               <item name="VRC" type="462c0819:PsiDirectoryNode" />
               <item name="train" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
-              <item name="vrc" type="462c0819:PsiDirectoryNode" />
-              <item name="VRC" type="462c0819:PsiDirectoryNode" />
-              <item name="train" type="462c0819:PsiDirectoryNode" />
-              <item name="logs" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
@@ -489,20 +482,6 @@
       <option name="presentableId" value="Default" />
       <updated>1520153808625</updated>
     </task>
-    <task id="LOCAL-00013" summary="[update] speedup update &lt;version 2.2.003&gt;&#10;&#10;[add] 安定化">
-      <created>1527548821691</created>
-      <option name="number" value="00013" />
-      <option name="presentableId" value="LOCAL-00013" />
-      <option name="project" value="LOCAL" />
-      <updated>1527548821691</updated>
-    </task>
-    <task id="LOCAL-00014" summary="[update] speedup update &lt;version 2.2.004&gt;&#10;&#10;[add] add_filter_layerを実装し、試験運用">
-      <created>1527561902374</created>
-      <option name="number" value="00014" />
-      <option name="presentableId" value="LOCAL-00014" />
-      <option name="project" value="LOCAL" />
-      <updated>1527561902374</updated>
-    </task>
     <task id="LOCAL-00015" summary="[update] speedup update &lt;version 2.2.005&gt;&#10;&#10;[add] 間が空く問題の修正">
       <created>1527570823288</created>
       <option name="number" value="00015" />
@@ -832,7 +811,21 @@
       <option name="project" value="LOCAL" />
       <updated>1529162567778</updated>
     </task>
-    <option name="localTasksCounter" value="62" />
+    <task id="LOCAL-00062" summary="[update] doubleblock update &lt;version 2.4.062&gt;&#10;&#10;[add] decayFlatnet_pos">
+      <created>1529164266530</created>
+      <option name="number" value="00062" />
+      <option name="presentableId" value="LOCAL-00062" />
+      <option name="project" value="LOCAL" />
+      <updated>1529164266530</updated>
+    </task>
+    <task id="LOCAL-00063" summary="[update] training update &lt;version 2.4.068&gt;&#10;&#10;[add] 学習の設定更新">
+      <created>1529189762051</created>
+      <option name="number" value="00063" />
+      <option name="presentableId" value="LOCAL-00063" />
+      <option name="project" value="LOCAL" />
+      <updated>1529189762051</updated>
+    </task>
+    <option name="localTasksCounter" value="64" />
     <servers />
   </component>
   <component name="TodoView">
@@ -871,8 +864,6 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[update] h_flat update &lt;version 2.3.061&gt;&#10;&#10;[add] hybrid_flatnetの実装" />
-    <MESSAGE value="[update] h_flat update &lt;version 2.3.063&gt;&#10;&#10;[add] hybrid_flatnetの実装" />
     <MESSAGE value="[update] h_flat update &lt;version 2.3.078&gt;&#10;&#10;[change] hybrid_flatnet改造" />
     <MESSAGE value="[update] h_flat update &lt;version 2.3.081&gt;&#10;&#10;[change] hybrid_flatnet改造2" />
     <MESSAGE value="[update] h_flat update &lt;version 2.3.081&gt;&#10;&#10;[change] hybrid_flatnet改造3" />
@@ -896,7 +887,9 @@
     <MESSAGE value="[update] doubleblock update &lt;version 2.4.047&gt;&#10;&#10;[add] psブロックの調整2" />
     <MESSAGE value="[update] doubleblock update &lt;version 2.4.047&gt;&#10;&#10;[add] decayFlatnet" />
     <MESSAGE value="[update] doubleblock update &lt;version 2.4.061&gt;&#10;&#10;[add] decayFlatnet" />
-    <option name="LAST_COMMIT_MESSAGE" value="[update] doubleblock update &lt;version 2.4.061&gt;&#10;&#10;[add] decayFlatnet" />
+    <MESSAGE value="[update] doubleblock update &lt;version 2.4.062&gt;&#10;&#10;[add] decayFlatnet_pos" />
+    <MESSAGE value="[update] training update &lt;version 2.4.068&gt;&#10;&#10;[add] 学習の設定更新" />
+    <option name="LAST_COMMIT_MESSAGE" value="[update] training update &lt;version 2.4.068&gt;&#10;&#10;[add] 学習の設定更新" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -1220,8 +1213,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="165">
-          <caret line="838" column="92" selection-start-line="838" selection-start-column="92" selection-end-line="838" selection-end-column="92" />
+        <state relative-caret-position="245">
+          <caret line="800" column="76" selection-start-line="800" selection-start-column="76" selection-end-line="800" selection-end-column="76" />
           <folding>
             <element signature="e#0#21#0" expanded="true" />
           </folding>
