@@ -17,7 +17,7 @@ term = 4096
 length=term//SHIFT+1
 cutoff=5
 effect_ranges=1024
-align=True
+align=False
 eef=1200
 upidx=target/now
 p=pyaudio.PyAudio()
@@ -86,11 +86,11 @@ CHANNELS = 1        #モノラル
 RATE = 16000       #サンプルレート
 CHUNK = 1024     #データ点数
 RECORD_SECONDS = 5 #録音する時間の長さ
-WAVE_INPUT_FILENAME = "../train/Model/datasets/source/02/"
+WAVE_INPUT_FILENAME = "../train/Model/datasets/source/01/"
 files=glob.glob(WAVE_INPUT_FILENAME+"*.wav")
 filestri=glob.glob(WAVE_INPUT_FILENAME+"*.str")
 stri=""
-name="answerdata"
+name="04_r/Source_data"
 cnt=0
 for file in files:
     print(file)
@@ -139,10 +139,10 @@ for file in files:
             dmn=np.pad(dmn,(0,r),"reflect")
         a=fft(dmn)
         a=complex_to_pp(a[:,:SHIFT])
-        c=a[:,:,0]
-        a[:, :, 0] -= np.tile(np.mean(c, axis=1).reshape(-1, 1), (1, SHIFT))
-        v = 1 / np.sqrt(np.var(c, axis=1) + 1e-36)
-        a[:, :, 0]= np.einsum("ij,i->ij",a[:, :, 0],v)
+        # c=a[:,:,0]
+        # a[:, :, 0] -= np.tile(np.mean(c, axis=1).reshape(-1, 1), (1, SHIFT))
+        # v = 1 / np.sqrt(np.var(c, axis=1) + 1e-36)
+        # a[:, :, 0]= np.einsum("ij,i->ij",a[:, :, 0],v)
         bb=np.isnan(np.mean(a))
         #音素アラインメントの実行
         ttms=600//SHIFT

@@ -356,12 +356,6 @@ class Model:
             for i in range(self.args["batch_size"]):
                 n=self.fft(red[i].reshape(-1)/32767.0)
                 res[i]=n[:,:self.args["SHIFT"]]
-            means = np.mean(res[0, :, :, 0], axis=1)
-            scl = np.tile(np.reshape(means, (-1, 1)), (1, self.args["SHIFT"]))
-            res[0, :, :, 0] = res[0, :, :, 0] - scl
-            scales = np.sqrt(np.var(res[0, :, :, 0], axis=1) + 1e-64)
-            mms=1/scales
-            res[0,:,:,0]=np.einsum("ij,i->ij",res[0,:,:,0],mms)
             # running network
             # ネットワーク実行
             res=res[:,:self.args["SHIFT"],:]
@@ -371,14 +365,6 @@ class Model:
             res[:,:,self.args["SHIFT"]:,1]*=-1
             # resas = np.append(resas, res[0])
             a=res[0].copy()
-            means_mask=means.copy()
-            vss=np.var(a[:,:,0],axis=1)
-            # means_mask[vss<0.125]=-17.0
-            sm2=np.tile( means_mask.reshape(-1,1), (1, self.args["NFFT"]))
-            c = a[:, :, 0]
-            c = np.einsum("ij,i->ij", c, scales)
-            c=c+sm2
-            a[:, :, 0] = c
             res3 = np.append(res3, a).reshape(-1,self.args["NFFT"],2)
 
 
@@ -785,7 +771,7 @@ def generator_flatnet(current_outputs,reuse,depth,chs,f,s,ps,train,name):
             ten = block_double(current, f,s, chs, i, reuse, i != depth - 1, pixs=4,train=train )
         else :
             ten = block_dc(current, output_shape, chs, f, s, i, reuses=reuse, shake=i != depth - 1,train=train)
-        if i!=depth-1 and ps!=3:
+        if i!=depth-1:
             current = ten + connections
         else:
             current=ten
@@ -799,8 +785,8 @@ def generator_flatnet_decay(current_outputs,reuse,depth,chs,f,s,ps,train):
     m=tf.tile(m,[1,1,c[2],1])
     v = tf.tile(v, [1, 1, c[2], 1])
     current=tf.multiply(tf.add(current,-m),(v+1e-8))
-    mn=m*tf.get_variable("means_t",m.shape,trainable=True)+tf.get_variable("means_b",m.shape,trainable=True)
-    vn=v*tf.get_variable("vars_t",v.shape,trainable=True)+tf.get_variable("vars_b",v.shape,trainable=True)
+    mn=m*tf.get_variable("means_t",m.shape,trainable=True,initializer=tf.random_normal_initializer(stddev=0.001))+tf.get_variable("means_b",m.shape,trainable=True,initializer=tf.zeros_initializer())
+    vn=v*tf.get_variable("vars_t",v.shape,trainable=True,initializer=tf.random_normal_initializer(stddev=0.001))+tf.get_variable("vars_b",v.shape,trainable=True,initializer=tf.zeros_initializer())
     #main process
     for i in range(depth):
         connections = current
@@ -810,7 +796,7 @@ def generator_flatnet_decay(current_outputs,reuse,depth,chs,f,s,ps,train):
                 ten = block_double(current, chs[i * 2 + 1], chs[i * 2], f,s, i, reuse, i != depth - 1,pixs=4, train=train)
         else :
             ten = block_dc(current,chs[i*2+1],chs[i*2], f, s, i, reuses=reuse, shake=i != depth - 1,train=train)
-        if i!=depth-1 and ps!=3:
+        if i!=depth-1:
             ims=ten.shape[3]//connections.shape[3]
             if ims!=0:
                 connections=tf.tile(connections,[1,1,1,ims])
@@ -912,7 +898,7 @@ def block_double(current,output_shape,chs,f,s,depth,reuses,shake,pixs=2,train=Tr
                            data_format="channels_last", reuse=reuses, name="conv21" + str(depth))
     tenB = tf.layers.batch_normalization(tenB, axis=3, training=train, trainable=True, reuse=reuses,
                                          name="bn21" + str(depth))
-    inl=tf.random_normal_initializer(mean=0.5,stddev=0.01)
+    inl=tf.random_normal_initializer(mean=0.5,stddev=1.0)
 
     nas = tf.get_variable("pos_gate"+str(depth),shape=[1,1,tenB.shape[2],1],trainable=True,initializer=inl)
     nas = tf.tile(nas,[tenB.shape[0],tenB.shape[1],1,tenB.shape[3]])
