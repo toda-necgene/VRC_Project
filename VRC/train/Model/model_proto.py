@@ -238,8 +238,8 @@ class Model:
 
         # self.d_lossA=(self.d_loss_AR+self.d_loss_AF+self.d_loss_AR0+self.d_loss_AF0)/2.0
         # self.d_lossB= (self.d_loss_BR + self.d_loss_BF+self.d_loss_BR0 + self.d_loss_BF0)/2.0
-        self.d_lossA = (self.d_loss_AR + self.d_loss_AF ) / 2.0
-        self.d_lossB = (self.d_loss_BR + self.d_loss_BF ) / 2.0
+        self.d_lossA = (self.d_loss_AR + self.d_loss_AF )
+        self.d_lossB = (self.d_loss_BR + self.d_loss_BF )
 
         self.d_loss=self.d_lossA+self.d_lossB
             # objective-functions of generator
@@ -286,17 +286,20 @@ class Model:
         self.g_loss_all= tf.summary.scalar("g_loss_cycle_A", tf.reduce_mean(L1bAAb),family="g_loss")
         # self.g_loss_gan = tf.summary.scalar("g_loss_gan_A_0", tf.reduce_mean(DSA1),family="g_loss")
         self.g_loss_gan2 = tf.summary.scalar("g_loss_gan_A_1", tf.reduce_mean(DSA2), family="g_loss")
-        self.dscore = tf.summary.scalar("dscore_A", tf.reduce_mean(self.d_judge_AF),family="d_score")
+        self.dscore = tf.summary.scalar("dscore_AF", tf.reduce_mean(self.d_judge_AF),family="d_score")
+        self.dscore3 = tf.summary.scalar("dscore_AR", tf.reduce_mean(self.d_judge_AR), family="d_score")
         # self.g_loss_sum_1 = tf.summary.merge([self.g_loss_all, self.g_loss_gan, self.g_loss_gan2, self.dscore])
-        self.g_loss_sum_1 = tf.summary.merge([self.g_loss_all, self.g_loss_gan2, self.dscore])
+        self.g_loss_sum_1 = tf.summary.merge([self.g_loss_all, self.g_loss_gan2, self.dscore,self.dscore3])
 
         self.g_loss_all2 = tf.summary.scalar("g_loss_cycle_B", tf.reduce_mean(L1B),family="g_loss")
         # self.g_loss_gan3 = tf.summary.scalar("g_loss_gan_B_0", tf.reduce_mean(DSB1),family="g_loss")
         self.g_loss_gan4 = tf.summary.scalar("g_loss_gan_B_1", tf.reduce_mean(DSB2), family="g_loss")
-        self.dscore2 = tf.summary.scalar("dscore_B", tf.reduce_mean(self.d_judge_BF),family="d_score")
+        self.dscore2 = tf.summary.scalar("dscore_BF", tf.reduce_mean(self.d_judge_BF),family="d_score")
+        self.dscore4 = tf.summary.scalar("dscore_BR", tf.reduce_mean(self.d_judge_BR), family="d_score")
+
         # self.g_loss_uba = tf.summary.scalar("g_loss_distAB", tf.reduce_mean(L1UBA), family="g_loss")
         # self.g_loss_sum_2 = tf.summary.merge([self.g_loss_all2, self.g_loss_gan3, self.g_loss_gan4, self.dscore2])
-        self.g_loss_sum_2 = tf.summary.merge([self.g_loss_all2, self.g_loss_gan4, self.dscore2])
+        self.g_loss_sum_2 = tf.summary.merge([self.g_loss_all2, self.g_loss_gan4, self.dscore2,self.dscore4])
 
         self.d_loss_sumA = tf.summary.scalar("d_lossA", tf.reduce_mean(self.d_lossA),family="d_loss")
         self.d_loss_sumB = tf.summary.scalar("d_lossB", tf.reduce_mean(self.d_lossB),family="d_loss")
@@ -356,6 +359,12 @@ class Model:
             for i in range(self.args["batch_size"]):
                 n=self.fft(red[i].reshape(-1)/32767.0)
                 res[i]=n[:,:self.args["SHIFT"]]
+            means = np.mean(res[0,:,:,0], axis=1)
+            means = np.tile(np.reshape(means, (-1, 1)), (1, self.args["SHIFT"]))
+            res[0, :, :, 0] = res[0, :, :, 0] - means
+            scales =np.reshape(np.sqrt(np.var(res[0,:,:,0], axis=1) + 1e-8), (-1))
+            mms = 1 / scales
+            res[0, :, :, 0] = np.einsum("ij,i->ij", res[0, :, :, 0], mms)
             # running network
             # ネットワーク実行
             res=res[:,:self.args["SHIFT"],:]
@@ -364,7 +373,14 @@ class Model:
             res=np.append(res,res2,axis=2)
             res[:,:,self.args["SHIFT"]:,1]*=-1
             # resas = np.append(resas, res[0])
-            a=res[0].copy()
+            a = res[0].copy()
+            c = a[:, :, 0]
+            scales_mask = scales.copy()
+            means_mask = means.copy()
+            c = np.einsum("ij,i->ij", c, scales_mask)
+            sm = np.tile(means_mask, (1, 2))
+            c = c + sm
+            a[:, :, 0] = c
             res3 = np.append(res3, a).reshape(-1,self.args["NFFT"],2)
 
 
@@ -436,7 +452,6 @@ class Model:
         start_time = time.time()
         log_data_g = np.empty(0)
         log_data_d = np.empty(0)
-        ti=0
         # loading net
         # 過去の学習データの読み込み
         if self.load():
@@ -483,7 +498,7 @@ class Model:
             self.experiment.param("beta_g_opt", beta_g_opt)
             self.experiment.param("training_interval", self.args["train_interval"])
             self.experiment.param("learning_rate_scale", tln)
-
+        ts=0.0
 
         for epoch in range(self.args["start_epoch"],self.args["train_epoch"]):
             # shuffling training data
@@ -564,7 +579,7 @@ class Model:
                 nos = np.random.rand(self.args["batch_size"]) * self.args["label_noise"]
                 # self.sess.run([g_optim,self.update_ops],feed_dict={ self.input_modela:res_t,self.label_modela:res_l,self.input_modelb:tar,self.label_modelb:tar_l, self.noise:nos,self.training:np.asarray([rate])})
                 self.sess.run([g_optim,self.update_ops],feed_dict={ self.input_modela:res_t,self.input_modelb:tar, self.noise:nos,self.training:np.asarray([rate]),lr_g:lr_g_opt3})
-                # Update D network (1time)
+                # Update D network (2times)
                 nos = np.random.rand(self.args["batch_size"]) * self.args["label_noise"]
                 #self.sess.run([d_optim],
                  #             feed_dict={self.input_modelb: tar, self.input_modela: res_t, self.label_modela: res_l,
@@ -572,12 +587,15 @@ class Model:
                 self.sess.run([d_optim],
                               feed_dict={self.input_modelb: tar, self.input_modela: res_t,
                                         self.noise: nos, self.training: np.asarray([rate]),lr_d:lr_d_opt3})
+                self.sess.run([d_optim],
+                              feed_dict={self.input_modelb: tar, self.input_modela: res_t,
+                                         self.noise: nos, self.training: np.asarray([rate]), lr_d: lr_d_opt3})
 
                 # tensorboardの保存
                 if self.args["tensorboard"] and (counter+ti*epoch)%self.args["train_interval"]==0:
                     nos = np.random.rand(self.args["batch_size"]) * 0.0
                     # hg,hd,hg2, hd2=self.sess.run([self.g_loss_sum_1,self.d_loss_sumA,self.g_loss_sum_2, self.d_loss_sumB],feed_dict={self.input_modela:res_t,self.label_modela:res_l, self.label_modelb:tar_l,self.input_modelb:tar ,self.noise:nos ,self.training:np.asarray([1.0]) })
-                    hg, hd, hg2, hd2 = self.sess.run(
+                    hg, hd, hg2, hd2= self.sess.run(
                         [self.g_loss_sum_1, self.d_loss_sumA, self.g_loss_sum_2, self.d_loss_sumB],
                         feed_dict={self.input_modela: res_t,self.input_modelb: tar, self.noise: nos, self.training: np.asarray([1.0])})
 
@@ -627,9 +645,9 @@ class Model:
                 ft=taken_time*(self.args["train_epoch"]-epoch-1)
                 print(" [*] Epoch %5d (iterations: %10d)finished in %.2f (preprocess %.3f) ETA: %3d:%2d:%2.1f" % (epoch,count,taken_time,ts,ft//3600,ft//60%60,ft%60))
                 time_of_epoch=np.append(time_of_epoch,np.asarray([taken_time,ts]))
-            if epoch%500==0:
+            if epoch%100==0:
+                lr_d_opt3 = lr_d_opt * (0.1 ** (epoch // 100))
                 lr_g_opt3 = lr_g_opt * (0.1 ** (epoch // 100))
-                lr_d_opt3 = lr_g_opt * (0.1 ** (epoch // 100))
         print(" [*] Finished!! in "+ str(np.sum(time_of_epoch[::2])))
 
         if self.args["log"] and self.args["wave_otp_dir"] != "False":
@@ -725,9 +743,11 @@ def discriminator(inp,reuse,f,s,depth,chs,a):
     current=tf.reshape(inp, [inp.shape[0],inp.shape[1],inp.shape[2],2])
     for i in range(depth):
         stddevs=math.sqrt(2.0/(f[0]*f[1]*int(current.shape[3])))
-        ten = tf.layers.conv2d(current, chs[i], kernel_size=f, strides=s, padding="VALID",
+        ten=current
+        if i!=0:
+            ten = tf.layers.batch_normalization(ten, name="bn_disk" + str(i), training=True, reuse=reuse)
+        ten = tf.layers.conv2d(ten, chs[i], kernel_size=f, strides=s, padding="VALID",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), data_format="channels_last",name="disc_"+str(i),reuse=reuse)
-        ten=tf.layers.batch_normalization(ten,training=True)
         if i!=depth-1:
             current = tf.nn.leaky_relu(ten)
         else:
@@ -778,22 +798,13 @@ def generator_flatnet(current_outputs,reuse,depth,chs,f,s,ps,train,name):
     return current
 def generator_flatnet_decay(current_outputs,reuse,depth,chs,f,s,ps,train):
     current=current_outputs
-    c=current.shape
-    m,v=tf.nn.moments(current,[2])
-    m=tf.reshape(m,[c[0],c[1],1,c[3]])
-    v=tf.reshape(v,[c[0],c[1],1,c[3]])
-    m=tf.tile(m,[1,1,c[2],1])
-    v = tf.tile(v, [1, 1, c[2], 1])
-    current=tf.multiply(tf.add(current,-m),(v+1e-8))
-    mn=m*tf.get_variable("means_t",m.shape,trainable=True,initializer=tf.random_normal_initializer(stddev=0.001))+tf.get_variable("means_b",m.shape,trainable=True,initializer=tf.zeros_initializer())
-    vn=v*tf.get_variable("vars_t",v.shape,trainable=True,initializer=tf.random_normal_initializer(stddev=0.001))+tf.get_variable("vars_b",v.shape,trainable=True,initializer=tf.zeros_initializer())
     #main process
     for i in range(depth):
         connections = current
         if ps==1:
             ten = block_ps(current, chs[i*2+1],chs[i*2],f, i, reuse,i!=depth-1,train)
         elif ps == 3:
-                ten = block_double(current, chs[i * 2 + 1], chs[i * 2], f,s, i, reuse, i != depth - 1,pixs=4, train=train)
+                ten = block_double(current, chs[i * 2 + 1], chs[i * 2], f,s, i, reuse, i != depth - 1,pixs=16, train=train)
         else :
             ten = block_dc(current,chs[i*2+1],chs[i*2], f, s, i, reuses=reuse, shake=i != depth - 1,train=train)
         if i!=depth-1:
@@ -805,9 +816,6 @@ def generator_flatnet_decay(current_outputs,reuse,depth,chs,f,s,ps,train):
             current = ten + connections
         else:
             current=ten
-    m, v = tf.nn.moments(current, [2])
-    current = (current- m) / (v + 1e-8)
-    current=current*vn+mn
     return current
 
 def block_dc(current,output_shape,chs,f,s,depth,reuses,shake,train):
@@ -900,11 +908,11 @@ def block_double(current,output_shape,chs,f,s,depth,reuses,shake,pixs=2,train=Tr
                                          name="bn21" + str(depth))
     inl=tf.random_normal_initializer(mean=0.5,stddev=1.0)
 
-    nas = tf.get_variable("pos_gate"+str(depth),shape=[1,1,tenB.shape[2],1],trainable=True,initializer=inl)
-    nas = tf.tile(nas,[tenB.shape[0],tenB.shape[1],1,tenB.shape[3]])
-    nas = tf.clip_by_value(nas,0.0,1.0)
-    tt = tf.pad(tenB*nas, ((0, 0), (0, 0), (2, 0), (0, 0)), "reflect")
-    tenB = tt[:, :, :-2, :]
+    # nas = tf.get_variable("pos_gate"+str(depth),shape=[1,1,tenB.shape[2],1],trainable=True,initializer=inl)
+    # nas = tf.tile(nas,[tenB.shape[0],tenB.shape[1],1,tenB.shape[3]])
+    # nas = tf.clip_by_value(nas,0.0,1.0)
+    # tt = tf.pad(tenB*nas, ((0, 0), (0, 0), (2, 0), (0, 0)), "reflect")
+    # tenB = tt[:, :, :-2, :]
     tenB = tf.nn.leaky_relu(tenB, name="lrelu" + str(depth))
     tenB = deconve_with_ps(tenB, pixs, output_shape, depth, reuses=reuses)
 

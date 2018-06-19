@@ -139,10 +139,10 @@ for file in files:
             dmn=np.pad(dmn,(0,r),"reflect")
         a=fft(dmn)
         a=complex_to_pp(a[:,:SHIFT])
-        # c=a[:,:,0]
-        # a[:, :, 0] -= np.tile(np.mean(c, axis=1).reshape(-1, 1), (1, SHIFT))
-        # v = 1 / np.sqrt(np.var(c, axis=1) + 1e-36)
-        # a[:, :, 0]= np.einsum("ij,i->ij",a[:, :, 0],v)
+        c=a[:,:,0]
+        a[:, :, 0] -= np.tile(np.mean(c, axis=1).reshape(-1, 1), (1, SHIFT))
+        v = 1 / np.sqrt(np.var(c, axis=1) + 1e-36)
+        a[:, :, 0]= np.einsum("ij,i->ij",a[:, :, 0],v)
         bb=np.isnan(np.mean(a))
         #音素アラインメントの実行
         ttms=600//SHIFT
@@ -207,7 +207,7 @@ for file in files:
         np.save("../train/Model/datasets/train/"+str(name)+"/"+str(cnt) +"-wave", a)
         cnt+=1
 plt.subplot(211)
-plt.imshow(a[:,:,0],aspect="auto")
+plt.imshow(np.transpose(a[:,:,0],(1,0)),aspect="auto")
 plt.colorbar()
 plt.subplot(212)
 plt.imshow(a[:,:,1],aspect="auto")
