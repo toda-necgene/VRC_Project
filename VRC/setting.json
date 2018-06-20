@@ -2,18 +2,18 @@
     "saving_config":{
         "checkpoint_dir":"Z://models/",
         "wave_otp_dir":"Z://waves/",
-        "version":"2.5.013"
+        "version":"2.5.014"
     },
     "network_architecture":{
-        "architect":"ps_decay_flatnet",
+        "architect":"double_decay_flatnet",
         "input_size":4096,
         "batch_size":64,
-        "depth":8,
+        "depth":4,
         "d_depth":5,
         "D_channels":[32,64,64,64,1],
         "G_channel":512,
-        "G_channels":[32,32,32,32,32,32,32,32,32,32,32,32,64,64,64,2],
-        "strides_g":[8,8],
+        "G_channels":[32,32,32,32,64,64,64,2],
+        "strides_g":[16,16],
         "strides_d":[2,2],
         "filter_g":[16,16],
         "filter_d":[3,3]

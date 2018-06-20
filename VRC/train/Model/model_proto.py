@@ -890,38 +890,22 @@ def block_hybrid(current,f,chs,depth,reuses,shake,train):
     ten=(ten1+ten2)*0.5
     return ten
 def block_double(current,output_shape,chs,f,s,depth,reuses,shake,pixs=2,train=True):
-    tenA=current
-
-    stddevs = math.sqrt(2.0 / (f[0] * f[1] * chs))
-    tenA = tf.layers.conv2d(tenA, chs, kernel_size=f, strides=s, padding="VALID",
-                           kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), data_format="channels_last",reuse=reuses,name="conv11"+str(depth))
-    tenA = tf.layers.batch_normalization(tenA, axis=3, training=train, trainable=True, reuse=reuses,
-                                            name="bn11" + str(depth))
-
-    tenA = tf.nn.leaky_relu(tenA,name="lrelu"+str(depth))
-
-
-    stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(tenA.shape[3])))
-    tenA = tf.layers.conv2d_transpose(tenA, output_shape, kernel_size=f, strides=s, padding="VALID",
-                                      kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
-                                      data_format="channels_last", reuse=reuses, name="deconv11" + str(depth))
-
-    tenB=current
+    ten=current
     ps_f=[pixs,pixs]
-    tenB = tf.layers.conv2d(tenB, chs, kernel_size=ps_f, strides=ps_f, padding="VALID",
+    stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(ten.shape[3])))
+    ten = tf.layers.conv2d(ten, chs, kernel_size=ps_f, strides=ps_f, padding="VALID",
                            kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
                            data_format="channels_last", reuse=reuses, name="conv21" + str(depth))
-    tenB = tf.layers.batch_normalization(tenB, axis=3, training=train, trainable=True, reuse=reuses,
+    ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
                                          name="bn21" + str(depth))
-    inl=tf.random_normal_initializer(mean=0.5,stddev=1.0)
+    ten = tf.nn.leaky_relu(ten, name="lrelu" + str(depth))
 
-    # nas = tf.get_variable("pos_gate"+str(depth),shape=[1,1,tenB.shape[2],1],trainable=True,initializer=inl)
-    # nas = tf.tile(nas,[tenB.shape[0],tenB.shape[1],1,tenB.shape[3]])
-    # nas = tf.clip_by_value(nas,0.0,1.0)
-    # tt = tf.pad(tenB*nas, ((0, 0), (0, 0), (2, 0), (0, 0)), "reflect")
-    # tenB = tt[:, :, :-2, :]
-    tenB = tf.nn.leaky_relu(tenB, name="lrelu" + str(depth))
-    tenB = deconve_with_ps(tenB, pixs, output_shape, depth, reuses=reuses)
+    tenB=ten
+    if shake:
+        tt = tf.pad(tenB, ((0, 0), (0, 0), (2, 0), (0, 0)), "reflect")
+        tenB = tt[:, :, :-2, :]
+    tenB = deconve_with_ps(tenB, pixs, output_shape, depth, reuses=reuses,name="02")
+    tenA = deconve_with_ps(ten, pixs, output_shape, depth, reuses=reuses,name="01")
 
     ten = (tenA + tenB) * 0.5
     if shake:
@@ -929,12 +913,12 @@ def block_double(current,output_shape,chs,f,s,depth,reuses,shake,pixs=2,train=Tr
 
     return ten
 
-def deconve_with_ps(inp,r,otp_shape,depth,f=[1,1],reuses=None):
+def deconve_with_ps(inp,r,otp_shape,depth,f=[1,1],reuses=None,name=""):
     chs_r=(r**2)*otp_shape
     stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(inp.shape[3])))
     ten = tf.layers.conv2d(inp, chs_r, kernel_size=f, strides=f, padding="VALID",
                            kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
-                           data_format="channels_last", reuse=reuses, name="deconv_ps1" + str(depth))
+                           data_format="channels_last", reuse=reuses, name="deconv_ps1"+name + str(depth))
     b_size = -1
     in_h = ten.shape[1]
     in_w = ten.shape[2]
