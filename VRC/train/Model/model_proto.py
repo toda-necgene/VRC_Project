@@ -93,13 +93,6 @@ class Model:
                  print(' [x] JSONDecodeError: ', e)
         else:
             print( " [!] Setting file is not found")
-        if len(self.args["D_channels"]) != (self.args['d_depth']):
-            print(" [!] Channels length and depth+1 must be equal ." + str(len(self.args["D_channels"])) + "vs" + str(self.args['d_depth']))
-            self.args["D_channels"] = [min([2 ** (i + 1) - 2, 254]) for i in range(self.args['d_depth'])]
-        if len(self.args["G_channels"]) != (self.args['depth']*2):
-            print(" [!] Channels length and depth*2 must be equal ." + str(len(self.args["G_channels"])) + "vs" + str(
-                self.args['depth']*2))
-            self.args["D_channels"] = [min([2 ** (i + 1) - 2, 254]) for i in range(self.args['depth']*2)]
         self.args["SHIFT"] = self.args["NFFT"]//2
         self.args["name_save"] = self.args["model_name"] + self.args["version"]
         ss=self.args["input_size"]//self.args["SHIFT"]
@@ -736,7 +729,7 @@ def generator_flatnet_decay(current_outputs,reuse,depth,chs,f,s,d,ps,train):
         if ps==1:
             ten = block_ps(current, chs[i*2+1],chs[i*2],f[i], i, reuse,i!=depth-1,train=train)
         elif ps == 3:
-            ten = block_double(current, chs[i * 2 + 1], chs[i * 2], f[i],s[i], i, reuse, i != depth - 1,pixs=f[i], train=train,dl=d[i])
+            ten = block_double(current, chs[i * 2 + 1], chs[i * 2], f[i],s[i], i, reuse, i != depth - 1,pixs=f[i], train=train)
         else :
             ten = block_dc(current,chs[i*2+1],chs[i*2], f[i], s[i], i, reuses=reuse, shake=i != depth - 1,train=train)
         if i!=depth-1:
@@ -751,9 +744,19 @@ def generator_flatnet_decay(current_outputs,reuse,depth,chs,f,s,d,ps,train):
             current = ten + connections
         else:
             current=ten
-
+    current=dilations(current,d,reuse,train,chs,depth)
     return current
-
+def dilations(inp,d,reuse,train,chs,startd):
+    ten=inp
+    stddevs = math.sqrt(2.0 / (2 * 1 * int(ten.shape[3])))
+    for i in range(len(d)):
+        ten = tf.nn.leaky_relu(ten, name="lrelu" + str(startd+i))
+        ten = tf.layers.conv2d(ten, chs[i+startd*2], kernel_size=[2, 1], strides=[1, 1], padding="VALID",
+                           kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
+                           data_format="channels_last", reuse=reuse, name="conv11" + str(startd*2+i), dilation_rate=(d[i], 1))
+        ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuse,
+                                        name="bn11" + str(startd*2+i))
+    return ten
 def block_dc(current,output_shape,chs,f,s,depth,reuses,shake,train):
     ten=current
 
@@ -820,28 +823,22 @@ def block_hybrid(current,f,chs,depth,reuses,shake,train):
         ten2 = tf.nn.relu(ten2)
     ten=(ten1+ten2)*0.5
     return ten
-def block_double(current,output_shape,chs,f,s,depth,reuses,shake,pixs=[2,2],train=True,dl=1):
+def block_double(current,output_shape,chs,f,s,depth,reuses,shake,pixs=[2,2],train=True):
     ten=current
     stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(ten.shape[3])))
-    ten = tf.layers.conv2d(ten, chs, kernel_size=[1,f[1]], strides=s, padding="VALID",
+    ten = tf.layers.conv2d(ten, chs, kernel_size=f, strides=s, padding="VALID",
                            kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
                            data_format="channels_last", reuse=reuses, name="conv11" + str(depth),dilation_rate=(1,1))
     ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
-                                        name="bn21" + str(depth))
+                                        name="bn11" + str(depth))
 
-    ten = tf.nn.leaky_relu(ten, name="lrelu" + str(depth))
-    ten = tf.layers.conv2d(ten, chs, kernel_size=[f[0],1], strides=[1,1], padding="VALID",
-                           kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
-                           data_format="channels_last", reuse=reuses, name="conv21" + str(depth), dilation_rate=(dl, 1))
-    ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
-                                         name="bn21" + str(depth))
     ten = tf.nn.leaky_relu(ten, name="lrelu" + str(depth))
     tenB=ten
     if shake:
         tt = tf.pad(tenB, ((0, 0), (0, 0), (1, 0), (0, 0)), "reflect")
         tenB = tt[:, :, :-1, :]
-    tenB = deconve_with_ps(tenB, [1,pixs[1]], output_shape, depth, reuses=reuses,name="02")
-    tenA = deconve_with_ps(ten, [1,pixs[1]], output_shape, depth, reuses=reuses,name="01")
+    tenB = deconve_with_ps(tenB, pixs, output_shape, depth, reuses=reuses,name="02")
+    tenA = deconve_with_ps(ten, pixs, output_shape, depth, reuses=reuses,name="01")
 
     ten = (tenA + tenB) * 0.5
     if shake:
