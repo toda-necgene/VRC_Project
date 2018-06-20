@@ -2,10 +2,10 @@
     "saving_config":{
         "checkpoint_dir":"Z://models/",
         "wave_otp_dir":"Z://waves/",
-        "version":"2.5.009"
+        "version":"2.5.010"
     },
     "network_architecture":{
-        "architect":"decay_flatnet",
+        "architect":"ps_decay_flatnet",
         "input_size":4096,
         "batch_size":64,
         "depth":8,
@@ -29,7 +29,7 @@
         "g_b1":0.5,
         "d_b1":0.5,
         "train_d_scale":1.0,
-        "train_interval":10,
+        "train_interval":250,
         "save_interval":10,
         "weight_Cycle":1.0,
         "weight_GAN1":1.0,

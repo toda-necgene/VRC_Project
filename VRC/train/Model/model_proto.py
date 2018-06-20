@@ -807,7 +807,7 @@ def generator_flatnet_decay(current_outputs,reuse,depth,chs,f,s,ps,train):
     for i in range(depth):
         connections = current
         if ps==1:
-            ten = block_ps(current, chs[i*2+1],chs[i*2],f, i, reuse,i!=depth-1,train)
+            ten = block_ps(current, chs[i*2+1],chs[i*2],f, i, reuse,i!=depth-1,train=train)
         elif ps == 3:
                 ten = block_double(current, chs[i * 2 + 1], chs[i * 2], f,s, i, reuse, i != depth - 1,pixs=16, train=train)
         else :
