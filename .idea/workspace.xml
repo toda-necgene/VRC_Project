@@ -32,8 +32,8 @@
       <file leaf-file-name="setting.json" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/VRC/setting.json">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="64">
-              <caret line="4" column="26" selection-start-line="4" selection-start-column="26" selection-end-line="4" selection-end-column="26" />
+            <state relative-caret-position="176">
+              <caret line="17" column="22" selection-start-line="17" selection-start-column="22" selection-end-line="17" selection-end-column="22" />
             </state>
           </provider>
         </entry>
@@ -41,8 +41,8 @@
       <file leaf-file-name="model_proto.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-2235">
-              <caret line="421" selection-start-line="421" selection-end-line="421" />
+            <state relative-caret-position="181">
+              <caret line="855" lean-forward="true" selection-start-line="855" selection-end-line="855" />
               <folding>
                 <element signature="e#0#21#0" expanded="true" />
               </folding>
@@ -330,20 +330,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1520153808625</updated>
-    </task>
-    <task id="LOCAL-00020" summary="[update] filter update &lt;version 2.2.018&gt;&#10;&#10;[fix] 入出力を正方形に変更">
-      <created>1528140314369</created>
-      <option name="number" value="00020" />
-      <option name="presentableId" value="LOCAL-00020" />
-      <option name="project" value="LOCAL" />
-      <updated>1528140314369</updated>
-    </task>
-    <task id="LOCAL-00021" summary="[update] filter update &lt;version 2.2.020&gt;&#10;&#10;[fix] 動くように修正">
-      <created>1528142452652</created>
-      <option name="number" value="00021" />
-      <option name="presentableId" value="LOCAL-00021" />
-      <option name="project" value="LOCAL" />
-      <updated>1528142452652</updated>
     </task>
     <task id="LOCAL-00022" summary="[update] BN update &lt;version 2.2.025&gt;&#10;&#10;[fix] BNの修正">
       <created>1528239451288</created>
@@ -674,7 +660,21 @@
       <option name="project" value="LOCAL" />
       <updated>1529379713700</updated>
     </task>
-    <option name="localTasksCounter" value="69" />
+    <task id="LOCAL-00069" summary="[update] architect update &lt;version 2.5.006&gt;&#10;&#10;[change] 設定ファイルの変更&#10;[目的]　性能の向上">
+      <created>1529453568543</created>
+      <option name="number" value="00069" />
+      <option name="presentableId" value="LOCAL-00069" />
+      <option name="project" value="LOCAL" />
+      <updated>1529453568544</updated>
+    </task>
+    <task id="LOCAL-00070" summary="[update] architect update &lt;version 2.5.006&gt;&#10;&#10;[change] psの変更&#10;[目的]　性能の向上">
+      <created>1529454137128</created>
+      <option name="number" value="00070" />
+      <option name="presentableId" value="LOCAL-00070" />
+      <option name="project" value="LOCAL" />
+      <updated>1529454137128</updated>
+    </task>
+    <option name="localTasksCounter" value="71" />
     <servers />
   </component>
   <component name="TodoView">
@@ -724,8 +724,6 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[update] shuffle update &lt;version 2.3.109&gt;&#10;&#10;[add] hybrid_unetを追加" />
-    <MESSAGE value="[update] setting update &lt;version 2.3.131&gt;&#10;&#10;[add] 設定ファイルに対応" />
     <MESSAGE value="[update] output update &lt;version 2.3.170&gt;&#10;&#10;[add] 出力方式を変更" />
     <MESSAGE value="[update] output update &lt;version 2.3.172&gt;&#10;&#10;[add] 方式を変更" />
     <MESSAGE value="[update] output update &lt;version 2.3.181&gt;&#10;&#10;[add] 方式を変更" />
@@ -749,7 +747,9 @@
     <MESSAGE value="[update] training update &lt;version 2.4.080&gt;&#10;&#10;[add] position_gateの追加" />
     <MESSAGE value="[update] training update &lt;version 2.4.080&gt;&#10;&#10;[add] initializerの変更&#10;[fix] add_layerの修正" />
     <MESSAGE value="[update] training update &lt;version 2.5.000&gt;&#10;&#10;[change] batchsizeの変更" />
-    <option name="LAST_COMMIT_MESSAGE" value="[update] training update &lt;version 2.5.000&gt;&#10;&#10;[change] batchsizeの変更" />
+    <MESSAGE value="[update] architect update &lt;version 2.5.006&gt;&#10;&#10;[change] 設定ファイルの変更&#10;[目的]　性能の向上" />
+    <MESSAGE value="[update] architect update &lt;version 2.5.006&gt;&#10;&#10;[change] psの変更&#10;[目的]　性能の向上" />
+    <option name="LAST_COMMIT_MESSAGE" value="[update] architect update &lt;version 2.5.006&gt;&#10;&#10;[change] psの変更&#10;[目的]　性能の向上" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -1025,13 +1025,6 @@
     <entry file="file://$PROJECT_DIR$/VRC/train/Model/__init__.py">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/train/main.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="208">
-          <caret line="14" selection-start-line="14" selection-end-line="14" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="3232">
@@ -1049,10 +1042,17 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/VRC/train/main.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="208">
+          <caret line="14" selection-start-line="14" selection-end-line="14" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-2235">
-          <caret line="421" selection-start-line="421" selection-end-line="421" />
+        <state relative-caret-position="181">
+          <caret line="855" lean-forward="true" selection-start-line="855" selection-end-line="855" />
           <folding>
             <element signature="e#0#21#0" expanded="true" />
           </folding>
@@ -1061,8 +1061,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/setting.json">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="64">
-          <caret line="4" column="26" selection-start-line="4" selection-start-column="26" selection-end-line="4" selection-end-column="26" />
+        <state relative-caret-position="176">
+          <caret line="17" column="22" selection-start-line="17" selection-start-column="22" selection-end-line="17" selection-end-column="22" />
         </state>
       </provider>
     </entry>

@@ -98,7 +98,7 @@ class Model:
             self.args["D_channels"] = [min([2 ** (i + 1) - 2, 254]) for i in range(self.args['d_depth'])]
         if len(self.args["G_channels"]) != (self.args['depth']*2):
             print(" [!] Channels length and depth*2 must be equal ." + str(len(self.args["G_channels"])) + "vs" + str(
-                self.args['gepth']*2))
+                self.args['depth']*2))
             self.args["D_channels"] = [min([2 ** (i + 1) - 2, 254]) for i in range(self.args['depth']*2)]
         self.args["SHIFT"] = self.args["NFFT"]//2
         self.args["name_save"] = self.args["model_name"] + self.args["version"]
@@ -852,9 +852,11 @@ def block_ps(current,output_shape,chs,f,depth,reuses,relu,train):
 
     ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
                                         name="bn11" + str(depth))
-    tt = tf.pad(ten, ((0, 0), (0, 0), (2, 0), (0, 0)), "reflect")
-    ten = tt[:, :, :-2, :]
-    ten = tf.nn.leaky_relu(ten,name="lrelu"+str(depth))
+    ten = tf.nn.leaky_relu(ten, name="lrelu" + str(depth))
+
+    if relu:
+        tt = tf.pad(ten, ((0, 0), (0, 0), (2, 0), (0, 0)), "reflect")
+        ten = tt[:, :, :-2, :]+ten
     ten=deconve_with_ps(ten,f[0],output_shape,depth,reuses=reuses)
     if relu:
         ten=tf.nn.leaky_relu(ten)
