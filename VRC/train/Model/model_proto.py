@@ -96,7 +96,7 @@ class Model:
         self.args["SHIFT"] = self.args["NFFT"]//2
         self.args["name_save"] = self.args["model_name"] + self.args["version"]
         ss=self.args["input_size"]//self.args["SHIFT"]
-        self.input_size_model=[None,ss+self.args["dilation_size"]+self.args["dilation_size"] ,self.args["NFFT"]//2,2]
+        self.input_size_model=[None,ss+ss+self.args["dilation_size"] ,self.args["NFFT"]//2,2]
         self.input_size_test = [1, ss+self.args["dilation_size"], self.args["NFFT"] // 2, 2]
         self.output_size = [1, ss, self.args["NFFT"] // 2, 2]
         print("model train input size:" + str(self.input_size_model))
@@ -149,7 +149,7 @@ class Model:
                                                 d=self.args["dilations"],
                                                 type=self.args["architect"],
                                                 train=False,name="1", chs2=self.args["G_channels"])
-            output_aB=tf.concat([self.fake_aB_12_image[:,:-1,:,:],self.fake_aB_23_image],axis=1)
+            output_aB=tf.concat([self.fake_aB_12_image,self.fake_aB_23_image[:,:-1,:,:]],axis=1)
             with tf.variable_scope("generator_2",reuse=tf.AUTO_REUSE):
                 self.fake_bA_12_image = generator(self.input_modelb1, reuse=None,
                                               chs=self.args["G_channel"], depth=self.args["depth"], f=self.args["filter_g"],
@@ -159,7 +159,7 @@ class Model:
                                                f=self.args["filter_g"],
                                                s=self.args["strides_g"],d=self.args["dilations"], chs2=self.args["G_channels"],
                                                type=self.args["architect"], train=True, name="2")
-            output_bA = tf.concat([self.fake_bA_12_image[:,:-1,:,:], self.fake_bA_23_image], axis=1)
+            output_bA = tf.concat([self.fake_bA_12_image, self.fake_bA_23_image[:,:-1,:,:]], axis=1)
             with tf.variable_scope("generator_2",reuse=tf.AUTO_REUSE):
                 self.fake_Ba_image = generator(output_aB, reuse=True,
                                               chs=self.args["G_channel"], depth=self.args["depth"], f=self.args["filter_g"],

@@ -6,7 +6,7 @@
     },
     "network_architecture":{
         "architect":"double_decay_flatnet",
-        "batch_size":16,
+        "batch_size":32,
         "depth":8,
         "d_depth":5,
         "D_channels":[32,64,64,64,1],
