@@ -14,6 +14,7 @@ Hz=C1*(2**0)
 now=317.6
 target=563.666
 term = 4096
+dilation=512*7
 length=term//SHIFT+1
 cutoff=5
 effect_ranges=1024
@@ -90,7 +91,7 @@ WAVE_INPUT_FILENAME = "../train/Model/datasets/source/02/"
 files=glob.glob(WAVE_INPUT_FILENAME+"*.wav")
 filestri=glob.glob(WAVE_INPUT_FILENAME+"*.str")
 stri=""
-name="24/Answer_data"
+name="24d/Answer_data"
 cnt=0
 for file in files:
     print(file)
@@ -126,7 +127,7 @@ for file in files:
     mod=data_realA.shape[0]%term
     resp=np.zeros([NFFT//2])
     for i in range(times):
-        ind=term+SHIFT
+        ind=term*2+dilation+SHIFT
         startpos=term*i+mod
         data_realAb = data_realA[max(startpos-ind,0):startpos]
         r=ind-data_realAb.shape[0]

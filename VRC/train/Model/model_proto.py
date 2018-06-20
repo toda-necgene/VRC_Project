@@ -39,18 +39,18 @@ class Model:
         self.args["weight_GAN1"] = 1.0
         self.args["weight_GAN2"] = 1.0
         self.args["NFFT"]=128
+        self.args["dilation_size"] = 7
         self.args["debug"] = False
         self.args["noise"] = False
         self.args["cupy"] = False
         self.args["D_channels"] =[2]
         self.args["G_channel"] = 32
         self.args["G_channels"] = [32]
-        self.args["strides_g"] = [2,2]
-        self.args["strides_g2"] = [1, 1]
+        self.args["strides_g"] = [[2,2]]
         self.args["strides_d"] = [2,2]
-        self.args["filter_g"] = [8,8]
-        self.args["filter_g2"] = [2, 2]
+        self.args["filter_g"] = [[8,8]]
         self.args["filter_d"] = [4,4]
+        self.args["dilations"] = [1,1,1,1]
         self.args["model_name"] = "wave2wave"
         self.args["version"] = "1.0.0"
         self.args["log_eps"] = 1e-8
@@ -103,13 +103,10 @@ class Model:
         self.args["SHIFT"] = self.args["NFFT"]//2
         self.args["name_save"] = self.args["model_name"] + self.args["version"]
         ss=self.args["input_size"]//self.args["SHIFT"]
-        self.input_size_model=[None,ss,self.args["NFFT"]//2,2]
-        sd=self.args["input_size"]//self.args["SHIFT"]
-        for i in range(self.args["d_depth"]):
-            sd=(sd-self.args["filter_d"][0])//self.args["strides_d"][0]+1
-        self.input_size_label=[self.args["batch_size"],sd,24]
-        print(self.input_size_label)
-        print("model input size:"+str(self.input_size_model))
+        self.input_size_model=[None,ss*2+self.args["dilation_size"] ,self.args["NFFT"]//2,2]
+        self.input_size_test = [1, ss+self.args["dilation_size"], self.args["NFFT"] // 2, 2]
+        self.output_size = [1, ss, self.args["NFFT"] // 2, 2]
+        print("model input size:"+str(self.output_size))
         self.sess=tf.InteractiveSession(config=tf.ConfigProto(gpu_options=tf.GPUOptions()))
         if bool(self.args["debug"]):
             self.sess=tf_debug.LocalCLIDebugWrapperSession(self.sess)
@@ -132,43 +129,57 @@ class Model:
 
         #inputs place holder
         #入力
-        self.input_modela=tf.placeholder(tf.float32, self.input_size_model, "input_A")
+        self.input_modela= tf.placeholder(tf.float32, self.input_size_model, "input_A")
         self.input_modelb = tf.placeholder(tf.float32, self.input_size_model, "input_B")
-
+        self.input_model_test = tf.placeholder(tf.float32, self.input_size_test, "input_T")
+        self.input_modela1=self.input_modela[:,:self.input_size_test[1],:,:]
+        self.input_modela2 = self.input_modela[:, -self.input_size_test[1]:, :, :]
+        self.input_modelb1=self.input_modelb[:,:self.input_size_test[1],:,:]
+        self.input_modelb2 = self.input_modelb[:, -self.input_size_test[1]:, :, :]
         self.training=tf.placeholder(tf.float32,[1],name="Training")
         #creating generator
         #G-net（生成側）の作成
         with tf.variable_scope("generators"):
 
             with tf.variable_scope("generator_1",reuse=tf.AUTO_REUSE):
-                self.fake_aB_image = generator(self.input_modela, reuse=None,chs=self.args["G_channel"], depth=self.args["depth"], f=self.args["filter_g"],
-                                              s=self.args["strides_g"], chs2=self.args["G_channels"],type=self.args["architect"],train=True,name="1")
-                self.fake_aB_image_test = generator(self.input_modelb, reuse=True,
+                self.fake_aB_12_image = generator(self.input_modela1, reuse=None,chs=self.args["G_channel"], depth=self.args["depth"], f=self.args["filter_g"],
+                                              s=self.args["strides_g"],d=self.args["dilations"], chs2=self.args["G_channels"],type=self.args["architect"],train=True,name="1")
+                self.fake_aB_23_image = generator(self.input_modela2, reuse=True, chs=self.args["G_channel"],
+                                                  depth=self.args["depth"], f=self.args["filter_g"],
+                                                  s=self.args["strides_g"],d=self.args["dilations"], chs2=self.args["G_channels"],
+                                                  type=self.args["architect"], train=True, name="1")
+                self.fake_aB_image_test = generator(self.input_model_test, reuse=True,
                                                 chs=self.args["G_channel"], depth=self.args["depth"],
                                                 f=self.args["filter_g"],
                                                 s=self.args["strides_g"],
+                                                d=self.args["dilations"],
                                                 type=self.args["architect"],
                                                 train=False,name="1", chs2=self.args["G_channels"])
-
+            output_aB=tf.concat([self.fake_aB_12_image[:,:-1,:,:],self.fake_aB_23_image],axis=1)
             with tf.variable_scope("generator_2",reuse=tf.AUTO_REUSE):
-                self.fake_bA_image = generator(self.input_modelb, reuse=None,
+                self.fake_bA_12_image = generator(self.input_modelb1, reuse=None,
                                               chs=self.args["G_channel"], depth=self.args["depth"], f=self.args["filter_g"],
-                                              s=self.args["strides_g"], chs2=self.args["G_channels"],type=self.args["architect"],train=True,name="2")
-
-            with tf.variable_scope("generator_2",reuse=tf.AUTO_REUSE):
-                self.fake_Ba_image = generator(self.fake_aB_image, reuse=True,
-                                              chs=self.args["G_channel"], depth=self.args["depth"], f=self.args["filter_g"],
-                                              s=self.args["strides_g"], chs2=self.args["G_channels"],type=self.args["architect"],train=True,name="2")
-            with tf.variable_scope("generator_1",reuse=tf.AUTO_REUSE):
-                self.fake_Ab_image = generator(self.fake_bA_image, reuse=True,
+                                              s=self.args["strides_g"],d=self.args["dilations"], chs2=self.args["G_channels"],type=self.args["architect"],train=True,name="2")
+                self.fake_bA_23_image = generator(self.input_modelb2, reuse=True,
                                                chs=self.args["G_channel"], depth=self.args["depth"],
                                                f=self.args["filter_g"],
-                                               s=self.args["strides_g"], chs2=self.args["G_channels"],type=self.args["architect"],train=True,name="1")
+                                               s=self.args["strides_g"],d=self.args["dilations"], chs2=self.args["G_channels"],
+                                               type=self.args["architect"], train=True, name="2")
+            output_bA = tf.concat([self.fake_bA_12_image[:,:-1,:,:], self.fake_bA_23_image], axis=1)
+            with tf.variable_scope("generator_2",reuse=tf.AUTO_REUSE):
+                self.fake_Ba_image = generator(output_aB, reuse=True,
+                                              chs=self.args["G_channel"], depth=self.args["depth"], f=self.args["filter_g"],
+                                              s=self.args["strides_g"],d=self.args["dilations"], chs2=self.args["G_channels"],type=self.args["architect"],train=True,name="2")
+            with tf.variable_scope("generator_1",reuse=tf.AUTO_REUSE):
+                self.fake_Ab_image = generator(output_bA, reuse=True,
+                                               chs=self.args["G_channel"], depth=self.args["depth"],
+                                               f=self.args["filter_g"],
+                                               s=self.args["strides_g"],d=self.args["dilations"], chs2=self.args["G_channels"],type=self.args["architect"],train=True,name="1")
         self.noise = tf.placeholder(tf.float32, [self.args["batch_size"]], "inputs_Noise")
 
-        ss=self.input_modela.shape[1:]
-        a_true_noised=self.input_modela+tf.random_normal(ss,0,self.noise[0])
-        b_true_noised = self.input_modelb + tf.random_normal(ss, 0, self.noise[0])
+        ss=self.input_modelb[:,:self.output_size[1],:,:].shape[1:]
+        a_true_noised=self.input_modela[:,:self.output_size[1],:,:]+tf.random_normal(ss,0,self.noise[0])
+        b_true_noised = self.input_modelb[:,:self.output_size[1],:,:] + tf.random_normal(ss, 0, self.noise[0])
 
         #creating discriminator inputs
         #D-netの入力の作成
@@ -182,122 +193,69 @@ class Model:
                                                                        self.args["strides_d"], self.args["d_depth"],
                                                                        self.args["D_channels"],a="B")
 
-                self.d_judge_BF = discriminator(self.fake_aB_image[:,:,:,:], True, self.args["filter_d"],
+                self.d_judge_BF = discriminator(self.fake_aB_12_image[:,:,:,:], True, self.args["filter_d"],
                                                                        self.args["strides_d"], self.args["d_depth"],
                                                                        self.args["D_channels"],a="B")
             with tf.variable_scope("discrimA"):
                 self.d_judge_AR = discriminator(a_true_noised[:,:,:,:], None, self.args["filter_d"],
                                                                         self.args["strides_d"], self.args["d_depth"],
                                                                         self.args["D_channels"],"A")
-                self.d_judge_AF = discriminator(self.fake_bA_image[:,:,:,:], True, self.args["filter_d"],
+                self.d_judge_AF = discriminator(self.fake_bA_12_image[:,:,:,:], True, self.args["filter_d"],
                                                                         self.args["strides_d"], self.args["d_depth"],
                                                                         self.args["D_channels"],a="A")
-            # with tf.variable_scope("discrimB2"):
-            #     self.d_judge_BR0 = discriminator(b_true_noised[:,:,:,:1], None, self.args["filter_d"],
-            #                                                            self.args["strides_d"], self.args["d_depth"],
-            #                                                            self.args["D_channels"],a="B2")
-            #
-            #     self.d_judge_BF0 = discriminator(self.fake_aB_image[:,:,:,:1], True, self.args["filter_d"],
-            #                                                            self.args["strides_d"], self.args["d_depth"],
-            #                                                            self.args["D_channels"],a="B2")
-            # with tf.variable_scope("discrimA2"):
-            #     self.d_judge_AR0 = discriminator(a_true_noised[:,:,:,:1], None, self.args["filter_d"],
-            #                                                             self.args["strides_d"], self.args["d_depth"],
-            #                                                             self.args["D_channels"],a="A2")
-            #     self.d_judge_AF0 = discriminator(self.fake_bA_image[:,:,:,:1], True, self.args["filter_d"],
-            #                                                             self.args["strides_d"], self.args["d_depth"],
-            #                                                             self.args["D_channels"],a="A2")
-
 
         #getting individual variabloes
         #それぞれの変数取得
         self.g_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"generators")
         self.d_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"discrims")
-        #objective-functions of discriminator
-        #D-netの目的関数
-        # self.d_loss_AR = tf.reduce_mean(tf.squared_difference(self.d_judge_AR_logits,tf.ones_like(self.label_modela)))
-        # self.d_loss_AF = tf.reduce_mean(tf.squared_difference(self.d_judge_AF_logits,tf.zeros_like(self.label_modela)))
-        # self.d_loss_BR = tf.reduce_mean(tf.squared_difference(self.d_judge_BR_logits,tf.ones_like(self.label_modelb)))
-        # self.d_loss_BF = tf.reduce_mean(tf.squared_difference(self.d_judge_BF_logits,tf.zeros_like(self.label_modelb)))
-        #
-        # self.d_loss_AR0 = tf.reduce_mean(tf.squared_difference(self.d_judge_AR0, self.label_modela))
-        # self.d_loss_AF0 = tf.reduce_mean(tf.squared_difference(self.d_judge_AF0, self.label_modela * 0))
-        # self.d_loss_BR0 = tf.reduce_mean(tf.squared_difference(self.d_judge_BR0, self.label_modelb))
-        # self.d_loss_BF0 = tf.reduce_mean(tf.squared_difference(self.d_judge_BF0, self.label_modelb * 0))
 
         self.d_loss_AR = tf.reduce_mean(tf.squared_difference(self.d_judge_AR, tf.ones_like(self.d_judge_AR)))
         self.d_loss_AF = tf.reduce_mean(tf.squared_difference(self.d_judge_AF, tf.zeros_like(self.d_judge_AF)))
         self.d_loss_BR = tf.reduce_mean(tf.squared_difference(self.d_judge_BR, tf.ones_like(self.d_judge_BR)))
         self.d_loss_BF = tf.reduce_mean(tf.squared_difference(self.d_judge_BF, tf.zeros_like(self.d_judge_BF)))
 
-        # self.d_loss_AR0 = tf.reduce_mean(tf.squared_difference(self.d_judge_AR0, tf.ones_like(self.d_judge_AR0)))
-        # self.d_loss_AF0 = tf.reduce_mean(tf.squared_difference(self.d_judge_AF0, tf.zeros_like(self.d_judge_AF0)))
-        # self.d_loss_BR0 = tf.reduce_mean(tf.squared_difference(self.d_judge_BR0, tf.ones_like(self.d_judge_BR0)))
-        # self.d_loss_BF0 = tf.reduce_mean(tf.squared_difference(self.d_judge_BF0, tf.zeros_like(self.d_judge_BF0)))
-
-        # self.d_lossA=(self.d_loss_AR+self.d_loss_AF+self.d_loss_AR0+self.d_loss_AF0)/2.0
-        # self.d_lossB= (self.d_loss_BR + self.d_loss_BF+self.d_loss_BR0 + self.d_loss_BF0)/2.0
         self.d_lossA = (self.d_loss_AR + self.d_loss_AF )
         self.d_lossB = (self.d_loss_BR + self.d_loss_BF )
 
         self.d_loss=self.d_lossA+self.d_lossB
-            # objective-functions of generator
+        # objective-functions of generator
         # G-netの目的関数
 
         # L1 norm lossA
-        saa=tf.abs(self.fake_Ba_image[:,:,:,0]-self.input_modela[:,:,:,0])
-        sbb=tf.abs(self.fake_Ba_image[:,:,:,1]-self.input_modela[:,:,:,1])
+        saa=tf.abs(self.fake_Ba_image[:,:,:,0]-self.input_modela[:,:self.output_size[1],:,0])
+        sbb=tf.abs(self.fake_Ba_image[:,:,:,1]-self.input_modela[:,:self.output_size[1],:,1])
         L1B=saa+sbb
 
         # Gan lossA
-        # DSb=tf.reduce_mean(-tf.log(self.d_judge_BF+1e-32))
-        # DSA1 = tf.reduce_mean(tf.squared_difference(self.d_judge_AF0, tf.ones_like(self.d_judge_AF0)))
         DSA2 = tf.reduce_mean(tf.squared_difference(self.d_judge_AF, tf.ones_like(self.d_judge_AF)))
-        # DSB1 = tf.reduce_mean(tf.squared_difference(self.d_judge_BF0, tf.ones_like(self.d_judge_BF0)))
         DSB2 = tf.reduce_mean(tf.squared_difference(self.d_judge_BF, tf.ones_like(self.d_judge_BF)))
 
         # generator lossA
-        # self.g_loss_aB = L1B * self.args["weight_Cycle"]+tf.reduce_mean(self.args["weight_GAN1"]*DSB1+self.args["weight_GAN2"]*DSB2)
         self.g_loss_aB = L1B * self.args["weight_Cycle"] + tf.reduce_mean(self.args["weight_GAN2"] * DSB2)
 
-        # self.g_loss_aB =  tf.reduce_mean(self.args["weight_GAN"] * DSb)
 
         # L1 norm lossB
-        sa=tf.abs(self.fake_Ab_image[:,:,:,0]-self.input_modelb[:,:,:,0] )
-        sb=tf.abs(self.fake_Ab_image[:,:,:,1]-self.input_modelb[:,:,:,1] )
+        sa=tf.abs(self.fake_Ab_image[:,:,:,0]-self.input_modelb[:,:self.output_size[1],:,0] )
+        sb=tf.abs(self.fake_Ab_image[:,:,:,1]-self.input_modelb[:,:self.output_size[1],:,1] )
         L1bAAb = sa+sb
         # Gan loss
-        # DSA = tf.reduce_mean(-tf.log(self.d_judge_AF+1e-32))
-
-        # L1UBA =16.0/(tf.abs(self.fake_bA_image[:,:,:,0]-self.fake_aB_image[:,:,:,0])+1e-8)
-        # L1UBA =tf.maximum(L1UBA,tf.ones_like(L1UBA))
-        # generator loss
-        # self.g_loss_bA = L1bAAb * self.args["weight_Cycle"] + tf.reduce_mean( self.args["weight_GAN1"]*DSA1+self.args["weight_GAN2"]*DSA2)
         self.g_loss_bA = L1bAAb * self.args["weight_Cycle"] + tf.reduce_mean( self.args["weight_GAN2"] * DSA2)
-
-        # self.g_loss_bA =  tf.reduce_mean( self.args["weight_GAN"]*DSA)
-
         self.g_loss=self.g_loss_aB+self.g_loss_bA
         #BN_UPDATE
         self.update_ops=tf.get_collection(tf.GraphKeys.UPDATE_OPS)
         #tensorboard functions
         #tensorboard 表示用関数
         self.g_loss_all= tf.summary.scalar("g_loss_cycle_A", tf.reduce_mean(L1bAAb),family="g_loss")
-        # self.g_loss_gan = tf.summary.scalar("g_loss_gan_A_0", tf.reduce_mean(DSA1),family="g_loss")
         self.g_loss_gan2 = tf.summary.scalar("g_loss_gan_A_1", tf.reduce_mean(DSA2), family="g_loss")
         self.dscore = tf.summary.scalar("dscore_AF", tf.reduce_mean(self.d_judge_AF),family="d_score")
         self.dscore3 = tf.summary.scalar("dscore_AR", tf.reduce_mean(self.d_judge_AR), family="d_score")
-        # self.g_loss_sum_1 = tf.summary.merge([self.g_loss_all, self.g_loss_gan, self.g_loss_gan2, self.dscore])
         self.g_loss_sum_1 = tf.summary.merge([self.g_loss_all, self.g_loss_gan2, self.dscore,self.dscore3])
 
         self.g_loss_all2 = tf.summary.scalar("g_loss_cycle_B", tf.reduce_mean(L1B),family="g_loss")
-        # self.g_loss_gan3 = tf.summary.scalar("g_loss_gan_B_0", tf.reduce_mean(DSB1),family="g_loss")
         self.g_loss_gan4 = tf.summary.scalar("g_loss_gan_B_1", tf.reduce_mean(DSB2), family="g_loss")
         self.dscore2 = tf.summary.scalar("dscore_BF", tf.reduce_mean(self.d_judge_BF),family="d_score")
         self.dscore4 = tf.summary.scalar("dscore_BR", tf.reduce_mean(self.d_judge_BR), family="d_score")
 
-        # self.g_loss_uba = tf.summary.scalar("g_loss_distAB", tf.reduce_mean(L1UBA), family="g_loss")
-        # self.g_loss_sum_2 = tf.summary.merge([self.g_loss_all2, self.g_loss_gan3, self.g_loss_gan4, self.dscore2])
         self.g_loss_sum_2 = tf.summary.merge([self.g_loss_all2, self.g_loss_gan4, self.dscore2,self.dscore4])
 
         self.d_loss_sumA = tf.summary.scalar("d_lossA", tf.reduce_mean(self.d_lossA),family="d_loss")
@@ -331,13 +289,13 @@ class Model:
 
 
         tt=time.time()
-        ipt=self.args["input_size"]+self.args["SHIFT"]
+        ipt=self.args["input_size"]+self.args["SHIFT"]+self.args["SHIFT"]*self.args["dilation_size"]
         times=in_put.shape[1]//(self.args["input_size"])+1
         if in_put.shape[1]%((self.args["input_size"])*self.args["batch_size"])==0:
             times-=1
         otp=np.array([],dtype=np.int16)
         res3 = np.zeros([1,self.args["NFFT"],2], dtype=np.float32)
-        rss=np.zeros([self.input_size_model[2]],dtype=np.float64)
+        rss=np.zeros([self.input_size_test[2]],dtype=np.float64)
         for t in range(times):
             # Preprocess
             # 前処理
@@ -351,7 +309,7 @@ class Model:
                 resorce=np.pad(resorce,((0,0),(r,0)),'constant')
             red=resorce
             red=red.reshape((1,ipt))
-            res = np.zeros([1,self.input_size_model[1],self.input_size_model[2],self.input_size_model[3]])
+            res = np.zeros([1,self.input_size_test[1],self.input_size_test[2],self.input_size_test[3]])
             # FFT
             # 短時間高速離散フーリエ変換
             n=self.fft(red[0].reshape(-1)/32767.0)
@@ -365,15 +323,15 @@ class Model:
             # running network
             # ネットワーク実行
             res=res[:,:self.args["SHIFT"],:]
-            res=self.sess.run(self.fake_aB_image_test,feed_dict={ self.input_modelb:res,self.training:np.asarray([1.0])})
+            res=self.sess.run(self.fake_aB_image_test,feed_dict={ self.input_model_test:res,self.training:np.asarray([1.0])})
             res2=res.copy()[:,:,::-1,:]
             res=np.append(res,res2,axis=2)
             res[:,:,self.args["SHIFT"]:,1]*=-1
             # resas = np.append(resas, res[0])
             a = res[0].copy()
             c = a[:, :, 0]
-            scales_mask = scales.copy()
-            means_mask = means.copy()
+            scales_mask = scales.copy()[:self.output_size[1]]
+            means_mask = means.copy()[:self.output_size[1]]
             c = np.einsum("ij,i->ij", c, scales_mask)
             sm = np.tile(means_mask, (1, 2))
             c = c + sm
@@ -757,66 +715,43 @@ def discriminator(inp,reuse,f,s,depth,chs,a):
         print(" [*] bottom shape:"+str(current.shape))
     #出力サイズB*H*24
     return current
-def generator(current_outputs,reuse,depth,chs,chs2,f,s,type,train,name):
-    if type == "flatnet":
-        return generator_flatnet(current_outputs,reuse,depth,chs,f,s,0,train,name)
-    elif type == "ps_flatnet":
-        return generator_flatnet(current_outputs, reuse, depth, chs, f, s, 1,train,name)
-    elif type == "hybrid_flatnet":
-        return generator_flatnet(current_outputs, reuse, depth, chs, f, s, 2,train,name)
-    elif type == "double_flatnet":
-        return generator_flatnet(current_outputs, reuse, depth, chs, f, s, 3, train, name)
-    elif type == "ps_decay_flatnet":
-        return generator_flatnet_decay(current_outputs, reuse, depth, chs2, f, s, 1, train)
+def generator(current_outputs,reuse,depth,chs,chs2,f,s,d,type,train,name):
+    if type == "ps_decay_flatnet":
+        return generator_flatnet_decay(current_outputs, reuse, depth, chs2, f, s,d, 1, train)
     elif type == "double_decay_flatnet":
-        return generator_flatnet_decay(current_outputs, reuse, depth, chs2, f, s, 3, train)
+        return generator_flatnet_decay(current_outputs, reuse, depth, chs2, f, s,d, 3, train)
     elif type == "decay_flatnet":
-        return generator_flatnet_decay(current_outputs, reuse, depth, chs2, f, s, 0, train)
+        return generator_flatnet_decay(current_outputs, reuse, depth, chs2, f, s,d, 0, train)
     elif type == "ps_unet":
         return generator_unet(current_outputs, reuse, depth, chs, f, s, 1)
     elif type == "hybrid_unet":
         return generator_unet(current_outputs, reuse, depth, chs, f, s, 2)
     else :
         return  generator_unet(current_outputs,reuse,depth,chs,f,s)
-def generator_flatnet(current_outputs,reuse,depth,chs,f,s,ps,train,name):
-    current=current_outputs
-    output_shape=int(current.shape[3])
-    #main process
-    for i in range(depth):
-        connections = current
-        if ps==1:
-            ten = block_ps(current, output_shape,chs, f, i, reuse,i!=depth-1,train)
-        elif ps==2 :
-            ten=block_hybrid(current,f,chs,i,reuse,i!=depth-1,train)
-        elif ps == 3:
-            ten = block_double(current, f,s, chs, i, reuse, i != depth - 1, pixs=4,train=train )
-        else :
-            ten = block_dc(current, output_shape, chs, f, s, i, reuses=reuse, shake=i != depth - 1,train=train)
-        if i!=depth-1:
-            current = ten + connections
-        else:
-            current=ten
-    return current
-def generator_flatnet_decay(current_outputs,reuse,depth,chs,f,s,ps,train):
+def generator_flatnet_decay(current_outputs,reuse,depth,chs,f,s,d,ps,train):
     current=current_outputs
     #main process
     for i in range(depth):
         connections = current
         if ps==1:
-            ten = block_ps(current, chs[i*2+1],chs[i*2],f, i, reuse,i!=depth-1,train=train)
+            ten = block_ps(current, chs[i*2+1],chs[i*2],f[i], i, reuse,i!=depth-1,train=train)
         elif ps == 3:
-                ten = block_double(current, chs[i * 2 + 1], chs[i * 2], f,s, i, reuse, i != depth - 1,pixs=f, train=train)
+            ten = block_double(current, chs[i * 2 + 1], chs[i * 2], f[i],s[i], i, reuse, i != depth - 1,pixs=f[i], train=train,dl=d[i])
         else :
-            ten = block_dc(current,chs[i*2+1],chs[i*2], f, s, i, reuses=reuse, shake=i != depth - 1,train=train)
+            ten = block_dc(current,chs[i*2+1],chs[i*2], f[i], s[i], i, reuses=reuse, shake=i != depth - 1,train=train)
         if i!=depth-1:
             ims=ten.shape[3]//connections.shape[3]
             if ims!=0:
                 connections=tf.tile(connections,[1,1,1,ims])
             elif connections.shape[3]>ten.shape[3]:
                 connections = connections[:,:,:,:ten.shape[3]]
+            ims2 = int(ten.shape[1])-int(connections.shape[1])
+            if ims2<0:
+                connections = connections[:, :ims2, :, :]
             current = ten + connections
         else:
             current=ten
+
     return current
 
 def block_dc(current,output_shape,chs,f,s,depth,reuses,shake,train):
@@ -885,22 +820,28 @@ def block_hybrid(current,f,chs,depth,reuses,shake,train):
         ten2 = tf.nn.relu(ten2)
     ten=(ten1+ten2)*0.5
     return ten
-def block_double(current,output_shape,chs,f,s,depth,reuses,shake,pixs=[2,2],train=True):
+def block_double(current,output_shape,chs,f,s,depth,reuses,shake,pixs=[2,2],train=True,dl=1):
     ten=current
     stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(ten.shape[3])))
-    ten = tf.layers.conv2d(ten, chs, kernel_size=pixs, strides=pixs, padding="VALID",
+    ten = tf.layers.conv2d(ten, chs, kernel_size=[1,f[1]], strides=s, padding="VALID",
                            kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
-                           data_format="channels_last", reuse=reuses, name="conv21" + str(depth))
+                           data_format="channels_last", reuse=reuses, name="conv11" + str(depth),dilation_rate=(1,1))
+    ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
+                                        name="bn21" + str(depth))
+
+    ten = tf.nn.leaky_relu(ten, name="lrelu" + str(depth))
+    ten = tf.layers.conv2d(ten, chs, kernel_size=[f[0],1], strides=[1,1], padding="VALID",
+                           kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
+                           data_format="channels_last", reuse=reuses, name="conv21" + str(depth), dilation_rate=(dl, 1))
     ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
                                          name="bn21" + str(depth))
     ten = tf.nn.leaky_relu(ten, name="lrelu" + str(depth))
-
     tenB=ten
     if shake:
-        tt = tf.pad(tenB, ((0, 0), (0, 0), (pixs[1], 0), (0, 0)), "reflect")
-        tenB = tt[:, :, :-pixs[1], :]
-    tenB = deconve_with_ps(tenB, pixs, output_shape, depth, reuses=reuses,name="02")
-    tenA = deconve_with_ps(ten, pixs, output_shape, depth, reuses=reuses,name="01")
+        tt = tf.pad(tenB, ((0, 0), (0, 0), (1, 0), (0, 0)), "reflect")
+        tenB = tt[:, :, :-1, :]
+    tenB = deconve_with_ps(tenB, [1,pixs[1]], output_shape, depth, reuses=reuses,name="02")
+    tenA = deconve_with_ps(ten, [1,pixs[1]], output_shape, depth, reuses=reuses,name="01")
 
     ten = (tenA + tenB) * 0.5
     if shake:
