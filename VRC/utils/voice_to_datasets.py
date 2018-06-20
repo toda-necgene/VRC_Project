@@ -14,7 +14,7 @@ Hz=C1*(2**0)
 now=317.6
 target=563.666
 term = 4096
-dilation=512*7
+dilation=512*15
 length=term//SHIFT+1
 cutoff=5
 effect_ranges=1024
@@ -91,7 +91,7 @@ WAVE_INPUT_FILENAME = "../train/Model/datasets/source/02/"
 files=glob.glob(WAVE_INPUT_FILENAME+"*.wav")
 filestri=glob.glob(WAVE_INPUT_FILENAME+"*.str")
 stri=""
-name="24d/Answer_data"
+name="24d15s/Answer_data"
 cnt=0
 for file in files:
     print(file)
@@ -140,69 +140,11 @@ for file in files:
             dmn=np.pad(dmn,(0,r),"reflect")
         a=fft(dmn)
         a=complex_to_pp(a[:,:SHIFT])
-        c=a[:,:,0]
-        a[:, :, 0] -= np.tile(np.mean(c, axis=1).reshape(-1, 1), (1, SHIFT))
-        v = 1 / np.sqrt(np.var(c, axis=1) + 1e-36)
-        a[:, :, 0]= np.einsum("ij,i->ij",a[:, :, 0],v)
+        # c=a[:,:,0]
+        # a[:, :, 0] -= np.tile(np.mean(c, axis=1).reshape(-1, 1), (1, SHIFT))
+        # v = 1 / np.sqrt(np.var(c, axis=1) + 1e-36)
+        # a[:, :, 0]= np.einsum("ij,i->ij",a[:, :, 0],v)
         bb=np.isnan(np.mean(a))
-        #音素アラインメントの実行
-        ttms=600//SHIFT
-        ttm_pp = int(ttms * 0.2)
-        ttm_main=ttms*2-ttm_pp*2
-        if align and not os.path.exists("../train/Model/datasets/train/" + str(name) + "/" + str(cnt) + "-stri.npy"):
-            stridatra=np.zeros([length-cutoff,24],dtype=np.float32)
-            flag=True
-            tts=0
-            segs=seg
-            while True:
-                print("play"+str(startpos))
-                play(dddd)
-                print("言葉を音素で入力 %d/%d"%(i+1,times))
-                ins=input().encode("utf-8").decode("utf-8")
-                if ins=="":
-                    flag=False
-                for n in ins:
-                    if n in lss  :
-                        seg+=1
-                    elif n == "?":
-                        pass
-                    else:
-                        if not n in lss:
-                            print("存在しない文字です")
-                        else:
-                            print(stri[max(seg-2,0):min(seg+2,len(stri))])
-                            print(ins[seg-segs],seg,ins)
-                        flag=False
-                        seg=segs
-                if flag:
-                    pss=(length-cutoff)//(len(ins)+1)
-                    r=1
-                    for n in ins:
-                        ff=lss[n]
-                        mainpos=pss*r
-                        ts=np.linspace(0.1,1.0,ttm_pp)
-                        tm=np.ones([ttm_main])
-                        te=np.linspace(1.0,0.1,ttm_pp)
-                        filt=np.append(ts,tm).reshape(-1)
-                        filt=np.append(filt,te).reshape(-1)
-                        s=mainpos-ttms
-                        e=mainpos+ttms
-                        sk=0
-                        se=ttms*2
-                        if s<0:
-                            s=0
-                            sk=-s-1
-                        if e>=stridatra.shape[0]:
-                            e=stridatra.shape[0]
-                            se=stridatra.shape[0]-e
-                        stridatra[s:e,ff]+=filt[sk:se]
-                        r+=1
-                    seg+=len(ins)
-                    break
-                print("しっぱい")
-                flag = True
-                seg = segs
-            np.save("../train/Model/datasets/train/" + str(name) + "/" + str(cnt) + "-stri", stridatra)
         if bb:
             print("NAN!!")
         np.save("../train/Model/datasets/train/"+str(name)+"/"+str(cnt) +"-wave", a)

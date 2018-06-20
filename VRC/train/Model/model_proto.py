@@ -96,10 +96,11 @@ class Model:
         self.args["SHIFT"] = self.args["NFFT"]//2
         self.args["name_save"] = self.args["model_name"] + self.args["version"]
         ss=self.args["input_size"]//self.args["SHIFT"]
-        self.input_size_model=[None,ss*2+self.args["dilation_size"] ,self.args["NFFT"]//2,2]
+        self.input_size_model=[None,ss+self.args["dilation_size"]+self.args["dilation_size"] ,self.args["NFFT"]//2,2]
         self.input_size_test = [1, ss+self.args["dilation_size"], self.args["NFFT"] // 2, 2]
         self.output_size = [1, ss, self.args["NFFT"] // 2, 2]
-        print("model input size:"+str(self.output_size))
+        print("model train input size:" + str(self.input_size_model))
+        print("model output size:"+str(self.output_size))
         self.sess=tf.InteractiveSession(config=tf.ConfigProto(gpu_options=tf.GPUOptions()))
         if bool(self.args["debug"]):
             self.sess=tf_debug.LocalCLIDebugWrapperSession(self.sess)
@@ -137,10 +138,10 @@ class Model:
             with tf.variable_scope("generator_1",reuse=tf.AUTO_REUSE):
                 self.fake_aB_12_image = generator(self.input_modela1, reuse=None,chs=self.args["G_channel"], depth=self.args["depth"], f=self.args["filter_g"],
                                               s=self.args["strides_g"],d=self.args["dilations"], chs2=self.args["G_channels"],type=self.args["architect"],train=True,name="1")
-                self.fake_aB_23_image = generator(self.input_modela2, reuse=True, chs=self.args["G_channel"],
-                                                  depth=self.args["depth"], f=self.args["filter_g"],
-                                                  s=self.args["strides_g"],d=self.args["dilations"], chs2=self.args["G_channels"],
-                                                  type=self.args["architect"], train=True, name="1")
+                self.fake_aB_23_image=generator(self.input_modela2, reuse=True, chs=self.args["G_channel"],
+                                                      depth=self.args["depth"], f=self.args["filter_g"],
+                                                      s=self.args["strides_g"],d=self.args["dilations"], chs2=self.args["G_channels"],
+                                                      type=self.args["architect"], train=True, name="1")
                 self.fake_aB_image_test = generator(self.input_model_test, reuse=True,
                                                 chs=self.args["G_channel"], depth=self.args["depth"],
                                                 f=self.args["filter_g"],
@@ -307,12 +308,12 @@ class Model:
             # 短時間高速離散フーリエ変換
             n=self.fft(red[0].reshape(-1)/32767.0)
             res[0]=n[:,:self.args["SHIFT"]]
-            means = np.mean(res[0,:,:,0], axis=1)
-            means = np.tile(np.reshape(means, (-1, 1)), (1, self.args["SHIFT"]))
-            res[0, :, :, 0] = res[0, :, :, 0] - means
-            scales =np.reshape(np.sqrt(np.var(res[0,:,:,0], axis=1) + 1e-8), (-1))
-            mms = 1 / scales
-            res[0, :, :, 0] = np.einsum("ij,i->ij", res[0, :, :, 0], mms)
+            # means = np.mean(res[0,:,:,0], axis=1)
+            # means = np.tile(np.reshape(means, (-1, 1)), (1, self.args["SHIFT"]))
+            # res[0, :, :, 0] = res[0, :, :, 0] - means
+            # scales =np.reshape(np.sqrt(np.var(res[0,:,:,0], axis=1) + 1e-8), (-1))
+            # mms = 1 / scales
+            # res[0, :, :, 0] = np.einsum("ij,i->ij", res[0, :, :, 0], mms)
             # running network
             # ネットワーク実行
             res=res[:,:self.args["SHIFT"],:]
@@ -322,13 +323,13 @@ class Model:
             res[:,:,self.args["SHIFT"]:,1]*=-1
             # resas = np.append(resas, res[0])
             a = res[0].copy()
-            c = a[:, :, 0]
-            scales_mask = scales.copy()[:self.output_size[1]]
-            means_mask = means.copy()[:self.output_size[1]]
-            c = np.einsum("ij,i->ij", c, scales_mask)
-            sm = np.tile(means_mask, (1, 2))
-            c = c + sm
-            a[:, :, 0] = c
+            # c = a[:, :, 0]
+            # scales_mask = scales.copy()[:self.output_size[1]]
+            # means_mask = means.copy()[:self.output_size[1]]
+            # c = np.einsum("ij,i->ij", c, scales_mask)
+            # sm = np.tile(means_mask, (1, 2))
+            # c = c + sm
+            # a[:, :, 0] = c
             res3 = np.append(res3, a).reshape(-1,self.args["NFFT"],2)
 
 
@@ -372,8 +373,8 @@ class Model:
 
         self.lod="[glr="+str(lr_g_opt)+",gb="+str(beta_g_opt)+",dlr="+str(lr_d_opt)+",db="+str(beta_d_opt)+"]"
 
-        lr_g_opt3 = lr_g_opt*(0.1**(self.args["start_epoch"]//self.args["lr_decay_term"]))
-        lr_d_opt3 = lr_g_opt*(0.1**(self.args["start_epoch"]//self.args["lr_decay_term"]))
+        lr_g_opt3 = lr_g_opt*(0.5**(self.args["start_epoch"]//self.args["lr_decay_term"]))
+        lr_d_opt3 = lr_g_opt*(0.5**(self.args["start_epoch"]//self.args["lr_decay_term"]))
         lr_g=tf.placeholder(tf.float32,None,name="g_lr")
         lr_d=tf.placeholder(tf.float32,None,name="d_lr")
         g_optim = tf.train.AdamOptimizer(lr_g, beta_g_opt, beta_2_g_opt).minimize(self.g_loss,
@@ -597,8 +598,8 @@ class Model:
                 print(" [*] Epoch %5d (iterations: %10d)finished in %.2f (preprocess %.3f) ETA: %3d:%2d:%2.1f" % (epoch,count,taken_time,ts,ft//3600,ft//60%60,ft%60))
                 time_of_epoch=np.append(time_of_epoch,np.asarray([taken_time,ts]))
             if epoch%self.args["lr_decay_term"]==0:
-                lr_d_opt3 = lr_d_opt * (0.1 ** (epoch // 100))
-                lr_g_opt3 = lr_g_opt * (0.1 ** (epoch // 100))
+                lr_d_opt3 = lr_d_opt * (0.5 ** (epoch // 100))
+                lr_g_opt3 = lr_g_opt * (0.5 ** (epoch // 100))
         self.save(self.args["checkpoint_dir"], epoch)
         print(" [*] Finished!! in "+ str(np.sum(time_of_epoch[::2])))
 
