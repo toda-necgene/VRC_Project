@@ -134,8 +134,6 @@ class Model:
         #入力
         self.input_modela=tf.placeholder(tf.float32, self.input_size_model, "input_A")
         self.input_modelb = tf.placeholder(tf.float32, self.input_size_model, "input_B")
-        self.label_modela = tf.placeholder(tf.float32, self.input_size_label, "label_A")
-        self.label_modelb = tf.placeholder(tf.float32, self.input_size_label, "label_B")
 
         self.training=tf.placeholder(tf.float32,[1],name="Training")
         #creating generator
@@ -306,7 +304,7 @@ class Model:
         self.d_loss_sumB = tf.summary.scalar("d_lossB", tf.reduce_mean(self.d_lossB),family="d_loss")
 
         self.result=tf.placeholder(tf.float32, [1,1,160000], name="FB")
-        self.result1 = tf.placeholder(tf.float32, [1,2560,128,2], name="FBI0")
+        self.result1 = tf.placeholder(tf.float32, [1,320,1024,2], name="FBI0")
         im1=tf.transpose(self.result1[:,:,:,:1],[0,2,1,3])
         im2 = tf.transpose(self.result1[:, :, :, 1:], [0, 2, 1, 3])
         self.fake_B_sum = tf.summary.audio("fake_B", tf.reshape(self.result,[1,160000,1]), 16000, 1)
@@ -570,8 +568,6 @@ class Model:
                 # トレーニングデータの取得
                 res_t=np.asarray([batch_sounds_r[ind] for ind in index_list[st:st+self.args["batch_size"]]])
                 tar=np.asarray([batch_sounds_t[ind] for ind in index_list2[st:st+self.args["batch_size"]]])
-                res_l=np.asarray([batch_label_t[ind] for ind in index_list2[st:st+self.args["batch_size"]]])
-                tar_l = np.asarray([batch_label_r[ind] for ind in index_list2[st:st + self.args["batch_size"]]])
 
                 rate = 1.0 - 0.5 ** (epoch // 50 + 1)
                 # G-netの学習
@@ -809,7 +805,7 @@ def generator_flatnet_decay(current_outputs,reuse,depth,chs,f,s,ps,train):
         if ps==1:
             ten = block_ps(current, chs[i*2+1],chs[i*2],f, i, reuse,i!=depth-1,train=train)
         elif ps == 3:
-                ten = block_double(current, chs[i * 2 + 1], chs[i * 2], f,s, i, reuse, i != depth - 1,pixs=16, train=train)
+                ten = block_double(current, chs[i * 2 + 1], chs[i * 2], f,s, i, reuse, i != depth - 1,pixs=f, train=train)
         else :
             ten = block_dc(current,chs[i*2+1],chs[i*2], f, s, i, reuses=reuse, shake=i != depth - 1,train=train)
         if i!=depth-1:
@@ -889,11 +885,10 @@ def block_hybrid(current,f,chs,depth,reuses,shake,train):
         ten2 = tf.nn.relu(ten2)
     ten=(ten1+ten2)*0.5
     return ten
-def block_double(current,output_shape,chs,f,s,depth,reuses,shake,pixs=2,train=True):
+def block_double(current,output_shape,chs,f,s,depth,reuses,shake,pixs=[2,2],train=True):
     ten=current
-    ps_f=[pixs,pixs]
     stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(ten.shape[3])))
-    ten = tf.layers.conv2d(ten, chs, kernel_size=ps_f, strides=ps_f, padding="VALID",
+    ten = tf.layers.conv2d(ten, chs, kernel_size=pixs, strides=pixs, padding="VALID",
                            kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
                            data_format="channels_last", reuse=reuses, name="conv21" + str(depth))
     ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
@@ -902,8 +897,8 @@ def block_double(current,output_shape,chs,f,s,depth,reuses,shake,pixs=2,train=Tr
 
     tenB=ten
     if shake:
-        tt = tf.pad(tenB, ((0, 0), (0, 0), (2, 0), (0, 0)), "reflect")
-        tenB = tt[:, :, :-2, :]
+        tt = tf.pad(tenB, ((0, 0), (0, 0), (pixs[1], 0), (0, 0)), "reflect")
+        tenB = tt[:, :, :-pixs[1], :]
     tenB = deconve_with_ps(tenB, pixs, output_shape, depth, reuses=reuses,name="02")
     tenA = deconve_with_ps(ten, pixs, output_shape, depth, reuses=reuses,name="01")
 
@@ -914,7 +909,7 @@ def block_double(current,output_shape,chs,f,s,depth,reuses,shake,pixs=2,train=Tr
     return ten
 
 def deconve_with_ps(inp,r,otp_shape,depth,f=[1,1],reuses=None,name=""):
-    chs_r=(r**2)*otp_shape
+    chs_r=r[0]*r[1]*otp_shape
     stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(inp.shape[3])))
     ten = tf.layers.conv2d(inp, chs_r, kernel_size=f, strides=f, padding="VALID",
                            kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
@@ -922,9 +917,9 @@ def deconve_with_ps(inp,r,otp_shape,depth,f=[1,1],reuses=None,name=""):
     b_size = -1
     in_h = ten.shape[1]
     in_w = ten.shape[2]
-    ten = tf.reshape(ten, [b_size, r, r, in_h, in_w, otp_shape])
+    ten = tf.reshape(ten, [b_size, r[0], r[1], in_h, in_w, otp_shape])
     ten = tf.transpose(ten, [0, 2, 3, 4, 1, 5])
-    ten = tf.reshape(ten, [b_size, in_h * r, in_w * r, otp_shape])
+    ten = tf.reshape(ten, [b_size, in_h * r[0], in_w * r[1], otp_shape])
     return ten[:,:,:,:]
 
 def generator_unet(current_outputs,reuse,depth,chs,f,s,ps=0):

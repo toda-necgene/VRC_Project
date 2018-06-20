@@ -6,7 +6,7 @@ import glob
 import cupy
 import os
 import matplotlib.pyplot as plt
-NFFT=128
+NFFT=1024
 SHIFT=NFFT//2
 C1=32.703
 rate=16000
@@ -86,11 +86,11 @@ CHANNELS = 1        #モノラル
 RATE = 16000       #サンプルレート
 CHUNK = 1024     #データ点数
 RECORD_SECONDS = 5 #録音する時間の長さ
-WAVE_INPUT_FILENAME = "../train/Model/datasets/source/01/"
+WAVE_INPUT_FILENAME = "../train/Model/datasets/source/02/"
 files=glob.glob(WAVE_INPUT_FILENAME+"*.wav")
 filestri=glob.glob(WAVE_INPUT_FILENAME+"*.str")
 stri=""
-name="04_r/Source_data"
+name="24/Answer_data"
 cnt=0
 for file in files:
     print(file)
