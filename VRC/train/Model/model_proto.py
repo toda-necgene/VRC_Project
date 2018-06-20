@@ -66,6 +66,7 @@ class Model:
         self.args["dropbox"]="False"
         self.args["architect"] = "flatnet"
         self.args["label_noise"]=0.0
+        self.args["lr_decay_term"] = 100
         self.args["train_data_path"]="./train/Model/datasets/train/"
         if os.path.exists(path):
             try:
@@ -102,7 +103,7 @@ class Model:
         self.args["SHIFT"] = self.args["NFFT"]//2
         self.args["name_save"] = self.args["model_name"] + self.args["version"]
         ss=self.args["input_size"]//self.args["SHIFT"]
-        self.input_size_model=[self.args["batch_size"],ss,self.args["NFFT"]//2,2]
+        self.input_size_model=[None,ss,self.args["NFFT"]//2,2]
         sd=self.args["input_size"]//self.args["SHIFT"]
         for i in range(self.args["d_depth"]):
             sd=(sd-self.args["filter_d"][0])//self.args["strides_d"][0]+1
@@ -142,10 +143,9 @@ class Model:
         with tf.variable_scope("generators"):
 
             with tf.variable_scope("generator_1",reuse=tf.AUTO_REUSE):
-                self.fake_aB_image = generator(tf.reshape(self.input_modela, self.input_size_model), reuse=None,
-                                              chs=self.args["G_channel"], depth=self.args["depth"], f=self.args["filter_g"],
+                self.fake_aB_image = generator(self.input_modela, reuse=None,chs=self.args["G_channel"], depth=self.args["depth"], f=self.args["filter_g"],
                                               s=self.args["strides_g"], chs2=self.args["G_channels"],type=self.args["architect"],train=True,name="1")
-                self.fake_aB_image_test = generator(tf.reshape(self.input_modelb, self.input_size_model), reuse=True,
+                self.fake_aB_image_test = generator(self.input_modelb, reuse=True,
                                                 chs=self.args["G_channel"], depth=self.args["depth"],
                                                 f=self.args["filter_g"],
                                                 s=self.args["strides_g"],
@@ -153,23 +153,24 @@ class Model:
                                                 train=False,name="1", chs2=self.args["G_channels"])
 
             with tf.variable_scope("generator_2",reuse=tf.AUTO_REUSE):
-                self.fake_bA_image = generator(tf.reshape(self.input_modelb, self.input_size_model), reuse=None,
+                self.fake_bA_image = generator(self.input_modelb, reuse=None,
                                               chs=self.args["G_channel"], depth=self.args["depth"], f=self.args["filter_g"],
                                               s=self.args["strides_g"], chs2=self.args["G_channels"],type=self.args["architect"],train=True,name="2")
 
             with tf.variable_scope("generator_2",reuse=tf.AUTO_REUSE):
-                self.fake_Ba_image = generator(tf.reshape(self.fake_aB_image, self.input_size_model), reuse=True,
+                self.fake_Ba_image = generator(self.fake_aB_image, reuse=True,
                                               chs=self.args["G_channel"], depth=self.args["depth"], f=self.args["filter_g"],
                                               s=self.args["strides_g"], chs2=self.args["G_channels"],type=self.args["architect"],train=True,name="2")
             with tf.variable_scope("generator_1",reuse=tf.AUTO_REUSE):
-                self.fake_Ab_image = generator(tf.reshape(self.fake_bA_image, self.input_size_model), reuse=True,
+                self.fake_Ab_image = generator(self.fake_bA_image, reuse=True,
                                                chs=self.args["G_channel"], depth=self.args["depth"],
                                                f=self.args["filter_g"],
                                                s=self.args["strides_g"], chs2=self.args["G_channels"],type=self.args["architect"],train=True,name="1")
         self.noise = tf.placeholder(tf.float32, [self.args["batch_size"]], "inputs_Noise")
 
-        a_true_noised=self.input_modela+tf.random_normal(self.input_modela.shape,0,self.noise[0])
-        b_true_noised = self.input_modelb + tf.random_normal(self.input_modelb.shape, 0, self.noise[0])
+        ss=self.input_modela.shape[1:]
+        a_true_noised=self.input_modela+tf.random_normal(ss,0,self.noise[0])
+        b_true_noised = self.input_modelb + tf.random_normal(ss, 0, self.noise[0])
 
         #creating discriminator inputs
         #D-netの入力の作成
@@ -345,20 +346,18 @@ class Model:
 
             # Padiing
             # サイズ合わせ
-            red=np.zeros((self.args["batch_size"]-1,ipt))
             start_pos=self.args["input_size"]*t+(in_put.shape[1]%self.args["input_size"])
             resorce=np.reshape(in_put[0,max(0,start_pos-ipt):start_pos,0],(1,-1))
             r=max(0,ipt-resorce.shape[1])
             if r>0:
                 resorce=np.pad(resorce,((0,0),(r,0)),'constant')
-            red=np.append(resorce,red)
-            red=red.reshape((self.args["batch_size"],ipt))
-            res = np.zeros(self.input_size_model)
+            red=resorce
+            red=red.reshape((1,ipt))
+            res = np.zeros([1,self.input_size_model[1],self.input_size_model[2],self.input_size_model[3]])
             # FFT
             # 短時間高速離散フーリエ変換
-            for i in range(self.args["batch_size"]):
-                n=self.fft(red[i].reshape(-1)/32767.0)
-                res[i]=n[:,:self.args["SHIFT"]]
+            n=self.fft(red[0].reshape(-1)/32767.0)
+            res[0]=n[:,:self.args["SHIFT"]]
             means = np.mean(res[0,:,:,0], axis=1)
             means = np.tile(np.reshape(means, (-1, 1)), (1, self.args["SHIFT"]))
             res[0, :, :, 0] = res[0, :, :, 0] - means
@@ -420,12 +419,12 @@ class Model:
         beta_2_d_opt=self.args["d_b2"]
         # naming output-directory
         # 出力ディレクトリ
-
+        taken_times=np.empty([1])
 
         self.lod="[glr="+str(lr_g_opt)+",gb="+str(beta_g_opt)+",dlr="+str(lr_d_opt)+",db="+str(beta_d_opt)+"]"
 
-        lr_g_opt3 = lr_g_opt*(0.1**(self.args["start_epoch"]//100))
-        lr_d_opt3 = lr_g_opt*(0.1**(self.args["start_epoch"]//100))
+        lr_g_opt3 = lr_g_opt*(0.1**(self.args["start_epoch"]//self.args["lr_decay_term"]))
+        lr_d_opt3 = lr_g_opt*(0.1**(self.args["start_epoch"]//self.args["lr_decay_term"]))
         lr_g=tf.placeholder(tf.float32,None,name="g_lr")
         lr_d=tf.placeholder(tf.float32,None,name="d_lr")
         g_optim = tf.train.AdamOptimizer(lr_g, beta_g_opt, beta_2_g_opt).minimize(self.g_loss,
@@ -607,7 +606,8 @@ class Model:
 
             #saving model
             #モデルの保存
-            self.save(self.args["checkpoint_dir"], epoch)
+            if epoch%self.args["save_interval"]==0:
+                self.save(self.args["checkpoint_dir"], epoch)
             if self.args["log"] and self.args["wave_otp_dir"]!="False":
                 with open(self.args["log_file"],"a") as f:
                     if self.args["stop_argument"]:
@@ -641,13 +641,18 @@ class Model:
                 #console outputs
                 count = counter + ti * epoch
                 taken_time = time.time() - start_time
+                taken_times=np.append(taken_time,taken_times)
+                if taken_times.shape[0]>20:
+                    taken_times=taken_times[0:20]
+                tsts=np.mean(taken_times)
                 start_time = time.time()
-                ft=taken_time*(self.args["train_epoch"]-epoch-1)
+                ft=tsts*(self.args["train_epoch"]-epoch-1)
                 print(" [*] Epoch %5d (iterations: %10d)finished in %.2f (preprocess %.3f) ETA: %3d:%2d:%2.1f" % (epoch,count,taken_time,ts,ft//3600,ft//60%60,ft%60))
                 time_of_epoch=np.append(time_of_epoch,np.asarray([taken_time,ts]))
-            if epoch%100==0:
+            if epoch%self.args["lr_decay_term"]==0:
                 lr_d_opt3 = lr_d_opt * (0.1 ** (epoch // 100))
                 lr_g_opt3 = lr_g_opt * (0.1 ** (epoch // 100))
+        self.save(self.args["checkpoint_dir"], epoch)
         print(" [*] Finished!! in "+ str(np.sum(time_of_epoch[::2])))
 
         if self.args["log"] and self.args["wave_otp_dir"] != "False":
@@ -740,7 +745,7 @@ class Model:
 
 
 def discriminator(inp,reuse,f,s,depth,chs,a):
-    current=tf.reshape(inp, [inp.shape[0],inp.shape[1],inp.shape[2],2])
+    current=tf.reshape(inp, [-1,inp.shape[1],inp.shape[2],2])
     for i in range(depth):
         stddevs=math.sqrt(2.0/(f[0]*f[1]*int(current.shape[3])))
         ten=current
@@ -928,7 +933,7 @@ def deconve_with_ps(inp,r,otp_shape,depth,f=[1,1],reuses=None):
     ten = tf.layers.conv2d(inp, chs_r, kernel_size=f, strides=f, padding="VALID",
                            kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
                            data_format="channels_last", reuse=reuses, name="deconv_ps1" + str(depth))
-    b_size = ten.shape[0]
+    b_size = -1
     in_h = ten.shape[1]
     in_w = ten.shape[2]
     ten = tf.reshape(ten, [b_size, r, r, in_h, in_w, otp_shape])
