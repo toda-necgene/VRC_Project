@@ -83,13 +83,13 @@ def complex_to_pp(fft_r):
     time_ruler=fft_r.shape[0]
     re = fft_r.real
     im = fft_r.imag
-    c = np.log(np.power(re, 2) + np.power(im, 2) + 1e-24).reshape(time_ruler, -1, 1)
+    c = np.sqrt(np.power(re, 2) + np.power(im, 2) + 1e-24).reshape(time_ruler, -1, 1)
     d = np.arctan2(im, re).reshape(time_ruler, -1, 1)
     spec = np.concatenate((c, d), 2)
     return spec
 
 def pp_to_complex(frame):
-    power = np.sqrt(np.exp(frame[:, :, 0]))
+    power = frame[:, :, 0]
     re = power * (np.cos(frame[:, :, 1]))
     im = power * (np.sin(frame[:, :, 1]))
     ep = re + 1j * im
@@ -200,7 +200,7 @@ pl.subplot(2,1,1)
 aba=np.transpose(ab[1:,:,0],(1,0))
 aba[0,0]=10
 pl.imshow(aba,aspect="auto")
-pl.clim(-30,10)
+pl.clim(0,20)
 pl.colorbar()
 pl.subplot(2,1,2)
 abn=np.transpose(ab[1:,:,1],(1,0))
@@ -214,15 +214,15 @@ pl.subplot(2,1,1)
 aba=np.transpose(abc[1:,:,0],(1,0))
 aba[0,0]=10
 pl.imshow(aba,aspect="auto")
-pl.clim(-30,10)
+pl.clim(0,20)
 pl.subplot(2,1,2)
 abn=np.transpose(abc[1:,:,1],(1,0))
 abn[0,0]=10
 pl.imshow(abn,aspect="auto")
 pl.savefig("testB.png")
 np.save("label2",abc)
-pl.cla()
 pl.clim(-3.1415,3.1415)
+pl.show()
 np.save("sample",abc)
 print("----dist-----")
 def ank(x,y):

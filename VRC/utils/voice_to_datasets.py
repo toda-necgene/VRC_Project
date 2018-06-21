@@ -76,7 +76,7 @@ def complex_to_pp(fft_r):
     time_ruler=fft_r.shape[0]
     re = fft_r.real
     im = fft_r.imag
-    c = np.log(np.power(re, 2) + np.power(im, 2) + 1e-24).reshape(time_ruler, -1, 1)
+    c = np.sqrt(np.power(re, 2) + np.power(im, 2) + 1e-24).reshape(time_ruler, -1, 1)
     d = np.arctan2(im, re).reshape(time_ruler, -1, 1)
     spec = np.concatenate((c, d), 2)
     return spec
@@ -90,7 +90,7 @@ RECORD_SECONDS = 5 #録音する時間の長さ
 WAVE_INPUT_FILENAME = "../train/Model/datasets/source/02/"
 files=glob.glob(WAVE_INPUT_FILENAME+"*.wav")
 stri=""
-name="24ds_h/Answer_data"
+name="24ds2/Answer_data"
 cnt=0
 for file in files:
     print(file)
