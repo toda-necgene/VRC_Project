@@ -5,15 +5,12 @@ import matplotlib.pyplot as pl
 import time
 import os
 
-import librosa,librosa.display
-import sklearn
-
-from .model_proto_cpu import Model as model
+from model_proto_cpu2 import Model as model
 from datetime import datetime
 import glob
 
 Add_Effect=True
-NFFT=1024
+NFFT=128
 SHIFT=NFFT//2
 C1=32.703
 rate=16000
@@ -23,7 +20,7 @@ target=563.666
 term=4096
 upidx=target/now
 upidx=1.0
-path="./setting.json"
+path="../setting.json"
 net=model(path)
 net.build_model()
 if not net.load():
@@ -39,6 +36,7 @@ def search(x,y,num=51):
     x0[cc < -10] = -10.0
     cc = np.mean(ym[:, :, 0], axis=1)
     ym[cc < -10] = -10.0
+    print(np.sum(x0<-10))
     ys = [y[:,:,:].copy()]
     for i in range(-(num-1)//2,0):
         ys.append(np.roll(ym[:,:,:],i))
@@ -46,7 +44,7 @@ def search(x,y,num=51):
         ys.append(np.roll(ym[:,:,:], i))
 
 
-    a=np.asarray([ank(x0,c) for c in ys]).reshape(num,NFFT,-1)
+    a=np.asarray([ank(x0,c) for c in ys]).reshape(num,NFFT,2)
     b=np.min(a, axis=0)
     return b
 def filter_clip(dd,f=1.5):
@@ -161,11 +159,9 @@ WAVE_OUTPUT_FILENAME = "./テスト.wav"
 WAVE_OUTPUT_FILENAME2 = "./テスト-2.wav"
 WAVE_OUTPUT_FILENAME3 = "./天才.wav"
 WAVE_OUTPUT_FILENAME4 = "./天才-2.wav"
-file_l="./train/Model/datasets/test/label.wav"
-file_l2 = "./テスト.wav"
-file_l3="./train/Model/datasets/test/label.wav"
-file3="./train/Model/datasets/test/B2.wav"
-file="./train/Model/datasets/test/test.wav"
+file_l="../train/Model/datasets/test/label.wav"
+file3="../train/Model/datasets/test/B2.wav"
+file="../train/Model/datasets/test/tet.wav"
 
 index=0
 dms=[]
@@ -202,14 +198,7 @@ data_realB=data.reshape(-1)
 
 tm=time.time()
 # data_realA=filter_pes (data_realA)
-data_realA=data_realA.reshape(1,-1,1)
-data_realC=data_realC.reshape(1,-1,1)
-print(" [*] conversion start!!")
-data_C,_,data_E=net.convert(data_realA)
-data_G,_,_=net.convert(data_realC)
-
-print(" [*] conversion finished in %3.3f!!" % (time.time()-tm))
-data_C=data_C.reshape(-1)
+data_realA=data_realA.reshape(-1)
 
 timee=80000
 times=data_realB.shape[0]//timee
@@ -220,127 +209,37 @@ ab=np.zeros([NFFT,2])
 abc=np.zeros([1,NFFT,2])
 abb=np.zeros([1,NFFT,2])
 vvr=np.zeros([1])
-times=data_C.shape[0]//term+1
-if data_C.shape[0]%term==0:
-    times-=1
 ttm=time.time()
 resp=np.zeros([NFFT//2])
 print("----------------------------------------------------------------")
+print(" [*] test start!!")
 for i in range(times):
     ind=term+SHIFT
     startpos=term*i+data_realB.shape[0]%term
     data_realAb = data_realA[max(startpos - ind, 0):startpos]
     data_realBb = data_realB[max(startpos - ind, 0):startpos]
+    r = ind - data_realAb.shape[0]
+    if r > 0:
+        data_realAb = np.pad(data_realAb, (r, 0), "constant")
     r=ind-data_realBb.shape[0]
     if r>0:
         data_realBb=np.pad(data_realBb,(r,0),"constant")
     ddms=data_realBb.astype(np.float32)/32767.0
+    dms = data_realAb.astype(np.float32) / 32767.0
+
     bss=fft(ddms)
-    bss=complex_to_pp(bss)
-    abc = np.append(abc, bss, axis=0)
-data_E=data_E.reshape([-1,NFFT,2])
+    ass=fft(dms)
+    dataB=complex_to_pp(bss)[:,:SHIFT,:].reshape(1,64,SHIFT,2)
+    dataA = complex_to_pp(ass)[:,:SHIFT,:].reshape(1,64,SHIFT,2)
 
-FORMAT=pyaudio.paInt16
-p=pyaudio.PyAudio()
-ww = wave.open(WAVE_OUTPUT_FILENAME, 'wb')
-ww.setnchannels(1)
-ww.setsampwidth(p.get_sample_size(FORMAT))
-ww.setframerate(RATE)
-ww.writeframes(data_C.tobytes())
-ww.close()
+    data_C = net.sess.run(net.d_judge_AR, feed_dict={net.input_modela: dataB,net.noise:np.zeros([1])})
+    data_D = net.sess.run(net.d_judge_AR, feed_dict={net.input_modela: dataA,net.noise:np.zeros([1])})
+    abc = np.append(abc, data_C)
+    ab = np.append(ab, data_D)
+print(" [*] conversion finished in %3.3f!!" % (time.time()-tm))
 
-p=pyaudio.PyAudio()
-ww = wave.open(WAVE_OUTPUT_FILENAME3, 'wb')
-ww.setnchannels(1)
-ww.setsampwidth(p.get_sample_size(FORMAT))
-ww.setframerate(RATE)
-ww.writeframes(data_G.tobytes())
-ww.close()
+print("score_A")
+print(np.mean(ab))
 
-
-mix=np.append(data_C,data_realA).astype(np.int16)
-
-ww = wave.open("ミックス.wav", 'wb')
-ww.setnchannels(1)
-ww.setsampwidth(p.get_sample_size(FORMAT))
-ww.setframerate(RATE)
-ww.writeframes(mix.tobytes())
-ww.close()
-
-L1_1=np.mean(np.abs(abc[65:,:,:]-data_E[64:,:,:]).reshape(-1))
-L1_12=np.mean(search(abc[65:,:,:],data_E[64:,:,:]).reshape(-1))
-L1_22_1=np.mean(search(abc[65:,:,:1],data_E[64:,:,:1]).reshape(-1))
-L1_22_2=np.mean(search(abc[65:,:,1:],data_E[64:,:,1:]).reshape(-1))
-
-print(" [*] Finished!!")
-
-def nowtime():
-    return datetime.now().strftime("%Y_%m_%d %H_%M_%S")
-
-f=glob.glob(net.args["wave_otp_dir"]+"*.wav")
-print(net.args["wave_otp_dir"]+"*.wav")
-tm=os.path.basename(f[-1])
-print(" ______________________________________")
-print("|///     stats  %18s ///|" % nowtime())
-print("|/// File_name  %18s ///|" % tm[0:19])
-print("|/// BF_raw_Loss_str  %1.4f       ///|" % L1_1)
-print("|/// BF_raw_Loss_best %1.4f       ///|" % L1_12)
-print("|/// BF_raw_powL_best %1.4f       ///|" % L1_22_1)
-print("|/// BF_raw_freL_best %1.4f       ///|" % L1_22_2)
-print(" ---------------------------------------")
-if not os.path.exists("Z://data/"+str(net.args["name_save"])+"-results.txt"):
-    f=open("Z://data/"+str(net.args["name_save"])+"-results.txt","w")
-    f.write("\n")
-    f.close()
-
-with open("Z://data/"+str(net.args["name_save"])+"-results.txt","a") as f:
-    f.write("\n")
-    f.write(" ______________________________________\n")
-    f.write("|///      tats  %18s ///|\n" % nowtime())
-    f.write("|/// Model_name %18s ///|\n" % net.args["version"])
-    f.write("|/// File_name  %18s ///|\n" % tm[0:19])
-    f.write("|/// BF_raw_Loss_srt   %1.4f       ///|\n" % L1_1)
-    f.write("|/// BF_raw_Loss_best  %1.4f       ///|\n" % L1_12)
-    f.write("|/// BF_raw_powL_best  %1.4f       ///|\n" % L1_22_1)
-    f.write("|/// BF_raw_freL_best  %1.4f       ///|\n" % L1_22_2)
-    f.write(" ---------------------------------------\n")
-pl.subplot(6,1,5)
-aba=abc[1:,:,0].transpose((1,0))
-pl.imshow(aba,aspect="auto")
-pl.clim(-30,10)
-pl.colorbar()
-pl.subplot(6,1,3)
-abn=data_E[1:,:,0].transpose((1,0))
-pl.imshow(abn,aspect="auto")
-pl.clim(-30,10)
-pl.colorbar()
-pl.subplot(6,1,6)
-aba=abc[1:,:,1].transpose((1,0))
-pl.imshow(aba,aspect="auto")
-pl.clim(-3.141592,3.141592)
-pl.colorbar()
-pl.subplot(6,1,4)
-abn=data_E[1:,:,1].transpose((1,0))
-pl.imshow(abn,aspect="auto")
-pl.clim(-3.141592,3.141592)
-pl.colorbar()
-
-
-data_E=data_E.reshape([-1,NFFT,2])
-x,xfs = librosa.load(file_l2, sr=16000)
-y,yfs = librosa.load(file_l3, sr=16000)
-
-mfccsx = librosa.feature.mfcc(x, sr=xfs)
-mfccsy = librosa.feature.mfcc(y, sr=yfs)
-mfccsx = sklearn.preprocessing.scale(mfccsx, axis=1)
-mfccsy = sklearn.preprocessing.scale(mfccsy, axis=1)
-
-pl.subplot(6,1,1)
-librosa.display.specshow(mfccsx, sr=xfs, x_axis='time')
-pl.colorbar()
-
-pl.subplot(6,1,2)
-librosa.display.specshow(mfccsy, sr=yfs, x_axis='time')
-pl.colorbar()
-
-pl.show()
+print("score_B")
+print(np.mean(abc))

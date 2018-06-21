@@ -16,7 +16,7 @@ term = 4096
 length=term//SHIFT+1
 cutoff=5
 effect_ranges=1024
-align=True
+align=False
 eef=1200
 upidx=target/now
 p=pyaudio.PyAudio()
@@ -89,6 +89,8 @@ filestri=glob.glob(WAVE_INPUT_FILENAME+"*.str")
 stri=""
 name="Answer_data"
 cnt=0
+var_profile=np.zeros([1])
+mean_profile=np.zeros([1])
 for file in files:
     print(file)
     index=0
@@ -137,9 +139,10 @@ for file in files:
         a=fft(dmn)
         a=complex_to_pp(a[:,:SHIFT])
         c=a[:,:,0]
+        m=np.mean(c, axis=1)
         a[:, :, 0] -= np.tile(np.mean(c, axis=1).reshape(-1, 1), (1, SHIFT))
-        v = 1 / np.sqrt(np.var(c, axis=1) + 1e-36)
-        a[:, :, 0]= np.einsum("ij,i->ij",a[:, :, 0],v)
+        v =  np.sqrt(np.var(c, axis=1)+ 1e-36)
+        a[:, :, 0]= np.einsum("ij,i->ij",a[:, :, 0],1 / v)
         bb=np.isnan(np.mean(a))
         #音素アラインメントの実行
         ttms=600//SHIFT
@@ -198,11 +201,18 @@ for file in files:
                 print("しっぱい")
                 flag = True
                 seg = segs
-            np.save("../train/Model/datasets/train/" + str(name) + "/" + str(cnt) + "-stri", stridatra)
         if bb:
             print("NAN!!")
-        np.save("../train/Model/datasets/train/"+str(name)+"/"+str(cnt) +"-wave", a)
+        var_profile=np.append(var_profile,v)
+        mean_profile=np.append(mean_profile,m)
         cnt+=1
+print("-----variance-----")
+print(np.var(var_profile[0:]))
+print(np.mean(var_profile[0:]))
+print("-----mean-----")
+print(np.var(mean_profile[0:]))
+print(np.mean(mean_profile[0:]))
+
 plt.subplot(211)
 plt.imshow(a[:,:,0],aspect="auto")
 plt.colorbar()
