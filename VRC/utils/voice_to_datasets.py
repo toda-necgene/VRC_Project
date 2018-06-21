@@ -14,7 +14,7 @@ Hz=C1*(2**0)
 now=317.6
 target=563.666
 term = 4096
-dilation=512*15
+dilation=512*7
 length=term//SHIFT+1
 cutoff=5
 effect_ranges=1024
@@ -89,9 +89,8 @@ CHUNK = 1024     #データ点数
 RECORD_SECONDS = 5 #録音する時間の長さ
 WAVE_INPUT_FILENAME = "../train/Model/datasets/source/02/"
 files=glob.glob(WAVE_INPUT_FILENAME+"*.wav")
-filestri=glob.glob(WAVE_INPUT_FILENAME+"*.str")
 stri=""
-name="24d15s/Answer_data"
+name="24ds_h/Answer_data"
 cnt=0
 for file in files:
     print(file)
@@ -111,11 +110,6 @@ for file in files:
     ppt=file+".txt"
     seg = 0
 
-    with open(ppt,"rb") as fos:
-        b=fos.readline()
-        while b is not b'':
-            stri+=b.decode('utf-8')
-            b=fos.readline()
     rate=16000
     b=np.zeros([1])
     ab=np.zeros([1,128,2])
@@ -149,6 +143,7 @@ for file in files:
             print("NAN!!")
         np.save("../train/Model/datasets/train/"+str(name)+"/"+str(cnt) +"-wave", a)
         cnt+=1
+print("generated "+str(cnt)+"samples")
 plt.subplot(211)
 plt.imshow(np.transpose(a[:,:,0],(1,0)),aspect="auto")
 plt.colorbar()

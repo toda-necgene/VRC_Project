@@ -751,10 +751,11 @@ def dilations(inp,d,reuse,train,chs,startd):
     ten=inp
     stddevs = math.sqrt(2.0 / (2 * 1 * int(ten.shape[3])))
     for i in range(len(d)):
-        ten = tf.nn.leaky_relu(ten, name="lrelu" + str(startd+i))
-        ten = tf.layers.conv2d(ten, chs[i+startd*2], kernel_size=[2, 1], strides=[1, 1], padding="VALID",
+        tenA = tf.layers.conv2d(ten, chs[i+startd*2], kernel_size=[2, 1], strides=[1, 1], padding="VALID",
                            kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
                            data_format="channels_last", reuse=reuse, name="conv11" + str(startd*2+i), dilation_rate=(d[i], 1))
+        tenB = tf.nn.tanh(tenA)
+        ten=tenA*tenB
         ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuse,
                                         name="bn11" + str(startd*2+i))
     return ten
@@ -833,7 +834,9 @@ def block_double(current,output_shape,chs,f,s,depth,reuses,shake,pixs=[2,2],trai
     ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
                                         name="bn11" + str(depth))
 
-    ten = tf.nn.leaky_relu(ten, name="lrelu" + str(depth))
+    tenC = tf.nn.tanh(ten)
+    ten = ten * tenC
+
     tenB=ten
     if shake:
         tt = tf.pad(tenB, ((0, 0), (0, 0), (1, 0), (0, 0)), "reflect")
@@ -843,8 +846,8 @@ def block_double(current,output_shape,chs,f,s,depth,reuses,shake,pixs=[2,2],trai
 
     ten = (tenA + tenB) * 0.5
     if shake:
-        ten=tf.nn.leaky_relu(ten)
-
+        tenC = tf.nn.tanh(ten)
+        ten=ten*tenC
     return ten
 
 def deconve_with_ps(inp,r,otp_shape,depth,f=[1,1],reuses=None,name=""):
