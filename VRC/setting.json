@@ -2,16 +2,16 @@
     "saving_config":{
         "checkpoint_dir":"Z://models/",
         "wave_otp_dir":"Z://waves/",
-        "version":"2.6.013"
+        "version":"2.6.020"
     },
     "network_architecture":{
         "architect":"double_decay_flatnet",
-        "batch_size":1,
+        "batch_size":32,
         "depth":10,
         "d_depth":5,
         "D_channels":[32,64,64,64,1],
         "G_channel":1024,
-        "G_channels":[64,16,64,16,32,16,32,16,32,16,16,8,16,8,16,8,8,4,8,4,4,4,2],
+        "G_channels":[64,16,64,16,32,16,32,16,32,16,16,8,16,8,16,8,8,4,8,8,16,8,1],
         "strides_g":[[1,32],[1,32],[1,32],[1,16],[1,16],[1,16],[1,8],[1,8],[1,4],[1,4]],
         "strides_d":[1,2],
         "filter_g":[[1,32],[1,32],[1,32],[1,16],[1,16],[1,16],[1,8],[1,8],[1,4],[1,4]],
