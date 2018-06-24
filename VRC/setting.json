@@ -2,19 +2,19 @@
     "saving_config":{
         "checkpoint_dir":"Z://models/",
         "wave_otp_dir":"Z://waves/",
-        "version":"2.6.020"
+        "version":"2.6.035"
     },
     "network_architecture":{
-        "architect":"double_decay_flatnet",
+        "architect":"hybrid_decay_flatnet",
         "batch_size":32,
-        "depth":10,
+        "depth":8,
         "d_depth":5,
         "D_channels":[32,64,64,64,1],
         "G_channel":1024,
-        "G_channels":[64,16,64,16,32,16,32,16,32,16,16,8,16,8,16,8,8,4,8,8,16,8,1],
-        "strides_g":[[1,32],[1,32],[1,32],[1,16],[1,16],[1,16],[1,8],[1,8],[1,4],[1,4]],
+        "G_channels":[32,16,32,16,32,16,16,8,16,8,16,8,16,8,16,8,8,4,1],
+        "strides_g":[[1,16],[1,16],[1,16],[1,16],[1,8],[1,8],[1,4],[1,4]],
         "strides_d":[1,2],
-        "filter_g":[[1,32],[1,32],[1,32],[1,16],[1,16],[1,16],[1,8],[1,8],[1,4],[1,4]],
+        "filter_g":[[1,32],[1,32],[1,16],[1,16],[1,16],[1,16],[1,8],[1,8]],
         "filter_d":[2,10],
         "dilations":[1,2,4]
     },
@@ -35,7 +35,7 @@
         "weight_GAN1":1.0,
         "weight_GAN2":1.0,
         "label_noise":0.01,
-        "lr_decay_term":2000
+        "lr_decay_term":1500
   },
 
     "process_config":{
