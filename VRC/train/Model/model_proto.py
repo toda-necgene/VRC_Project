@@ -223,9 +223,9 @@ class Model:
         # Gan lossA
         DSA2 = tf.reduce_mean(tf.squared_difference(self.d_judge_AF, tf.ones_like(self.d_judge_AF)))
         DSB2 = tf.reduce_mean(tf.squared_difference(self.d_judge_BF, tf.ones_like(self.d_judge_BF)))
-
+        GAN1B=DSA2+DSB2
         # generator lossA
-        self.g_loss_aB = L1B * self.args["weight_Cycle"] + tf.reduce_mean(self.args["weight_GAN2"] * DSB2)
+        self.g_loss_aB = L1B * self.args["weight_Cycle"] + tf.reduce_mean(self.args["weight_GAN2"] * GAN1B)
 
 
         # L1 norm lossB
@@ -373,8 +373,8 @@ class Model:
 
         self.lod="[glr="+str(lr_g_opt)+",gb="+str(beta_g_opt)+",dlr="+str(lr_d_opt)+",db="+str(beta_d_opt)+"]"
 
-        lr_g_opt3 = lr_g_opt*(0.5**(self.args["start_epoch"]//self.args["lr_decay_term"]))
-        lr_d_opt3 = lr_g_opt*(0.5**(self.args["start_epoch"]//self.args["lr_decay_term"]))
+        lr_g_opt3 = lr_g_opt*(0.1**(self.args["start_epoch"]//self.args["lr_decay_term"]))
+        lr_d_opt3 = lr_g_opt*(0.1**(self.args["start_epoch"]//self.args["lr_decay_term"]))
         lr_g=tf.placeholder(tf.float32,None,name="g_lr")
         lr_d=tf.placeholder(tf.float32,None,name="d_lr")
         g_optim = tf.train.AdamOptimizer(lr_g, beta_g_opt, beta_2_g_opt).minimize(self.g_loss,
@@ -598,8 +598,8 @@ class Model:
                 print(" [*] Epoch %5d (iterations: %10d)finished in %.2f (preprocess %.3f) ETA: %3d:%2d:%2.1f" % (epoch,count,taken_time,ts,ft//3600,ft//60%60,ft%60))
                 time_of_epoch=np.append(time_of_epoch,np.asarray([taken_time,ts]))
             if epoch%self.args["lr_decay_term"]==0:
-                lr_d_opt3 = lr_d_opt * (0.5 ** (epoch // 100))
-                lr_g_opt3 = lr_g_opt * (0.5 ** (epoch // 100))
+                lr_d_opt3 = lr_d_opt * (0.1 ** (epoch // 100))
+                lr_g_opt3 = lr_g_opt * (0.1 ** (epoch // 100))
         self.save(self.args["checkpoint_dir"], epoch)
         print(" [*] Finished!! in "+ str(np.sum(time_of_epoch[::2])))
 
@@ -809,10 +809,9 @@ def block_ps(current,output_shape,chs,f,s,depth,reuses,relu,train):
     ten = tf.transpose(ten, [0, 2, 3, 4, 1, 5])
     ten = tf.reshape(ten, [-1, in_h * (s[0]+1), in_w * (s[1]+1), chs])
     ten=tf.nn.relu(ten)
-    m=[(int(ten.shape[1])-int(current.shape[1])+1),(int(ten.shape[2])-int(current.shape[2])+1)]
-    print(m)
-    stddevs = math.sqrt(2.0 / (m[0] * m[1] * int(ten.shape[3])))
-    ten=tf.layers.conv2d(ten,output_shape,m,[1,1],padding="VALID",kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), data_format="channels_last",reuse=reuses,name="conv21"+str(depth))
+    m=[1,(int(ten.shape[1])-int(current.shape[1])+1),(int(ten.shape[2])-int(current.shape[2])+1),1]
+
+    ten=tf.nn.avg_pool(ten,m,[1,1,1,1],padding="VALID")
     if relu:
         ten = tf.nn.relu(ten, name="lrelu" + str(depth))
     return ten
