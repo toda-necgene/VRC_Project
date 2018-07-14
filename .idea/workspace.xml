@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="BookmarkManager">
-    <bookmark url="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py" line="695" />
+    <bookmark url="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py" line="696" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="22fa9a76-09a0-4f62-a2d8-6f3210b56f42" name="Default" comment="">
+    <list default="true" id="22fa9a76-09a0-4f62-a2d8-6f3210b56f42" name="Default" comment="[update] mixconv update &lt;version 2.6.070&gt;&#10;&#10;[add] ミックスブロックの追加">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/VRC/setting.json" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/setting.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/VRC/train/Model/model_proto.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/train/Model/model_proto.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/VRC/utils/voice_to_datasets.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/utils/voice_to_datasets.py" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/VRC/Network/to/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -31,8 +32,8 @@
       <file leaf-file-name="setting.json" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/setting.json">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="299">
-              <caret line="22" column="24" lean-forward="true" selection-start-line="22" selection-start-column="24" selection-end-line="22" selection-end-column="24" />
+            <state relative-caret-position="160">
+              <caret line="13" column="45" selection-start-line="13" selection-start-column="45" selection-end-line="13" selection-end-column="45" />
             </state>
           </provider>
         </entry>
@@ -40,8 +41,8 @@
       <file leaf-file-name="model_proto.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="193">
-              <caret line="898" column="14" selection-start-line="898" selection-start-column="14" selection-end-line="898" selection-end-column="14" />
+            <state relative-caret-position="330">
+              <caret line="773" column="23" lean-forward="true" selection-start-line="773" selection-start-column="23" selection-end-line="773" selection-end-column="23" />
               <folding>
                 <element signature="e#0#21#0" expanded="true" />
               </folding>
@@ -52,8 +53,8 @@
       <file leaf-file-name="voice_to_datasets.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="465">
-              <caret line="81" column="7" selection-start-line="81" selection-start-column="6" selection-end-line="81" selection-end-column="7" />
+            <state relative-caret-position="658">
+              <caret line="131" column="31" selection-start-line="131" selection-start-column="31" selection-end-line="131" selection-end-column="31" />
               <folding>
                 <element signature="e#0#14#0" expanded="true" />
               </folding>
@@ -125,9 +126,10 @@
     </option>
   </component>
   <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="713" />
+    <option name="x" value="475" />
+    <option name="y" value="-8" />
     <option name="width" value="734" />
-    <option name="height" value="867" />
+    <option name="height" value="758" />
   </component>
   <component name="ProjectLevelVcsManager">
     <ConfirmationsSetting value="2" id="Add" />
@@ -168,7 +170,8 @@
               <item name="vrc" type="462c0819:PsiDirectoryNode" />
               <item name="VRC" type="462c0819:PsiDirectoryNode" />
               <item name="train" type="462c0819:PsiDirectoryNode" />
-              <item name="Model" type="462c0819:PsiDirectoryNode" />
+              <item name="logs" type="462c0819:PsiDirectoryNode" />
+              <item name="[glr=0.0002,gb=0.9,dlr=0.0002,db=0.9]wave2wave2.6.103" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
@@ -176,16 +179,6 @@
               <item name="VRC" type="462c0819:PsiDirectoryNode" />
               <item name="train" type="462c0819:PsiDirectoryNode" />
               <item name="Model" type="462c0819:PsiDirectoryNode" />
-              <item name="datasets" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
-              <item name="vrc" type="462c0819:PsiDirectoryNode" />
-              <item name="VRC" type="462c0819:PsiDirectoryNode" />
-              <item name="train" type="462c0819:PsiDirectoryNode" />
-              <item name="Model" type="462c0819:PsiDirectoryNode" />
-              <item name="datasets" type="462c0819:PsiDirectoryNode" />
-              <item name="train" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
@@ -204,19 +197,19 @@
     <property name="settings.editor.selected.configurable" value="preferences.keymap" />
   </component>
   <component name="RecentsManager">
-    <key name="CopyFile.RECENT_KEYS">
-      <recent name="C:\Users\tadop\git\vrc\VRC" />
-      <recent name="C:\Users\tadop\git\vrc\VRC\train\Model\datasets\test" />
-      <recent name="C:\Users\tadop\git\vrc\VRC\train\Model\datasets\train" />
-      <recent name="C:\Users\tadop\git\vrc\VRC\train\logs" />
-      <recent name="C:\Users\tadop\git\vrc\VRC\train\Model\datasets\train\04" />
-    </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\tadop\git\vrc\VRC\train\logs\1-2" />
       <recent name="C:\Users\tadop\git\vrc\VRC\train\Model\datasets\source\01" />
       <recent name="C:\Users\tadop\git\vrc\VRC" />
       <recent name="C:\Users\tadop\git\vrc\VRC\train\Model\datasets\test" />
       <recent name="C:\Users\tadop\git\vrc\VRC\utils" />
+    </key>
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\tadop\git\vrc\VRC" />
+      <recent name="C:\Users\tadop\git\vrc\VRC\train\Model\datasets\test" />
+      <recent name="C:\Users\tadop\git\vrc\VRC\train\Model\datasets\train" />
+      <recent name="C:\Users\tadop\git\vrc\VRC\train\logs" />
+      <recent name="C:\Users\tadop\git\vrc\VRC\train\Model\datasets\train\04" />
     </key>
   </component>
   <component name="RunDashboard">
@@ -368,13 +361,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1520153808625</updated>
-    </task>
-    <task id="LOCAL-00034" summary="[update] h_flat update &lt;version 2.3.081&gt;&#10;&#10;[change] hybrid_flatnet改造3">
-      <created>1528504441568</created>
-      <option name="number" value="00034" />
-      <option name="presentableId" value="LOCAL-00034" />
-      <option name="project" value="LOCAL" />
-      <updated>1528504441568</updated>
     </task>
     <task id="LOCAL-00035" summary="[update] input update &lt;version 2.3.090&gt;&#10;&#10;[change] 入力を変更">
       <created>1528542434339</created>
@@ -712,7 +698,14 @@
       <option name="project" value="LOCAL" />
       <updated>1530053026287</updated>
     </task>
-    <option name="localTasksCounter" value="83" />
+    <task id="LOCAL-00083" summary="[update] mixconv update &lt;version 2.6.070&gt;&#10;&#10;[add] ミックスブロックの追加">
+      <created>1530345216206</created>
+      <option name="number" value="00083" />
+      <option name="presentableId" value="LOCAL-00083" />
+      <option name="project" value="LOCAL" />
+      <updated>1530345216207</updated>
+    </task>
+    <option name="localTasksCounter" value="84" />
     <servers />
   </component>
   <component name="TodoView">
@@ -747,6 +740,26 @@
       <window_info anchor="bottom" id="Find" order="2" weight="0.3292683" />
       <window_info anchor="bottom" id="Messages" order="0" />
     </layout>
+    <layout-to-restore>
+      <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
+      <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
+      <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.2496474" />
+      <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
+      <window_info anchor="right" id="Commander" order="0" weight="0.4" />
+      <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
+      <window_info anchor="bottom" id="TODO" order="6" weight="0.3292683" />
+      <window_info active="true" anchor="bottom" id="Run" order="7" sideWeight="0.4957687" visible="true" weight="0.2615176" />
+      <window_info anchor="bottom" id="Find" order="2" weight="0.3292683" />
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.39972898" />
+      <window_info anchor="bottom" id="Terminal" order="9" sideWeight="0.9005642" weight="0.3292683" />
+      <window_info anchor="bottom" id="Event Log" order="11" sideWeight="0.50423133" side_tool="true" weight="0.2615176" />
+      <window_info anchor="bottom" id="Version Control" order="10" weight="0.3292683" />
+      <window_info id="Favorites" order="2" side_tool="true" />
+      <window_info anchor="bottom" id="Message" order="1" />
+      <window_info anchor="bottom" id="Messages" order="0" />
+      <window_info anchor="bottom" id="Python Console" order="8" weight="0.3292683" />
+    </layout-to-restore>
   </component>
   <component name="Vcs.Log.History.Properties">
     <option name="COLUMN_ORDER">
@@ -762,7 +775,6 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[update] doubleblock update &lt;version 2.4.038&gt;&#10;&#10;[add] ダブルブロックの調整6" />
     <MESSAGE value="[update] doubleblock update &lt;version 2.4.045&gt;&#10;&#10;[add] psブロックの調整7" />
     <MESSAGE value="[update] doubleblock update &lt;version 2.4.047&gt;&#10;&#10;[add] psブロックの調整2" />
     <MESSAGE value="[update] doubleblock update &lt;version 2.4.047&gt;&#10;&#10;[add] decayFlatnet" />
@@ -787,7 +799,8 @@
     <MESSAGE value="[update] activation update &lt;version 2.6.020&gt;&#10;&#10;[change] LeakyReluに戻した&#10;[chnage] 最終層を分離させた" />
     <MESSAGE value="[update] hybrid update &lt;version 2.6.020&gt;&#10;&#10;[change] Reluに変更&#10;[add] 新しくハイブリッドモデルを追加した。" />
     <MESSAGE value="[update] bug fix update &lt;version 2.6.047&gt;&#10;&#10;[fix] 誤差関数のバグの修正" />
-    <option name="LAST_COMMIT_MESSAGE" value="[update] bug fix update &lt;version 2.6.047&gt;&#10;&#10;[fix] 誤差関数のバグの修正" />
+    <MESSAGE value="[update] mixconv update &lt;version 2.6.070&gt;&#10;&#10;[add] ミックスブロックの追加" />
+    <option name="LAST_COMMIT_MESSAGE" value="[update] mixconv update &lt;version 2.6.070&gt;&#10;&#10;[add] ミックスブロックの追加" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -795,13 +808,6 @@
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$USER_HOME$/AppData/Local/Programs/Python/Python36/Lib/site-packages/matplotlib/axes/_base.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="153">
-          <caret line="2960" selection-start-line="2960" selection-end-line="2960" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$USER_HOME$/AppData/Local/Programs/Python/Python36/Lib/site-packages/cupy/fft/fft.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="149">
@@ -1048,6 +1054,7 @@
     <entry file="file://$PROJECT_DIR$/VRC/train/logs/[glr=0.001,gb=0.5,dlr=0.001,db=0.5]wave2wave2.6.029/events.out.tfevents.1529678859.DESKTOP-QFC16G3" />
     <entry file="file://$PROJECT_DIR$/VRC/train/logs/[glr=0.001,gb=0.5,dlr=0.001,db=0.5]wave2wave2.6.034/events.out.tfevents.1529876979.DESKTOP-QFC16G3" />
     <entry file="file://$PROJECT_DIR$/VRC/train/logs/[glr=0.001,gb=0.5,dlr=0.001,db=0.5]wave2wave2.6.037/events.out.tfevents.1529923874.DESKTOP-QFC16G3" />
+    <entry file="file://$PROJECT_DIR$/VRC/train/logs/[glr=0.0002,gb=0.5,dlr=0.0002,db=0.5]wave2wave2.6.081/events.out.tfevents.1530577906.DESKTOP-QFC16G3" />
     <entry file="file://$PROJECT_DIR$/VRC/train/main.py">
       <provider selected="true" editor-type-id="text-editor">
         <state>
@@ -1057,8 +1064,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="465">
-          <caret line="81" column="7" selection-start-line="81" selection-start-column="6" selection-end-line="81" selection-end-column="7" />
+        <state relative-caret-position="658">
+          <caret line="131" column="31" selection-start-line="131" selection-start-column="31" selection-end-line="131" selection-end-column="31" />
           <folding>
             <element signature="e#0#14#0" expanded="true" />
           </folding>
@@ -1067,15 +1074,15 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/setting.json">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="299">
-          <caret line="22" column="24" lean-forward="true" selection-start-line="22" selection-start-column="24" selection-end-line="22" selection-end-column="24" />
+        <state relative-caret-position="160">
+          <caret line="13" column="45" selection-start-line="13" selection-start-column="45" selection-end-line="13" selection-end-column="45" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="193">
-          <caret line="898" column="14" selection-start-line="898" selection-start-column="14" selection-end-line="898" selection-end-column="14" />
+        <state relative-caret-position="330">
+          <caret line="773" column="23" lean-forward="true" selection-start-line="773" selection-start-column="23" selection-end-line="773" selection-end-column="23" />
           <folding>
             <element signature="e#0#21#0" expanded="true" />
           </folding>
