@@ -10,7 +10,6 @@ from datetime import datetime
 import json
 import shutil
 import math
-BN_FLAG=False
 class Model:
     def __init__(self,path):
         self.args=dict()
@@ -61,27 +60,21 @@ class Model:
         self.args["architect"]="flatnet"
         if os.path.exists(path):
             try:
-                with open(path, "r") as f:
-                    dd = json.load(f)
-                    keys = dd.keys()
-                    for j in keys:
-                        data=dd[j]
-                        keys2 = data.keys()
-                        for k in keys2:
-                            if k in self.args:
-                                if type(self.args[k]) == type(data[k]):
-                                    self.args[k] = data[k]
-                                else:
-                                    print(" [!] Argumet \"" + k + "\" is incorrect data type. Please change to \"" + str(
-                                        type(self.args[k])) + "\"")
-                            elif k[0] == "#":
-                                pass
+                with open(path,"r") as f:
+                    data=json.load(f)
+                    keys=data.keys()
+                    for k in keys:
+                        if k in self.args:
+                            if type(self.args[k])==type(data[k]):
+                                self.args[k]=data[k]
                             else:
-                                print(" [!] Argument \"" + k + "\" is not exsits.")
+                                print(" [!] Argumet \""+k+"\" is incorrect data type. Please change to \""+str(type(self.args[k]))+"\"")
+                        else:
+                            print(" [!] Argument \"" + k + "\" is not exsits.")
             except json.JSONDecodeError as e:
-                print(' [x] JSONDecodeError: ', e)
+                 print(' [x] JSONDecodeError: ', e)
         else:
-            print(" [!] Setting file is not found")
+            print( " [!] Setting file is not found")
         if len(self.args["D_channels"]) != (self.args['d_depth'] + 1):
             print(" [!] Channels length and depth+1 must be equal ." + str(len(self.args["D_channels"])) + "vs" + str(self.args['d_depth'] + 1))
             self.args["D_channels"] = [min([2 ** (i + 1) - 2, 254]) for i in range(self.args['d_depth'] + 1)]
@@ -111,18 +104,15 @@ class Model:
 
         #inputs place holder
         #入力
-        self.input_model=tf.placeholder(tf.float32, self.input_size_model, "inputs_G-net")
+        self.input_model=tf.placeholder(tf.float32, self.input_size_model, "inputs_G-netA")
         #creating generator
         #G-net（生成側）の作成
         with tf.variable_scope("generators"):
             with tf.variable_scope("generator_1"):
                 self.fake_B_image =generator(tf.reshape(self.input_model,self.input_size_model), reuse=False,chs=self.args["G_channel"],depth=self.args["depth"],f=self.args["filter_g"],s=self.args["strides_g"],type=self.args["architect"],rate=1.0)
-            self.noise = tf.placeholder(tf.float32, [self.args["batch_size"]], "inputs_Noise")
-
         #getting individual variabloes
         #それぞれの変数取得
-        self.g_vars_1=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"generators")
-
+        self.g_vars_1=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"generator_1")
         #saver
         #保存の準備
         self.saver = tf.train.Saver()
@@ -136,18 +126,15 @@ class Model:
         #wave file　変換用
 
         tt=time.time()
-        ipt=self.args["input_size"]+self.args["SHIFT"]
+        ipt=self.args["input_size"]+self.args["NFFT"]
         times=in_put.shape[1]//(self.args["input_size"])+1
         if in_put.shape[1]%((self.args["input_size"])*self.args["batch_size"])==0:
             times-=1
         otp=np.array([],dtype=np.int16)
         otp2=np.asarray([],dtype=np.int16)
         otp3= np.asarray([[[]]], dtype=np.float32)
-        rest = np.asarray([[[]]], dtype=np.float32)
-
-        otp4 = np.asarray([[[]]], dtype=np.float32)
-        rss=np.zeros([self.args["SHIFT"]])
-        rss4=np.zeros([self.args["SHIFT"]])
+        rss=np.zeros([self.input_size_model[2]//2])
+        rss4=np.zeros([self.input_size_model[2]//2])
         for t in range(times):
             # Preprocess
             # 前処理
@@ -163,86 +150,81 @@ class Model:
             red=np.append(resorce,red)
             red=red.reshape((self.args["batch_size"],ipt))
             res = np.zeros(self.input_size_model)
+
+            # changing pitch
+            # ピッチ変更
+            for i in range(self.args["batch_size"]):
+                red[i] = shift(red[i] / 32767.0, self.args["pitch_rate"]).reshape(red[i].shape)
             # FFT
             # 短時間高速離散フーリエ変換
-            MEAN_RANGE=16
             for i in range(self.args["batch_size"]):
                 n=self.fft(red[i].reshape(-1))
-                rest = np.append(rest, n[:, :, :].copy())
-                res[i]=n[:,:self.args["SHIFT"],:]
-            sts = res.shape[1]//MEAN_RANGE
-            samples=res[0, :, :, 0].reshape(MEAN_RANGE,-1)
-            means = np.mean(samples, axis=1)
-            filter = -5.95
-            means[means < filter] = -17.0
-            means = np.tile(np.reshape(means, (-1, 1)), (sts, self.args["SHIFT"]))
-            res[0, :, :, 0] =res[0, :, :, 0]- means
-            samples = res[0, :, :, 0].reshape(MEAN_RANGE,-1)
-            scales = np.tile(np.reshape(np.sqrt(np.var(samples, axis=1) + 1e-8), (-1)), (sts))
-            mms = 1 / scales
-            scales[means[:,0] < filter] = 0.001
-            res[0, :, :, 0] = np.einsum("ij,i->ij", res[0, :, :, 0], mms)
-
-            # filter = -4.75
-            # means[means < filter] = -17.0
-            # scl = np.tile(np.reshape(means, (-1, 1)), (1, self.args["SHIFT"]))
-            # res[0, :, :, 0] = np.einsum("ij,i->ij", res[0, :, :, 0] , mms)+scl
+                res[i]=n
+            scales = np.sqrt(np.var(res[0, :, :, 0], axis=1) + 1e-8)
+            means = np.mean(res[0, :, :, 0], axis=1)
+            mms = 1/scales
+            scl = np.tile(np.reshape(means, (-1, 1)), (1, self.args["NFFT"]))
+            res[0, :, :, 0] = np.einsum("ij,i->ij",res[0, :, :, 0]- scl,mms)
 
             # running network
             # ネットワーク実行
+
             res2=self.sess.run(self.fake_B_image,feed_dict={ self.input_model:res})
-            res3 = res2.copy()[:, :, ::-1, :]
-            res2= np.append(res2,res3, axis=2)
-            # res2[:,:,self.args["SHIFT"]:,1]*=-1
+            # otp3 = np.append(otp3, res2[0,2:, :, :])
 
             # resas = np.append(resas, res[0])
             # Postprocess
             # 後処理
             a=res2[0].copy()
-            c = a[:, :, 0]
-            scales_mask = scales.copy()
-            means_mask = means.copy()
-            c = np.einsum("ij,i->ij", c, scales_mask)
-            sm=np.tile(means_mask,(1,2))
-            c=c+sm
+            scales2=np.sqrt(np.var(a[:,:,0],axis=1)+1e-8)
+            means2 = np.mean(a[:, :, 0], axis=1)
+            ss=np.tile((scales/(scales2+1e-32)).reshape(-1,1),(1,self.args["NFFT"]))
+            sm=np.tile((means-means2).reshape(-1,1),(1,self.args["NFFT"]))
+            c=a[:,:,0]
+
+            c=c*ss
+            c = c + sm
             a[:,:,0]=c
 
-            b=res2[0].copy()
-            scales_mask = scales.copy()
-            c = b[:, :, 0]
-            c = np.einsum("ij,i->ij", c, scales_mask)
-            c = c + sm
-            b[:,:,0] = c
-            b[:,:,0] = np.clip(b[:,:,0], -60.0, 3.0)
-            otp3 = np.append(otp3, a[:, :, :].copy())
-            otp4 = np.append(otp4, a[:, :, :].copy())
+            # print([np.mean(scales-np.sqrt(np.var(c, axis=1) + 1e-8)),np.mean(means-np.mean(c, axis=1))])
+            b=a.copy()
+
+            b = mask_scale(b, 250, 770, -10)
+            b = mask_scale(b, 0,250, -20)
+            b = mask_scale(b, 770, 1024, -50)
+            b = mask_const(b, 250, 770, 5)
+
+            # b = mask_scale(b, 0, 1024, 10)
+
+            scales3 = np.sqrt(np.var(b[:, :, 0], axis=1) + 1e-32)
+            means3 = np.mean(b[:, :, 0], axis=1)
+            scales_mask=scales.copy()
+            means_mask = means.copy()
+            means_mask[means_mask < -2.5] = -30.0
+            ss2 = scales_mask / (scales3 + 1e-32)
+            sm2=np.tile((means_mask-means3).reshape(-1,1),(1,self.args["NFFT"]))
+            b[:,:,0]=np.einsum("ij,i->ij",b[:,:,0]+sm2,ss2)
+
+            b = np.clip(b, -60.0, 9.0)
+
+            otp3 = np.append(otp3, a[ 1:, :, :])
 
             # otp3 = np.append(otp3, a[ 2:, :, :])
 
             # IFFT
             # 短時間高速離散逆フーリエ変換
-            res2,rss=self.ifft(a,rss)
-            res2=np.clip(res2,-1.0,1.0)
-            res2=res2*32767
             res4, rss4 = self.ifft(b, rss4)
             res4 = np.clip(res4, -1.0, 1.0)
             res4 = res4 * 32767
             # chaching results
             # 結果の保存
-            res2=res2.reshape(-1).astype(np.int16)
             res4 = res4.reshape(-1).astype(np.int16)
             # print(res2.shape)
-            otp=np.append(otp,res2[-8192:])
             otp2 = np.append(otp2, res4[-8192:])
-        h=otp.shape[0]-in_put.shape[1]
-        if h>0:
-            otp=otp[h:]
         h = otp2.shape[0] - in_put.shape[1]
         if h > 0:
             otp2 = otp2[h:]
-        restx=rest.reshape([-1,self.args["NFFT"],2])
-        otpx = otp3.reshape([-1, self.args["NFFT"], 2])
-        return otp.reshape(1,in_put.shape[1],in_put.shape[2]),otp2,np.abs(restx[:,:self.args["SHIFT"],:]-otpx[:,:self.args["SHIFT"],:]),otp4
+        return otp2.reshape(1,in_put.shape[1],in_put.shape[2])
 
     def save(self, checkpoint_dir, step):
         model_name = "wave2wave.model"
@@ -271,7 +253,6 @@ class Model:
             self.epoch=self.saver
             return True
         else:
-            print(" [x] %s is not found." % checkpoint_dir)
             return False
 
     def fft(self,data):
@@ -291,34 +272,33 @@ class Model:
         c = np.log(np.power(re, 2) + np.power(im, 2) + 1e-24).reshape(time_ruler, -1, 1)
         d = np.arctan2(im, re).reshape(time_ruler, -1, 1)
         spec = np.concatenate((c, d), 2)
-        return spec
-    def ifft(self,data,redi):
-        a=data
-        a[:, :, 0]=np.clip(a[:, :, 0],a_min=-100000,a_max=88)
-        sss=np.exp(a[:,:,0])
-        p = np.sqrt(sss)
-        r = p * (np.cos(a[:, :, 1]))
-        i = p * (np.sin(a[:, :, 1]))
-        dds = np.concatenate((r.reshape(r.shape[0], r.shape[1], 1), i.reshape(i.shape[0], i.shape[1], 1)), 2)
-        data=dds[:,:,0]+1j*dds[:,:,1]
-        fft_s = np.fft.ifft(data,n=self.args["NFFT"], axis=1)
 
+        return spec
+    def ifft(self,data,red):
+        a=np.clip(data[:, :, 0],a_min=-100000,a_max=88)
+        sss=np.exp(a)
+        p = np.sqrt(sss)
+        r = p * (np.cos(data[:, :, 1]))
+        i = p * (np.sin(data[:, :, 1]))
+        dds = np.concatenate((r.reshape(r.shape[0], r.shape[1], 1), i.reshape(i.shape[0], i.shape[1], 1)), 2)
+        datanum=dds[:,:,0]+1j*dds[:,:,1]
+        window=np.hamming(self.args["NFFT"])
+        fft_s = np.fft.ifft(datanum,n=self.args["NFFT"], axis=1)
         fft_data = fft_s.real
+        # fft_data[:]/=window
         v = fft_data[:, :self.args["NFFT"]// 2]
         reds = fft_data[-1, self.args["NFFT"] // 2:].copy()
-        lats = np.roll(fft_data[:, self.args["NFFT"] // 2:], 1, axis=0 )
-        lats[0, :]=redi
+        lats = np.roll(fft_data[:, self.args["NFFT"] // 2:], 1,axis=0)
+        lats[0, :] =red
         spec = np.reshape(v + lats, (-1))
         return spec,reds
-
-
 def generator(current_outputs,reuse,depth,chs,f,s,rate,type):
     if type == "flatnet":
-        return generator_flatnet(current_outputs,reuse,depth,chs,f,s,0)
+        return generator_flatnet(current_outputs,reuse,depth,chs,f,s,0,train)
     elif type == "ps_flatnet":
-        return generator_flatnet(current_outputs, reuse, depth, chs, f, s, 1)
+        return generator_flatnet(current_outputs, reuse, depth, chs, f, s, 1,train)
     elif type == "hybrid_flatnet":
-        return generator_flatnet(current_outputs, reuse, depth, chs, f, s, 2)
+        return generator_flatnet(current_outputs, reuse, depth, chs, f, s, 2,train)
     elif type == "ps_unet":
         return generator_unet(current_outputs, reuse, depth, chs, f, s, 1)
     elif type == "hybrid_unet":
@@ -331,16 +311,16 @@ def generator_flatnet(current_outputs,reuse,depth,chs,f,s,ps):
     #main process
     for i in range(depth):
         connections = current
+        fs=[2**(i//4+1),2**(i//4+1)]
+        fss = [f[0] * 2 ** ((depth - i - 1) // 2 + 1), f[1] * 2 ** ((depth - i - 1) // 2 + 1)]
+
         if ps==1:
-            ten = block2(current, output_shape, f, i, reuse,i!=depth-1)
+            ten = block2(current, output_shape, fss, i, reuse,i!=depth-1)
         elif ps==2 :
-            ten=block3(current,f,chs,depth=i,reuses=reuse,shake=i!=depth-1)
+            ten=block3(current,chs,fss,i,reuse,i!=depth-1)
         else :
-            ten = block(current, output_shape, chs, f, s, i, reuse, i != depth - 1)
-        if i!=depth-1:
-            current = ten + connections
-        else:
-            current=ten
+            ten = block(current, output_shape, chs, fss, s, i, reuse, i != depth - 1)
+        current = ten + connections
     return current
 def block(current,output_shape,chs,f,s,depth,reuses,relu):
     ten=current
@@ -353,13 +333,16 @@ def block(current,output_shape,chs,f,s,depth,reuses,relu):
                                         gamma_initializer=tf.ones_initializer(), reuse=reuses, name="bn11" + str(depth))
 
     ten = tf.nn.leaky_relu(ten,name="lrelu"+str(depth))
-    ten = tf.manip.roll(ten,1,2)
+
     stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(ten.shape[3])))
     ten = tf.layers.conv2d_transpose(ten, output_shape, kernel_size=f, strides=s, padding="VALID",
                                      kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
                                      data_format="channels_last",reuse=reuses,name="deconv11"+str(depth))
     if relu:
         ten=tf.nn.relu(ten)
+        ten = tf.layers.batch_normalization(ten, axis=3, training=False, trainable=False,
+                                            gamma_initializer=tf.ones_initializer(), reuse=reuses,
+                                            name="bn12" + str(depth))
     return ten
 def block2(current,output_shape,f,depth,reuses,relu):
     ten=current
@@ -372,44 +355,34 @@ def block2(current,output_shape,f,depth,reuses,relu):
     ten = tf.layers.batch_normalization(ten, axis=3, training=False, trainable=False,
                                         gamma_initializer=tf.ones_initializer(), reuse=reuses, name="bn21" + str(depth))
 
-    ten = tf.manip.roll(ten, 1, 2)
-
     ten = tf.nn.leaky_relu(ten,name="lrelu"+str(depth))
     ten=deconve_with_ps(ten,f[0],output_shape,depth,reuses=reuses)
+    ten = tf.layers.batch_normalization(ten, axis=3, training=False, trainable=False,
+                                        gamma_initializer=tf.ones_initializer(), reuse=reuses, name="bn22" + str(depth))
 
     if relu:
         ten=tf.nn.relu(ten)
     return ten
-def block3(current,f,chs,depth,reuses,shake):
+def block3(current,chs,f,depth,reuses,relu):
     ten=current
 
     stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(ten.shape[3])))
     ten = tf.layers.conv2d(ten, chs, kernel_size=f, strides=f, padding="VALID",
                            kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), data_format="channels_last",reuse=reuses,name="conv21"+str(depth))
 
-    ten = tf.layers.batch_normalization(ten, axis=3, training=False, trainable=False, reuse=reuses,
-                                        name="bn11" + str(depth))
+    ten = tf.layers.batch_normalization(ten, axis=3, training=True, trainable=True,
+                                        gamma_initializer=tf.ones_initializer(), reuse=reuses, name="bn21" + str(depth))
 
     ten = tf.nn.leaky_relu(ten,name="lrelu"+str(depth))
-    n=(depth%2)*2-1
+    ten1 = tf.manip.roll(ten, shift=8, axis=2)
 
-    pos = tf.constant(np.linspace(1.0, 0.1, int(ten.shape[2])), dtype=tf.float32, shape=ten.shape)
-    ten1 = ten * pos
-    ten2 = ten * pos
-
-    if shake:
-        ten1 = tf.manip.roll(ten, n*4, 2)
-        ten2 = tf.manip.roll(ten, -n * 4, 1)
-    stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(ten.shape[3])))
-    ten1=deconve_with_ps(ten1,f[0],2,depth,reuses=reuses)
-    ten2 =  tf.layers.conv2d_transpose(ten2, 2, kernel_size=f, strides=f, padding="VALID",
+    ten1=deconve_with_ps(ten1[:,:,:,:],f[0],1,depth,reuses=reuses)
+    ten2 =  tf.layers.conv2d_transpose(ten[:,:,:,:], 1, kernel_size=f, strides=f, padding="VALID",
                                      kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
-                                       data_format="channels_last", reuse=reuses, name="deconv11" + str(depth))
-
-    if shake:
-        ten1 = tf.nn.leaky_relu(ten1)
-        ten2 = tf.nn.relu(ten2)
-    ten=(ten1+ten2)*0.5
+                                     data_format="channels_last",reuse=reuses,name="deconv11"+str(depth))
+    ten=tf.concat([ten2,ten1],axis=3)
+    if relu:
+        ten=tf.nn.relu(ten)
     return ten
 def deconve_with_ps(inp,r,otp_shape,depth,f=[1,1],reuses=None):
     chs_r=(r**2)*otp_shape
@@ -454,12 +427,10 @@ def up_layer(current,output_shape,f,s,depth,bn=True,do=False,reuse=None,ps=0):
         ten2 = deconve_with_ps(ten, f[0], output_shape, depth, reuses=reuse)
         ten = ten1 + ten2
     if bn:
-        ten=tf.layers.batch_normalization(ten,axis=3,training=False,gamma_initializer=tf.random_normal_initializer(1.0, 0.2),name="bn_u"+str(depth),reuse=reuse)
+        ten=tf.layers.batch_normalization(ten,axis=3,training=True,gamma_initializer=tf.random_normal_initializer(1.0, 0.2),name="bn_u"+str(depth),reuse=reuse)
     return ten
 def down_layer(current,output_shape,f,s,reuse,depth):
-    ten=current
-    if depth!=0:
-        ten=tf.layers.batch_normalization(current,axis=3,training=False,gamma_initializer=tf.random_normal_initializer(1.0, 0.2),name="bn_d"+str(depth),reuse=reuse)
+    ten=tf.layers.batch_normalization(current,axis=3,training=True,gamma_initializer=tf.random_normal_initializer(1.0, 0.2),name="bn_d"+str(depth),reuse=reuse)
     ten=tf.layers.conv2d(ten, output_shape,kernel_size=f ,strides=s, padding="VALID",kernel_initializer=tf.contrib.layers.xavier_initializer(),data_format="channels_last",name="conv"+str(depth),reuse=reuse)
     ten=tf.nn.leaky_relu(ten)
     return ten

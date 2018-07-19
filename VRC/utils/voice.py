@@ -4,7 +4,7 @@ import wave
 import matplotlib.pyplot as pl
 import matplotlib.cm as cm
 import time
-NFFT=1024
+NFFT=128
 SHIFT=NFFT//2
 C1=32.703
 rate=16000
@@ -223,7 +223,6 @@ pl.savefig("testB.png")
 np.save("label2",abc)
 pl.cla()
 pl.clim(-3.1415,3.1415)
-np.save("sample",abc)
 print("----dist-----")
 def ank(x,y):
     return  np.mean(np.abs(x-y),axis=0)

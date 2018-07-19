@@ -2,8 +2,6 @@
 *.class
 *.meta
 *.wav
-*.npy
-*.json
 VRC/logs/*
 VRC/datasets/*
 VRC/Network/*
