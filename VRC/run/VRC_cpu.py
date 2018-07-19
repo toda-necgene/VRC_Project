@@ -4,18 +4,21 @@ import scipy
 import pyaudio as pa
 import atexit
 import time
-path_to_networks = './Network'
-graph_filename = './graph'
-NFFT=128
-SHIFT=64
+NFFT=1024
+SHIFT=512
 TERM=4096
+gain=1.0
+sgain=1.0
+noise_gate=0.0
+DIL=7
 ac=1
 ab=0
 
 
-def fft(data):
+def fft( data,noise_presets,me):
+
     time_ruler = data.shape[0] // SHIFT
-    if data.shape[0] % SHIFT == 0:
+    if data.shape[0] % SHIFT== 0:
         time_ruler -= 1
     window = np.hamming(NFFT)
     pos = 0
@@ -23,34 +26,33 @@ def fft(data):
     for fft_index in range(time_ruler):
         frame = data[pos:pos + NFFT]
         wined[fft_index] = frame * window
-        pos += SHIFT
+        pos +=  SHIFT
     fft_r = scipy.fft(wined, n=NFFT, axis=1)
     re = fft_r.real.reshape(time_ruler, -1)
     im = fft_r.imag.reshape(time_ruler, -1)
     c = np.log(np.power(re, 2) + np.power(im, 2) + 1e-24).reshape(time_ruler, -1, 1)
+    c[:,:,0] +=noise_presets*noise_gate
+    c[:,:,0] += me*noise_gate
     d = np.arctan2(im, re).reshape(time_ruler, -1, 1)
     spec = np.concatenate((c, d), 2)
     return spec
 
 
-def ifft(datanum_in, red):
-    data = datanum_in[ac:, ab:, :]
-    a = np.clip(data[:, :, 0], a_min=-60, a_max=10)
-    sss = np.exp(a)
-    p = np.sqrt(sss)
-    r = p * (np.cos(data[:, :, 1]))
-    i = p * (np.sin(data[:, :, 1]))
+def ifft(data, redi):
+    a = data
+    p = np.sqrt(np.exp(np.clip(a[:, :, 0], -30.0, 10.0)))
+    r = p * (np.cos(a[:, :, 1]))
+    i = p * (np.sin(a[:, :, 1]))
     dds = np.concatenate((r.reshape(r.shape[0], r.shape[1], 1), i.reshape(i.shape[0], i.shape[1], 1)), 2)
-    datanum = dds[:, :, 0] + 1j * dds[:, :, 1]
-    fft_s = scipy.ifft(datanum, n=NFFT, axis=1)
+    data = dds[:, :, 0] + 1j * dds[:, :, 1]
+    fft_s = scipy.ifft(data, n=NFFT, axis=1)
     fft_data = fft_s.real
     v = fft_data[:, :NFFT // 2]
     reds = fft_data[-1, NFFT // 2:].copy()
     lats = np.roll(fft_data[:, NFFT // 2:], 1, axis=0)
-    lats[0, :] = red
-    spec = np.reshape(v + lats, (-1))
+    lats[0, :] = redi
+    spec = np.reshape((v + lats)/2, (-1))
     return spec, reds
-
 
 net=Model("../setting.json")
 net.build_model()
@@ -63,10 +65,9 @@ use_device_index = 0
 data=np.zeros(TERM)
 
 #Process Of guess
-def process(data):
-    tt = time.time()
-    output=net.sess.run(net.fake_B_image,feed_dict={net.input_model:data})
-    # print("TT:"+str(time.time()-tt))
+def process(data,data2):
+    dd=np.asarray([data,data2]).reshape([2,data.shape[0],data.shape[1],data.shape[2]])
+    output=net.sess.run(net.fake_aB_image_test,feed_dict={net.input_model_test:dd})
     return output
 inf=p_in.get_default_output_device_info()
 print(inf)
@@ -77,6 +78,7 @@ stream=p_in.open(format = pa.paInt16,
 		input = True,
 		output = True)
 rdd=np.zeros(SHIFT)
+rddb=np.zeros(SHIFT)
 tt=time.time()
 def terminate():
     stream.stop_stream()
@@ -85,37 +87,32 @@ def terminate():
     print("Stream Stop")
 la=np.zeros([5])
 atexit.register(terminate)
-las=np.zeros([SHIFT])
+ipt = TERM+SHIFT+SHIFT*DIL
+dd=SHIFT*DIL+SHIFT
+las=np.zeros([dd])
+noise_presets=np.tile(net.args["noise_set"],(net.input_size_test[1],1))
+me=-np.mean(noise_presets)
+
 while stream.is_active():
-    inputs = np.frombuffer(stream.read(TERM),dtype=np.int16).reshape(TERM).astype(np.float32)/32767.0
+    inputs = np.frombuffer(stream.read(TERM),dtype=np.int16).reshape(TERM).astype(np.float32)/32767.0*sgain
     tt = time.time()
-    inp=np.append(las,inputs).reshape(1,TERM+SHIFT,1)
-    las = inputs[-SHIFT:]
-    res = np.zeros([1, TERM//SHIFT, SHIFT, 2])
-    n = fft(inp.reshape(-1))[:,:SHIFT,:]
-    means = np.mean(n[:, :, 0], axis=1)
-    filter = -6.5
-    means[means < filter] = -32.0
-    # scales=np.var(n[:, :, 0], axis=1)
-    scl = np.tile(np.reshape(means, (-1, 1)), (1, SHIFT))
-    n[:, :, 0]=n[ :, :, 0]  - scl
-    scales = np.sqrt(np.var(n[:, :, 0], axis=1) + 1e-8)
-    scales[means < filter] = 0.001
-    mms = 1 / scales
-
-    n[ :, :, 0] = np.einsum("ij,i->ij", n[ :, :, 0] , mms)
-
-    res[0] = n.astype(np.float32)
-    res = process(res)
-
-    res[0,:, :, 0] = np.einsum("ij,i->ij", res[0,:, :, 0] , scales)
-    res[0,:, :, 0]+= scl
-
+    inp=np.append(las,inputs)
+    inp2=np.pad(inp.copy(),(SHIFT//2,0),"constant")[:-SHIFT//2]
+    r = max(0, ipt - inp.shape[0])
+    if r > 0:
+        inp = np.pad(inp,  (r, 0), 'constant')
+    las = inputs[-dd:]
+    res = fft(inp.reshape(-1),noise_presets,me)[:,:SHIFT,:]
+    resb= fft(inp2.reshape(-1),noise_presets,me)[:,:SHIFT,:]
+    res = process(res,resb)
     res2 = res.copy()[:, :, ::-1, :]
+    res2[:,:,:,1]*=-1
     res = np.append(res, res2, axis=2)
-
-    res,rdd = ifft(res[0],rdd)
-    res = np.clip(res,-0.8,0.8).reshape(-1)*32767
+    resa,rdd = ifft(res[0],rdd)
+    resb, rddb = ifft(res[1], rddb)
+    resb=np.pad(resb[SHIFT//2:],(0,SHIFT//2),"constant")
+    res=(resa+resb)*gain
+    res = np.clip(res,-1.0,1.0).reshape(-1)*32767
 
     vs=(res[-TERM:].astype(np.int16)).tobytes()
     la=np.append(la,time.time() - tt)

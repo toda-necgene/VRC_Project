@@ -1,20 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="BookmarkManager">
-    <bookmark url="file://$PROJECT_DIR$/utils/Converter.py" line="239" mnemonic="9" />
-  </component>
   <component name="ChangeListManager">
     <list default="true" id="118ef545-7803-4684-8710-61ccd65f9b8d" name="Default" comment="">
-      <change afterPath="$PROJECT_DIR$/utils/discrim_test.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/utils/model_proto_cpu2.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/utils/noiseprofiler.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Data/datasets/test/音声　未加工.wav" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/run/Converter.py" beforeDir="false" afterPath="$PROJECT_DIR$/run/Converter.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/run/VRC_cpu.py" beforeDir="false" afterPath="$PROJECT_DIR$/run/VRC_cpu.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/setting.json" beforeDir="false" afterPath="$PROJECT_DIR$/setting.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tmp.wav" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/train/Model/colab.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/train/Model/datasets/test/test.wav" beforeDir="false" afterPath="$PROJECT_DIR$/train/Model/datasets/test/test.wav" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils/Converter.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils/VoiceConverter.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils/allinement.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils/discrim_test.py" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/utils/model_proto_cpu.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/model_proto_cpu.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils/model_proto_cpu2.py" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/utils/model_test.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/model_test.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils/tagging.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/tagging.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils/testing.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/testing.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/words.txt" beforeDir="false" afterPath="$PROJECT_DIR$/words.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils/size_fitter.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils/testing.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils/voice.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils/検査用.wav" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/words.txt" beforeDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -23,15 +32,30 @@
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
+  <component name="FavoritesManager">
+    <favorites_list name="VRC" />
+  </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="375">
-      <file leaf-file-name="model_test.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/utils/model_test.py">
+      <file leaf-file-name="model_proto_cpu.py" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/utils/model_proto_cpu.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="3672">
-              <caret line="228" column="22" selection-start-line="228" selection-start-column="22" selection-end-line="228" selection-end-column="22" />
+            <state relative-caret-position="138">
+              <caret line="132" column="36" selection-start-line="132" selection-start-column="36" selection-end-line="132" selection-end-column="36" />
               <folding>
-                <element signature="e#0#14#0" expanded="true" />
+                <element signature="e#0#23#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="Converter.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/run/Converter.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="884">
+              <caret line="60" selection-start-line="60" selection-end-line="60" />
+              <folding>
+                <element signature="e#0#23#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -40,38 +64,29 @@
       <file leaf-file-name="setting.json" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/setting.json">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="17">
-              <caret line="7" column="43" selection-start-line="7" selection-start-column="43" selection-end-line="7" selection-end-column="43" />
+            <state relative-caret-position="306">
+              <caret line="18" column="25" selection-start-line="18" selection-start-column="25" selection-end-line="18" selection-end-column="25" />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="voice.py" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/utils/voice.py">
+      <file leaf-file-name="noiseprofiler.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/utils/noiseprofiler.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="317">
-              <caret line="227" column="13" lean-forward="true" selection-start-line="227" selection-start-column="13" selection-end-line="227" selection-end-column="13" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="model_proto.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/train/Model/model_proto.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="12512">
-              <caret line="753" column="8" selection-start-line="753" selection-start-column="8" selection-end-line="757" selection-end-column="21" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="model_proto_cpu.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/utils/model_proto_cpu.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="5865">
-              <caret line="359" column="17" selection-start-line="359" selection-start-column="17" selection-end-line="359" selection-end-column="17" />
+            <state relative-caret-position="1343">
+              <caret line="81" column="27" selection-start-line="81" selection-start-column="27" selection-end-line="81" selection-end-column="27" />
               <folding>
-                <element signature="e#0#21#0" expanded="true" />
+                <element signature="e#0#18#0" expanded="true" />
               </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="VRC_cpu.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/run/VRC_cpu.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="357">
+              <caret line="26" column="36" selection-start-line="26" selection-start-column="36" selection-end-line="26" selection-end-column="36" />
             </state>
           </provider>
         </entry>
@@ -134,11 +149,8 @@
         <option value="$PROJECT_DIR$/run/VRC.py" />
         <option value="Z:/data/convertedmodel/VRC.py" />
         <option value="Z:/waves/wave2wave2.3.024/setting.json" />
-        <option value="$PROJECT_DIR$/train/Model/colab.py" />
         <option value="$PROJECT_DIR$/utils/VoiceConverter.py" />
-        <option value="$PROJECT_DIR$/utils/voice.py" />
         <option value="$PROJECT_DIR$/setting.ini" />
-        <option value="$PROJECT_DIR$/run/VRC_cpu.py" />
         <option value="$PROJECT_DIR$/result.txt" />
         <option value="$PROJECT_DIR$/utils/Converter.py" />
         <option value="$PROJECT_DIR$/roll.txt" />
@@ -148,23 +160,27 @@
         <option value="$PROJECT_DIR$/utils/voice_to_datasets.py" />
         <option value="$PROJECT_DIR$/utils/wordchecker.py" />
         <option value="$PROJECT_DIR$/words.txt" />
-        <option value="$PROJECT_DIR$/run/Converter.py" />
         <option value="$PROJECT_DIR$/utils/tagging.py" />
         <option value="$PROJECT_DIR$/utils/model_proto_cpu2.py" />
         <option value="$PROJECT_DIR$/utils/discrim_test.py" />
         <option value="$PROJECT_DIR$/utils/testing.py" />
+        <option value="$PROJECT_DIR$/utils/voice.py" />
         <option value="$PROJECT_DIR$/train/Model/model_proto.py" />
+        <option value="$PROJECT_DIR$/train/Model/colab.py" />
         <option value="$PROJECT_DIR$/utils/model_test.py" />
         <option value="$PROJECT_DIR$/utils/model_proto_cpu.py" />
+        <option value="$PROJECT_DIR$/run/Converter.py" />
+        <option value="$PROJECT_DIR$/utils/noiseprofiler.py" />
+        <option value="$PROJECT_DIR$/run/VRC_cpu.py" />
         <option value="$PROJECT_DIR$/setting.json" />
       </list>
     </option>
   </component>
   <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="586" />
-    <option name="y" value="-9" />
-    <option name="width" value="865" />
-    <option name="height" value="525" />
+    <option name="x" value="320" />
+    <option name="y" value="-10" />
+    <option name="width" value="1620" />
+    <option name="height" value="1250" />
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectView">
@@ -183,6 +199,12 @@
               <item name="VRC" type="b2602c69:ProjectViewProjectNode" />
               <item name="vrc" type="462c0819:PsiDirectoryNode" />
               <item name="VRC" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="VRC" type="b2602c69:ProjectViewProjectNode" />
+              <item name="vrc" type="462c0819:PsiDirectoryNode" />
+              <item name="VRC" type="462c0819:PsiDirectoryNode" />
+              <item name="Data" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="VRC" type="b2602c69:ProjectViewProjectNode" />
@@ -207,7 +229,29 @@
               <item name="VRC" type="b2602c69:ProjectViewProjectNode" />
               <item name="vrc" type="462c0819:PsiDirectoryNode" />
               <item name="VRC" type="462c0819:PsiDirectoryNode" />
+              <item name="train" type="462c0819:PsiDirectoryNode" />
+              <item name="Model" type="462c0819:PsiDirectoryNode" />
+              <item name="datasets" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="VRC" type="b2602c69:ProjectViewProjectNode" />
+              <item name="vrc" type="462c0819:PsiDirectoryNode" />
+              <item name="VRC" type="462c0819:PsiDirectoryNode" />
+              <item name="train" type="462c0819:PsiDirectoryNode" />
+              <item name="Model" type="462c0819:PsiDirectoryNode" />
+              <item name="datasets" type="462c0819:PsiDirectoryNode" />
+              <item name="test" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="VRC" type="b2602c69:ProjectViewProjectNode" />
+              <item name="vrc" type="462c0819:PsiDirectoryNode" />
+              <item name="VRC" type="462c0819:PsiDirectoryNode" />
               <item name="utils" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="VRC" type="b2602c69:ProjectViewProjectNode" />
+              <item name="vrc" type="462c0819:PsiDirectoryNode" />
+              <item name="_windows" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
@@ -221,18 +265,18 @@
     <property name="settings.editor.selected.configurable" value="terminal" />
   </component>
   <component name="RecentsManager">
-    <key name="CopyFile.RECENT_KEYS">
-      <recent name="C:\Users\C0116170\git\vrc\vrc\VRC" />
-      <recent name="C:\Users\C0116170\git\vrc\vrc\VRC\train\Model\datasets\test" />
-      <recent name="C:\Users\C0116170\git\vrc\vrc\VRC\utils" />
-      <recent name="C:\Users\C0116170\git\vrc\vrc\VRC\train\Model\datasets\source\02" />
-      <recent name="C:\Users\C0116170\git\vrc\vrc\VRC\train\Model\datasets\source\01" />
-    </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\C0116170\git\vrc\vrc\VRC" />
       <recent name="C:\Users\C0116170\git\vrc\vrc\VRC\train\Model\datasets\test" />
       <recent name="C:\Users\C0116170\git\vrc\vrc\VRC\train\Model\datasets\source" />
       <recent name="C:\Users\C0116170\git\vrc\vrc\VRC\utils" />
+    </key>
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\C0116170\git\vrc\vrc\VRC\utils" />
+      <recent name="C:\Users\C0116170\git\vrc\vrc\VRC\train\Model\datasets\test" />
+      <recent name="C:\Users\C0116170\git\vrc\vrc\VRC" />
+      <recent name="C:\Users\C0116170\git\vrc\vrc\VRC\train\Model\datasets\source\02" />
+      <recent name="C:\Users\C0116170\git\vrc\vrc\VRC\train\Model\datasets\source\01" />
     </key>
   </component>
   <component name="RunDashboard">
@@ -248,7 +292,7 @@
     </option>
   </component>
   <component name="RunManager" selected="Python.model_test">
-    <configuration name="discrim_test" type="PythonConfigurationType" factoryName="Python" temporary="true">
+    <configuration name="VRC_cpu" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="VRC" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -256,11 +300,11 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/utils" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/run" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/utils/discrim_test.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/run/VRC_cpu.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -302,7 +346,7 @@
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
     </configuration>
-    <configuration name="tagging" type="PythonConfigurationType" factoryName="Python" temporary="true">
+    <configuration name="noiseprofiler" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="VRC" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -314,13 +358,13 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/utils/tagging.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/utils/noiseprofiler.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
     </configuration>
-    <configuration name="testing" type="PythonConfigurationType" factoryName="Python" temporary="true">
+    <configuration name="voice" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="VRC" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -332,7 +376,7 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/utils/testing.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/utils/voice.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -340,18 +384,18 @@
     </configuration>
     <list>
       <item itemvalue="Python.model_test" />
-      <item itemvalue="Python.tagging" />
-      <item itemvalue="Python.discrim_test" />
-      <item itemvalue="Python.testing" />
       <item itemvalue="Python.model_test (1)" />
+      <item itemvalue="Python.voice" />
+      <item itemvalue="Python.VRC_cpu" />
+      <item itemvalue="Python.noiseprofiler" />
     </list>
     <recent_temporary>
       <list>
         <item itemvalue="Python.model_test" />
+        <item itemvalue="Python.VRC_cpu" />
+        <item itemvalue="Python.noiseprofiler" />
         <item itemvalue="Python.model_test (1)" />
-        <item itemvalue="Python.testing" />
-        <item itemvalue="Python.discrim_test" />
-        <item itemvalue="Python.tagging" />
+        <item itemvalue="Python.voice" />
       </list>
     </recent_temporary>
   </component>
@@ -463,15 +507,15 @@
   <component name="ToolWindowManager">
     <frame x="-7" y="-7" width="1550" height="838" extended-state="6" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.22009254" />
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.4954955" visible="true" weight="0.26305354" />
       <window_info anchor="bottom" id="TODO" order="6" />
       <window_info anchor="bottom" id="Event Log" order="7" sideWeight="0.50033045" side_tool="true" weight="0.33050847" />
       <window_info anchor="bottom" id="Version Control" order="8" weight="0.32831737" />
       <window_info anchor="bottom" id="Python Console" order="9" weight="0.31907895" />
-      <window_info anchor="bottom" id="Run" order="2" sideWeight="0.49966952" weight="0.32949308" />
-      <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
+      <window_info active="true" anchor="bottom" id="Run" order="2" sideWeight="0.49966952" visible="true" weight="0.37288135" />
+      <window_info id="Structure" order="1" sideWeight="0.5045045" side_tool="true" weight="0.26305354" />
       <window_info anchor="bottom" id="Terminal" order="10" weight="0.34039548" />
-      <window_info id="Favorites" order="2" side_tool="true" />
+      <window_info anchor="bottom" id="Favorites" order="12" sideWeight="0.5045045" side_tool="true" weight="0.26271185" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.3983051" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
@@ -510,40 +554,14 @@
           <option name="timeStamp" value="3" />
         </line-breakpoint>
       </breakpoints>
-      <option name="time" value="5" />
+      <option name="time" value="7" />
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$USER_HOME$/AppData/Roaming/Python/Python35/site-packages/h5py/__init__.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="156">
-          <caret line="35" selection-start-line="35" selection-end-line="35" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/Downloads/NCS_test-master/NCS_test-master/create_pred_model.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="348">
-          <caret line="46" column="59" selection-start-line="46" selection-start-column="59" selection-end-line="46" selection-end-column="59" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/utils/log/events.out.tfevents.1528151835.DESKTOP-M1M5RGU" />
-    <entry file="file://$PROJECT_DIR$/run/VRC.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="508">
-          <caret line="141" selection-start-line="141" selection-end-line="141" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://Z:/data/convertedmodel/VRC.py" />
-    <entry file="file://$PROJECT_DIR$/utils/test.png">
-      <provider selected="true" editor-type-id="images" />
-    </entry>
+    <entry file="file://$PROJECT_DIR$/utils/test.png" />
     <entry file="file://Z:/waves/wave2wave2.3.024/setting.json" />
-    <entry file="file://$PROJECT_DIR$/1.000.txt">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
+    <entry file="file://$PROJECT_DIR$/1.000.txt" />
     <entry file="file://$USER_HOME$/AppData/Local/Programs/Python/Python35/Lib/codecs.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="151">
@@ -558,34 +576,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/train/Model/colab.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="17">
-          <caret line="1" lean-forward="true" selection-start-line="1" selection-end-line="1" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/train/main.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="255">
           <caret line="16" column="11" selection-start-line="16" selection-start-column="11" selection-end-line="16" selection-end-column="11" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/utils/result.txt">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/utils/VoiceConverter.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="389">
-          <caret line="508" column="13" selection-start-line="508" selection-start-column="13" selection-end-line="508" selection-end-column="13" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/AppData/Local/Programs/Python/Python35/Lib/site-packages/tensorflow/python/client/session.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="148">
-          <caret line="1112" selection-start-line="1112" selection-end-line="1112" />
         </state>
       </provider>
     </entry>
@@ -607,34 +601,8 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/run/VRC_cpu.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="153">
-          <caret line="96" column="14" selection-start-line="96" selection-start-column="14" selection-end-line="96" selection-end-column="14" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/utils/testB.png">
-      <provider selected="true" editor-type-id="images" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/utils/testA.png">
-      <provider selected="true" editor-type-id="images" />
-    </entry>
     <entry file="file://$PROJECT_DIR$/roll.txt" />
-    <entry file="file://$PROJECT_DIR$/utils/allinement.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="17">
-          <caret line="1" lean-forward="true" selection-start-line="1" selection-end-line="1" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/result.txt">
-      <provider selected="true" editor-type-id="text-editor">
-        <state>
-          <caret selection-end-column="2062" />
-        </state>
-      </provider>
-    </entry>
+    <entry file="file://$PROJECT_DIR$/result.txt" />
     <entry file="file://$PROJECT_DIR$/.gitignore">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="170">
@@ -670,13 +638,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/run/Converter.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="389">
-          <caret line="605" column="13" selection-start-line="605" selection-start-column="13" selection-end-line="605" selection-end-column="13" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/utils/tagging.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="222">
@@ -698,21 +659,52 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/utils/Converter.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1054">
-          <caret line="164" selection-start-line="164" selection-end-line="164" />
-          <folding>
-            <element signature="e#0#23#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$USER_HOME$/AppData/Local/Programs/Python/Python35/Lib/wave.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="225">
           <caret line="158" selection-start-line="158" selection-end-line="158" />
         </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/utils/model_proto_cpu2.py" />
+    <entry file="file://$PROJECT_DIR$/utils/discrim_test.py" />
+    <entry file="file://$USER_HOME$/AppData/Local/Programs/Python/Python35/Lib/site-packages/tensorflow/python/ops/variable_scope.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="148">
+          <caret line="764" selection-start-line="764" selection-end-line="764" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/rol.txt" />
+    <entry file="file://$PROJECT_DIR$/Data.txt" />
+    <entry file="file://$PROJECT_DIR$/train/Model/model_unet.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/utils/testA.png" />
+    <entry file="file://$PROJECT_DIR$/utils/testB.png" />
+    <entry file="file://$PROJECT_DIR$/words.txt" />
+    <entry file="file://$PROJECT_DIR$/test.txt" />
+    <entry file="file://$PROJECT_DIR$/train/Model/colab.py" />
+    <entry file="file://$PROJECT_DIR$/train/Model/model_proto.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-1564">
+          <caret line="737" column="94" selection-start-line="736" selection-start-column="3" selection-end-line="737" selection-end-column="94" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/run/__init__.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$USER_HOME$/AppData/Local/Programs/Python/Python35/Lib/site-packages/tensorflow/python/client/session.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="17">
+          <caret line="1112" selection-start-line="1112" selection-end-line="1112" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/utils/voice_profile.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-2244" />
       </provider>
     </entry>
     <entry file="file://$USER_HOME$/AppData/Local/Programs/Python/Python35/Lib/site-packages/numpy/lib/arraypad.py">
@@ -722,99 +714,61 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/utils/model_proto_cpu2.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="17">
-          <caret line="184" lean-forward="true" selection-start-line="184" selection-end-line="184" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/utils/discrim_test.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="412">
-          <caret line="219" column="23" selection-start-line="219" selection-start-column="23" selection-end-line="219" selection-end-column="23" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/utils/testing.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="119">
-          <caret line="7" selection-start-line="7" selection-end-line="20" selection-end-column="14" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/train/Model/model_unet.py">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
-    <entry file="file://$USER_HOME$/AppData/Local/Programs/Python/Python35/Lib/site-packages/tensorflow/python/ops/variable_scope.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="148">
-          <caret line="764" selection-start-line="764" selection-end-line="764" />
-        </state>
-      </provider>
-    </entry>
+    <entry file="file://$PROJECT_DIR$/utils/result.txt" />
+    <entry file="file://$PROJECT_DIR$/utils/size_fitter.py" />
+    <entry file="file://$PROJECT_DIR$/utils/testing.py" />
+    <entry file="file://$PROJECT_DIR$/utils/voice.py" />
+    <entry file="file://$PROJECT_DIR$/utils/VoiceConverter.py" />
+    <entry file="file://$PROJECT_DIR$/utils/allinement.py" />
+    <entry file="file://$PROJECT_DIR$/utils/Converter.py" />
     <entry file="file://$PROJECT_DIR$/utils/model_test.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="3672">
-          <caret line="228" column="22" selection-start-line="228" selection-start-column="22" selection-end-line="228" selection-end-column="22" />
+        <state relative-caret-position="-321">
+          <caret line="251" column="10" selection-start-line="251" selection-start-column="10" selection-end-line="251" selection-end-column="10" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/run/Converter.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="884">
+          <caret line="60" selection-start-line="60" selection-end-line="60" />
           <folding>
-            <element signature="e#0#14#0" expanded="true" />
+            <element signature="e#0#23#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/words.txt">
+    <entry file="file://$PROJECT_DIR$/utils/noiseprofiler.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-914">
-          <caret selection-end-line="9" selection-end-column="14" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/rol.txt">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="276">
-          <caret line="58" column="14" selection-start-line="58" selection-start-column="14" selection-end-line="58" selection-end-column="14" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/test.txt">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="17">
-          <caret line="12" selection-end-line="49" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Data.txt">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/train/Model/model_proto.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="12512">
-          <caret line="753" column="8" selection-start-line="753" selection-start-column="8" selection-end-line="757" selection-end-column="21" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/utils/model_proto_cpu.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="5865">
-          <caret line="359" column="17" selection-start-line="359" selection-start-column="17" selection-end-line="359" selection-end-column="17" />
+        <state relative-caret-position="1343">
+          <caret line="81" column="27" selection-start-line="81" selection-start-column="27" selection-end-line="81" selection-end-column="27" />
           <folding>
-            <element signature="e#0#21#0" expanded="true" />
+            <element signature="e#0#18#0" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/run/VRC_cpu.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="357">
+          <caret line="26" column="36" selection-start-line="26" selection-start-column="36" selection-end-line="26" selection-end-column="36" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/setting.json">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="17">
-          <caret line="7" column="43" selection-start-line="7" selection-start-column="43" selection-end-line="7" selection-end-column="43" />
+        <state relative-caret-position="306">
+          <caret line="18" column="25" selection-start-line="18" selection-start-column="25" selection-end-line="18" selection-end-column="25" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/utils/voice.py">
+    <entry file="file://$PROJECT_DIR$/utils/model_proto_cpu.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="317">
-          <caret line="227" column="13" lean-forward="true" selection-start-line="227" selection-start-column="13" selection-end-line="227" selection-end-column="13" />
+        <state relative-caret-position="138">
+          <caret line="132" column="36" selection-start-line="132" selection-start-column="36" selection-end-line="132" selection-end-column="36" />
+          <folding>
+            <element signature="e#0#23#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>

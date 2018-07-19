@@ -56,18 +56,12 @@ def filter_clip(dd,f=1.5):
 def filter_mean(dd):
     dxx1=np.roll(dd,1)
     dxx1[:1]=dd[:1]
-    dxx2=np.roll(dd,2)
-    dxx2[:2] = dd[:2]
-    dxx3= np.roll(dd, 3)
-    dxx3[:3] = dd[:3]
-    dxx4 = np.roll(dd, 4)
-    dxx4[:4] = dd[:4]
-    return (dd+dxx1+dxx2+dxx3+dxx4)/5.0
+    return (dd+dxx1)/2.0
 
 def filter_pes(dd):
     dxx1=np.roll(dd,-1)
     dxx1[:1]=0
-    return dd-dxx1*0.59
+    return dd-dxx1*0.27
 def mask_const(dd,f,t,power):
     dd[:,f:t,0]-=power
     # dd[:,:,1]=dd[:,:,1]*1.12
@@ -134,25 +128,6 @@ def complex_to_pp(fft_r):
     spec = np.concatenate((c, d), 2)
     return spec
 
-def pp_to_complex(frame):
-    power = np.sqrt(np.exp(frame[:, :, 0]))
-    re = power * (np.cos(frame[:, :, 1]))
-    im = power * (np.sin(frame[:, :, 1]))
-    ep = re + 1j * im
-    return ep
-
-def ifft(data,inp):
-    window=np.hamming(NFFT)
-    fft_s=np.fft.ifft(data,n=NFFT,axis=-1)
-    fft_data=fft_s.real
-    fft_data[:]/=window
-    v = fft_data[:,:NFFT//2]
-    res = fft_data[-1, NFFT//2 :].copy()
-    lats = np.roll(fft_data[:,NFFT//2:],1,axis=0)
-    lats[0,:]=inp
-    spec=np.reshape(v+lats,(-1))
-
-    return spec,res
 CHANNELS = 1        #モノラル
 RATE = 16000       #サンプルレート
 CHUNK = 1024     #データ点数
@@ -165,6 +140,7 @@ file_l="./train/Model/datasets/test/label.wav"
 file_l2 = "./テスト.wav"
 file_l3="./train/Model/datasets/test/label.wav"
 file3="./train/Model/datasets/test/B2.wav"
+file4="./train/Model/datasets/test/B.wav"
 file="./train/Model/datasets/test/test.wav"
 
 index=0
@@ -210,7 +186,7 @@ data_G,_,_=net.convert(data_realC)
 
 print(" [*] conversion finished in %3.3f!!" % (time.time()-tm))
 data_C=data_C.reshape(-1)
-
+data_D=(data_C.copy()*2.5).astype(np.int16)
 timee=80000
 times=data_realB.shape[0]//timee
 
@@ -220,8 +196,8 @@ ab=np.zeros([NFFT,2])
 abc=np.zeros([1,NFFT,2])
 abb=np.zeros([1,NFFT,2])
 vvr=np.zeros([1])
-times=data_C.shape[0]//term+1
-if data_C.shape[0]%term==0:
+times=data_realB.shape[0]//term+1
+if data_realB.shape[0]%term==0:
     times-=1
 ttm=time.time()
 resp=np.zeros([NFFT//2])
@@ -248,6 +224,14 @@ ww.setsampwidth(p.get_sample_size(FORMAT))
 ww.setframerate(RATE)
 ww.writeframes(data_C.tobytes())
 ww.close()
+FORMAT=pyaudio.paInt16
+p=pyaudio.PyAudio()
+ww = wave.open(WAVE_OUTPUT_FILENAME2, 'wb')
+ww.setnchannels(1)
+ww.setsampwidth(p.get_sample_size(FORMAT))
+ww.setframerate(RATE)
+ww.writeframes(data_D.tobytes())
+ww.close()
 
 p=pyaudio.PyAudio()
 ww = wave.open(WAVE_OUTPUT_FILENAME3, 'wb')
@@ -266,44 +250,6 @@ ww.setsampwidth(p.get_sample_size(FORMAT))
 ww.setframerate(RATE)
 ww.writeframes(mix.tobytes())
 ww.close()
-
-L1_1=np.mean(np.abs(abc[65:,:,:]-data_E[64:,:,:]).reshape(-1))
-L1_12=np.mean(search(abc[65:,:,:],data_E[64:,:,:]).reshape(-1))
-L1_22_1=np.mean(search(abc[65:,:,:1],data_E[64:,:,:1]).reshape(-1))
-L1_22_2=np.mean(search(abc[65:,:,1:],data_E[64:,:,1:]).reshape(-1))
-
-print(" [*] Finished!!")
-
-def nowtime():
-    return datetime.now().strftime("%Y_%m_%d %H_%M_%S")
-
-f=glob.glob(net.args["wave_otp_dir"]+"*.wav")
-print(net.args["wave_otp_dir"]+"*.wav")
-tm=os.path.basename(f[-1])
-print(" ______________________________________")
-print("|///     stats  %18s ///|" % nowtime())
-print("|/// File_name  %18s ///|" % tm[0:19])
-print("|/// BF_raw_Loss_str  %1.4f       ///|" % L1_1)
-print("|/// BF_raw_Loss_best %1.4f       ///|" % L1_12)
-print("|/// BF_raw_powL_best %1.4f       ///|" % L1_22_1)
-print("|/// BF_raw_freL_best %1.4f       ///|" % L1_22_2)
-print(" ---------------------------------------")
-if not os.path.exists("Z://data/"+str(net.args["name_save"])+"-results.txt"):
-    f=open("Z://data/"+str(net.args["name_save"])+"-results.txt","w")
-    f.write("\n")
-    f.close()
-
-with open("Z://data/"+str(net.args["name_save"])+"-results.txt","a") as f:
-    f.write("\n")
-    f.write(" ______________________________________\n")
-    f.write("|///      tats  %18s ///|\n" % nowtime())
-    f.write("|/// Model_name %18s ///|\n" % net.args["version"])
-    f.write("|/// File_name  %18s ///|\n" % tm[0:19])
-    f.write("|/// BF_raw_Loss_srt   %1.4f       ///|\n" % L1_1)
-    f.write("|/// BF_raw_Loss_best  %1.4f       ///|\n" % L1_12)
-    f.write("|/// BF_raw_powL_best  %1.4f       ///|\n" % L1_22_1)
-    f.write("|/// BF_raw_freL_best  %1.4f       ///|\n" % L1_22_2)
-    f.write(" ---------------------------------------\n")
 pl.subplot(6,1,5)
 aba=abc[1:,:,0].transpose((1,0))
 pl.imshow(aba,aspect="auto")
