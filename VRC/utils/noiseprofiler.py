@@ -67,7 +67,7 @@ def complex_to_pp(fft_r):
 CHANNELS = 1        #モノラル
 RATE = 16000       #サンプルレート
 CHUNK = 1024     #データ点数
-file_l="./noise.wav"
+file_l="../Data/noise.wav"
 
 index=0
 
