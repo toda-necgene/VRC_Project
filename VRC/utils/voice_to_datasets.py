@@ -90,8 +90,9 @@ RECORD_SECONDS = 5 #録音する時間の長さ
 WAVE_INPUT_FILENAME = "../train/Model/datasets/source/02/"
 files=glob.glob(WAVE_INPUT_FILENAME+"*.wav")
 stri=""
-name="25/Answer_data"
+name="v2/Source_data"
 cnt=0
+cc=0
 for file in files:
     print(file)
     index=0
@@ -105,7 +106,6 @@ for file in files:
     data = np.frombuffer(dms, np.int16)
     data_real=data.reshape(-1)
     data_realA=data_real
-    print(np.max(data_realA[0:8192]))
     timee=data_realA.shape[0]
     ppt=file+".txt"
     seg = 0
@@ -120,6 +120,8 @@ for file in files:
     ttm=time.time()
     mod=data_realA.shape[0]%term
     resp=np.zeros([NFFT//2])
+    if times>100:
+        times=100
     for i in range(times):
         ind=term*2+dilation+SHIFT
         startpos=term*i+mod
@@ -141,13 +143,8 @@ for file in files:
         bb=np.isnan(np.mean(a))
         if bb:
             print("NAN!!")
+        a=np.append(a,cc)
         np.save("../train/Model/datasets/train/"+str(name)+"/"+str(cnt) +"-wave", a)
         cnt+=1
+    cc+=1
 print("generated "+str(cnt)+"samples")
-plt.subplot(211)
-plt.imshow(np.transpose(a[:,:,0],(1,0)),aspect="auto")
-plt.colorbar()
-plt.subplot(212)
-plt.imshow(a[:,:,1],aspect="auto")
-plt.colorbar()
-plt.show()
