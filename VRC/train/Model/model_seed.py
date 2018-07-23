@@ -183,7 +183,7 @@ class Model:
         #それぞれの変数取得
         self.g_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"generators")
         self.d_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"seed_net")
-        a=tf.pow((self.input_diff_ab)-tf.sqrt(tf.reduce_sum(tf.pow(self.seed_A- self.seed_B,2))),2)*0.5
+        a=tf.pow(self.input_diff_ab-tf.sqrt(tf.reduce_sum(tf.pow(self.seed_A- self.seed_B,2))),2)*0.5
         fb=tf.losses.mean_squared_error(labels=tf.zeros_like(self.seed_FB), predictions=self.seed_FB)
         gb=tf.losses.mean_squared_error(labels=tf.zeros_like(self.seed_FA), predictions=self.seed_FA)
         b=(fb+gb)
@@ -428,7 +428,6 @@ class Model:
                     plt.subplot(212)
                     ins = np.transpose(im3[0], (1, 0))
                     plt.imshow(ins, aspect="auto")
-                    plt.clim(-3.141593, 3.141593)
                     if epoch == self.args["start_epoch"]:
                         plt.colorbar()
                     path = self.args["wave_otp_dir"] + nowtime()+"_seedA"
@@ -513,7 +512,7 @@ class Model:
                 #console outputs
                 count = counter + ti * epoch
                 taken_time = time.time() - start_time
-                taken_times=taken_times.append(taken_time)
+                taken_times.append(taken_time)
                 if len(taken_times)>20:
                     taken_times=taken_times[-20:]
                 tfa=np.asarray(taken_times)

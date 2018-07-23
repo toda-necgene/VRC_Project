@@ -4,10 +4,7 @@
     <bookmark url="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py" line="696" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="22fa9a76-09a0-4f62-a2d8-6f3210b56f42" name="Default" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/setting.json" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/setting.json" afterDir="false" />
-    </list>
+    <list default="true" id="22fa9a76-09a0-4f62-a2d8-6f3210b56f42" name="Default" comment="" />
     <ignored path="$PROJECT_DIR$/VRC/Network/to/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -30,8 +27,8 @@
       <file leaf-file-name="model_seed.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_seed.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="439">
-              <caret line="285" column="90" selection-start-line="285" selection-start-column="90" selection-end-line="285" selection-end-column="90" />
+            <state relative-caret-position="135">
+              <caret line="515" column="16" selection-start-line="515" selection-start-column="16" selection-end-line="515" selection-end-column="16" />
             </state>
           </provider>
         </entry>
@@ -382,13 +379,6 @@
       <option name="presentableId" value="Default" />
       <updated>1520153808625</updated>
     </task>
-    <task id="LOCAL-00037" summary="[update] shuffle update &lt;version 2.3.090&gt;&#10;&#10;[add] rollを追加">
-      <created>1528617861439</created>
-      <option name="number" value="00037" />
-      <option name="presentableId" value="LOCAL-00037" />
-      <option name="project" value="LOCAL" />
-      <updated>1528617861439</updated>
-    </task>
     <task id="LOCAL-00038" summary="[update] shuffle update &lt;version 2.3.109&gt;&#10;&#10;[add] hybrid_unetを追加">
       <created>1528618409899</created>
       <option name="number" value="00038" />
@@ -725,7 +715,14 @@
       <option name="project" value="LOCAL" />
       <updated>1532301087730</updated>
     </task>
-    <option name="localTasksCounter" value="86" />
+    <task id="LOCAL-00086" summary="[3.2.028] 実行アップデート&#10;&#10;[fix] テストのバグを修正">
+      <created>1532309325240</created>
+      <option name="number" value="00086" />
+      <option name="presentableId" value="LOCAL-00086" />
+      <option name="project" value="LOCAL" />
+      <updated>1532309325240</updated>
+    </task>
+    <option name="localTasksCounter" value="87" />
     <servers />
   </component>
   <component name="TodoView">
@@ -795,7 +792,6 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[update] doubleblock update &lt;version 2.4.047&gt;&#10;&#10;[add] decayFlatnet" />
     <MESSAGE value="[update] doubleblock update &lt;version 2.4.061&gt;&#10;&#10;[add] decayFlatnet" />
     <MESSAGE value="[update] doubleblock update &lt;version 2.4.062&gt;&#10;&#10;[add] decayFlatnet_pos" />
     <MESSAGE value="[update] training update &lt;version 2.4.068&gt;&#10;&#10;[add] 学習の設定更新" />
@@ -820,7 +816,8 @@
     <MESSAGE value="[update] mixconv update &lt;version 2.6.070&gt;&#10;&#10;[add] ミックスブロックの追加" />
     <MESSAGE value="[update] mixconv update &lt;version 2.7.000&gt;&#10;&#10;[add] ミックスブロックの構造をUnet化" />
     <MESSAGE value="[3.2.026] ハイパーパラメータアップデート&#10;&#10;[fix] パラメータの調整" />
-    <option name="LAST_COMMIT_MESSAGE" value="[3.2.026] ハイパーパラメータアップデート&#10;&#10;[fix] パラメータの調整" />
+    <MESSAGE value="[3.2.028] 実行アップデート&#10;&#10;[fix] テストのバグを修正" />
+    <option name="LAST_COMMIT_MESSAGE" value="[3.2.028] 実行アップデート&#10;&#10;[fix] テストのバグを修正" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -1086,8 +1083,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_seed.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="439">
-          <caret line="285" column="90" selection-start-line="285" selection-start-column="90" selection-end-line="285" selection-end-column="90" />
+        <state relative-caret-position="135">
+          <caret line="515" column="16" selection-start-line="515" selection-start-column="16" selection-end-line="515" selection-end-column="16" />
         </state>
       </provider>
     </entry>
