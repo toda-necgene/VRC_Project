@@ -183,11 +183,11 @@ class Model:
         #それぞれの変数取得
         self.g_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"generators")
         self.d_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"seed_net")
-        a=tf.pow((self.input_diff_ab/3.0)-tf.sqrt(tf.reduce_sum(tf.pow(self.seed_A- self.seed_B,2))),2)*0.5
+        a=tf.pow((self.input_diff_ab)-tf.sqrt(tf.reduce_sum(tf.pow(self.seed_A- self.seed_B,2))),2)*0.5
         fb=tf.losses.mean_squared_error(labels=tf.zeros_like(self.seed_FB), predictions=self.seed_FB)
         gb=tf.losses.mean_squared_error(labels=tf.zeros_like(self.seed_FA), predictions=self.seed_FA)
         b=(fb+gb)
-        c=0.5*(tf.pow(1.0-tf.sqrt(tf.reduce_sum(tf.pow(self.seed_A,2))),2)+tf.pow(1.0-tf.sqrt(tf.reduce_sum(tf.pow(self.seed_B,2))),2))
+        c=0.5*(tf.pow(10.0-tf.sqrt(tf.reduce_sum(tf.pow(self.seed_A,2))),2)+tf.pow(10.0-tf.sqrt(tf.reduce_sum(tf.pow(self.seed_B,2))),2))
         d=tf.losses.mean_squared_error(labels=self.tar_def,predictions=self.seed_def)
         # S-netの目的関数
         self.d_loss=a+b+c+d
@@ -262,13 +262,13 @@ class Model:
             # 短時間高速離散フーリエ変換
             n=self.fft(red[0].reshape(-1)/32767.0)
             res[0]=n[:,:self.args["SHIFT"]]
-            res=self.sess.run(self.fake_aB_image_test,feed_dict={ self.input_model_test:res ,self.input_model_test_s:tar})
+            res,b=self.sess.run([self.fake_aB_image_test,self.seed_TB],feed_dict={ self.input_model_test:res ,self.input_model_test_s:tar})
             res2=res.copy()[:,:,::-1,:]
             res=np.append(res,res2,axis=2)
             res[:,:,self.args["SHIFT"]:,1]*=-1
             a = res[0].copy()
             res3 = np.append(res3, a).reshape(-1,self.args["NFFT"],2)
-
+            res4 = b
 
             # 後処理
             # 短時間高速離散逆フーリエ変換
@@ -283,7 +283,7 @@ class Model:
         if h>0:
             otp=otp[h:]
 
-        return otp.reshape(1,in_put.shape[1],in_put.shape[2]),time.time()-tt,res3[1:]
+        return otp.reshape(1,in_put.shape[1],in_put.shape[2]),time.time()-tt,res3[1:],res4[1:]
 
 
 
@@ -298,7 +298,7 @@ class Model:
         beta_d_opt=self.args["d_b1"]
         beta_2_d_opt=self.args["d_b2"]
         # 出力ディレクトリ
-        taken_times=np.empty([1])
+        taken_times=[]
 
         self.lod="[glr="+str(lr_g_opt)+",gb="+str(beta_g_opt)+",dlr="+str(lr_d_opt)+",db="+str(beta_d_opt)+"]"
 
@@ -341,6 +341,8 @@ class Model:
         # テストデータの読み込み
         test=isread('./Model/datasets/test/test.wav')[0:160000].astype(np.float32)
         label=isread('./Model/datasets/test/label.wav')[0:160000].astype(np.float32)
+        label2 = isread('./Model/datasets/test/label2.wav')[0:160000].astype(np.float32)
+
         # 回数計算
         train_data_num = min(len(data), self.args["train_data_num"])
         print(" [*] data found",len(data))
@@ -372,8 +374,13 @@ class Model:
             if self.args["test"] and epoch%self.args["save_interval"]==0:
                 print(" [*] Epoch %3d testing" % epoch)
                 #テスト
-                out_puts,taken_time_test,im=self.convert(test.reshape(1,-1,1),label.reshape(-1))
+                out_puts,taken_time_test,im,im2=self.convert(test.reshape(1,-1,1),label.reshape(-1))
+                out_puts2, _, _, im3 = self.convert(test.reshape(1, -1, 1), label2.reshape(-1))
+
                 im = im.reshape([-1, self.args["NFFT"], 2])
+                im2 = im2.reshape([-1, 4, 8])
+                im3 = im3.reshape([-1, 4, 8])
+
                 otp_im=np.append(np.clip((im[:,:,0]+30)/40,0.0,1.0).reshape([1,-1,self.args["NFFT"],1]),np.clip((im[:,:,1]+3.15)/6.30,0.0,1.0).reshape([1,-1,self.args["NFFT"],1]),axis=3)
                 out_put=out_puts.astype(np.float32)/32767.0
                 #テストの誤差
@@ -413,6 +420,22 @@ class Model:
                             self.dbx.files_upload(ff.read(), "/apps/tensorflow_watching_app/Latestwave.wav",mode=dropbox.files.WriteMode.overwrite)
                         print(" [*] Files uploaded!!")
 
+                    plt.clf()
+                    plt.subplot(211)
+                    ins = np.transpose(im2[0], (1, 0))
+                    plt.imshow(ins, aspect="auto")
+                    if epoch == self.args["start_epoch"]:
+                        plt.colorbar()
+                    plt.subplot(212)
+                    ins = np.transpose(im3[0], (1, 0))
+                    plt.imshow(ins, aspect="auto")
+                    plt.clim(-3.141593, 3.141593)
+                    if epoch == self.args["start_epoch"]:
+                        plt.colorbar()
+                    path = self.args["wave_otp_dir"] + nowtime()+"_seedA"
+                    plt.savefig(path + ".png")
+                    plt.clf()
+                    upload(out_puts2, path,comment="another_label")
                 print(" [*] Epoch %3d tested in %3.3f" % (epoch, taken_time_test))
 
             print(" [*] Epoch %3d started" % epoch)
@@ -491,10 +514,11 @@ class Model:
                 #console outputs
                 count = counter + ti * epoch
                 taken_time = time.time() - start_time
-                taken_times=np.append(taken_time,taken_times)
-                if taken_times.shape[0]>20:
-                    taken_times=taken_times[0:20]
-                tsts=np.mean(taken_times)
+                taken_times=taken_times.append(taken_time)
+                if len(taken_times)>20:
+                    taken_times=taken_times[-20:]
+                tfa=np.asarray(taken_times)
+                tsts=np.mean(tfa)
                 start_time = time.time()
                 ft=tsts*(self.args["train_epoch"]-epoch-1)
                 print(" [*] Epoch %5d (iterations: %10d)finished in %.2f (preprocess %.3f) ETA: %3d:%2d:%2.1f" % (epoch,count,taken_time,ts,ft//3600,ft//60%60,ft%60))
@@ -852,7 +876,7 @@ def upload(voice,to,comment=""):
     voiced=voice.astype(np.int16)
     p=pyaudio.PyAudio()
     FORMAT = pyaudio.paInt16
-    ww = wave.open(to+".wav", 'wb')
+    ww = wave.open(to+comment+".wav", 'wb')
     ww.setnchannels(1)
     ww.setsampwidth(p.get_sample_size(FORMAT))
     ww.setframerate(16000)
