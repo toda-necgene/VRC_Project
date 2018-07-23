@@ -282,8 +282,7 @@ class Model:
         h=otp.shape[0]-in_put.shape[1]
         if h>0:
             otp=otp[h:]
-
-        return otp.reshape(1,in_put.shape[1],in_put.shape[2]),time.time()-tt,res3[1:],res4[1:]
+        return otp.reshape(1,in_put.shape[1],in_put.shape[2]),time.time()-tt,res3[1:],res4
 
 
 
