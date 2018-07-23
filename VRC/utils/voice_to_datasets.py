@@ -4,9 +4,8 @@ import wave
 import time
 import glob
 import cupy
-import os
 import matplotlib.pyplot as plt
-NFFT=1024
+NFFT=128
 SHIFT=NFFT//2
 C1=32.703
 rate=16000
@@ -14,17 +13,8 @@ Hz=C1*(2**0)
 now=317.6
 target=563.666
 term = 4096
-dilation=512*7
-length=term//SHIFT+1
-cutoff=5
-effect_ranges=1024
-align=False
-eef=1200
 upidx=target/now
-p=pyaudio.PyAudio()
-stream=p.open(format=pyaudio.paInt16,channels=1,rate=16000,output=True)
-print(stream.is_active())
-lss={"a":0,"i":1,"u":2,"e":3,"o":4,"k":5,"s":6,"t":7,"n":8,"h":9,"m":10,"y":11,"r":12,"w":13,"g":14,"z":15,"d":16,"b":17,"p":18,"H":19,"Q":20,"N":21,"f":22,"?":23}
+
 def fft(data):
     time_ruler=data.shape[0]//SHIFT
     if data.shape[0]%SHIFT==0:
@@ -76,23 +66,20 @@ def complex_to_pp(fft_r):
     time_ruler=fft_r.shape[0]
     re = fft_r.real
     im = fft_r.imag
-    c = np.sqrt(np.power(re, 2) + np.power(im, 2) + 1e-24).reshape(time_ruler, -1, 1)
+    c = np.log(np.power(re, 2) + np.power(im, 2) + 1e-24).reshape(time_ruler, -1, 1)
     d = np.arctan2(im, re).reshape(time_ruler, -1, 1)
     spec = np.concatenate((c, d), 2)
     return spec
-def play(d):
-    stream.write(d.tobytes())
+
 FORMAT = pyaudio.paInt16
 CHANNELS = 1        #モノラル
 RATE = 16000       #サンプルレート
 CHUNK = 1024     #データ点数
 RECORD_SECONDS = 5 #録音する時間の長さ
-WAVE_INPUT_FILENAME = "../train/Model/datasets/source/02/"
-files=glob.glob(WAVE_INPUT_FILENAME+"*.wav")
-stri=""
-name="v2/Source_data"
+WAVE_INPUT_FILENAME = "../train/Model/datasets/source/02"
+files=glob.glob(WAVE_INPUT_FILENAME+"/*.wav")
+name="4096-128-2/Answer_data"
 cnt=0
-cc=0
 for file in files:
     print(file)
     index=0
@@ -103,48 +90,48 @@ for file in files:
         dms.append(dds)
         dds = wf.readframes(CHUNK)
     dms = b''.join(dms)
-    data = np.frombuffer(dms, np.int16)
+    data = np.frombuffer(dms, 'int16')
     data_real=data.reshape(-1)
     data_realA=data_real
     timee=data_realA.shape[0]
-    ppt=file+".txt"
-    seg = 0
 
     rate=16000
+
     b=np.zeros([1])
     ab=np.zeros([1,128,2])
     abc=np.zeros([1,128,2])
+
     times=data_realA.shape[0]//term+1
     if data_realA.shape[0]%term==0:
         times-=1
     ttm=time.time()
-    mod=data_realA.shape[0]%term
     resp=np.zeros([NFFT//2])
-    if times>100:
-        times=100
     for i in range(times):
-        ind=term*2+dilation+SHIFT
-        startpos=term*i+mod
+        ind=term+SHIFT
+        startpos=term*i+data_realA.shape[0]%term
         data_realAb = data_realA[max(startpos-ind,0):startpos]
         r=ind-data_realAb.shape[0]
         if r>0:
             data_realAb=np.pad(data_realAb,(r,0),"constant")
-        dddd = data_realAb.copy()
-        dmn=data_realAb.copy()/32767.0
+        dmn=data_realAb/32767.0
         r=SHIFT-dmn.shape[0]%SHIFT
         if r!=SHIFT:
             dmn=np.pad(dmn,(0,r),"reflect")
         a=fft(dmn)
         a=complex_to_pp(a[:,:SHIFT])
-        # c=a[:,:,0]
+        c=a[:,:,0]
+        v=1/np.sqrt(np.var(c,axis=1)+1e-36)
         # a[:, :, 0] -= np.tile(np.mean(c, axis=1).reshape(-1, 1), (1, SHIFT))
-        # v = 1 / np.sqrt(np.var(c, axis=1) + 1e-36)
         # a[:, :, 0]= np.einsum("ij,i->ij",a[:, :, 0],v)
         bb=np.isnan(np.mean(a))
         if bb:
             print("NAN!!")
-        a=np.append(a,cc)
-        np.save("../train/Model/datasets/train/"+str(name)+"/"+str(cnt) +"-wave", a)
+        np.save("../train/Model/datasets/train/"+str(name)+"/"+str(cnt) +".data", a)
         cnt+=1
-    cc+=1
-print("generated "+str(cnt)+"samples")
+plt.subplot(211)
+plt.imshow(a[:,:,0],aspect="auto")
+plt.colorbar()
+plt.subplot(212)
+plt.imshow(a[:,:,1],aspect="auto")
+plt.colorbar()
+plt.show()
