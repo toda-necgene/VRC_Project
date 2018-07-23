@@ -10,7 +10,7 @@ from datetime import datetime
 import glob
 
 Add_Effect=True
-NFFT=128
+NFFT=1024
 SHIFT=NFFT//2
 C1=32.703
 rate=16000
@@ -149,7 +149,7 @@ CHUNK = 1024     #データ点数
 RECORD_SECONDS = 5 #録音する時間の長さ
 WAVE_OUTPUT_FILENAME = "./B.wav"
 WAVE_OUTPUT_FILENAME2 = "./B2.wav"
-WAVE_OUTPUT_FILENAME3 = "./B3.wav"
+file_ll="../train/Model/datasets/test/label2.wav"
 file_l="../train/Model/datasets/test/label.wav"
 file="../train/Model/datasets/test/test.wav"
 
@@ -162,7 +162,7 @@ while dds != b'':
     dds = wf.readframes(CHUNK)
 dms = b''.join(dms)
 data = np.frombuffer(dms, 'int16')
-data_realA=data.reshape(-1).astype(np.float32)
+data_realA=data.reshape(-1)
 
 dms=[]
 wf = wave.open(file_l, 'rb')
@@ -174,13 +174,25 @@ dms = b''.join(dms)
 data = np.frombuffer(dms, 'int16')
 data_realB=data.reshape(-1)
 
+
+dms=[]
+wf = wave.open(file_ll, 'rb')
+dds = wf.readframes(CHUNK)
+while dds != b'':
+    dms.append(dds)
+    dds = wf.readframes(CHUNK)
+dms = b''.join(dms)
+data = np.frombuffer(dms, 'int16')
+data_realC=data.reshape(-1)
+
 tm=time.time()
 # data_realA=filter_pes(data_realA)
-data_realA=data_realA.reshape(1,-1,1)
 print(" [*] conversion start!!")
-data_C,data_D,data_E,data_F=net.convert(data_realA/32767.0)
+data_C,data_F=net.convert(data_realA/32767.0,data_realB /32767.0)
+
+data_D,data_E=net.convert(data_realA/32767.0,data_realC /32767.0)
+
 print(" [*] conversion finished in %3.3f!!" % (time.time()-tm))
-data_C=data_C.reshape(-1)
 
 timee=80000
 times=data_realB.shape[0]//timee
@@ -191,61 +203,71 @@ ab=np.zeros([NFFT,2])
 abc=np.zeros([1,NFFT,2])
 abb=np.zeros([1,NFFT,2])
 vvr=np.zeros([1])
-times=data_C.shape[0]//term+1
-if data_C.shape[0]%term==0:
+times=data_realA.shape[0]//term+1
+if data_realA.shape[0]%term==0:
     times-=1
 ttm=time.time()
 resp=np.zeros([NFFT//2])
 print("----------------------------------------------------------------")
 for i in range(times):
     ind=term+SHIFT
-    startpos=term*i+data_realB.shape[0]%term
+    startpos=term*i+data_realA.shape[0]%term
     data_realAb = data_realA[max(startpos - ind, 0):startpos]
-    data_realBb = data_realB[max(startpos - ind, 0):startpos]
-    r=ind-data_realBb.shape[0]
+    r=ind-data_realAb.shape[0]
     if r>0:
-        data_realBb=np.pad(data_realBb,(r,0),"constant")
-    ddms=data_realBb.astype(np.float32)/32767.0
+        data_realAb=np.pad(data_realAb,(r,0),"constant")
+    ddms=data_realAb.astype(np.float32)/32767.0
     bss=fft(ddms)
     bss=complex_to_pp(bss)
     abc = np.append(abc, bss, axis=0)
-bsd=data_D.astype(np.float32)/32767
-data_D=(bsd*32767).astype(np.int16)
 data_E=data_E.reshape([-1,NFFT,2])
 data_F=data_F.reshape([-1,NFFT,2])
-pl.subplot(6,1,5)
+pl.subplot(6,1,1)
 aba=abc[1:,:,0].transpose((1,0))
 pl.imshow(aba,aspect="auto")
 pl.clim(-30,10)
 pl.colorbar()
+
+pl.subplot(6,1,2)
+aba=abc[1:,:,1].transpose((1,0))
+pl.imshow(aba,aspect="auto")
+pl.clim(-3.141592,3.141592)
+pl.colorbar()
+
 pl.subplot(6,1,3)
 abn=np.transpose(data_F[1:,:,0],(1,0))
 pl.imshow(abn,aspect="auto")
 pl.clim(-30,10)
-pl.colorbar()
-pl.subplot(6,1,6)
-aba=abc[1:,:,1].transpose((1,0))
-pl.imshow(aba,aspect="auto")
-pl.clim(-3.141592,3.141592)
 pl.colorbar()
 pl.subplot(6,1,4)
 abn=np.transpose(data_F[1:,:,1],(1,0))
 pl.imshow(abn,aspect="auto")
 pl.clim(-3.141592,3.141592)
 pl.colorbar()
-pl.subplot(6, 1, 1)
+
+pl.subplot(6, 1, 5)
 data_E=data_E.reshape([-1,NFFT,2])
 abn = np.transpose(data_E[1:, :, 0], (1, 0))
 pl.imshow(abn, aspect="auto")
 pl.clim(-30, 10)
 pl.colorbar()
-pl.subplot(6, 1, 2)
+pl.subplot(6, 1, 6)
 aba = data_E[:, :, 1].transpose((1, 0))
 pl.imshow(aba, aspect="auto")
 pl.clim(-3.141592, 3.141592)
 pl.colorbar()
 
 FORMAT=pyaudio.paInt16
+
+
+p=pyaudio.PyAudio()
+ww = wave.open("S1.wav", 'wb')
+ww.setnchannels(1)
+ww.setsampwidth(p.get_sample_size(FORMAT))
+ww.setframerate(RATE)
+ww.writeframes(data_realA.tobytes())
+ww.close()
+
 p=pyaudio.PyAudio()
 ww = wave.open(WAVE_OUTPUT_FILENAME, 'wb')
 ww.setnchannels(1)
@@ -261,44 +283,5 @@ ww.setsampwidth(p.get_sample_size(FORMAT))
 ww.setframerate(RATE)
 ww.writeframes(data_D.tobytes())
 ww.close()
-
-
-L1_1=np.mean(np.abs(abc[65:,:,:]-data_E[64:,:,:]).reshape(-1))
-L1_2=np.mean(np.abs(abc[65:,:,:]-data_F[64:,:,:]).reshape(-1))
-L1_12=np.mean(search(abc[65:,:,:],data_E[64:,:,:]).reshape(-1))
-L1_22=np.mean(search(abc[65:,:,:],data_F[64:,:,:]).reshape(-1))
-
-print(" [*] Finished!!")
-
-def nowtime():
-    return datetime.now().strftime("%Y_%m_%d %H_%M_%S")
-
-f=glob.glob(net.args["wave_otp_dir"]+"*.wav")
-print(net.args["wave_otp_dir"]+"*.wav")
-tm=os.path.basename(f[-1])
-print(" ______________________________________")
-print("|///     stats  %18s ///|" % nowtime())
-print("|/// File_name  %18s ///|" % tm[0:19])
-print("|/// BF_norm_Loss_str  %1.4f       ///|" % L1_1)
-print("|/// BF_filt_Loss_str  %1.4f       ///|" % L1_2)
-print("|/// BF_norm_Loss_best %1.4f       ///|" % L1_12)
-print("|/// BF_filt_Loss_best %1.4f       ///|" % L1_22)
-print(" ---------------------------------------")
-if not os.path.exists("Z://data/"+str(net.args["name_save"])+"-results.txt"):
-    f=open("Z://data/"+str(net.args["name_save"])+"-results.txt","w")
-    f.write("\n")
-    f.close()
-
-with open("Z://data/"+str(net.args["name_save"])+"-results.txt","a") as f:
-    f.write("\n")
-    f.write(" ______________________________________\n")
-    f.write("|///      tats  %18s ///|\n" % nowtime())
-    f.write("|/// Model_name %18s ///|\n" % net.args["version"])
-    f.write("|/// File_name  %18s ///|\n" % tm[0:19])
-    f.write("|/// BF_norm_Loss_str   %1.4f       ///|\n" % L1_1)
-    f.write("|/// BF_filt_Loss_srt   %1.4f       ///|\n" % L1_2)
-    f.write("|/// BF_norm_Loss_best  %1.4f       ///|\n" % L1_12)
-    f.write("|/// BF_filt_Loss_best  %1.4f       ///|\n" % L1_22)
-    f.write(" ---------------------------------------\n")
 
 pl.show()
