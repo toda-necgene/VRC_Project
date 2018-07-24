@@ -13,7 +13,7 @@ from datetime import datetime
 import json
 import shutil
 import cupy
-import dropbox
+import dropbox,dropbox.files
 import math
 import matplotlib.pyplot as plt
 class Model:
@@ -46,9 +46,7 @@ class Model:
         self.args["cupy"] = False
         self.args["D_channels"] =[2]
         self.args["G_channels"] = [32]
-        self.args["strides_g"] = [[2,2]]
         self.args["strides_d"] = [2,2]
-        self.args["filter_g"] = [[8,8]]
         self.args["filter_d"] = [4,4]
         self.args["dilations"] = [1,1,1,1]
         self.args["model_name"] = "wave2wave"
@@ -120,7 +118,10 @@ class Model:
         self.checkpoint_dir = self.args["checkpoint_dir"]
 
     def build_model(self):
-
+        """
+        モデルの生成
+        :return:
+        """
         #入力
         self.input_modela= tf.placeholder(tf.float32, self.input_size_model, "input_A")
         self.input_modelb = tf.placeholder(tf.float32, self.input_size_model, "input_B")
@@ -137,102 +138,124 @@ class Model:
         #シードの作成
 
         with tf.variable_scope("seed_net"):
-            self.seed_A,_=seed_net(self.input_modela1[:,:8,:,:],None,self.args["d_depth"],self.args["D_channels"],"A")
-            self.seed_def, _ = seed_net(self.input_def[:, :8, :, :], True, self.args["d_depth"],
+            self.seed_A,self.reality_A=seed_net(self.input_modela1[:,:8,:,:],None,self.args["d_depth"],self.args["D_channels"],"A")
+            self.seed_def, self.reality_def = seed_net(self.input_def[:, :8, :, :], True, self.args["d_depth"],
                                       self.args["D_channels"], "A")
-            self.seed_B,_=seed_net(self.input_modelb1[:,:8,:,:],True,self.args["d_depth"],self.args["D_channels"]," ")
+            self.seed_B,self.reality_B=seed_net(self.input_modelb1[:,:8,:,:],True,self.args["d_depth"],self.args["D_channels"]," ")
             self.seed_TB,_ = seed_net(self.input_model_test_s[:,-8:,:,:], True,self.args["d_depth"],self.args["D_channels"], " ",train=False)
         #G-net（生成側）の作成
         with tf.variable_scope("generators"):
-            self.fake_aB_12_image = generator(self.input_modela1,self.seed_B, reuse=None,chs=self.args["G_channels"], depth=self.args["depth"], f=self.args["filter_g"],
-                                          s=self.args["strides_g"],d=self.args["dilations"],type=self.args["architect"],train=True)
+            self.fake_aB_12_image = generator(self.input_modela1,self.seed_B, reuse=None,chs=self.args["G_channels"], depth=self.args["depth"],d=self.args["dilations"],net_type=self.args["architect"],train=True)
             self.fake_aB_23_image=generator(self.input_modela2,self.seed_B, reuse=True, chs=self.args["G_channels"],
-                                                  depth=self.args["depth"], f=self.args["filter_g"],s=self.args["strides_g"],d=self.args["dilations"],
-                                                  type=self.args["architect"], train=True)
+                                                  depth=self.args["depth"],d=self.args["dilations"],
+                                                  net_type=self.args["architect"], train=True)
             self.fake_aB_image_test = generator(self.input_model_test,self.seed_TB, reuse=True,
                                             chs=self.args["G_channels"], depth=self.args["depth"],
-                                            f=self.args["filter_g"],
-                                            s=self.args["strides_g"],
                                             d=self.args["dilations"],
-                                            type=self.args["architect"],
+                                            net_type=self.args["architect"],
                                             train=False)
             output_aB=tf.concat([self.fake_aB_12_image,self.fake_aB_23_image[:,:-1,:,:]],axis=1)
             self.fake_bA_12_image = generator(self.input_modelb1,self.seed_A, reuse=True,
-                                          chs=self.args["G_channels"], depth=self.args["depth"], f=self.args["filter_g"],
-                                          s=self.args["strides_g"],d=self.args["dilations"],type=self.args["architect"],train=True)
+                                          chs=self.args["G_channels"], depth=self.args["depth"], d=self.args["dilations"],net_type=self.args["architect"],train=True)
             self.fake_bA_23_image = generator(self.input_modelb2,self.seed_A, reuse=True,
-                                           chs=self.args["G_channels"], depth=self.args["depth"],
-                                           f=self.args["filter_g"],
-                                           s=self.args["strides_g"],d=self.args["dilations"],
-                                           type=self.args["architect"], train=True)
+                                           chs=self.args["G_channels"], depth=self.args["depth"],d=self.args["dilations"],
+                                           net_type=self.args["architect"], train=True)
             output_bA = tf.concat([self.fake_bA_12_image, self.fake_bA_23_image[:,:-1,:,:]], axis=1)
             self.fake_Ba_image = generator(output_aB,self.seed_A, reuse=True,
-                                          chs=self.args["G_channels"], depth=self.args["depth"], f=self.args["filter_g"],
-                                          s=self.args["strides_g"],d=self.args["dilations"],type=self.args["architect"],train=True)
+                                          chs=self.args["G_channels"], depth=self.args["depth"],d=self.args["dilations"],net_type=self.args["architect"],train=True)
             self.fake_Ab_image = generator(output_bA,self.seed_B, reuse=True,
-                                           chs=self.args["G_channels"], depth=self.args["depth"],
-                                           f=self.args["filter_g"],
-                                           s=self.args["strides_g"],d=self.args["dilations"],type=self.args["architect"],train=True)
+                                           chs=self.args["G_channels"], depth=self.args["depth"],d=self.args["dilations"],net_type=self.args["architect"],train=True)
 
-        #偽物のシード作成
+        # 偽物のシード作成
         self.d_judge_F_logits=[]
         with tf.variable_scope("seed_net",reuse=True):
-            self.seed_FB,_=seed_net(self.fake_aB_12_image,True,self.args["d_depth"],self.args["D_channels"]," ")
-            self.seed_FA,_=seed_net(self.fake_bA_12_image,True,self.args["d_depth"],self.args["D_channels"]," ")
+            self.seed_FB,self.reality_FB=seed_net(self.fake_aB_12_image,True,self.args["d_depth"],self.args["D_channels"]," ")
+            self.seed_FA,self.reality_FA=seed_net(self.fake_bA_12_image,True,self.args["d_depth"],self.args["D_channels"]," ")
 
-        #それぞれの変数取得
+        # それぞれの変数取得
         self.g_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"generators")
         self.d_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"seed_net")
-        a=tf.pow(self.input_diff_ab-tf.sqrt(tf.reduce_sum(tf.pow(self.seed_A- self.seed_B,2))),2)*0.5
-        fb=tf.losses.mean_squared_error(labels=tf.zeros_like(self.seed_FB), predictions=self.seed_FB)
-        gb=tf.losses.mean_squared_error(labels=tf.zeros_like(self.seed_FA), predictions=self.seed_FA)
-        b=(fb+gb)
-        c=0.5*(tf.pow(10.0-tf.sqrt(tf.reduce_sum(tf.pow(self.seed_A,2))),2)+tf.pow(10.0-tf.sqrt(tf.reduce_sum(tf.pow(self.seed_B,2))),2))
-        d=tf.losses.mean_squared_error(labels=self.tar_def,predictions=self.seed_def)
-        # S-netの目的関数
-        self.d_loss=a+b+c+d
-        # G-netの目的関数
-        #Cycle_loss
-        self.g_loss_cycle_A2 = tf.reduce_mean(tf.abs(self.input_modelb[:,:8,:,:1] - self.fake_Ab_image[:,:8,:,:1])*self.args["weight_Cycle1"]+tf.abs(self.input_modelb[:,:8,:,1:] - self.fake_Ab_image[:,:8,:,1:])*self.args["weight_Cycle2"])
-        self.g_loss_cycle_B2 = tf.reduce_mean(tf.abs(self.input_modela[:,:8,:,:1] - self.fake_Ba_image[:,:8,:,:1])*self.args["weight_Cycle1"]+tf.abs(self.input_modela[:,:8,:,1:] - self.fake_Ba_image[:,:8,:,1:])*self.args["weight_Cycle2"])
-        #GAN_labelロス
-        self.g_loss_GAN_A=tf.losses.mean_squared_error(labels=self.seed_B, predictions=self.seed_FB)
-        self.g_loss_GAN_B=tf.losses.mean_squared_error(labels=self.seed_A, predictions=self.seed_FA)
-        self.g_loss=(self.g_loss_cycle_A2+self.g_loss_cycle_B2)+(self.g_loss_GAN_A+self.g_loss_GAN_B)*self.args["weight_GAN1"]
-
+        # 誤差関数を設定
+        self.loss_functions()
         #バッチ正規化の更新
         self.update_ops=tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-        #tensorboard 表示用関数
-        self.g_loss_all= tf.summary.scalar("g_loss_cycle_A", tf.reduce_mean(self.g_loss_cycle_A2),family="g_loss")
-        self.g_loss_gan2 = tf.summary.scalar("g_loss_gan_A_1", tf.reduce_mean(self.g_loss_GAN_A), family="g_loss")
-        self.g_loss_sum_1 = tf.summary.merge([self.g_loss_all, self.g_loss_gan2])
-
-        self.g_loss_all2 = tf.summary.scalar("g_loss_cycle_B", tf.reduce_mean(self.g_loss_cycle_B2),family="g_loss")
-        self.g_loss_gan4 = tf.summary.scalar("g_loss_gan_B_1", tf.reduce_mean(self.g_loss_GAN_B), family="g_loss")
-        self.g_loss_sum_2 = tf.summary.merge([self.g_loss_all2, self.g_loss_gan4])
-        sum=[]
-        sum.append(tf.summary.scalar("d_loss", tf.reduce_mean(self.d_loss),family="d_loss"))
-        sum.append(tf.summary.scalar("d_lossA", tf.reduce_mean(a),family="d_loss"))
-        sum.append(tf.summary.scalar("d_lossB", tf.reduce_mean(b),family="d_loss"))
-        sum.append(tf.summary.scalar("d_lossC", tf.reduce_mean(c),family="d_loss"))
-        sum.append(tf.summary.scalar("d_lossD", tf.reduce_mean(d),family="d_loss"))
-        self.d_loss_sum = tf.summary.merge(sum)
-        self.result=tf.placeholder(tf.float32, [1,1,160000], name="FB")
-        self.result1 = tf.placeholder(tf.float32, [1,320,1024,2], name="FBI0")
-        im1=tf.transpose(self.result1[:,:,:,:1],[0,2,1,3])
-        im2 = tf.transpose(self.result1[:, :, :, 1:], [0, 2, 1, 3])
-        self.fake_B_sum = tf.summary.audio("fake_B", tf.reshape(self.result,[1,160000,1]), 16000, 1)
-        self.fake_B_sum2 = tf.summary.image("fake_B_image01", im1, 1)
-        self.fake_B_sum3 = tf.summary.image("fake_B_image02", im2, 1)
-        self.g_test_epo=tf.placeholder(tf.float32,name="g_test_epoch_end")
-        self.g_test_epoch = tf.summary.merge([tf.summary.scalar("g_test_epoch_end", self.g_test_epo,family="test")])
-
-        self.tb_results=tf.summary.merge([self.fake_B_sum,self.fake_B_sum2,self.fake_B_sum3,self.g_test_epoch])
-
         #保存の準備
         self.saver = tf.train.Saver()
 
+    def loss_functions(self):
+        """
+        **概要**
+        それぞれの誤差関数（目的関数）を設定している。
+        式は以下のように定義されている
+        各項の説明
+		"""
 
+        # クラスタリングの誤差
+        cluster_loss = tf.pow(self.input_diff_ab - tf.sqrt(tf.reduce_sum(tf.pow(self.seed_A - self.seed_B, 2))),
+                              2) * 0.5
+        # GANにおける本物と偽物の評価の誤差
+        reality_loss_FB = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.zeros_like(self.reality_FB[0]),
+                                                                  logits=self.reality_FB[0])
+        reality_loss_FA = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.zeros_like(self.reality_FA[0]),
+                                                                  logits=self.reality_FA[0])
+        reality_loss_A = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(self.reality_A[0]),
+                                                                 logits=self.reality_A[0])
+        reality_loss_B = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(self.reality_B[0]),
+                                                                 logits=self.reality_B[0])
+        reality_loss = (reality_loss_FA + reality_loss_FB + reality_loss_A + reality_loss_B)
+        # クラスタリングにおける分布の制限誤差
+        circle_loss = 0.5 * (tf.pow(10.0 - tf.sqrt(tf.reduce_sum(tf.pow(self.seed_A, 2))), 2) + tf.pow(
+            10.0 - tf.sqrt(tf.reduce_sum(tf.pow(self.seed_B, 2))), 2))
+        # クラスタリングの基準点の誤差
+        reference_loss = tf.losses.mean_squared_error(labels=self.tar_def, predictions=self.seed_def)
+
+        # S-netの目的関数
+        self.d_loss = cluster_loss + reality_loss + circle_loss + reference_loss
+        # G-netの目的関数
+        # Cycle_loss
+        self.g_loss_cycle_A=tf.reduce_mean(tf.abs(self.input_modelb[:, :8, :, :1] - self.fake_Ab_image[:, :8, :, :1]) * self.args["weight_Cycle1"])
+        self.g_loss_cycle_A2 = tf.reduce_mean(tf.abs(self.input_modelb[:, :8, :, 1:] - self.fake_Ab_image[:, :8, :, 1:]) *self.args["weight_Cycle2"])
+        self.g_loss_cycle_B =tf.reduce_mean(tf.abs(self.input_modela[:, :8, :, :1] - self.fake_Ba_image[:, :8, :, :1]) * self.args["weight_Cycle1"])
+        self.g_loss_cycle_B2 = tf.reduce_mean(tf.abs(self.input_modela[:, :8, :, 1:] - self.fake_Ba_image[:, :8, :, 1:]) *
+            self.args["weight_Cycle2"])
+        # GAN_labelロス
+        self.g_loss_GAN_A = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(self.reality_FA[0]),logits=self.reality_FA[0])
+        self.g_loss_GAN_B = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(self.reality_FB[0]),logits=self.reality_FB[0])
+        self.g_loss_GAN_A2 =  tf.losses.mean_squared_error(labels=self.seed_A, predictions=self.seed_FA)
+        self.g_loss_GAN_B2 =  tf.losses.mean_squared_error(labels=self.seed_B, predictions=self.seed_FB)
+
+        self.g_loss = (self.g_loss_cycle_A2 + self.g_loss_cycle_B2)+(self.g_loss_cycle_A + self.g_loss_cycle_B) + (self.g_loss_GAN_A + self.g_loss_GAN_B) * \
+                      self.args["weight_GAN1"]+(self.g_loss_GAN_A2 + self.g_loss_GAN_B2) * \
+                      self.args["weight_GAN2"]
+        # tensorboard 表示用関数
+        summary=list()
+        summary.append(tf.summary.scalar("cluster", tf.reduce_mean(cluster_loss), family="d_loss"))
+        summary.append(tf.summary.scalar("real", tf.reduce_mean(reality_loss_A+reality_loss_B), family="d_loss"))
+        summary.append(tf.summary.scalar("fake", tf.reduce_mean(reality_loss_FA + reality_loss_FB), family="d_loss"))
+        summary.append(tf.summary.scalar("circle_10", tf.reduce_mean(circle_loss), family="d_loss"))
+        summary.append(tf.summary.scalar("reference", tf.reduce_mean(reference_loss), family="d_loss"))
+        summary.append(tf.summary.scalar("cycle_A_pow", tf.reduce_mean(self.g_loss_cycle_A), family="g_loss"))
+        summary.append(tf.summary.scalar("cycle_A_fre", tf.reduce_mean(self.g_loss_cycle_A2), family="g_loss"))
+        summary.append(tf.summary.scalar("cycle_B_pow", tf.reduce_mean(self.g_loss_cycle_B), family="g_loss"))
+        summary.append(tf.summary.scalar("cycle_B_fre", tf.reduce_mean(self.g_loss_cycle_B2), family="g_loss"))
+        summary.append(tf.summary.scalar("GAN_A", tf.reduce_mean(self.g_loss_GAN_A), family="g_loss"))
+        summary.append(tf.summary.scalar("GAN_B", tf.reduce_mean(self.g_loss_GAN_B), family="g_loss"))
+        summary.append(tf.summary.scalar("A_cluster", tf.reduce_mean(self.g_loss_GAN_A2), family="g_loss"))
+        summary.append(tf.summary.scalar("B_cluster", tf.reduce_mean(self.g_loss_GAN_B2), family="g_loss"))
+
+        self.loss_sum = tf.summary.merge(summary)
+
+        self.result = tf.placeholder(tf.float32, [1, 1, 160000], name="FB")
+        self.result1 = tf.placeholder(tf.float32, [1, 320, 1024, 2], name="FBI0")
+        im1 = tf.transpose(self.result1[:, :, :, :1], [0, 2, 1, 3])
+        im2 = tf.transpose(self.result1[:, :, :, 1:], [0, 2, 1, 3])
+        self.fake_B_sum = tf.summary.audio("fake_B", tf.reshape(self.result, [1, 160000, 1]), 16000, 1)
+        self.fake_B_sum2 = tf.summary.image("fake_B_image01", im1, 1)
+        self.fake_B_sum3 = tf.summary.image("fake_B_image02", im2, 1)
+        self.g_test_epo = tf.placeholder(tf.float32, name="g_test_epoch_end")
+        self.g_test_epoch = tf.summary.merge([tf.summary.scalar("g_test_epoch_end", self.g_test_epo, family="test")])
+
+        self.tb_results = tf.summary.merge([self.fake_B_sum, self.fake_B_sum2, self.fake_B_sum3, self.g_test_epoch])
 
     def convert(self,in_put,target):
         #テスト用関数
@@ -246,6 +269,7 @@ class Model:
         otp=np.array([],dtype=np.int16)
         res3 = np.zeros([1,self.args["NFFT"],2], dtype=np.float32)
         rss=np.zeros([self.input_size_test[2]],dtype=np.float64)
+        res4=None
         for t in range(times):
             # 前処理
 
@@ -451,9 +475,9 @@ class Model:
                 diff=np.asarray([diff_list[int(res2[ts])][int(tar2[ts])]for ts in range(self.args["batch_size"])])
                 # S-netの学習 (2times)
                 self.sess.run([d_optim],feed_dict={self.input_modelb: tar, self.input_modela: res_t,self.input_diff_ab:diff,self.input_def: post,self.tar_def:defa, lr_d: lr_d_opt3})
-                # self.sess.run([d_optim],
-                #               feed_dict={self.input_modelb: tar, self.input_modela: res_t, self.input_diff_ab: diff,
-                #                          self.input_def: post, self.tar_def: defa, lr_d: lr_d_opt3})
+                self.sess.run([d_optim],
+                              feed_dict={self.input_modelb: tar, self.input_modela: res_t, self.input_diff_ab: diff,
+                                         self.input_def: post, self.tar_def: defa, lr_d: lr_d_opt3})
                 # G-netの学習
                 self.sess.run([g_optim, self.update_ops],
                               feed_dict={self.input_modela: res_t, self.input_modelb: tar, self.input_def: post,
@@ -471,10 +495,8 @@ class Model:
                     diff = np.asarray(
                         [diff_list[int(res2[ts])][int(tar2[ts])] for ts in range(10)])
 
-                    hg, hd, hg2= self.sess.run([self.g_loss_sum_1, self.d_loss_sum, self.g_loss_sum_2],feed_dict={self.input_def: post, self.tar_def: defa,self.input_modela: res_t,self.input_modelb: tar,self.input_diff_ab:diff})
-                    self.writer.add_summary(hg, counter + ti * epoch)
-                    self.writer.add_summary(hd, counter + ti * epoch)
-                    self.writer.add_summary(hg2, counter+ti*epoch)
+                    h= self.sess.run(self.loss_sum,feed_dict={self.input_def: post, self.tar_def: defa,self.input_modela: res_t,self.input_modelb: tar,self.input_diff_ab:diff})
+                    self.writer.add_summary(h, counter + ti * epoch)
                 counter+=1
 
             #モデルの保存
@@ -524,7 +546,7 @@ class Model:
             if epoch%self.args["lr_decay_term"]==0:
                 lr_d_opt3 = lr_d_opt * (0.1 ** (epoch // 100))
                 lr_g_opt3 = lr_g_opt * (0.1 ** (epoch // 100))
-        self.save(self.args["checkpoint_dir"], epoch)
+        self.save(self.args["checkpoint_dir"],self.args["train_epoch"])
         print(" [*] Finished!! in "+ str(np.sum(time_of_epoch[::2])))
 
         if self.args["log"] and self.args["wave_otp_dir"] != "False":
@@ -630,27 +652,38 @@ def seed_net(inp,reuse,depth,chs,a,train=True):
                                kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
                                data_format="channels_last", name="conv_seed" + str(i), reuse=reuse)
         current = tf.nn.leaky_relu(current)
-    current=tf.reshape(current,[-1,1,chs[depth-1],1])
-    sig=current
+    current=tf.reshape(current,[-1,1,chs[-1],1])
+
+    seed=tf.layers.conv2d(current,chs[-1], kernel_size=[1,1], strides=[1,1], padding="VALID",use_bias=False,
+                               kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
+                               data_format="channels_last", name="conv_seed_alpha_0", reuse=reuse)
+    seed = tf.layers.batch_normalization(seed, name="bn_seed_alpha", training=train, reuse=reuse)
+    seed = tf.nn.leaky_relu(seed)
+    seed = tf.layers.conv2d(seed, chs[-1], kernel_size=[1, 1], strides=[1, 1], padding="VALID", use_bias=False,
+                            kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
+                            data_format="channels_last", name="conv_seed_alpha_1", reuse=reuse)
+    seed=tf.nn.tanh(seed)
+    real=tf.reshape(current,[-1,chs[-1]])
+    real = tf.layers.dense(real, units=1, name="conv_seed_beta_0", reuse=reuse)
+    real_s = tf.nn.sigmoid(real)
+
     if a is "A" :
         print(" [*] bottom shape:"+str(current.shape))
-    return sig,current
-def generator(current,seed,reuse,depth,chs,f,s,d,type,train):
-    if type == "hybrid_decay_flatnet":
-        return generator_flatnet_decay(current, seed,reuse, depth, chs, f, s, d, 2, train)
-    elif type == "mix_decay_flatnet":
-        return generator_flatnet_decay(current, seed,reuse, depth, chs, f, s, d, 4, train)
+    return seed,[real,real_s]
+def generator(current,seed,reuse,depth,chs,d,net_type,train):
+    if net_type == "resnet":
+        return generator_flatnet_decay(current, seed,reuse, depth, chs, d, 2, train)
     else :
-        return  generator_unet(current,reuse,depth,chs,f,s)
-def generator_flatnet_decay(c,seed,reuse,depth,chs,f,s,d,ps,train):
+        return generator_flatnet_decay(current, seed,reuse, depth, chs, d, 4, train)
+def generator_flatnet_decay(c,seed,reuse,depth,chs,d,ps,train):
     #main process
     current=c
     for i in range(depth):
         connections = current
         if ps == 2:
-            ten = block_hybrid(current,seed, chs[i], chs[i * 2], f[i], s[i], i, reuse, i != depth - 1, pixs=f[i],train=train)
+            ten = block_res(current,seed,chs[i], i, reuse,train=train)
         else:
-            ten = block_mix(current,seed,chs[i], i, reuse,train=train)
+            ten = block_flat(current,seed,chs[i], i, reuse,train=train)
         if i!=depth-1:
             ims=ten.shape[3]//connections.shape[3]
             if ims!=0:
@@ -690,37 +723,10 @@ def dilations(inp,d,reuse,train,chs,startd):
             ten2 = tf.nn.leaky_relu(ten2)
     current=tf.concat([ten,ten2],axis=3)
     return current
-def block_hybrid(current,seed,output_shape,chs,f,s,depth,reuses,shake,pixs=[2,2],train=True):
-    ten = current
-    stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(ten.shape[3])))
-    tenA = tf.layers.conv2d(ten, chs, kernel_size=f, strides=s, padding="VALID",
-                           kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
-                           data_format="channels_last", reuse=reuses, name="conv11" + str(depth), dilation_rate=(1, 1))
-    tenA = tf.layers.batch_normalization(tenA, axis=3, training=train, trainable=True, reuse=reuses,
-                                        name="bn11" + str(depth))
-
-    tenA = tf.nn.leaky_relu(tenA)
-
-    tenA = tf.layers.conv2d_transpose(tenA,output_shape,f,s,padding="VALID",kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),data_format="channels_last", reuse=reuses, name="deconv" + str(depth))
-    stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(ten.shape[3])))
-    tenB = tf.layers.conv2d(ten, chs, kernel_size=f, strides=f, padding="VALID",
-                           kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
-                           data_format="channels_last", reuse=reuses, name="conv12" + str(depth))
-    tenB = tf.layers.batch_normalization(tenB, axis=3, training=train, trainable=True, reuse=reuses,
-                                        name="bn11" + str(depth))
-
-    tenB = tf.nn.leaky_relu(tenB)
-
-    tenB = deconve_with_ps(tenB, pixs, output_shape, depth, reuses=reuses, name="01")
-    if shake:
-        ten = tf.nn.leaky_relu(tenB + tenA)
-    else:
-        ten=tenB + tenA
-    return ten
-def block_mix(current,seed,chs,depth,reuses,train=True):
+def block_res(current,seed,chs,depth,reuses,train=True):
     ten = current
     tenM=[]
-    times=4
+    times=5
     res=3
 
     for i in range(times-1):
@@ -741,28 +747,30 @@ def block_mix(current,seed,chs,depth,reuses,train=True):
     ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
                                         name="bn"+str(times) + str(depth))
     ten = tf.nn.leaky_relu(ten)
-
-    tenS = tf.layers.conv2d(seed, chs, kernel_size=[1, 2], strides=[1, 1], padding="SAME",
-                            kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
-                            data_format="channels_last", reuse=reuses, name="convS1" + str(depth))
+    tenS=tf.reshape(seed,[-1,int(ten.shape[2])])
+    tenS = tf.layers.dense(tenS,units= int(ten.shape[2]),name="FCS1" + str(depth),reuse=reuses)
+    tenS=tf.reshape(tenS,[-1,1,int(ten.shape[2]),1])
     tenS = tf.layers.batch_normalization(tenS, axis=3, training=train, trainable=True, reuse=reuses,
                                          name="bnS1" + str(depth))
 
-    tenS = tf.nn.leaky_relu(tenS)
-
-    ten=ten+tenS
+    tenS = tf.nn.sigmoid(tenS)
+    ten=ten*tenS
     for i in range(res):
         stddevs = math.sqrt(2.0 / (7 * int(ten.shape[3])))
         tenA=ten
         ten = tf.layers.conv2d(ten, chs, [1,7], [1,1], padding="SAME",
                                           kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),use_bias=False,
-                                          data_format="channels_last", reuse=reuses, name="res_conv"+str(i) + str(depth))
+                                          data_format="channels_last", reuse=reuses, name="res_convA"+str(i) + str(depth))
         ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
-                                             name="bn"+str(times+i+1) + str(depth))
+                                             name="bnA"+str(times+i+1) + str(depth))
         ten = tf.nn.leaky_relu(ten)
-
+        ten=tf.layers.conv2d(ten, chs, [1,7], [1,1], padding="SAME",
+                                          kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),use_bias=False,
+                                          data_format="channels_last", reuse=reuses, name="res_convB"+str(i) + str(depth))
+        ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
+                                            name="bnB" + str(times + i + 1) + str(depth))
         ten=ten+tenA
-
+        ten = tf.nn.leaky_relu(ten)
     ten = deconve_with_ps(ten, [1, 2], chs//2, depth, reuses=reuses, name="00")
     ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
                                          name="bn"+str(times+res+1) + str(depth))
@@ -774,10 +782,70 @@ def block_mix(current,seed,chs,depth,reuses,train=True):
                                             name="bn"+str(i+2+times+res) + str(depth))
         ten=tf.nn.leaky_relu(ten)
     return ten
-def deconve_with_ps(inp,r,otp_shape,depth,f=[1,1],reuses=None,name=""):
+
+def block_flat(current,seed,chs,depth,reuses,train=True):
+    ten = current
+    tenM=[]
+    times=5
+    res=3
+
+    for i in range(times-1):
+        stddevs = math.sqrt(2.0 / ( 4 * int(ten.shape[3])))
+        ten = tf.layers.conv2d(ten, chs//(2**(times-i-1)), kernel_size=[1, 2], strides=[1, 2], padding="VALID",
+                               kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),use_bias=False,
+                               data_format="channels_last", reuse=reuses, name="conv"+str(i) + str(depth),
+                               dilation_rate=(1, 1))
+        ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
+                                            name="bn"+str(i) + str(depth))
+        ten = tf.nn.leaky_relu(ten)
+        tenM.append(ten)
+    stddevs = math.sqrt(2.0 / (4 * int(ten.shape[3])))
+    ten = tf.layers.conv2d(ten, chs, kernel_size=[1, 2], strides=[1, 2], padding="VALID",
+                           kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), use_bias=False,
+                           data_format="channels_last", reuse=reuses, name="conv"+str(times) + str(depth),
+                           dilation_rate=(1, 1))
+    ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
+                                        name="bn"+str(times) + str(depth))
+    ten = tf.nn.leaky_relu(ten)
+    tenS=tf.reshape(seed,[-1,int(ten.shape[2])])
+    tenS = tf.layers.dense(tenS,units= int(ten.shape[2]),name="FCS1" + str(depth),reuse=reuses)
+    tenS=tf.reshape(tenS,[-1,1,int(ten.shape[2]),1])
+    tenS = tf.layers.batch_normalization(tenS, axis=3, training=train, trainable=True, reuse=reuses,
+                                         name="bnS1" + str(depth))
+
+    tenS = tf.nn.sigmoid(tenS)
+    ten=ten*tenS
+    for i in range(res):
+        stddevs = math.sqrt(2.0 / (7 * int(ten.shape[3])))
+        tenA=ten
+        ten = tf.layers.conv2d(ten, chs, [1,7], [1,2], padding="VALID",
+                                          kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),use_bias=False,
+                                          data_format="channels_last", reuse=reuses, name="res_conv"+str(i) + str(depth))
+        ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
+                                             name="bnA"+str(times+i+1) + str(depth))
+        ten = tf.nn.leaky_relu(ten)
+        ten=tf.layers.conv2d_transpose(ten, chs, [1,8], [1,2], padding="VALID",
+                                          kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),use_bias=False,
+                                          data_format="channels_last", reuse=reuses, name="res_deconv"+str(i) + str(depth))
+        ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
+                                            name="bnB" + str(times + i + 1) + str(depth))
+        ten=ten+tenA
+        ten = tf.nn.leaky_relu(ten)
+    ten = deconve_with_ps(ten, [1, 2], chs//2, depth, reuses=reuses, name="00")
+    ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
+                                         name="bn"+str(times+res+1) + str(depth))
+    ten = tf.nn.leaky_relu(ten)
+    for i in range(times-1):
+        ten+=tenM[times-i-2]
+        ten = deconve_with_ps(ten, [1, 2], chs//(2**(i+2)), depth, reuses=reuses, name=str(i+1))
+        ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
+                                            name="bn"+str(i+2+times+res) + str(depth))
+        ten=tf.nn.leaky_relu(ten)
+    return ten
+def deconve_with_ps(inp,r,otp_shape,depth,reuses=None,name=""):
     chs_r=r[0]*r[1]*otp_shape
-    stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(inp.shape[3])))
-    ten = tf.layers.conv2d(inp, chs_r, kernel_size=f, strides=f, padding="VALID",
+    stddevs = math.sqrt(2.0 / int(inp.shape[3]))
+    ten = tf.layers.conv2d(inp, chs_r, kernel_size=[1,1], strides=[1,1], padding="VALID",
                            kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),use_bias=False,
                            data_format="channels_last", reuse=reuses, name="deconv_ps1"+name + str(depth))
     b_size = -1
@@ -787,47 +855,6 @@ def deconve_with_ps(inp,r,otp_shape,depth,f=[1,1],reuses=None,name=""):
     ten = tf.transpose(ten, [0, 2, 3, 4, 1, 5])
     ten = tf.reshape(ten, [b_size, in_h * r[0], in_w * r[1], otp_shape])
     return ten[:,:,:,:]
-
-def generator_unet(current_outputs,reuse,depth,chs,f,s,ps=0):
-    current=current_outputs
-    connections=[ ]
-    for i in range(depth):
-        connections.append(current)
-        current = down_layer(current, chs*(i+1) ,f,s,reuse,i)
-    print("shape of structure:"+str([[int(c.shape[0]),int(c.shape[1]),int(c.shape[2]),int(c.shape[3])] for c in connections]))
-    for i in range(depth):
-        current=up_layer(current,chs*(depth-i-1) if (depth-i-1)!=0 else 2,f,s,i,i!=(depth-1),depth-i-1>2,reuse,ps=ps)
-        if i!=depth-1:
-            current += connections[depth - i -1]
-    return tf.reshape(current,current_outputs.shape)
-
-def up_layer(current,output_shape,f,s,depth,bn=True,do=False,reuse=None,ps=0):
-    ten=tf.nn.leaky_relu(current)
-    stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(ten.shape[3])))
-    if ps==0:
-        ten=tf.layers.conv2d_transpose(ten, output_shape, kernel_size=f, strides=s, padding="VALID",
-                         kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), data_format="channels_last",
-                         name="deconv" + str(depth), reuse=reuse)
-    elif ps==1:
-        ten=deconve_with_ps(ten,f[0],output_shape,depth,reuses=reuse)
-    else:
-        ten1 = tf.layers.conv2d_transpose(ten, output_shape, kernel_size=f, strides=s, padding="VALID",
-                               kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), data_format="channels_last",
-                               name="deconv" + str(depth), reuse=reuse)
-        ten2 = deconve_with_ps(ten, f[0], output_shape, depth, reuses=reuse)
-        ten = ten1 + ten2
-    if bn:
-        ten=tf.layers.batch_normalization(ten,axis=3,training=True,gamma_initializer=tf.random_normal_initializer(1.0, 0.2),name="bn_u"+str(depth),reuse=reuse)
-    return ten
-def down_layer(current,output_shape,f,s,reuse,depth):
-    ten=current
-    stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(current.shape[3])))
-    if depth!=0:
-        ten=tf.layers.batch_normalization(ten,axis=3,training=True,gamma_initializer=tf.random_normal_initializer(1.0, 0.2),name="bn_d"+str(depth),reuse=reuse)
-
-    ten=tf.layers.conv2d(ten, output_shape,kernel_size=f ,strides=s, padding="VALID",kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),data_format="channels_last",name="conv"+str(depth),reuse=reuse)
-    ten=tf.nn.leaky_relu(ten)
-    return ten
 
 
 def shift(data_inps,pitch):
