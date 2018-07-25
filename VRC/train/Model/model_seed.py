@@ -142,7 +142,7 @@ class Model:
             self.seed_def, self.reality_def = seed_net(self.input_def[:, :8, :, :], True, self.args["d_depth"],
                                       self.args["D_channels"], "A")
             self.seed_B,self.reality_B=seed_net(self.input_modelb1[:,:8,:,:],True,self.args["d_depth"],self.args["D_channels"]," ")
-            self.seed_TB,_ = seed_net(self.input_model_test_s[:,-8:,:,:], True,self.args["d_depth"],self.args["D_channels"], " ",train=False)
+            self.seed_TB,self.score_f = seed_net(self.input_model_test_s[:,-8:,:,:], True,self.args["d_depth"],self.args["D_channels"], " ",train=False)
         #G-net（生成側）の作成
         with tf.variable_scope("generators"):
             self.fake_aB_12_image = generator(self.input_modela1,self.seed_B, reuse=None,chs=self.args["G_channels"], depth=self.args["depth"],d=self.args["dilations"],net_type=self.args["architect"],train=True)
@@ -191,26 +191,22 @@ class Model:
 		"""
 
         # クラスタリングの誤差
-        cluster_loss = tf.pow(self.input_diff_ab - tf.sqrt(tf.reduce_sum(tf.pow(self.seed_A - self.seed_B, 2))),
+        cluster_loss = tf.pow(self.input_diff_ab/5.0 - tf.sqrt(tf.reduce_sum(tf.pow(self.seed_A - self.seed_B, 2))),
                               2) * 0.5
         # GANにおける本物と偽物の評価の誤差
-        reality_loss_FB = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.zeros_like(self.reality_FB[0]),
-                                                                  logits=self.reality_FB[0])
-        reality_loss_FA = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.zeros_like(self.reality_FA[0]),
-                                                                  logits=self.reality_FA[0])
-        reality_loss_A = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(self.reality_A[0]),
-                                                                 logits=self.reality_A[0])
-        reality_loss_B = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(self.reality_B[0]),
-                                                                 logits=self.reality_B[0])
+        reality_loss_FB = tf.losses.mean_squared_error(labels=tf.zeros_like(self.reality_FB),predictions=self.reality_FB)
+        reality_loss_FA = tf.losses.mean_squared_error(labels=tf.zeros_like(self.reality_FA),predictions =self.reality_FA)
+        reality_loss_A = tf.losses.mean_squared_error(labels=tf.ones_like(self.reality_A),predictions=self.reality_A)
+        reality_loss_B = tf.losses.mean_squared_error(labels=tf.ones_like(self.reality_B),predictions=self.reality_B)
         reality_loss = (reality_loss_FA + reality_loss_FB + reality_loss_A + reality_loss_B)
         # クラスタリングにおける分布の制限誤差
-        circle_loss = 0.5 * (tf.pow(10.0 - tf.sqrt(tf.reduce_sum(tf.pow(self.seed_A, 2))), 2) + tf.pow(
-            10.0 - tf.sqrt(tf.reduce_sum(tf.pow(self.seed_B, 2))), 2))
+        # circle_loss = 0.5 * (tf.pow(1.0 - tf.sqrt(tf.reduce_sum(tf.pow(self.seed_A, 2))), 2) + tf.pow(
+        #     1.0 - tf.sqrt(tf.reduce_sum(tf.pow(self.seed_B, 2))+1e-32), 2))
         # クラスタリングの基準点の誤差
         reference_loss = tf.losses.mean_squared_error(labels=self.tar_def, predictions=self.seed_def)
 
         # S-netの目的関数
-        self.d_loss = cluster_loss + reality_loss + circle_loss + reference_loss
+        self.d_loss = cluster_loss + reality_loss  + reference_loss # + circle_loss
         # G-netの目的関数
         # Cycle_loss
         self.g_loss_cycle_A=tf.reduce_mean(tf.abs(self.input_modelb[:, :8, :, :1] - self.fake_Ab_image[:, :8, :, :1]) * self.args["weight_Cycle1"])
@@ -219,8 +215,8 @@ class Model:
         self.g_loss_cycle_B2 = tf.reduce_mean(tf.abs(self.input_modela[:, :8, :, 1:] - self.fake_Ba_image[:, :8, :, 1:]) *
             self.args["weight_Cycle2"])
         # GAN_labelロス
-        self.g_loss_GAN_A = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(self.reality_FA[0]),logits=self.reality_FA[0])
-        self.g_loss_GAN_B = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(self.reality_FB[0]),logits=self.reality_FB[0])
+        self.g_loss_GAN_A = tf.losses.mean_squared_error(labels=tf.ones_like(self.reality_FA),predictions=self.reality_FA)
+        self.g_loss_GAN_B = tf.losses.mean_squared_error(labels=tf.ones_like(self.reality_FB),predictions=self.reality_FB)
         self.g_loss_GAN_A2 =  tf.losses.mean_squared_error(labels=self.seed_A, predictions=self.seed_FA)
         self.g_loss_GAN_B2 =  tf.losses.mean_squared_error(labels=self.seed_B, predictions=self.seed_FB)
 
@@ -232,7 +228,7 @@ class Model:
         summary.append(tf.summary.scalar("cluster", tf.reduce_mean(cluster_loss), family="d_loss"))
         summary.append(tf.summary.scalar("real", tf.reduce_mean(reality_loss_A+reality_loss_B), family="d_loss"))
         summary.append(tf.summary.scalar("fake", tf.reduce_mean(reality_loss_FA + reality_loss_FB), family="d_loss"))
-        summary.append(tf.summary.scalar("circle_10", tf.reduce_mean(circle_loss), family="d_loss"))
+        #summary.append(tf.summary.scalar("circle_10", tf.reduce_mean(circle_loss), family="d_loss"))
         summary.append(tf.summary.scalar("reference", tf.reduce_mean(reference_loss), family="d_loss"))
         summary.append(tf.summary.scalar("cycle_A_pow", tf.reduce_mean(self.g_loss_cycle_A), family="g_loss"))
         summary.append(tf.summary.scalar("cycle_A_fre", tf.reduce_mean(self.g_loss_cycle_A2), family="g_loss"))
@@ -286,14 +282,13 @@ class Model:
             # 短時間高速離散フーリエ変換
             n=self.fft(red[0].reshape(-1)/32767.0)
             res[0]=n[:,:self.args["SHIFT"]]
-            res,b=self.sess.run([self.fake_aB_image_test,self.seed_TB],feed_dict={ self.input_model_test:res ,self.input_model_test_s:tar})
+            res,b,c=self.sess.run([self.fake_aB_image_test,self.seed_TB,self.score_f],feed_dict={ self.input_model_test:res ,self.input_model_test_s:tar})
             res2=res.copy()[:,:,::-1,:]
             res=np.append(res,res2,axis=2)
             res[:,:,self.args["SHIFT"]:,1]*=-1
             a = res[0].copy()
             res3 = np.append(res3, a).reshape(-1,self.args["NFFT"],2)
             res4 = b
-
             # 後処理
             # 短時間高速離散逆フーリエ変換
             res,rss=self.ifft(a,rss)
@@ -352,6 +347,7 @@ class Model:
         log_data_g = np.empty(0)
         log_data_d = np.empty(0)
         defa = np.zeros(self.args["D_channels"][-1]).reshape([1,1,-1,1])
+        defa[0,0,0,0]=1.0
         # 過去の学習データの読み込み
         if self.load():
             print(" [*] Load SUCCESS")
@@ -401,8 +397,8 @@ class Model:
                 out_puts2, _, _, im3 = self.convert(test.reshape(1, -1, 1), label2.reshape(-1))
 
                 im = im.reshape([-1, self.args["NFFT"], 2])
-                im2 = im2.reshape([-1, 4, 8])
-                im3 = im3.reshape([-1, 4, 8])
+                im2 = im2.reshape([-1, 4, 4])
+                im3 = im3.reshape([-1, 4, 4])
 
                 otp_im=np.append(np.clip((im[:,:,0]+30)/40,0.0,1.0).reshape([1,-1,self.args["NFFT"],1]),np.clip((im[:,:,1]+3.15)/6.30,0.0,1.0).reshape([1,-1,self.args["NFFT"],1]),axis=3)
                 out_put=out_puts.astype(np.float32)/32767.0
@@ -424,14 +420,12 @@ class Model:
                     ins=np.transpose(im[:,:,0],(1,0))
                     plt.imshow(ins,aspect="auto")
                     plt.clim(-30,10)
-                    if epoch==self.args["start_epoch"]:
-                        plt.colorbar()
+                    plt.colorbar()
                     plt.subplot(212)
                     ins = np.transpose(im[:, :, 1], (1, 0))
                     plt.imshow(ins, aspect="auto")
                     plt.clim(-3.141593, 3.141593)
-                    if epoch == self.args["start_epoch"]:
-                        plt.colorbar()
+                    plt.colorbar()
                     path=self.args["wave_otp_dir"]+nowtime()
                     plt.savefig(path+".png")
                     upload(out_puts,path)
@@ -447,13 +441,11 @@ class Model:
                     plt.subplot(211)
                     ins = np.transpose(im2[0], (1, 0))
                     plt.imshow(ins, aspect="auto")
-                    if epoch == self.args["start_epoch"]:
-                        plt.colorbar()
+                    plt.colorbar()
                     plt.subplot(212)
                     ins = np.transpose(im3[0], (1, 0))
                     plt.imshow(ins, aspect="auto")
-                    if epoch == self.args["start_epoch"]:
-                        plt.colorbar()
+                    plt.colorbar()
                     path = self.args["wave_otp_dir"] + nowtime()+"_seedA"
                     plt.savefig(path + ".png")
                     plt.clf()
@@ -612,7 +604,7 @@ class Model:
         return spec
     def ifft(self,data,redi):
         a=data
-        a[:, :, 0]=np.clip(a[:, :, 0],a_min=-100000,a_max=88)
+        a[:, :, 0]=np.clip(a[:, :, 0],a_min=-100000,a_max=20)
         sss=np.exp(a[:,:,0])
         p = np.sqrt(sss)
         r = p * (np.cos(a[:, :, 1]))
@@ -639,37 +631,31 @@ class Model:
 
 
 def seed_net(inp,reuse,depth,chs,a,train=True):
-    stddevs = math.sqrt(2.0 / (int(inp.shape[1]) * int(inp.shape[3])))
+    stddevs = math.sqrt(2.0 / (int(inp.shape[1]) * 16))
     current = tf.layers.conv2d(inp, 16, kernel_size=[inp.shape[1],1], strides=[1,1], padding="VALID",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),use_bias=False,
                                data_format="channels_last", name="seed_t", reuse=reuse)
     current = tf.layers.batch_normalization(current, name="bn_seed00", training=train, reuse=reuse)
     current = tf.nn.leaky_relu(current)
     for i in range(depth):
-        stddevs = math.sqrt(2.0 / 4.0*chs[i])
+        stddevs = math.sqrt(2.0 / 3.0*chs[i])
         current = tf.layers.batch_normalization(current, name="bn_seed" + str(i), training=train, reuse=reuse)
-        current=tf.layers.conv2d(current, chs[i], kernel_size=[1,7], strides=[1,4], padding="VALID",use_bias=False,
+        current=tf.layers.conv2d(current, chs[i], kernel_size=[1,3], strides=[1,2], padding="VALID",use_bias=False,
                                kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
                                data_format="channels_last", name="conv_seed" + str(i), reuse=reuse)
         current = tf.nn.leaky_relu(current)
-    current=tf.reshape(current,[-1,1,chs[-1],1])
-
+    stddevs = 0.00001
     seed=tf.layers.conv2d(current,chs[-1], kernel_size=[1,1], strides=[1,1], padding="VALID",use_bias=False,
                                kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
                                data_format="channels_last", name="conv_seed_alpha_0", reuse=reuse)
-    seed = tf.layers.batch_normalization(seed, name="bn_seed_alpha", training=train, reuse=reuse)
-    seed = tf.nn.leaky_relu(seed)
-    seed = tf.layers.conv2d(seed, chs[-1], kernel_size=[1, 1], strides=[1, 1], padding="VALID", use_bias=False,
-                            kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
-                            data_format="channels_last", name="conv_seed_alpha_1", reuse=reuse)
-    seed=tf.nn.tanh(seed)
+    seed = tf.reshape(seed, [-1, 1, chs[-1], 1])
+    seed=seed/tf.sqrt(tf.reduce_sum(tf.pow(seed, 2))+1e-4)
     real=tf.reshape(current,[-1,chs[-1]])
-    real = tf.layers.dense(real, units=1, name="conv_seed_beta_0", reuse=reuse)
-    real_s = tf.nn.sigmoid(real)
+    real = tf.layers.dense(real, units=1,kernel_initializer=tf.truncated_normal_initializer(stddev=0.00001),use_bias=False, name="conv_seed_beta_0", reuse=reuse)
 
     if a is "A" :
-        print(" [*] bottom shape:"+str(current.shape))
-    return seed,[real,real_s]
+        print(" [*] bottom shape:"+str(seed.shape))
+    return seed,real
 def generator(current,seed,reuse,depth,chs,d,net_type,train):
     if net_type == "resnet":
         return generator_flatnet_decay(current, seed,reuse, depth, chs, d, 2, train)
@@ -701,33 +687,32 @@ def generator_flatnet_decay(c,seed,reuse,depth,chs,d,ps,train):
 def dilations(inp,d,reuse,train,chs,startd):
     ten = inp
     ten2 = inp
-    stddevs = math.sqrt(2.0 / (2 * 1 * int(ten.shape[3])))
     for i in range(len(d)):
+        stddevs = math.sqrt(2.0 / (2 * int(ten.shape[3])))
         ten = tf.layers.conv2d(ten, chs[i+startd], kernel_size=[2, 1], strides=[1, 1], padding="VALID",
                            kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),use_bias=False,
                            data_format="channels_last", reuse=reuse, name="conv_p" + str(startd+i), dilation_rate=(d[i], 1))
 
-        if i!=len(d)-1:
-            ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuse,
-                                        name="bn_p" + str(startd+i))
+        ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuse,
+                                    name="bn_p" + str(startd+i))
 
-            ten = tf.nn.leaky_relu(ten)
+        ten = tf.nn.leaky_relu(ten)
 
         ten2 = tf.layers.conv2d(ten2, chs[i + startd], kernel_size=[2, 1], strides=[1, 1], padding="VALID",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),use_bias=False,
                                data_format="channels_last", reuse=reuse, name="conv_f" + str(startd+ i),
                                dilation_rate=(d[i], 1))
-        if i!=len(d)-1:
-            ten2 = tf.layers.batch_normalization(ten2, axis=3, training=train, trainable=True, reuse=reuse,
-                                            name="bn_f" + str(startd+ i))
-            ten2 = tf.nn.leaky_relu(ten2)
+        ten2 = tf.layers.batch_normalization(ten2, axis=3, training=train, trainable=True, reuse=reuse,
+                                        name="bn_f" + str(startd+ i))
+        ten2 = tf.nn.leaky_relu(ten2)
+    ten2=tf.nn.tanh(ten2)*3.2
     current=tf.concat([ten,ten2],axis=3)
     return current
 def block_res(current,seed,chs,depth,reuses,train=True):
     ten = current
     tenM=[]
-    times=5
-    res=3
+    times=3
+    res=5
 
     for i in range(times-1):
         stddevs = math.sqrt(2.0 / ( 4 * int(ten.shape[3])))
@@ -753,7 +738,6 @@ def block_res(current,seed,chs,depth,reuses,train=True):
     tenS = tf.layers.batch_normalization(tenS, axis=3, training=train, trainable=True, reuse=reuses,
                                          name="bnS1" + str(depth))
 
-    tenS = tf.nn.sigmoid(tenS)
     ten=ten*tenS
     for i in range(res):
         stddevs = math.sqrt(2.0 / (7 * int(ten.shape[3])))
@@ -786,8 +770,8 @@ def block_res(current,seed,chs,depth,reuses,train=True):
 def block_flat(current,seed,chs,depth,reuses,train=True):
     ten = current
     tenM=[]
-    times=5
-    res=3
+    times=3
+    res=7
 
     for i in range(times-1):
         stddevs = math.sqrt(2.0 / ( 4 * int(ten.shape[3])))
@@ -807,14 +791,16 @@ def block_flat(current,seed,chs,depth,reuses,train=True):
     ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
                                         name="bn"+str(times) + str(depth))
     ten = tf.nn.leaky_relu(ten)
+
     tenS=tf.reshape(seed,[-1,int(ten.shape[2])])
     tenS = tf.layers.dense(tenS,units= int(ten.shape[2]),name="FCS1" + str(depth),reuse=reuses)
     tenS=tf.reshape(tenS,[-1,1,int(ten.shape[2]),1])
     tenS = tf.layers.batch_normalization(tenS, axis=3, training=train, trainable=True, reuse=reuses,
                                          name="bnS1" + str(depth))
 
-    tenS = tf.nn.sigmoid(tenS)
+    tenS = tf.tanh(tenS)
     ten=ten*tenS
+
     for i in range(res):
         stddevs = math.sqrt(2.0 / (7 * int(ten.shape[3])))
         tenA=ten
@@ -822,24 +808,25 @@ def block_flat(current,seed,chs,depth,reuses,train=True):
                                           kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),use_bias=False,
                                           data_format="channels_last", reuse=reuses, name="res_conv"+str(i) + str(depth))
         ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
-                                             name="bnA"+str(times+i+1) + str(depth))
+                                             name="bnA"+str(times+i+2) + str(depth))
         ten = tf.nn.leaky_relu(ten)
+        stddevs = math.sqrt(2.0 / (8 * int(ten.shape[3])))
         ten=tf.layers.conv2d_transpose(ten, chs, [1,8], [1,2], padding="VALID",
                                           kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),use_bias=False,
                                           data_format="channels_last", reuse=reuses, name="res_deconv"+str(i) + str(depth))
         ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
-                                            name="bnB" + str(times + i + 1) + str(depth))
-        ten=ten+tenA
+                                            name="bnB" + str(times + i + 2) + str(depth))
         ten = tf.nn.leaky_relu(ten)
+        ten=ten+tenA
     ten = deconve_with_ps(ten, [1, 2], chs//2, depth, reuses=reuses, name="00")
     ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
-                                         name="bn"+str(times+res+1) + str(depth))
+                                         name="bn"+str(times+res+2) + str(depth))
     ten = tf.nn.leaky_relu(ten)
     for i in range(times-1):
         ten+=tenM[times-i-2]
         ten = deconve_with_ps(ten, [1, 2], chs//(2**(i+2)), depth, reuses=reuses, name=str(i+1))
         ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
-                                            name="bn"+str(i+2+times+res) + str(depth))
+                                            name="bn"+str(i+3+times+res) + str(depth))
         ten=tf.nn.leaky_relu(ten)
     return ten
 def deconve_with_ps(inp,r,otp_shape,depth,reuses=None,name=""):
