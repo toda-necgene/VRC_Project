@@ -640,7 +640,7 @@ def seed_net(inp,reuse,depth,chs,a,train=True):
     for i in range(depth):
         stddevs = math.sqrt(2.0 / 3.0*chs[i])
         current = tf.layers.batch_normalization(current, name="bn_seed" + str(i), training=train, reuse=reuse)
-        current=tf.layers.conv2d(current, chs[i], kernel_size=[1,3], strides=[1,2], padding="VALID",use_bias=False,
+        current=tf.layers.conv2d(current, chs[i], kernel_size=[1,5], strides=[1,2], padding="VALID",use_bias=False,
                                kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
                                data_format="channels_last", name="conv_seed" + str(i), reuse=reuse)
         current = tf.nn.leaky_relu(current)
