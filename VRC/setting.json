@@ -2,13 +2,13 @@
     "saving_config":{
         "checkpoint_dir":"Z://models/",
         "wave_otp_dir":"Z://waves/",
-        "version":"3.2.163"
+        "version":"3.2.166"
     },
     "network_architecture":{
         "architect":"resnet",
         "depth":1,
         "d_depth":4,
-        "D_channels":[32,32,32,32],
+        "D_channels":[32,64,64,32],
         "G_channel":1024,
         "G_channels":[16,8,4,1],
         "dilations":[1,2,4]

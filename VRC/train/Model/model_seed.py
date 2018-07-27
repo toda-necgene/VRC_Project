@@ -648,7 +648,7 @@ def seed_net(inp,reuse,depth,chs,a,train=True):
                                kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
                                data_format="channels_last", name="conv_seed_alpha_0", reuse=reuse)
     seed = tf.reshape(seed, [-1, 1, chs[-1], 1])
-    seed=tf.tanh(seed)
+    seed=seed/tf.stop_gradient(tf.sqrt(tf.reduce_sum(tf.pow(seed, 2))+1e-16))
     real=tf.reshape(current,[-1,chs[-1]])
     real = tf.layers.dense(real, units=1,kernel_initializer=tf.truncated_normal_initializer(stddev=0.001),use_bias=False, name="conv_seed_beta_0", reuse=reuse)
 
