@@ -204,7 +204,7 @@ class Model:
         reference_loss = tf.losses.mean_squared_error(labels=self.tar_def, predictions=self.seed_def)
 
         # S-netの目的関数
-        self.d_loss = cluster_loss*0.001 + reality_loss  + reference_loss # + circle_loss
+        self.d_loss = cluster_loss*0.001 + reality_loss  + reference_loss*0.001 # + circle_loss
         # G-netの目的関数
         # Cycle_loss
         self.g_loss_cycle_A=tf.reduce_mean(tf.abs(self.input_modelb[:, :8, :, :1] - self.fake_Ab_image[:, :8, :, :1]) * self.args["weight_Cycle1"])
@@ -466,9 +466,9 @@ class Model:
                 diff=np.asarray([diff_list[int(res2[ts])][int(tar2[ts])]for ts in range(self.args["batch_size"])])
                 # S-netの学習 (2times)
                 self.sess.run([d_optim],feed_dict={self.input_modelb: tar, self.input_modela: res_t,self.input_diff_ab:diff,self.input_def: post,self.tar_def:defa, lr_d: lr_d_opt3})
-                self.sess.run([d_optim],
-                              feed_dict={self.input_modelb: tar, self.input_modela: res_t, self.input_diff_ab: diff,
-                                         self.input_def: post, self.tar_def: defa, lr_d: lr_d_opt3})
+                # self.sess.run([d_optim],
+                #               feed_dict={self.input_modelb: tar, self.input_modela: res_t, self.input_diff_ab: diff,
+                #                          self.input_def: post, self.tar_def: defa, lr_d: lr_d_opt3})
                 # G-netの学習
                 self.sess.run([g_optim, self.update_ops],
                               feed_dict={self.input_modela: res_t, self.input_modelb: tar, self.input_def: post,
@@ -648,7 +648,7 @@ def seed_net(inp,reuse,depth,chs,a,train=True):
                                kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
                                data_format="channels_last", name="conv_seed_alpha_0", reuse=reuse)
     seed = tf.reshape(seed, [-1, 1, chs[-1], 1])
-    seed=seed/tf.stop_gradient(tf.sqrt(tf.reduce_sum(tf.pow(seed, 2))+1e-4))
+    seed=tf.tanh(seed)
     real=tf.reshape(current,[-1,chs[-1]])
     real = tf.layers.dense(real, units=1,kernel_initializer=tf.truncated_normal_initializer(stddev=0.001),use_bias=False, name="conv_seed_beta_0", reuse=reuse)
 

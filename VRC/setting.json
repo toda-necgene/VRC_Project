@@ -2,7 +2,7 @@
     "saving_config":{
         "checkpoint_dir":"Z://models/",
         "wave_otp_dir":"Z://waves/",
-        "version":"3.2.161"
+        "version":"3.2.163"
     },
     "network_architecture":{
         "architect":"resnet",
@@ -28,9 +28,9 @@
         "train_interval":30,
         "save_interval":5,
         "weight_Cycle1":2.0,
-        "weight_Cycle2":50.0,
+        "weight_Cycle2":20.0,
         "weight_GAN1":1.0,
-        "weight_GAN2":10.0,
+        "weight_GAN2":5.0,
         "lr_decay_term":1000
   },
 
