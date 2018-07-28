@@ -17,53 +17,64 @@ import dropbox,dropbox.files
 import math
 import matplotlib.pyplot as plt
 class Model:
+    """
+    **概要**
+        学習モデルをつかさどります。各パラメーターはマニュアルを参照してください。
+
+    **操作プロトコル**
+
+        学習の手順
+            init->train
+
+        推論の手順
+            init->load->convert
+
+    """
     def __init__(self,path):
         self.args=dict()
         self.args["checkpoint_dir"]="./trained_models"
+        self.args["model_name"] = "wave2wave"
+        self.args["version"] = "1.0.0"
         self.args["wave_otp_dir"] = "False"
-        self.args["train_data_num"]=500
+        self.args["save_interval"]=1
+
+        self.args["input_size"] = 8192
+        self.args["NFFT"]=1024
+        self.args["dilation_size"] = 7
         self.args["batch_size"]=1
-        self.args["depth"] =4
+        self.args["repetations"]=1
+        self.args["depth"] =[2,4]
         self.args["d_depth"] = 4
-        self.args["train_epoch"]=500
-        self.args["stop_itr"] = -1
-        self.args["start_epoch"]=0
+        self.args["D_channels"] = [2]
+        self.args["G_channels"] = [32]
+        self.args["dilations"] = [1, 1, 1, 1]
+
         self.args["test"]=True
+        self.args["test_interval"] = 10
         self.args["log"] = True
         self.args["tensorboard"]=False
         self.args["hyperdash"]=False
-        self.args["stop_argument"]=True
-        self.args["stop_value"] = 0.5
-        self.args["input_size"] = 8192
-        self.args["weight_Cycle1"]=1.0
-        self.args["weight_Cycle2"] = 1.0
-        self.args["weight_GAN1"] = 1.0
-        self.args["weight_GAN2"] = 1.0
-        self.args["NFFT"]=128
-        self.args["dilation_size"] = 7
         self.args["debug"] = False
-        self.args["noise"] = False
         self.args["cupy"] = False
-        self.args["D_channels"] =[2]
-        self.args["G_channels"] = [32]
-        self.args["dilations"] = [1,1,1,1]
-        self.args["model_name"] = "wave2wave"
-        self.args["version"] = "1.0.0"
-        self.args["log_eps"] = 1e-8
-        self.args["g_lr"]=2e-4
+        self.args["test_dir"] = "./test"
+        self.args["dropbox"] = "False"
+
+        self.args["train_data_path"] = "./train/Model/datasets/train/"
+        self.args["train_epoch"] = 500
+        self.args["start_epoch"] = 0
+        self.args["g_lr"] = 2e-4
         self.args["g_b1"] = 0.5
         self.args["g_b2"] = 0.999
         self.args["d_b1"] = 0.5
         self.args["d_b2"] = 0.999
-        self.args["train_d_scale"]=1.0
-        self.args["train_interval"]=10
-        self.args["save_interval"]=1
-        self.args["test_dir"] = "./test"
-        self.args["dropbox"]="False"
-        self.args["architect"] = "flatnet"
-        self.args["label_noise"]=0.0
         self.args["lr_decay_term"] = 100
-        self.args["train_data_path"]="./train/Model/datasets/train/"
+        self.args["train_d_scale"]=1.0
+        self.args["cluster_weight"]=0.01
+        self.args["weight_Cycle_Pow"]=1.0
+        self.args["weight_Cycle_Fre"] = 1.0
+        self.args["weight_GAN_Reality"] = 1.0
+        self.args["weight_GAN_Cluster"] = 1.0
+
         if os.path.exists(path):
             try:
                 with open(path, "r") as f:
@@ -89,36 +100,48 @@ class Model:
                  print(' [x] JSONDecodeError: ', e)
         else:
             print( " [!] Setting file is not found")
+
         self.args["SHIFT"] = self.args["NFFT"]//2
         self.args["name_save"] = self.args["model_name"] + self.args["version"]
         ss=self.args["input_size"]//self.args["SHIFT"]
         self.input_size_model=[None,ss+ss+self.args["dilation_size"] ,self.args["NFFT"]//2,2]
         self.input_size_test = [1, ss+self.args["dilation_size"], self.args["NFFT"] // 2, 2]
         self.output_size = [1, ss, self.args["NFFT"] // 2, 2]
-        print("model train input size:" + str(self.input_size_model))
-        print("model output size:"+str(self.output_size))
         self.sess=tf.InteractiveSession(config=tf.ConfigProto(gpu_options=tf.GPUOptions()))
+
         if bool(self.args["debug"]):
             self.sess=tf_debug.LocalCLIDebugWrapperSession(self.sess)
             self.sess.add_tensor_filter('has_inf_or_nan', has_inf_or_nan)
+
         if  self.args["wave_otp_dir"] is not "False" :
             self.args["wave_otp_dir"]=self.args["wave_otp_dir"]+ self.args["name_save"]+"/"
             if not os.path.exists(self.args["wave_otp_dir"]):
                 os.makedirs(self.args["wave_otp_dir"])
             shutil.copy(path,self.args["wave_otp_dir"]+"setting.json")
             self.args["log_file"]=self.args["wave_otp_dir"]+"log.txt"
+
         if self.args["dropbox"]!="False":
             self.dbx=dropbox.Dropbox(self.args["dropbox"])
             self.dbx.users_get_current_account()
-
         else:
             self.dbx=None
+
         self.checkpoint_dir = self.args["checkpoint_dir"]
+
+        print("[i] model train input size:" + str(self.input_size_model))
+        print("[i] model output size:" + str(self.output_size))
+
+        print("[*] building model ...")
+        self.build_model()
+        print("[*] built model successfuly")
 
     def build_model(self):
         """
-        モデルの生成
-        :return:
+        **概要**
+            モデルの生成を行います。
+            このファンクションはinitにより黙示的に呼び出されます。
+
+        :return:　なし
         """
         #入力
         self.input_modela= tf.placeholder(tf.float32, self.input_size_model, "input_A")
@@ -143,26 +166,26 @@ class Model:
             self.seed_TB,self.score_f = seed_net(self.input_model_test_s[:,-8:,:,:], True,self.args["d_depth"],self.args["D_channels"], " ",train=False)
         #G-net（生成側）の作成
         with tf.variable_scope("generators"):
-            self.fake_aB_12_image = generator(self.input_modela1,self.seed_B, reuse=None,chs=self.args["G_channels"], depth=self.args["depth"],d=self.args["dilations"],net_type=self.args["architect"],train=True)
+            self.fake_aB_12_image = generator(self.input_modela1,self.seed_B, reuse=None,chs=self.args["G_channels"], depth=self.args["depth"],d=self.args["dilations"],net_repetation=self.args["repetations"],train=True)
             self.fake_aB_23_image=generator(self.input_modela2,self.seed_B, reuse=True, chs=self.args["G_channels"],
                                                   depth=self.args["depth"],d=self.args["dilations"],
-                                                  net_type=self.args["architect"], train=True)
+                                                  net_repetation=self.args["repetations"], train=True)
             self.fake_aB_image_test = generator(self.input_model_test,self.seed_TB, reuse=True,
                                             chs=self.args["G_channels"], depth=self.args["depth"],
                                             d=self.args["dilations"],
-                                            net_type=self.args["architect"],
+                                            net_repetation=self.args["repetations"],
                                             train=False)
             output_aB=tf.concat([self.fake_aB_12_image,self.fake_aB_23_image[:,:-1,:,:]],axis=1)
             self.fake_bA_12_image = generator(self.input_modelb1,self.seed_A, reuse=True,
-                                          chs=self.args["G_channels"], depth=self.args["depth"], d=self.args["dilations"],net_type=self.args["architect"],train=True)
+                                      chs=self.args["G_channels"], depth=self.args["depth"], d=self.args["dilations"],net_repetation=self.args["repetations"],train=True)
             self.fake_bA_23_image = generator(self.input_modelb2,self.seed_A, reuse=True,
                                            chs=self.args["G_channels"], depth=self.args["depth"],d=self.args["dilations"],
-                                           net_type=self.args["architect"], train=True)
+                                          net_repetation=self.args["repetations"], train=True)
             output_bA = tf.concat([self.fake_bA_12_image, self.fake_bA_23_image[:,:-1,:,:]], axis=1)
             self.fake_Ba_image = generator(output_aB,self.seed_A, reuse=True,
-                                          chs=self.args["G_channels"], depth=self.args["depth"],d=self.args["dilations"],net_type=self.args["architect"],train=True)
+                                      chs=self.args["G_channels"], depth=self.args["depth"],d=self.args["dilations"],net_repetation=self.args["repetations"],train=True)
             self.fake_Ab_image = generator(output_bA,self.seed_B, reuse=True,
-                                           chs=self.args["G_channels"], depth=self.args["depth"],d=self.args["dilations"],net_type=self.args["architect"],train=True)
+                                           chs=self.args["G_channels"], depth=self.args["depth"],d=self.args["dilations"],net_repetation=self.args["repetations"],train=True)
 
         # 偽物のシード作成
         self.d_judge_F_logits=[]
@@ -183,9 +206,11 @@ class Model:
     def loss_functions(self):
         """
         **概要**
-        それぞれの誤差関数（目的関数）を設定している。
-        式は以下のように定義されている
-        各項の説明
+            それぞれの誤差関数（目的関数）を設定しています。
+		    このファンクションはbuild_modelによって黙示的に呼び出されます。
+		    よって、initにおいても黙示的に呼び出されます。
+
+        :return:　なし
 		"""
 
         # クラスタリングの誤差
@@ -197,36 +222,44 @@ class Model:
         reality_loss_A = tf.losses.mean_squared_error(labels=tf.ones_like(self.reality_A),predictions=self.reality_A)
         reality_loss_B = tf.losses.mean_squared_error(labels=tf.ones_like(self.reality_B),predictions=self.reality_B)
         reality_loss = (reality_loss_FA + reality_loss_FB + reality_loss_A + reality_loss_B)
-        # クラスタリングにおける分布の制限誤差
+        # クラスタリングにおける分布の制限誤差（使用していません）
         # circle_loss = 0.5 * (tf.pow(1.0 - tf.sqrt(tf.reduce_sum(tf.pow(self.seed_A, 2))), 2) + tf.pow(
         #     1.0 - tf.sqrt(tf.reduce_sum(tf.pow(self.seed_B, 2))+1e-32), 2))
         # クラスタリングの基準点の誤差
         reference_loss = tf.losses.mean_squared_error(labels=self.tar_def, predictions=self.seed_def)
 
         # S-netの目的関数
-        self.d_loss = cluster_loss*0.001 + reality_loss  + reference_loss*0.001 # + circle_loss
+        self.d_loss = (cluster_loss+ reference_loss)*self.args["cluster_weight"] + reality_loss
+
         # G-netの目的関数
+
         # Cycle_loss
-        self.g_loss_cycle_A=tf.reduce_mean(tf.abs(self.input_modelb[:, :8, :, :1] - self.fake_Ab_image[:, :8, :, :1]) * self.args["weight_Cycle1"])
-        self.g_loss_cycle_A2 = tf.reduce_mean(tf.abs(self.input_modelb[:, :8, :, 1:] - self.fake_Ab_image[:, :8, :, 1:]) *self.args["weight_Cycle2"])
-        self.g_loss_cycle_B =tf.reduce_mean(tf.abs(self.input_modela[:, :8, :, :1] - self.fake_Ba_image[:, :8, :, :1]) * self.args["weight_Cycle1"])
-        self.g_loss_cycle_B2 = tf.reduce_mean(tf.abs(self.input_modela[:, :8, :, 1:] - self.fake_Ba_image[:, :8, :, 1:]) *
-            self.args["weight_Cycle2"])
+        # パワースペクトル
+        self.g_loss_cycle_A=tf.reduce_mean(tf.abs(self.input_modelb[:, :8, :, :1] - self.fake_Ab_image[:, :8, :, :1]))
+        self.g_loss_cycle_B =tf.reduce_mean(tf.abs(self.input_modela[:, :8, :, :1] - self.fake_Ba_image[:, :8, :, :1]) )
+        # 位相スペクトル
+        self.g_loss_cycle_A2 = tf.reduce_mean(tf.abs(self.input_modelb[:, :8, :, 1:] - self.fake_Ab_image[:, :8, :, 1:]))
+        self.g_loss_cycle_B2 = tf.reduce_mean(tf.abs(self.input_modela[:, :8, :, 1:] - self.fake_Ba_image[:, :8, :, 1:]))
+
         # GAN_labelロス
+        # 本物とのロス
         self.g_loss_GAN_A = tf.losses.mean_squared_error(labels=tf.ones_like(self.reality_FA),predictions=self.reality_FA)
         self.g_loss_GAN_B = tf.losses.mean_squared_error(labels=tf.ones_like(self.reality_FB),predictions=self.reality_FB)
-        self.g_loss_GAN_A2 =  tf.losses.mean_squared_error(labels=self.seed_A, predictions=self.seed_FA)
+        # クラスターによる判定
+        self.g_loss_GAN_A2 = tf.losses.mean_squared_error(labels=self.seed_A, predictions=self.seed_FA)
         self.g_loss_GAN_B2 =  tf.losses.mean_squared_error(labels=self.seed_B, predictions=self.seed_FB)
+        # すべてをまとめたもの
+        self.g_loss = (self.g_loss_cycle_A2 + self.g_loss_cycle_B2)*self.args["weight_Cycle_Fre"]+\
+                      (self.g_loss_cycle_A + self.g_loss_cycle_B)*self.args["weight_Cycle_Pow"] +\
+                      (self.g_loss_GAN_A + self.g_loss_GAN_B) *self.args["weight_GAN_Reality"]+\
+                      (self.g_loss_GAN_A2 + self.g_loss_GAN_B2) * self.args["weight_GAN_Cluster"]
 
-        self.g_loss = (self.g_loss_cycle_A2 + self.g_loss_cycle_B2)+(self.g_loss_cycle_A + self.g_loss_cycle_B) + (self.g_loss_GAN_A + self.g_loss_GAN_B) * \
-                      self.args["weight_GAN1"]+(self.g_loss_GAN_A2 + self.g_loss_GAN_B2) * \
-                      self.args["weight_GAN2"]
         # tensorboard 表示用関数
+        # 学習時の誤差表示
         summary=list()
         summary.append(tf.summary.scalar("cluster", tf.reduce_mean(cluster_loss), family="d_loss"))
         summary.append(tf.summary.scalar("real", tf.reduce_mean(reality_loss_A+reality_loss_B), family="d_loss"))
         summary.append(tf.summary.scalar("fake", tf.reduce_mean(reality_loss_FA + reality_loss_FB), family="d_loss"))
-        #summary.append(tf.summary.scalar("circle_10", tf.reduce_mean(circle_loss), family="d_loss"))
         summary.append(tf.summary.scalar("reference", tf.reduce_mean(reference_loss), family="d_loss"))
         summary.append(tf.summary.scalar("cycle_A_pow", tf.reduce_mean(self.g_loss_cycle_A), family="g_loss"))
         summary.append(tf.summary.scalar("cycle_A_fre", tf.reduce_mean(self.g_loss_cycle_A2), family="g_loss"))
@@ -236,9 +269,8 @@ class Model:
         summary.append(tf.summary.scalar("GAN_B", tf.reduce_mean(self.g_loss_GAN_B), family="g_loss"))
         summary.append(tf.summary.scalar("A_cluster", tf.reduce_mean(self.g_loss_GAN_A2), family="g_loss"))
         summary.append(tf.summary.scalar("B_cluster", tf.reduce_mean(self.g_loss_GAN_B2), family="g_loss"))
-
         self.loss_sum = tf.summary.merge(summary)
-
+        # エポックごとのテスト結果
         self.result = tf.placeholder(tf.float32, [1, 1, 160000], name="FB")
         self.result1 = tf.placeholder(tf.float32, [1, 320, 1024, 2], name="FBI0")
         im1 = tf.transpose(self.result1[:, :, :, :1], [0, 2, 1, 3])
@@ -248,21 +280,36 @@ class Model:
         self.fake_B_sum3 = tf.summary.image("fake_B_image02", im2, 1)
         self.g_test_epo = tf.placeholder(tf.float32, name="g_test_epoch_end")
         self.g_test_epoch = tf.summary.merge([tf.summary.scalar("g_test_epoch_end", self.g_test_epo, family="test")])
-
         self.tb_results = tf.summary.merge([self.fake_B_sum, self.fake_B_sum2, self.fake_B_sum3, self.g_test_epoch])
 
     def convert(self,in_put,target):
-        #テスト用関数
+        """
+        **概要**
+            推論及びエポック毎のテストの実施関数
+        :param in_put:
+            型：int16
+            変換する対象の音声データ
+        :param target:
+            型：int16
+            変換する目標の音声データ
+        :return:
+            型：int16,int,3Dfloat,3Dfloat
+            変換結果、変換にかかった時間、変換結果のスペクトル、変換先のシード
+        """
+        # 各変数の初期化
         tt=time.time()
         ipt=self.args["input_size"]+self.args["SHIFT"]+self.args["SHIFT"]*self.args["dilation_size"]
-        targ = target[0:ipt]/32767.0
-        tar=self.fft(targ)[:,:self.args["SHIFT"]].reshape(1,self.input_size_test[1],self.input_size_test[2],self.input_size_test[3])
-        times=in_put.shape[1]//(self.args["input_size"])+1
+        times = in_put.shape[1] // (self.args["input_size"]) + 1
         if in_put.shape[1]%((self.args["input_size"])*self.args["batch_size"])==0:
             times-=1
         otp=np.array([],dtype=np.int16)
         res3 = np.zeros([1,self.args["NFFT"],2], dtype=np.float32)
         rss=np.zeros([self.input_size_test[2]],dtype=np.float64)
+        # 変換目標のフーリエ変換（今後改修予定）
+        targ = target[0:ipt] / 32767.0
+        tar = self.fft(targ)[:, :self.args["SHIFT"]].reshape(1, self.input_size_test[1], self.input_size_test[2],
+                                                             self.input_size_test[3])
+
         res4=None
         for t in range(times):
             # 前処理
@@ -304,7 +351,13 @@ class Model:
 
 
     def train(self):
-
+        """
+        **概要**
+            モデルの学習を行います。
+            各パラメーターはマニュアルを参照してください。
+        :return:
+            なし
+        """
         # パラメータ
         tln=self.args["train_d_scale"]
         lr_g_opt=self.args["g_lr"]
@@ -326,7 +379,6 @@ class Model:
                                                                                        var_list=self.g_vars)
         d_optim = tf.train.AdamOptimizer(lr_d, beta_d_opt, beta_2_d_opt).minimize(self.d_loss,
                                                                                        var_list=self.d_vars)
-
         time_of_epoch=np.zeros(1)
 
         # ログ出力
@@ -362,7 +414,7 @@ class Model:
         label2 = isread('./Model/datasets/test/label2.wav')[0:160000].astype(np.float32)
 
         # 回数計算
-        train_data_num = min(len(data), self.args["train_data_num"])
+        train_data_num = len(data)
         print(" [*] data found",len(data))
         batch_idxs = train_data_num // self.args["batch_size"]
         index_list=[h for h in range(train_data_num)]
@@ -378,7 +430,7 @@ class Model:
             self.experiment=Experiment(self.args["name_save"]+"_G1")
             self.experiment.param("lr_g_opt", lr_g_opt)
             self.experiment.param("beta_g_opt", beta_g_opt)
-            self.experiment.param("training_interval", self.args["train_interval"])
+            self.experiment.param("training_interval", self.args["test_interval"])
             self.experiment.param("learning_rate_scale", tln)
 
         for epoch in range(self.args["start_epoch"],self.args["train_epoch"]):
@@ -474,7 +526,7 @@ class Model:
                               feed_dict={self.input_modela: res_t, self.input_modelb: tar, self.input_def: post,
                                          self.tar_def: defa, lr_g: lr_g_opt3})
                 # tensorboardの保存
-                if self.args["tensorboard"] and (counter+ti*epoch)%self.args["train_interval"]==0:
+                if self.args["tensorboard"] and (counter+ti*epoch)%self.args["test_interval"]==0:
                     res_t = np.asarray([batch_sounds_r[ind] for ind in range(10,20)])[:,
                             :-1].reshape(ism)
                     tar = np.asarray([batch_sounds_r[ind] for ind in range(10)])[:,
@@ -510,33 +562,22 @@ class Model:
             log_data_g = np.empty(0)
             log_data_d = np.empty(0)
 
-            if self.args["stop_itr"] != -1:
-                count=counter+ti*epoch
-                # console outputs
-                taken_time = time.time() - start_time
-                start_time = time.time()
-                ft = taken_time * (self.args["stop_itr"] - count - 1)
-                print(" [*] Epoch %5d finished in %.2f (preprocess %.3f) ETA: %3d:%2d:%2.1f" % (
-                epoch, taken_time, ts, ft // 3600, ft // 60 % 60, ft % 60))
-                time_of_epoch = np.append(time_of_epoch, np.asarray([taken_time, ts]))
-                if count>self.args["stop_itr"]:
-                    break
-            else :
-                #console outputs
-                count = counter + ti * epoch
-                taken_time = time.time() - start_time
-                taken_times.append(taken_time)
-                if len(taken_times)>20:
-                    taken_times=taken_times[-20:]
-                tfa=np.asarray(taken_times)
-                tsts=np.mean(tfa)
-                start_time = time.time()
-                ft=tsts*(self.args["train_epoch"]-epoch-1)
-                print(" [*] Epoch %5d (iterations: %10d)finished in %.2f (preprocess %.3f) ETA: %3d:%2d:%2.1f" % (epoch,count,taken_time,ts,ft//3600,ft//60%60,ft%60))
-                time_of_epoch=np.append(time_of_epoch,np.asarray([taken_time,ts]))
+            #console outputs
+            count = counter + ti * epoch
+            taken_time = time.time() - start_time
+            taken_times.append(taken_time)
+            if len(taken_times)>20:
+                taken_times=taken_times[-20:]
+            tfa=np.asarray(taken_times)
+            tsts=np.mean(tfa)
+            start_time = time.time()
+            ft=tsts*(self.args["train_epoch"]-epoch-1)
+            print(" [*] Epoch %5d (iterations: %10d)finished in %.2f (preprocess %.3f) ETA: %3d:%2d:%2.1f" % (epoch,count,taken_time,ts,ft//3600,ft//60%60,ft%60))
+            time_of_epoch=np.append(time_of_epoch,np.asarray([taken_time,ts]))
             if epoch%self.args["lr_decay_term"]==0:
                 lr_d_opt3 = lr_d_opt * (0.1 ** (epoch // 100))
                 lr_g_opt3 = lr_g_opt * (0.1 ** (epoch // 100))
+
         self.save(self.args["checkpoint_dir"],self.args["train_epoch"])
         print(" [*] Finished!! in "+ str(np.sum(time_of_epoch[::2])))
 
@@ -549,6 +590,18 @@ class Model:
         if self.args["hyperdash"]:
             self.experiment.end()
     def save(self, checkpoint_dir, step):
+        """
+        **概要**
+            学習結果の保存を行います。
+        :param checkpoint_dir:
+            型：String
+            保存先のパス
+        :param step:
+            型：int
+            保存時のエポック数
+        :return:
+            なし
+        """
         model_name = "wave2wave.model"
         model_dir =  self.args["name_save"]
         checkpoint_dir = os.path.join(checkpoint_dir, model_dir)
@@ -560,6 +613,13 @@ class Model:
                         os.path.join(checkpoint_dir, model_name),
                         global_step=step)
     def load(self):
+        """
+        **概要**
+            学習したモデルの読み込み
+            変数の初期化も含みます
+        :return:
+            なし
+        """
         # initialize variables
         # 変数の初期化
         init_op = tf.global_variables_initializer()
@@ -578,7 +638,16 @@ class Model:
             return False
 
     def fft(self,data):
-
+        """
+        **概要**
+        短時間高速フーリエ変換を行う
+        :param data:
+        型：2D-float64
+        変換を行う対象データ
+        :return:
+        型：3D-float64
+        変換後のデータ。パワー、位相のデータは3次元に格納。「パワー、位相」の順で格納している。
+        """
         time_ruler = data.shape[0] // self.args["SHIFT"]
         if data.shape[0] % self.args["SHIFT"] == 0:
             time_ruler -= 1
@@ -655,33 +724,11 @@ def seed_net(inp,reuse,depth,chs,a,train=True):
     if a is "A" :
         print(" [*] bottom shape:"+str(seed.shape))
     return seed,real
-def generator(current,seed,reuse,depth,chs,d,net_type,train):
-    if net_type == "resnet":
-        return generator_flatnet_decay(current, seed,reuse, depth, chs, d, 2, train)
-    else :
-        return generator_flatnet_decay(current, seed,reuse, depth, chs, d, 4, train)
-def generator_flatnet_decay(c,seed,reuse,depth,chs,d,ps,train):
-    #main process
-    current=c
-    for i in range(depth):
-        connections = current
-        if ps == 2:
-            ten = block_res(current,seed,chs[i], i, reuse,train=train)
-        else:
-            ten = block_flat(current,seed,chs[i], i, reuse,train=train)
-        if i!=depth-1:
-            ims=ten.shape[3]//connections.shape[3]
-            if ims!=0:
-                connections=tf.tile(connections,[1,1,1,ims])
-            elif connections.shape[3]>ten.shape[3]:
-                connections = connections[:,:,:,:ten.shape[3]]
-            ims2 = int(ten.shape[1])-int(connections.shape[1])
-            if ims2<0:
-                connections = connections[:, :ims2, :, :]
-            current = ten + connections
-        else:
-            current=ten
-    current=dilations(current,d,reuse,train,chs,depth)
+def generator(current,seed,reuse,depth,chs,d,net_repetation,train):
+    ten=current
+    for i in range(net_repetation):
+        ten = block_res(ten, seed, chs,i,depth, reuse, train=train)
+    current = dilations(ten, d, reuse, train, chs, (depth[0]*2)+depth[1])
     return current
 def dilations(inp,d,reuse,train,chs,startd):
     ten = inp
@@ -691,143 +738,84 @@ def dilations(inp,d,reuse,train,chs,startd):
         ten = tf.layers.conv2d(ten, chs[i+startd], kernel_size=[2, 1], strides=[1, 1], padding="VALID",
                            kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),use_bias=True,
                            data_format="channels_last", reuse=reuse, name="conv_p" + str(startd+i), dilation_rate=(d[i], 1))
+        if i!=len(d)-1:
+            ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuse,
+                                        name="bn_p" + str(startd+i))
 
-        ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuse,
-                                    name="bn_p" + str(startd+i))
-
-        ten = tf.nn.leaky_relu(ten)
+            ten = tf.nn.leaky_relu(ten)
 
         ten2 = tf.layers.conv2d(ten2, chs[i + startd], kernel_size=[2, 1], strides=[1, 1], padding="VALID",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),use_bias=True,
                                data_format="channels_last", reuse=reuse, name="conv_f" + str(startd+ i),
                                dilation_rate=(d[i], 1))
-        ten2 = tf.layers.batch_normalization(ten2, axis=3, training=train, trainable=True, reuse=reuse,
-                                        name="bn_f" + str(startd+ i))
-        ten2 = tf.nn.leaky_relu(ten2)
+        if i != len(d) - 1:
+            ten2 = tf.layers.batch_normalization(ten2, axis=3, training=train, trainable=True, reuse=reuse,
+                                            name="bn_f" + str(startd+ i))
+            ten2 = tf.nn.leaky_relu(ten2)
     ten2=tf.nn.tanh(ten2)*3.2
     current=tf.concat([ten,ten2],axis=3)
     return current
-def block_res(current,seed,chs,depth,reuses,train=True):
+def block_res(current,seed,chs,rep_pos,depth,reuses,train=True):
     ten = current
     tenM=[]
-    times=2
-    res=4
+    times=depth[0]
+    res=depth[1]
 
     for i in range(times-1):
         stddevs = math.sqrt(2.0 / ( 4 * int(ten.shape[3])))
-        ten = tf.layers.conv2d(ten, chs//(2**(times-i-1)), kernel_size=[1, 8], strides=[1, 8], padding="VALID",
+        ten = tf.layers.conv2d(ten, chs[i], kernel_size=[1, 8], strides=[1, 8], padding="VALID",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),use_bias=False,
-                               data_format="channels_last", reuse=reuses, name="conv"+str(i) + str(depth),
+                               data_format="channels_last", reuse=reuses, name="conv"+str(i) + str(rep_pos),
                                dilation_rate=(1, 1))
         ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
-                                            name="bn"+str(i) + str(depth))
+                                            name="bn"+str(i) + str(rep_pos))
         ten = tf.nn.leaky_relu(ten)
         tenM.append(ten)
     stddevs = math.sqrt(2.0 / (4 * int(ten.shape[3])))
-    ten = tf.layers.conv2d(ten, chs, kernel_size=[1, 2], strides=[1, 2], padding="VALID",
+    ten = tf.layers.conv2d(ten, chs[times-1], kernel_size=[1, 2], strides=[1, 2], padding="VALID",
                            kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), use_bias=False,
-                           data_format="channels_last", reuse=reuses, name="conv"+str(times) + str(depth),
+                           data_format="channels_last", reuse=reuses, name="conv"+str(times-1) + str(rep_pos),
                            dilation_rate=(1, 1))
     ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
-                                        name="bn"+str(times) + str(depth))
+                                        name="bn"+str(times-1) + str(rep_pos))
     ten = tf.nn.leaky_relu(ten)
-    tenS=tf.reshape(seed,[-1,int(ten.shape[2])])
-    tenS = tf.layers.dense(tenS,units= int(ten.shape[2]),name="FCS1" + str(depth),reuse=reuses)
-    tenS=tf.reshape(tenS,[-1,1,int(ten.shape[2]),1])
-    tenS = tf.layers.batch_normalization(tenS, axis=3, training=train, trainable=True, reuse=reuses,
-                                         name="bnS1" + str(depth))
-
-    ten=ten*tenS
     for i in range(res):
         stddevs = math.sqrt(2.0 / (7 * int(ten.shape[3])))
+        teny = tf.reshape(seed, [-1, int(ten.shape[2])])
+
         tenA=ten
-        ten = tf.layers.conv2d(ten, chs, [1,4], [1,1], padding="SAME",
+        ten = tf.layers.conv2d(tenA, chs[times+i], [1,4], [1,1], padding="SAME",
                                           kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),use_bias=False,
-                                          data_format="channels_last", reuse=reuses, name="res_convA"+str(i) + str(depth))
+                                          data_format="channels_last", reuse=reuses, name="res_convA"+str(i) + str(rep_pos))
         ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
-                                             name="bnA"+str(times+i+1) + str(depth))
-        ten = tf.nn.leaky_relu(ten)
-        ten=tf.layers.conv2d(ten, chs, [1,8], [1,1], padding="SAME",
-                                          kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),use_bias=False,
-                                          data_format="channels_last", reuse=reuses, name="res_convB"+str(i) + str(depth))
-        ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
-                                            name="bnB" + str(times + i + 1) + str(depth))
+                                             name="bnA"+str(times+i) + str(rep_pos))
+        tenS = tf.layers.dense(teny, units=int(ten.shape[2]), name="FCS1" + str(rep_pos), use_bias=False, reuse=reuses)
+        bias = tf.get_variable("BS1" + str(rep_pos), shape=[int(ten.shape[2])], use_resource=reuses)
+        ten = (ten + tenS * bias)
+
+        ten2 = tf.layers.conv2d(tenA, chs[times+i], [1, 8], [1, 1], padding="SAME",
+                                kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), use_bias=False,
+                                data_format="channels_last", reuse=reuses, name="res_convB" + str(i) + str(rep_pos))
+        ten2 = tf.layers.batch_normalization(ten2, axis=3, training=train, trainable=True, reuse=reuses,
+                                             name="bnB" + str(times + i ) + str(rep_pos))
+        tenS2 = tf.layers.dense(teny, units=int(ten.shape[2]), name="FCS1" + str(rep_pos), use_bias=False, reuse=reuses)
+        bias2 = tf.get_variable("BS2" + str(rep_pos), shape=[int(ten.shape[2])], use_resource=reuses)
+        ten2 = (ten2 + tenS2 * bias2)
+        ten = tf.nn.relu(ten) * tf.tanh(ten2)
         ten=ten+tenA
-        ten = tf.nn.leaky_relu(ten)
-    ten = deconve_with_ps(ten, [1, 2], chs//2, depth, reuses=reuses, name="00")
+
+    ten = deconve_with_ps(ten, [1, 2], chs[times+res], rep_pos, reuses=reuses, name="00")
     ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
-                                         name="bn"+str(times+res+1) + str(depth))
+                                         name="bn"+str(times+res) + str(rep_pos))
     ten = tf.nn.leaky_relu(ten)
     for i in range(times-1):
         ten+=tenM[times-i-2]
-        ten = deconve_with_ps(ten, [1, 8], chs//(2**(i+2)), depth, reuses=reuses, name=str(i+1))
+        ten = deconve_with_ps(ten, [1, 8], chs[times+res+1+i], rep_pos, reuses=reuses, name=str(i+1))
         ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
-                                            name="bn"+str(i+2+times+res) + str(depth))
+                                            name="bn"+str(i+1+times+res) + str(rep_pos))
         ten=tf.nn.leaky_relu(ten)
     return ten
 
-def block_flat(current,seed,chs,depth,reuses,train=True):
-    ten = current
-    tenM=[]
-    times=2
-    res=8
-
-    for i in range(times-1):
-        stddevs = math.sqrt(2.0 / ( 4 * int(ten.shape[3])))
-        ten = tf.layers.conv2d(ten, chs//(2**(times-i-1)), kernel_size=[1, 4], strides=[1, 4], padding="VALID",
-                               kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),use_bias=False,
-                               data_format="channels_last", reuse=reuses, name="conv"+str(i) + str(depth),
-                               dilation_rate=(1, 1))
-        ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
-                                            name="bn"+str(i) + str(depth))
-        ten = tf.nn.leaky_relu(ten)
-        tenM.append(ten)
-    stddevs = math.sqrt(2.0 / (4 * int(ten.shape[3])))
-    ten = tf.layers.conv2d(ten, chs, kernel_size=[1, 4], strides=[1, 4], padding="VALID",
-                           kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), use_bias=False,
-                           data_format="channels_last", reuse=reuses, name="conv"+str(times) + str(depth),
-                           dilation_rate=(1, 1))
-    ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
-                                        name="bn"+str(times) + str(depth))
-    ten = tf.nn.leaky_relu(ten)
-
-    tenS=tf.reshape(seed,[-1,int(ten.shape[2])])
-    tenS = tf.layers.dense(tenS,units= int(ten.shape[2]),name="FCS1" + str(depth),reuse=reuses)
-    tenS=tf.reshape(tenS,[-1,1,int(ten.shape[2]),1])
-    tenS = tf.layers.batch_normalization(tenS, axis=3, training=train, trainable=True, reuse=reuses,
-                                         name="bnS1" + str(depth))
-
-    tenS = tf.tanh(tenS)
-    ten=ten*tenS
-
-    for i in range(res):
-        stddevs = math.sqrt(2.0 / (7 * int(ten.shape[3])))
-        tenA=ten
-        ten = tf.layers.conv2d(ten, chs, [1,7], [1,2], padding="VALID",
-                                          kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),use_bias=False,
-                                          data_format="channels_last", reuse=reuses, name="res_conv"+str(i) + str(depth))
-        ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
-                                             name="bnA"+str(times+i+2) + str(depth))
-        ten = tf.nn.leaky_relu(ten)
-        stddevs = math.sqrt(2.0 / (8 * int(ten.shape[3])))
-        ten=tf.layers.conv2d_transpose(ten, chs, [1,8], [1,2], padding="VALID",
-                                          kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),use_bias=False,
-                                          data_format="channels_last", reuse=reuses, name="res_deconv"+str(i) + str(depth))
-        ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
-                                            name="bnB" + str(times + i + 2) + str(depth))
-        ten = tf.nn.leaky_relu(ten)
-        ten=ten+tenA
-    ten = deconve_with_ps(ten, [1, 4], chs//2, depth, reuses=reuses, name="00")
-    ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
-                                         name="bn"+str(times+res+2) + str(depth))
-    ten = tf.nn.leaky_relu(ten)
-    for i in range(times-1):
-        ten+=tenM[times-i-2]
-        ten = deconve_with_ps(ten, [1, 4], chs//(2**(i+2)), depth, reuses=reuses, name=str(i+1))
-        ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
-                                            name="bn"+str(i+3+times+res) + str(depth))
-        ten=tf.nn.leaky_relu(ten)
-    return ten
 def deconve_with_ps(inp,r,otp_shape,depth,reuses=None,name=""):
     chs_r=r[0]*r[1]*otp_shape
     stddevs = math.sqrt(2.0 / int(inp.shape[3]))

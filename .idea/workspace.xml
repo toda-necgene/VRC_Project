@@ -8,6 +8,7 @@
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/VRC/setting.json" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/setting.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/VRC/train/Model/model_seed.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/train/Model/model_seed.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/VRC/train/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/train/main.py" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/VRC/Network/to/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -22,8 +23,8 @@
       <file leaf-file-name="main.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/train/main.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="256">
-              <caret line="16" selection-start-line="16" selection-end-line="16" />
+            <state relative-caret-position="208">
+              <caret line="13" column="11" lean-forward="true" selection-start-line="13" selection-start-column="11" selection-end-line="13" selection-end-column="11" />
             </state>
           </provider>
         </entry>
@@ -31,8 +32,8 @@
       <file leaf-file-name="model_seed.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_seed.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="6874">
-              <caret line="650" column="75" selection-start-line="650" selection-start-column="75" selection-end-line="650" selection-end-column="75" />
+            <state relative-caret-position="140">
+              <caret line="647" column="20" lean-forward="true" selection-start-line="647" selection-start-column="20" selection-end-line="647" selection-end-column="20" />
               <folding>
                 <element signature="e#0#21#0" expanded="true" />
               </folding>
@@ -43,7 +44,7 @@
       <file leaf-file-name="voice_to_datasets.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1824">
+            <state relative-caret-position="658">
               <caret line="120" column="14" selection-start-line="120" selection-start-column="14" selection-end-line="120" selection-end-column="14" />
               <folding>
                 <element signature="e#0#14#0" expanded="true" />
@@ -55,8 +56,8 @@
       <file leaf-file-name="setting.json" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/VRC/setting.json">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="112">
-              <caret line="10" column="30" selection-start-line="10" selection-start-column="30" selection-end-line="10" selection-end-column="30" />
+            <state relative-caret-position="416">
+              <caret line="26" column="13" lean-forward="true" selection-start-line="26" selection-start-column="13" selection-end-line="26" selection-end-column="13" />
             </state>
           </provider>
         </entry>
@@ -89,12 +90,16 @@
       <find>16</find>
       <find>5</find>
       <find>014</find>
+      <find>depth</find>
+      <find>log_eps</find>
     </findStrings>
     <replaceStrings>
       <replace />
       <replace>8</replace>
       <replace>16</replace>
       <replace>15</replace>
+      <replace>rep_pos</replace>
+      <replace>test_interval</replace>
     </replaceStrings>
   </component>
   <component name="Git.Settings">
@@ -122,10 +127,10 @@
         <option value="$PROJECT_DIR$/VRC/utils/tagging.py" />
         <option value="$PROJECT_DIR$/VRC/utils/voice.py" />
         <option value="$PROJECT_DIR$/VRC/train/Model/model_proto.py" />
-        <option value="$PROJECT_DIR$/VRC/train/main.py" />
         <option value="$PROJECT_DIR$/VRC/utils/voice_to_datasets.py" />
-        <option value="$PROJECT_DIR$/VRC/train/Model/model_seed.py" />
         <option value="$PROJECT_DIR$/VRC/setting.json" />
+        <option value="$PROJECT_DIR$/VRC/train/main.py" />
+        <option value="$PROJECT_DIR$/VRC/train/Model/model_seed.py" />
       </list>
     </option>
   </component>
@@ -142,6 +147,7 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
+      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -220,7 +226,6 @@
           <select />
         </subPane>
       </pane>
-      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -395,13 +400,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1520153808625</updated>
-    </task>
-    <task id="LOCAL-00043" summary="[update] output update &lt;version 2.3.170&gt;&#10;&#10;[add] 出力方式を変更">
-      <created>1528778718616</created>
-      <option name="number" value="00043" />
-      <option name="presentableId" value="LOCAL-00043" />
-      <option name="project" value="LOCAL" />
-      <updated>1528778718616</updated>
     </task>
     <task id="LOCAL-00044" summary="[update] output update &lt;version 2.3.172&gt;&#10;&#10;[add] 方式を変更">
       <created>1528795780686</created>
@@ -739,7 +737,14 @@
       <option name="project" value="LOCAL" />
       <updated>1532684424065</updated>
     </task>
-    <option name="localTasksCounter" value="92" />
+    <task id="LOCAL-00092" summary="[3.2.165] ハイパーパラメータの模索&#10;&#10;[fix] 元に戻した">
+      <created>1532690515541</created>
+      <option name="number" value="00092" />
+      <option name="presentableId" value="LOCAL-00092" />
+      <option name="project" value="LOCAL" />
+      <updated>1532690515541</updated>
+    </task>
+    <option name="localTasksCounter" value="93" />
     <servers />
   </component>
   <component name="TodoView">
@@ -757,21 +762,21 @@
     <layout>
       <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.2496474" />
       <window_info anchor="top" id="TODO" order="0" show_stripe_button="false" type="FLOATING" weight="0.3282123" />
-      <window_info anchor="bottom" id="Event Log" order="9" sideWeight="0.10084626" side_tool="true" weight="0.3401084" />
+      <window_info anchor="bottom" id="Event Log" order="9" sideWeight="0.17066291" side_tool="true" weight="0.42276424" />
       <window_info anchor="bottom" id="Version Control" order="8" weight="0.3292683" />
       <window_info anchor="bottom" id="Python Console" order="7" weight="0.3292683" />
-      <window_info active="true" anchor="bottom" id="Run" order="6" sideWeight="0.49435824" visible="true" weight="0.42276424" />
+      <window_info anchor="bottom" id="Run" order="6" sideWeight="0.8293371" weight="0.42276424" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info anchor="bottom" id="Terminal" order="10" sideWeight="0.8991537" weight="0.3401084" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.39972898" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
-      <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="right" id="Commander" order="0" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
-      <window_info anchor="bottom" id="Find" order="2" weight="0.3292683" />
       <window_info anchor="bottom" id="Message" order="1" />
+      <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
+      <window_info anchor="bottom" id="Find" order="2" weight="0.3292683" />
       <window_info anchor="bottom" id="Messages" order="0" />
     </layout>
   </component>
@@ -789,7 +794,6 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[update] training update &lt;version 2.4.080&gt;&#10;&#10;[add] position_gateの追加" />
     <MESSAGE value="[update] training update &lt;version 2.4.080&gt;&#10;&#10;[add] initializerの変更&#10;[fix] add_layerの修正" />
     <MESSAGE value="[update] training update &lt;version 2.5.000&gt;&#10;&#10;[change] batchsizeの変更" />
     <MESSAGE value="[update] architect update &lt;version 2.5.006&gt;&#10;&#10;[change] 設定ファイルの変更&#10;[目的]　性能の向上" />
@@ -814,11 +818,12 @@
     <MESSAGE value="[3.2.141] 構造アップデート&#10;&#10;[add] レイヤー数の調整" />
     <MESSAGE value="[3.2.161] ハイパーパラメータの模索&#10;&#10;[add] いろいろ" />
     <MESSAGE value="[3.2.165] ハイパーパラメータの模索&#10;&#10;[add] tanhに変更" />
-    <option name="LAST_COMMIT_MESSAGE" value="[3.2.165] ハイパーパラメータの模索&#10;&#10;[add] tanhに変更" />
+    <MESSAGE value="[3.2.165] ハイパーパラメータの模索&#10;&#10;[fix] 元に戻した" />
+    <option name="LAST_COMMIT_MESSAGE" value="[3.2.165] ハイパーパラメータの模索&#10;&#10;[fix] 元に戻した" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
-      <option name="time" value="13" />
+      <option name="time" value="14" />
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
@@ -1047,9 +1052,10 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/VRC/train/logs/0727run02/events.out.tfevents.1532652366.DESKTOP-QFC16G3" />
     <entry file="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1824">
+        <state relative-caret-position="658">
           <caret line="120" column="14" selection-start-line="120" selection-start-column="14" selection-end-line="120" selection-end-column="14" />
           <folding>
             <element signature="e#0#14#0" expanded="true" />
@@ -1059,18 +1065,15 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/train/main.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="256">
-          <caret line="16" selection-start-line="16" selection-end-line="16" />
+        <state relative-caret-position="208">
+          <caret line="13" column="11" lean-forward="true" selection-start-line="13" selection-start-column="11" selection-end-line="13" selection-end-column="11" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/train/logs/0727run02/events.out.tfevents.1532652366.DESKTOP-QFC16G3">
-      <provider selected="true" editor-type-id="LargeFileEditor" />
-    </entry>
     <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_seed.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="6874">
-          <caret line="650" column="75" selection-start-line="650" selection-start-column="75" selection-end-line="650" selection-end-column="75" />
+        <state relative-caret-position="140">
+          <caret line="647" column="20" lean-forward="true" selection-start-line="647" selection-start-column="20" selection-end-line="647" selection-end-column="20" />
           <folding>
             <element signature="e#0#21#0" expanded="true" />
           </folding>
@@ -1079,8 +1082,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/setting.json">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="112">
-          <caret line="10" column="30" selection-start-line="10" selection-start-column="30" selection-end-line="10" selection-end-column="30" />
+        <state relative-caret-position="416">
+          <caret line="26" column="13" lean-forward="true" selection-start-line="26" selection-start-column="13" selection-end-line="26" selection-end-column="13" />
         </state>
       </provider>
     </entry>
