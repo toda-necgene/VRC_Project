@@ -387,10 +387,7 @@ class Model:
 
         if self.args["wave_otp_dir"] != "False" and  os.path.exists(self.args["wave_otp_dir"]):
             with open(self.args["log_file"], "w") as f:
-                if self.args["stop_argument"]:
-                    f.write("epochs,d_score,%g_loss,test_varidation")
-                else:
-                    f.write("epochs,test_varidation")
+                f.write("epochs,test_varidation")
                 f.flush()
         # 学習の情報の初期化
         start_time = time.time()
@@ -547,11 +544,7 @@ class Model:
                 self.save(self.args["checkpoint_dir"], epoch)
             if self.args["log"] and self.args["wave_otp_dir"]!="False":
                 with open(self.args["log_file"],"a") as f:
-                    if self.args["stop_argument"]:
-                        f.write("\n %6d,%5.5f,%5.5f,%10.5f" % (
-                        epoch, float(np.mean(log_data_d)), float(np.mean(log_data_g)), float(test1)))
-                    else:
-                        f.write("%6d,%10.5f" % (epoch, float(test1)))
+                    f.write("%6d,%10.5f" % (epoch, float(test1)))
                     f.write("\n")
                     f.flush()
             if self.args["hyperdash"] and self.args["stop_argument"] :
@@ -700,9 +693,9 @@ class Model:
 
 def seed_net(inp,reuse,depth,chs,a,train=True):
     stddevs = math.sqrt(2.0 / (int(inp.shape[1]) * 16))
-    current = tf.layers.conv2d(inp, 16, kernel_size=[inp.shape[1],1], strides=[1,1], padding="VALID",
+    current = tf.layers.conv2d(inp, 64, kernel_size=[inp.shape[1],1], strides=[1,1], padding="VALID",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),use_bias=False,
-                               data_format="channels_last", name="seed_t", reuse=reuse)
+                               data_format="channels_last", name="seed_t_conv", reuse=reuse)
     current = tf.layers.batch_normalization(current, name="bn_seed00", training=train, reuse=reuse)
     current = tf.nn.leaky_relu(current)
     for i in range(depth):
@@ -781,7 +774,7 @@ def block_res(current,seed,chs,rep_pos,depth,reuses,train=True):
     ten = tf.nn.leaky_relu(ten)
     for i in range(res):
         stddevs = math.sqrt(2.0 / (7 * int(ten.shape[3])))
-        teny = tf.reshape(seed, [-1, int(ten.shape[2])])
+        teny = tf.reshape(seed,[-1,int(seed.shape[2])])
 
         tenA=ten
         ten = tf.layers.conv2d(tenA, chs[times+i], [1,4], [1,1], padding="SAME",
@@ -789,18 +782,20 @@ def block_res(current,seed,chs,rep_pos,depth,reuses,train=True):
                                           data_format="channels_last", reuse=reuses, name="res_convA"+str(i) + str(rep_pos))
         ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
                                              name="bnA"+str(times+i) + str(rep_pos))
-        tenS = tf.layers.dense(teny, units=int(ten.shape[2]), name="FCS1" + str(rep_pos), use_bias=False, reuse=reuses)
-        bias = tf.get_variable("BS1" + str(rep_pos), shape=[int(ten.shape[2])], use_resource=reuses)
-        ten = (ten + tenS * bias)
+        tenS = tf.layers.dense(teny, units=int(ten.shape[2]), name="FCS1"+str(i) + str(rep_pos), use_bias=False, reuse=reuses)
+        with tf.variable_scope("BN1"+str(i)  + str(rep_pos),reuse=reuses):
+            bias = tf.get_variable("bias", shape=[int(ten.shape[2])])
+        ten = ten + tf.reshape(tenS * bias,[-1,1,ten.shape[2],1])
 
         ten2 = tf.layers.conv2d(tenA, chs[times+i], [1, 8], [1, 1], padding="SAME",
                                 kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), use_bias=False,
                                 data_format="channels_last", reuse=reuses, name="res_convB" + str(i) + str(rep_pos))
         ten2 = tf.layers.batch_normalization(ten2, axis=3, training=train, trainable=True, reuse=reuses,
                                              name="bnB" + str(times + i ) + str(rep_pos))
-        tenS2 = tf.layers.dense(teny, units=int(ten.shape[2]), name="FCS1" + str(rep_pos), use_bias=False, reuse=reuses)
-        bias2 = tf.get_variable("BS2" + str(rep_pos), shape=[int(ten.shape[2])], use_resource=reuses)
-        ten2 = (ten2 + tenS2 * bias2)
+        tenS2 = tf.layers.dense(teny, units=int(ten.shape[2]), name="FCS2" +str(i) + str(rep_pos), use_bias=False, reuse=reuses)
+        with tf.variable_scope("BN2" + str(i) + str(rep_pos), reuse=reuses):
+            bias2 = tf.get_variable("BS2"+str(i)  + str(rep_pos), shape=[int(ten.shape[2])])
+        ten2 = ten2 + tf.reshape(tenS2 * bias2,[-1,1,ten.shape[2],1])
         ten = tf.nn.relu(ten) * tf.tanh(ten2)
         ten=ten+tenA
 

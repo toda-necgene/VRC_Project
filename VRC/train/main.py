@@ -10,5 +10,4 @@ if len(sys.argv)!=0 and sys.argv.__contains__("--path"):
     i= sys.argv.index("--path")
     path=sys.argv[i+1]
 net = model(path)
-net.build_model()
 net.train()
