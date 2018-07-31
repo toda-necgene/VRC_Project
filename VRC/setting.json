@@ -2,13 +2,13 @@
     "saving_config":{
         "checkpoint_dir":"Z://models/",
         "wave_otp_dir":"Z://waves/",
-        "version":"3.3.000"
+        "version":"3.5.000"
     },
     "network_architecture":{
         "repetations":1,
         "depth":[3,4],
-        "d_depth":4,
-        "D_channels":[32,64,64,64],
+        "d_depth":7,
+        "D_channels":[16,16,32,32,64,64,2],
         "G_channels":[16,32,64,64,64,64,64,32,16,16,8,4,1],
         "dilations":[1,2,4]
     },
@@ -27,8 +27,9 @@
         "weight_Cycle_Fre":2.0,
         "weight_GAN_Cluster":1.0,
         "weight_GAN_Reality":1.0,
-        "lr_decay_term":1000
-  },
+        "lr_decay_term":1000,
+        "cluster_weight":1.0
+    },
 
     "process_config":{
         "NFFT":1024,

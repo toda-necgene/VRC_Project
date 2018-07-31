@@ -146,7 +146,7 @@ class Model:
         #入力
         self.input_modela= tf.placeholder(tf.float32, self.input_size_model, "input_A")
         self.input_modelb = tf.placeholder(tf.float32, self.input_size_model, "input_B")
-        self.input_diff_ab = tf.placeholder(tf.float32, self.input_size_model[0], "diff_ab")
+        self.input_diff_ab = tf.placeholder(tf.float32, [5,self.args["batch_size"]], "diff_ab")
         self.input_def = tf.placeholder(tf.float32, self.input_size_model, "def_0")
         self.tar_def=tf.placeholder(tf.float32, [None,1,self.args["D_channels"][-1],1], "def_tar_0")
         self.input_model_test = tf.placeholder(tf.float32, self.input_size_test, "input_T")
@@ -214,8 +214,18 @@ class Model:
 		"""
 
         # クラスタリングの誤差
-        cluster_loss = tf.pow(self.input_diff_ab/5.0 - tf.sqrt(tf.reduce_sum(tf.pow(self.seed_A - self.seed_B, 2))),
-                              2) * 0.5
+        seed_def_d=tf.tile(tf.reshape(self.seed_def[0],[1,1,-1,1]),[self.args["batch_size"],1,1,1])
+        seed_def_e = tf.tile(tf.reshape(self.seed_def[1],[1,1,-1,1]), [self.args["batch_size"], 1, 1, 1])
+        diff_ab=tf.pow(self.input_diff_ab[0] /5.0 - tf.sqrt(tf.reduce_sum(tf.pow(self.seed_A - self.seed_B, 2))),2) * 0.5
+        diff_ad = tf.pow(self.input_diff_ab[1] / 5.0 - tf.sqrt(tf.reduce_sum(tf.pow(self.seed_A - seed_def_d, 2))),2) * 0.5
+        diff_ae = tf.pow(self.input_diff_ab[2] / 5.0 - tf.sqrt(tf.reduce_sum(tf.pow(self.seed_A - seed_def_e, 2))),2) * 0.5
+        diff_bd = tf.pow(self.input_diff_ab[3] / 5.0 - tf.sqrt(tf.reduce_sum(tf.pow(self.seed_B - seed_def_d, 2))),2) * 0.5
+        diff_be = tf.pow(self.input_diff_ab[4] / 5.0 - tf.sqrt(tf.reduce_sum(tf.pow(self.seed_B - seed_def_e, 2))),2) * 0.5
+
+        cluster_loss = diff_ab+diff_ad+diff_ae+diff_bd+diff_be
+        # クラスタリングの基準点の誤差
+        reference_loss = tf.losses.mean_squared_error(labels=self.tar_def, predictions=self.seed_def)
+
         # GANにおける本物と偽物の評価の誤差
         reality_loss_FB = tf.losses.mean_squared_error(labels=tf.zeros_like(self.reality_FB),predictions=self.reality_FB)
         reality_loss_FA = tf.losses.mean_squared_error(labels=tf.zeros_like(self.reality_FA),predictions =self.reality_FA)
@@ -225,8 +235,6 @@ class Model:
         # クラスタリングにおける分布の制限誤差（使用していません）
         # circle_loss = 0.5 * (tf.pow(1.0 - tf.sqrt(tf.reduce_sum(tf.pow(self.seed_A, 2))), 2) + tf.pow(
         #     1.0 - tf.sqrt(tf.reduce_sum(tf.pow(self.seed_B, 2))+1e-32), 2))
-        # クラスタリングの基準点の誤差
-        reference_loss = tf.losses.mean_squared_error(labels=self.tar_def, predictions=self.seed_def)
 
         # S-netの目的関数
         self.d_loss = (cluster_loss+ reference_loss)*self.args["cluster_weight"] + reality_loss
@@ -246,8 +254,8 @@ class Model:
         self.g_loss_GAN_A = tf.losses.mean_squared_error(labels=tf.ones_like(self.reality_FA),predictions=self.reality_FA)
         self.g_loss_GAN_B = tf.losses.mean_squared_error(labels=tf.ones_like(self.reality_FB),predictions=self.reality_FB)
         # クラスターによる判定
-        self.g_loss_GAN_A2 = tf.losses.mean_squared_error(labels=self.seed_A, predictions=self.seed_FA)
-        self.g_loss_GAN_B2 =  tf.losses.mean_squared_error(labels=self.seed_B, predictions=self.seed_FB)
+        self.g_loss_GAN_A2 = tf.reduce_sum(tf.pow(self.seed_A-self.seed_FA,2))
+        self.g_loss_GAN_B2 = tf.reduce_sum(tf.pow(self.seed_B-self.seed_FB,2))
         # すべてをまとめたもの
         self.g_loss = (self.g_loss_cycle_A2 + self.g_loss_cycle_B2)*self.args["weight_Cycle_Fre"]+\
                       (self.g_loss_cycle_A + self.g_loss_cycle_B)*self.args["weight_Cycle_Pow"] +\
@@ -393,8 +401,8 @@ class Model:
         start_time = time.time()
         log_data_g = np.empty(0)
         log_data_d = np.empty(0)
-        defa = np.zeros(self.args["D_channels"][-1]).reshape([1,1,-1,1])
-        defa[0,0,0,0]=1.0
+
+
         # 過去の学習データの読み込み
         if self.load():
             print(" [*] Load SUCCESS")
@@ -414,14 +422,29 @@ class Model:
         train_data_num = len(data)
         print(" [*] data found",len(data))
         batch_idxs = train_data_num // self.args["batch_size"]
-        index_list=[h for h in range(train_data_num)]
-        index_list2=[h for h in range(train_data_num)]
+        trainlist=[h for h in range(train_data_num)]
+        testlist =trainlist[-self.args["batch_size"]:].copy()
+        np.random.shuffle(trainlist)
 
-        #　学習データをメモリに乗っける
+        index_list=trainlist[:-self.args["batch_size"]].copy()
+        index_list2=trainlist[:-self.args["batch_size"]].copy()
+
+        # 学習データをメモリに乗っける
         batch_files = data[:train_data_num]
-
         batch_sounds_r = np.asarray([(imread(batch_file)) for batch_file in batch_files])
+        # 規準データの生成
+        defa = np.zeros([2, self.args["D_channels"][-1]]).reshape([2, 1, -1, 1])
+        defa[0, 0, 0, 0] = 0.0
+        defa[1, 0, 1, 0] = 1.0
+        post = np.zeros([2, self.input_size_model[1], self.input_size_model[2], self.input_size_model[3]])
+        post[0] = batch_sounds_r[0, :-1].reshape(
+            [self.input_size_model[1], self.input_size_model[2], self.input_size_model[3]])
+        post[1] = batch_sounds_r[-1, :-1].reshape(
+            [self.input_size_model[1], self.input_size_model[2], self.input_size_model[3]])
+        # 誤差一覧を読み込み
         diff_list=np.loadtxt(self.args["train_data_path"]+'/diff.csv',delimiter=",")
+
+
         # hyperdash
         if self.args["hyperdash"]:
             self.experiment=Experiment(self.args["name_save"]+"_G1")
@@ -445,8 +468,8 @@ class Model:
                 out_puts2, _, _, im3 = self.convert(test.reshape(1, -1, 1), label2.reshape(-1))
 
                 im = im.reshape([-1, self.args["NFFT"], 2])
-                im2 = im2.reshape([-1, 4, 4])
-                im3 = im3.reshape([-1, 4, 4])
+                im2 = im2.reshape([2])
+                im3 = im3.reshape([2])
 
                 otp_im=np.append(np.clip((im[:,:,0]+30)/40,0.0,1.0).reshape([1,-1,self.args["NFFT"],1]),np.clip((im[:,:,1]+3.15)/6.30,0.0,1.0).reshape([1,-1,self.args["NFFT"],1]),axis=3)
                 out_put=out_puts.astype(np.float32)/32767.0
@@ -486,14 +509,16 @@ class Model:
                         print(" [*] Files uploaded!!")
 
                     plt.clf()
-                    plt.subplot(211)
-                    ins = np.transpose(im2[0], (1, 0))
-                    plt.imshow(ins, aspect="auto")
-                    plt.colorbar()
-                    plt.subplot(212)
-                    ins = np.transpose(im3[0], (1, 0))
-                    plt.imshow(ins, aspect="auto")
-                    plt.colorbar()
+                    # plt.subplot(211)
+                    # ins = np.transpose(im2[0], (1, 0))
+                    # plt.imshow(ins, aspect="auto")
+                    # plt.colorbar()
+                    plt.scatter(im2[0],im2[1])
+                    # plt.subplot(212)
+                    # ins = np.transpose(im3[0], (1, 0))
+                    # plt.imshow(ins, aspect="auto")
+                    # plt.colorbar()
+                    plt.scatter(im3[0],im3[1])
                     path = self.args["wave_otp_dir"] + nowtime()+"_seedA"
                     plt.savefig(path + ".png")
                     plt.clf()
@@ -507,12 +532,17 @@ class Model:
                 st=self.args["batch_size"]*idx
                 # トレーニングデータの取得
                 ism=[-1,self.input_size_model[1],self.input_size_model[2],self.input_size_model[3]]
-                post=batch_sounds_r[0,:-1].reshape([1,self.input_size_model[1],self.input_size_model[2],self.input_size_model[3]])
                 res_t=np.asarray([batch_sounds_r[ind] for ind in index_list[st:st+self.args["batch_size"]]])[:,:-1].reshape(ism)
                 tar=np.asarray([batch_sounds_r[ind] for ind in index_list2[st:st+self.args["batch_size"]]])[:,:-1].reshape(ism)
                 res2=np.asarray([batch_sounds_r[ind] for ind in index_list[st:st+self.args["batch_size"]]])[:,-1]
                 tar2 = np.asarray([batch_sounds_r[ind] for ind in index_list2[st:st + self.args["batch_size"]]])[:,-1]
-                diff=np.asarray([diff_list[int(res2[ts])][int(tar2[ts])]for ts in range(self.args["batch_size"])])
+                diff=np.zeros([5,self.args["batch_size"]])
+                diff[0]=np.asarray([diff_list[int(res2[ts])][int(tar2[ts])]for ts in range(self.args["batch_size"])])
+                diff[1] = np.asarray([diff_list[int(res2[ts])][0] for ts in range(self.args["batch_size"])])
+                diff[2] = np.asarray([diff_list[int(res2[ts])][-1] for ts in range(self.args["batch_size"])])
+                diff[3] = np.asarray([diff_list[int(tar2[ts])][0] for ts in range(self.args["batch_size"])])
+                diff[4] = np.asarray([diff_list[int(tar2[ts])][-1] for ts in range(self.args["batch_size"])])
+
                 # S-netの学習 (2times)
                 self.sess.run([d_optim],feed_dict={self.input_modelb: tar, self.input_modela: res_t,self.input_diff_ab:diff,self.input_def: post,self.tar_def:defa, lr_d: lr_d_opt3})
                 # self.sess.run([d_optim],
@@ -524,16 +554,20 @@ class Model:
                                          self.tar_def: defa, lr_g: lr_g_opt3})
                 # tensorboardの保存
                 if self.args["tensorboard"] and (counter+ti*epoch)%self.args["test_interval"]==0:
-                    res_t = np.asarray([batch_sounds_r[ind] for ind in range(10,20)])[:,
+                    res_t = np.asarray([batch_sounds_r[testlist[ind]] for ind in range(self.args["batch_size"],self.args["batch_size"]*2)])[:,
                             :-1].reshape(ism)
-                    tar = np.asarray([batch_sounds_r[ind] for ind in range(10)])[:,
+                    tar = np.asarray([batch_sounds_r[testlist[ind]] for ind in range(self.args["batch_size"])])[:,
                           :-1].reshape(ism)
-                    res2 = np.asarray([batch_sounds_r[ind] for ind in range(10,20)])[:,
+                    res2 = np.asarray([batch_sounds_r[testlist[ind]] for ind in range(self.args["batch_size"],self.args["batch_size"]*2)])[:,
                            -1]
-                    tar2 = np.asarray([batch_sounds_r[ind] for ind in range(10)])[:,
+                    tar2 = np.asarray([batch_sounds_r[testlist[ind]] for ind in range(self.args["batch_size"])])[:,
                            -1]
-                    diff = np.asarray(
-                        [diff_list[int(res2[ts])][int(tar2[ts])] for ts in range(10)])
+                    diff = np.zeros([5, self.args["batch_size"]])
+                    diff[0] = np.asarray([diff_list[int(res2[ts])][int(tar2[ts])] for ts in range(self.args["batch_size"])])
+                    diff[1] = np.asarray([diff_list[int(res2[ts])][0] for ts in range(self.args["batch_size"])])
+                    diff[2] = np.asarray([diff_list[int(res2[ts])][-1] for ts in range(self.args["batch_size"])])
+                    diff[3] = np.asarray([diff_list[int(tar2[ts])][0] for ts in range(self.args["batch_size"])])
+                    diff[4] = np.asarray([diff_list[int(tar2[ts])][-1] for ts in range(self.args["batch_size"])])
 
                     h= self.sess.run(self.loss_sum,feed_dict={self.input_def: post, self.tar_def: defa,self.input_modela: res_t,self.input_modelb: tar,self.input_diff_ab:diff})
                     self.writer.add_summary(h, counter + ti * epoch)
@@ -701,16 +735,17 @@ def seed_net(inp,reuse,depth,chs,a,train=True):
     for i in range(depth):
         stddevs = math.sqrt(2.0 / 3.0*chs[i])
         current = tf.layers.batch_normalization(current, name="bn_seed" + str(i), training=train, reuse=reuse)
-        current=tf.layers.conv2d(current, chs[i], kernel_size=[1,7], strides=[1,4], padding="VALID",use_bias=False,
+        current=tf.layers.conv2d(current, chs[i], kernel_size=[1,5], strides=[1,2], padding="VALID",use_bias=False,
                                kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
                                data_format="channels_last", name="conv_seed" + str(i), reuse=reuse)
         current = tf.nn.leaky_relu(current)
+        current=tf.layers.dropout(current,0.4,training=train)
     stddevs = 0.001
     seed=tf.layers.conv2d(current,chs[-1], kernel_size=[1,1], strides=[1,1], padding="VALID",use_bias=False,
                                kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
                                data_format="channels_last", name="conv_seed_alpha_0", reuse=reuse)
     seed = tf.reshape(seed, [-1, 1, chs[-1], 1])
-    seed=seed/tf.stop_gradient(tf.sqrt(tf.reduce_sum(tf.pow(seed, 2))+1e-16))
+    # seed=seed/tf.stop_gradient(tf.sqrt(tf.reduce_sum(tf.pow(seed, 2))+1e-16))
     real=tf.reshape(current,[-1,chs[-1]])
     real = tf.layers.dense(real, units=1,kernel_initializer=tf.truncated_normal_initializer(stddev=0.001),use_bias=False, name="conv_seed_beta_0", reuse=reuse)
 
@@ -786,6 +821,7 @@ def block_res(current,seed,chs,rep_pos,depth,reuses,train=True):
         with tf.variable_scope("BN1"+str(i)  + str(rep_pos),reuse=reuses):
             bias = tf.get_variable("bias", shape=[int(ten.shape[2])])
         ten = ten + tf.reshape(tenS * bias,[-1,1,ten.shape[2],1])
+        ten = tf.layers.dropout(ten, 0.5, training=train)
 
         ten2 = tf.layers.conv2d(tenA, chs[times+i], [1, 8], [1, 1], padding="SAME",
                                 kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), use_bias=False,
@@ -796,6 +832,8 @@ def block_res(current,seed,chs,rep_pos,depth,reuses,train=True):
         with tf.variable_scope("BN2" + str(i) + str(rep_pos), reuse=reuses):
             bias2 = tf.get_variable("BS2"+str(i)  + str(rep_pos), shape=[int(ten.shape[2])])
         ten2 = ten2 + tf.reshape(tenS2 * bias2,[-1,1,ten.shape[2],1])
+        ten2=tf.layers.dropout(ten2,0.5,training=train)
+
         ten = tf.nn.relu(ten) * tf.tanh(ten2)
         ten=ten+tenA
 
