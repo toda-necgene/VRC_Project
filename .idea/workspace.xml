@@ -6,7 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="22fa9a76-09a0-4f62-a2d8-6f3210b56f42" name="Default" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/setting.json" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/setting.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/VRC/train/Model/model_seed.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/train/Model/model_seed.py" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/VRC/Network/to/" />
@@ -28,11 +27,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="model_seed.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="model_seed.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_seed.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="272">
-              <caret line="562" column="67" selection-start-line="562" selection-start-column="67" selection-end-line="562" selection-end-column="67" />
+            <state relative-caret-position="281">
+              <caret line="429" column="57" selection-start-line="429" selection-start-column="57" selection-end-line="429" selection-end-column="57" />
               <folding>
                 <element signature="e#0#21#0" expanded="true" />
               </folding>
@@ -52,7 +51,7 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="setting.json" pinned="false" current-in-tab="true">
+      <file leaf-file-name="setting.json" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/setting.json">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="64">
@@ -128,8 +127,8 @@
         <option value="$PROJECT_DIR$/VRC/train/Model/model_proto.py" />
         <option value="$PROJECT_DIR$/VRC/utils/voice_to_datasets.py" />
         <option value="$PROJECT_DIR$/VRC/train/main.py" />
-        <option value="$PROJECT_DIR$/VRC/train/Model/model_seed.py" />
         <option value="$PROJECT_DIR$/VRC/setting.json" />
+        <option value="$PROJECT_DIR$/VRC/train/Model/model_seed.py" />
       </list>
     </option>
   </component>
@@ -399,13 +398,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1520153808625</updated>
-    </task>
-    <task id="LOCAL-00046" summary="[update] output update &lt;version 2.4.000&gt;&#10;&#10;[add] 発話情報の追加">
-      <created>1528940516363</created>
-      <option name="number" value="00046" />
-      <option name="presentableId" value="LOCAL-00046" />
-      <option name="project" value="LOCAL" />
-      <updated>1528940516363</updated>
     </task>
     <task id="LOCAL-00047" summary="[update] output update &lt;version 2.4.000&gt;&#10;&#10;[add] 発話情報の追加">
       <created>1528963111596</created>
@@ -743,7 +735,14 @@
       <option name="project" value="LOCAL" />
       <updated>1532749481566</updated>
     </task>
-    <option name="localTasksCounter" value="95" />
+    <task id="LOCAL-00095" summary="[3.5.000] テストアップデート&#10;&#10;[fix] テストのデータを分離した。">
+      <created>1533073753441</created>
+      <option name="number" value="00095" />
+      <option name="presentableId" value="LOCAL-00095" />
+      <option name="project" value="LOCAL" />
+      <updated>1533073753442</updated>
+    </task>
+    <option name="localTasksCounter" value="96" />
     <servers />
   </component>
   <component name="TodoView">
@@ -793,7 +792,6 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[update] architect update &lt;version 2.5.006&gt;&#10;&#10;[change] 設定ファイルの変更&#10;[目的]　性能の向上" />
     <MESSAGE value="[update] architect update &lt;version 2.5.006&gt;&#10;&#10;[change] psの変更&#10;[目的]　性能の向上" />
     <MESSAGE value="[update] architect update &lt;version 2.5.012&gt;&#10;&#10;[change] psの変更&#10;[目的]　性能の向上" />
     <MESSAGE value="[update] architect update &lt;version 2.5.014&gt;&#10;&#10;[change] double_netの変更&#10;[目的]　性能の向上" />
@@ -818,7 +816,8 @@
     <MESSAGE value="[3.2.165] ハイパーパラメータの模索&#10;&#10;[fix] 元に戻した" />
     <MESSAGE value="[3.2.170] ハイパーパラメータの模索&#10;&#10;[fix] resBlockにGLUを適用した。&#10;[del] flatnetの廃止&#10;[add] API生成の文章を追加" />
     <MESSAGE value="[3.3.000] architectureアップデート&#10;&#10;[fix] resBlockにGLUを適用した。&#10;[del] flatnetの廃止&#10;[add] API生成の文章を追加" />
-    <option name="LAST_COMMIT_MESSAGE" value="[3.3.000] architectureアップデート&#10;&#10;[fix] resBlockにGLUを適用した。&#10;[del] flatnetの廃止&#10;[add] API生成の文章を追加" />
+    <MESSAGE value="[3.5.000] テストアップデート&#10;&#10;[fix] テストのデータを分離した。" />
+    <option name="LAST_COMMIT_MESSAGE" value="[3.5.000] テストアップデート&#10;&#10;[fix] テストのデータを分離した。" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -1069,20 +1068,20 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_seed.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="272">
-          <caret line="562" column="67" selection-start-line="562" selection-start-column="67" selection-end-line="562" selection-end-column="67" />
-          <folding>
-            <element signature="e#0#21#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/VRC/setting.json">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="64">
           <caret line="4" column="22" selection-start-line="4" selection-start-column="22" selection-end-line="4" selection-end-column="22" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_seed.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="281">
+          <caret line="429" column="57" selection-start-line="429" selection-start-column="57" selection-end-line="429" selection-end-column="57" />
+          <folding>
+            <element signature="e#0#21#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>

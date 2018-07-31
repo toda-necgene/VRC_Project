@@ -423,11 +423,11 @@ class Model:
         print(" [*] data found",len(data))
         batch_idxs = train_data_num // self.args["batch_size"]
         trainlist=[h for h in range(train_data_num)]
-        testlist =trainlist[-self.args["batch_size"]:].copy()
+        testlist =trainlist[-self.args["batch_size"]*2:].copy()
         np.random.shuffle(trainlist)
 
-        index_list=trainlist[:-self.args["batch_size"]].copy()
-        index_list2=trainlist[:-self.args["batch_size"]].copy()
+        index_list=trainlist[:-self.args["batch_size"]*2].copy()
+        index_list2=trainlist[:-self.args["batch_size"]*2].copy()
 
         # 学習データをメモリに乗っける
         batch_files = data[:train_data_num]
