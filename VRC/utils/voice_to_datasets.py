@@ -181,7 +181,6 @@ for file in files:
     cnt_ns+=1
 print(" [*] アナライズ完了")
 print(file_freq_list)
-"""
 cnt=0
 cnt_ns=0
 for file in files:
@@ -225,4 +224,3 @@ for file in files:
         cnt+=1
     cnt_ns+=1
 print(" [*] プロセス完了!!　プログラムを終了します。")
-"""
