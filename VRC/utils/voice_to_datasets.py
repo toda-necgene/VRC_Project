@@ -3,13 +3,12 @@ import numpy as np
 import wave
 import time
 import glob
-import cupy
 NFFT=1024
 SHIFT=NFFT//2
 rate=16000
 term = 4096
-cut=120
-target=440
+cut=60
+target=750
 
 def fft(data):
     time_ruler=data.shape[0]//SHIFT
@@ -22,9 +21,7 @@ def fft(data):
         frame=data[pos:pos+NFFT]
         wined[fft_index]=frame*window
         pos += NFFT // 2
-    wined=cupy.asarray(wined, dtype=cupy.float64)
-    fft_rs=cupy.fft.fft(wined,n=NFFT,axis=-1)
-    fft_rs=cupy.asnumpy(fft_rs)
+    fft_rs=np.fft.fft(wined,n=NFFT,axis=-1)
     return fft_rs.reshape(time_ruler, -1)
 
 def shift(data_inps,pitch):
@@ -105,8 +102,8 @@ for file in files:
     rate=16000
 
     b=np.zeros([1])
-    ab=np.zeros([1,128,2])
-    abc=np.zeros([1,128,2])
+    ab=np.zeros([1,NFFT,2])
+    abc=np.zeros([1,NFFT,2])
 
     times=data_realA.shape[0]//term+1
     if data_realA.shape[0]%term==0:
@@ -130,33 +127,48 @@ for file in files:
         a=fft(dmn)
         a=complex_to_pp(a)
         c=a[:,:,0]
-        m=np.max(c,axis=1)
-        c=c[m>1.0]
-        if c.shape[0]!=0:
-            for v in c:
+        m=np.max(c,axis=1)>3.5
+        me = np.mean(c, axis=1)>-6.5
+        cs=list()
+        for sd in range(c.shape[0]):
+            if m[sd] and me[sd]:
+                cs.append(c[sd])
+        if len(cs)!=0:
+            for v in cs:
                 ala = np.fft.ifft(v).real
                 ala[cut:-cut] = 0
                 ala = np.fft.fft(ala).real[:SHIFT]
                 f = 0
-                ed = SHIFT
-                n = 3
-                ala=ala[f:ed]
-                bla = np.roll(ala.copy(), 1, axis=0)
-                alas = bla - ala
-                ana = np.argsort(alas)[-n:]
-                ana_weight = np.sort(alas)[-n:]+np.abs(np.min(alas))
-                ana_weight[ana_weight<np.mean(ala)]=0.0
-                ala = alas[:-1]
+                ed = 450
+                n = 10
 
+                alan=ala[f:ed]
+                # bla = np.roll(alan.copy(), -1, axis=0)
+                # ala = alan-bla
+                # alas=[]
+                # ank=0
+                # ask=0
+                # alas.append(-np.inf)
+                # for l in range(ala.shape[0]-1):
+                #     if ala[l]>= 0 and ala[l+1]<0 and l!=0:
+                #         alas.append(alan[l]-ank)
+                #         ask=l
+                #     elif ala[l]<= 0 and ala[l+1]>0 or l==0:
+                #         ank=alan[l]
+                #         if ask!=0 and alas[ask]<alan[ask]-ank:
+                #             alas[ask] = alan[ask] - ank
+                #         alas.append(-np.inf)
+                #     else:
+                #         alas.append(-np.inf)
+                # alas=np.asarray(alan[:-1])
+                ana = np.argsort(alan)[-n:]
+                aws=np.exp(alan[ana])
+                ana_weight = aws+np.exp((np.min(alan)))
                 ang=0
                 ttm=0
                 for l in range(ana.shape[0]):
-                    t = 1
-                    while ana[l] + t < ala.shape[0] and ala[ana[l] + t] > 0 :
-                        t += 1
-                    if ana[l] + t!=ala.shape[0]:
-                        ang += (ana[l] + t)*ana_weight[l]
-                        ttm+=ana_weight[l]
+                    ang += (ana[l])*ana_weight[l]
+                    ttm += ana_weight[l]
                 if ttm!=0:
                     file_freq += freq[int(ang/ttm) + f]
                     ca+=1
@@ -174,7 +186,7 @@ cnt=0
 cnt_ns=0
 for file in files:
     print(" [*] パッチデータに変換を開始します。 :",file)
-    delta=file_freq_list[cnt_ns]/target
+    delta=target/file_freq_list[cnt_ns]
     print(" [i] ピッチの倍率　:", delta)
     index=0
     dms=[]

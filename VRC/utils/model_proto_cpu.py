@@ -109,10 +109,8 @@ class Model:
         with tf.variable_scope("generators"):
             self.fake_image = generator(self.input_model, self.seed_TB, reuse=None,
                                                 chs=self.args["G_channels"], depth=self.args["depth"],
-                                                f=self.args["filter_g"],
-                                                s=self.args["strides_g"],
                                                 d=self.args["dilations"],
-                                                type=self.args["architect"],
+                                                net_type=self.args["architect"],
                                                 train=False)
         #getting individual variabloes
         #それぞれの変数取得
@@ -246,40 +244,45 @@ class Model:
 
 
 def seed_net(inp,reuse,depth,chs,a,train=True):
-    stddevs = math.sqrt(2.0 / (int(inp.shape[1]) * int(inp.shape[3])))
+    stddevs = math.sqrt(2.0 / (int(inp.shape[1]) * 16))
     current = tf.layers.conv2d(inp, 16, kernel_size=[inp.shape[1],1], strides=[1,1], padding="VALID",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),use_bias=False,
                                data_format="channels_last", name="seed_t", reuse=reuse)
     current = tf.layers.batch_normalization(current, name="bn_seed00", training=train, reuse=reuse)
     current = tf.nn.leaky_relu(current)
     for i in range(depth):
-        stddevs = math.sqrt(2.0 / 4.0*chs[i])
+        stddevs = math.sqrt(2.0 / 3.0*chs[i])
         current = tf.layers.batch_normalization(current, name="bn_seed" + str(i), training=train, reuse=reuse)
-        current=tf.layers.conv2d(current, chs[i], kernel_size=[1,7], strides=[1,4], padding="VALID",use_bias=False,
+        current=tf.layers.conv2d(current, chs[i], kernel_size=[1,5], strides=[1,2], padding="VALID",use_bias=False,
                                kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
                                data_format="channels_last", name="conv_seed" + str(i), reuse=reuse)
         current = tf.nn.leaky_relu(current)
-    current=tf.reshape(current,[-1,1,chs[depth-1],1])
-    sig=current
+    stddevs = 0.00001
+    seed=tf.layers.conv2d(current,chs[-1], kernel_size=[1,1], strides=[1,1], padding="VALID",use_bias=False,
+                               kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
+                               data_format="channels_last", name="conv_seed_alpha_0", reuse=reuse)
+    seed = tf.reshape(seed, [-1, 1, chs[-1], 1])
+    seed=seed/tf.sqrt(tf.reduce_sum(tf.pow(seed, 2))+1e-4)
+    real=tf.reshape(current,[-1,chs[-1]])
+    real = tf.layers.dense(real, units=1,kernel_initializer=tf.truncated_normal_initializer(stddev=0.00001),use_bias=False, name="conv_seed_beta_0", reuse=reuse)
+
     if a is "A" :
-        print(" [*] bottom shape:"+str(current.shape))
-    return sig,current
-def generator(current,seed,reuse,depth,chs,f,s,d,type,train):
-    if type == "hybrid_decay_flatnet":
-        return generator_flatnet_decay(current, seed,reuse, depth, chs, f, s, d, 2, train)
-    elif type == "mix_decay_flatnet":
-        return generator_flatnet_decay(current, seed,reuse, depth, chs, f, s, d, 4, train)
+        print(" [*] bottom shape:"+str(seed.shape))
+    return seed,real
+def generator(current,seed,reuse,depth,chs,d,net_type,train):
+    if net_type == "resnet":
+        return generator_flatnet_decay(current, seed,reuse, depth, chs, d, 2, train)
     else :
-        return  generator_unet(current,reuse,depth,chs,f,s)
-def generator_flatnet_decay(c,seed,reuse,depth,chs,f,s,d,ps,train):
+        return generator_flatnet_decay(current, seed,reuse, depth, chs, d, 4, train)
+def generator_flatnet_decay(c,seed,reuse,depth,chs,d,ps,train):
     #main process
     current=c
     for i in range(depth):
         connections = current
         if ps == 2:
-            ten = block_hybrid(current,seed, chs[i], chs[i * 2], f[i], s[i], i, reuse, i != depth - 1, pixs=f[i],train=train)
+            ten = block_res(current,seed,chs[i], i, reuse,train=train)
         else:
-            ten = block_mix(current,seed,chs[i], i, reuse,train=train)
+            ten = block_flat(current,seed,chs[i], i, reuse,train=train)
         if i!=depth-1:
             ims=ten.shape[3]//connections.shape[3]
             if ims!=0:
@@ -297,60 +300,91 @@ def generator_flatnet_decay(c,seed,reuse,depth,chs,f,s,d,ps,train):
 def dilations(inp,d,reuse,train,chs,startd):
     ten = inp
     ten2 = inp
-    stddevs = math.sqrt(2.0 / (2 * 1 * int(ten.shape[3])))
     for i in range(len(d)):
+        stddevs = math.sqrt(2.0 / (2 * int(ten.shape[3])))
         ten = tf.layers.conv2d(ten, chs[i+startd], kernel_size=[2, 1], strides=[1, 1], padding="VALID",
                            kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),use_bias=False,
                            data_format="channels_last", reuse=reuse, name="conv_p" + str(startd+i), dilation_rate=(d[i], 1))
 
-        if i!=len(d)-1:
-            ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuse,
-                                        name="bn_p" + str(startd+i))
+        ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuse,
+                                    name="bn_p" + str(startd+i))
 
-            ten = tf.nn.leaky_relu(ten)
+        ten = tf.nn.leaky_relu(ten)
 
         ten2 = tf.layers.conv2d(ten2, chs[i + startd], kernel_size=[2, 1], strides=[1, 1], padding="VALID",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),use_bias=False,
                                data_format="channels_last", reuse=reuse, name="conv_f" + str(startd+ i),
                                dilation_rate=(d[i], 1))
-        if i!=len(d)-1:
-            ten2 = tf.layers.batch_normalization(ten2, axis=3, training=train, trainable=True, reuse=reuse,
-                                            name="bn_f" + str(startd+ i))
-            ten2 = tf.nn.leaky_relu(ten2)
+        ten2 = tf.layers.batch_normalization(ten2, axis=3, training=train, trainable=True, reuse=reuse,
+                                        name="bn_f" + str(startd+ i))
+        ten2 = tf.nn.leaky_relu(ten2)
+    ten2=tf.nn.tanh(ten2)*3.2
     current=tf.concat([ten,ten2],axis=3)
     return current
-def block_hybrid(current,seed,output_shape,chs,f,s,depth,reuses,shake,pixs=[2,2],train=True):
-    ten = current
-    stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(ten.shape[3])))
-    tenA = tf.layers.conv2d(ten, chs, kernel_size=f, strides=s, padding="VALID",
-                           kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
-                           data_format="channels_last", reuse=reuses, name="conv11" + str(depth), dilation_rate=(1, 1))
-    tenA = tf.layers.batch_normalization(tenA, axis=3, training=train, trainable=True, reuse=reuses,
-                                        name="bn11" + str(depth))
-
-    tenA = tf.nn.leaky_relu(tenA)
-
-    tenA = tf.layers.conv2d_transpose(tenA,output_shape,f,s,padding="VALID",kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),data_format="channels_last", reuse=reuses, name="deconv" + str(depth))
-    stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(ten.shape[3])))
-    tenB = tf.layers.conv2d(ten, chs, kernel_size=f, strides=f, padding="VALID",
-                           kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
-                           data_format="channels_last", reuse=reuses, name="conv12" + str(depth))
-    tenB = tf.layers.batch_normalization(tenB, axis=3, training=train, trainable=True, reuse=reuses,
-                                        name="bn11" + str(depth))
-
-    tenB = tf.nn.leaky_relu(tenB)
-
-    tenB = deconve_with_ps(tenB, pixs, output_shape, depth, reuses=reuses, name="01")
-    if shake:
-        ten = tf.nn.leaky_relu(tenB + tenA)
-    else:
-        ten=tenB + tenA
-    return ten
-def block_mix(current,seed,chs,depth,reuses,train=True):
+def block_res(current,seed,chs,depth,reuses,train=True):
     ten = current
     tenM=[]
-    times=4
-    res=3
+    times=3
+    res=5
+
+    for i in range(times-1):
+        stddevs = math.sqrt(2.0 / ( 4 * int(ten.shape[3])))
+        ten = tf.layers.conv2d(ten, chs//(2**(times-i-1)), kernel_size=[1, 2], strides=[1, 2], padding="VALID",
+                               kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),use_bias=False,
+                               data_format="channels_last", reuse=reuses, name="conv"+str(i) + str(depth),
+                               dilation_rate=(1, 1))
+        ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
+                                            name="bn"+str(i) + str(depth))
+        ten = tf.nn.leaky_relu(ten)
+        tenM.append(ten)
+    stddevs = math.sqrt(2.0 / (4 * int(ten.shape[3])))
+    ten = tf.layers.conv2d(ten, chs, kernel_size=[1, 2], strides=[1, 2], padding="VALID",
+                           kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), use_bias=False,
+                           data_format="channels_last", reuse=reuses, name="conv"+str(times) + str(depth),
+                           dilation_rate=(1, 1))
+    ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
+                                        name="bn"+str(times) + str(depth))
+    ten = tf.nn.leaky_relu(ten)
+    tenS=tf.reshape(seed,[-1,int(ten.shape[2])])
+    tenS = tf.layers.dense(tenS,units= int(ten.shape[2]),name="FCS1" + str(depth),reuse=reuses)
+    tenS=tf.reshape(tenS,[-1,1,int(ten.shape[2]),1])
+    tenS = tf.layers.batch_normalization(tenS, axis=3, training=train, trainable=True, reuse=reuses,
+                                         name="bnS1" + str(depth))
+
+    ten=ten*tenS
+    for i in range(res):
+        stddevs = math.sqrt(2.0 / (7 * int(ten.shape[3])))
+        tenA=ten
+        ten = tf.layers.conv2d(ten, chs, [1,7], [1,1], padding="SAME",
+                                          kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),use_bias=False,
+                                          data_format="channels_last", reuse=reuses, name="res_convA"+str(i) + str(depth))
+        ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
+                                             name="bnA"+str(times+i+1) + str(depth))
+        ten = tf.nn.leaky_relu(ten)
+        ten=tf.layers.conv2d(ten, chs, [1,7], [1,1], padding="SAME",
+                                          kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),use_bias=False,
+                                          data_format="channels_last", reuse=reuses, name="res_convB"+str(i) + str(depth))
+        ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
+                                            name="bnB" + str(times + i + 1) + str(depth))
+        ten=ten+tenA
+        ten = tf.nn.leaky_relu(ten)
+    ten = deconve_with_ps(ten, [1, 2], chs//2, depth, reuses=reuses, name="00")
+    ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
+                                         name="bn"+str(times+res+1) + str(depth))
+    ten = tf.nn.leaky_relu(ten)
+    for i in range(times-1):
+        ten+=tenM[times-i-2]
+        ten = deconve_with_ps(ten, [1, 2], chs//(2**(i+2)), depth, reuses=reuses, name=str(i+1))
+        ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
+                                            name="bn"+str(i+2+times+res) + str(depth))
+        ten=tf.nn.leaky_relu(ten)
+    return ten
+
+def block_flat(current,seed,chs,depth,reuses,train=True):
+    ten = current
+    tenM=[]
+    times=3
+    res=7
 
     for i in range(times-1):
         stddevs = math.sqrt(2.0 / ( 4 * int(ten.shape[3])))
@@ -371,42 +405,47 @@ def block_mix(current,seed,chs,depth,reuses,train=True):
                                         name="bn"+str(times) + str(depth))
     ten = tf.nn.leaky_relu(ten)
 
-    tenS = tf.layers.conv2d(seed, chs, kernel_size=[1, 2], strides=[1, 1], padding="SAME",
-                            kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),
-                            data_format="channels_last", reuse=reuses, name="convS1" + str(depth))
+    tenS=tf.reshape(seed,[-1,int(ten.shape[2])])
+    tenS = tf.layers.dense(tenS,units= int(ten.shape[2]),name="FCS1" + str(depth),reuse=reuses)
+    tenS=tf.reshape(tenS,[-1,1,int(ten.shape[2]),1])
     tenS = tf.layers.batch_normalization(tenS, axis=3, training=train, trainable=True, reuse=reuses,
                                          name="bnS1" + str(depth))
 
-    tenS = tf.nn.leaky_relu(tenS)
+    tenS = tf.tanh(tenS)
+    ten=ten*tenS
 
-    ten=ten+tenS
     for i in range(res):
         stddevs = math.sqrt(2.0 / (7 * int(ten.shape[3])))
         tenA=ten
-        ten = tf.layers.conv2d(ten, chs, [1,7], [1,1], padding="SAME",
+        ten = tf.layers.conv2d(ten, chs, [1,7], [1,2], padding="VALID",
                                           kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),use_bias=False,
                                           data_format="channels_last", reuse=reuses, name="res_conv"+str(i) + str(depth))
         ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
-                                             name="bn"+str(times+i+1) + str(depth))
+                                             name="bnA"+str(times+i+2) + str(depth))
         ten = tf.nn.leaky_relu(ten)
-
+        stddevs = math.sqrt(2.0 / (8 * int(ten.shape[3])))
+        ten=tf.layers.conv2d_transpose(ten, chs, [1,8], [1,2], padding="VALID",
+                                          kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),use_bias=False,
+                                          data_format="channels_last", reuse=reuses, name="res_deconv"+str(i) + str(depth))
+        ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
+                                            name="bnB" + str(times + i + 2) + str(depth))
+        ten = tf.nn.leaky_relu(ten)
         ten=ten+tenA
-
     ten = deconve_with_ps(ten, [1, 2], chs//2, depth, reuses=reuses, name="00")
     ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
-                                         name="bn"+str(times+res+1) + str(depth))
+                                         name="bn"+str(times+res+2) + str(depth))
     ten = tf.nn.leaky_relu(ten)
     for i in range(times-1):
         ten+=tenM[times-i-2]
         ten = deconve_with_ps(ten, [1, 2], chs//(2**(i+2)), depth, reuses=reuses, name=str(i+1))
         ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
-                                            name="bn"+str(i+2+times+res) + str(depth))
+                                            name="bn"+str(i+3+times+res) + str(depth))
         ten=tf.nn.leaky_relu(ten)
     return ten
-def deconve_with_ps(inp,r,otp_shape,depth,f=[1,1],reuses=None,name=""):
+def deconve_with_ps(inp,r,otp_shape,depth,reuses=None,name=""):
     chs_r=r[0]*r[1]*otp_shape
-    stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(inp.shape[3])))
-    ten = tf.layers.conv2d(inp, chs_r, kernel_size=f, strides=f, padding="VALID",
+    stddevs = math.sqrt(2.0 / int(inp.shape[3]))
+    ten = tf.layers.conv2d(inp, chs_r, kernel_size=[1,1], strides=[1,1], padding="VALID",
                            kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),use_bias=False,
                            data_format="channels_last", reuse=reuses, name="deconv_ps1"+name + str(depth))
     b_size = -1
@@ -416,47 +455,6 @@ def deconve_with_ps(inp,r,otp_shape,depth,f=[1,1],reuses=None,name=""):
     ten = tf.transpose(ten, [0, 2, 3, 4, 1, 5])
     ten = tf.reshape(ten, [b_size, in_h * r[0], in_w * r[1], otp_shape])
     return ten[:,:,:,:]
-
-def generator_unet(current_outputs,reuse,depth,chs,f,s,ps=0):
-    current=current_outputs
-    connections=[ ]
-    for i in range(depth):
-        connections.append(current)
-        current = down_layer(current, chs*(i+1) ,f,s,reuse,i)
-    print("shape of structure:"+str([[int(c.shape[0]),int(c.shape[1]),int(c.shape[2]),int(c.shape[3])] for c in connections]))
-    for i in range(depth):
-        current=up_layer(current,chs*(depth-i-1) if (depth-i-1)!=0 else 2,f,s,i,i!=(depth-1),depth-i-1>2,reuse,ps=ps)
-        if i!=depth-1:
-            current += connections[depth - i -1]
-    return tf.reshape(current,current_outputs.shape)
-
-def up_layer(current,output_shape,f,s,depth,bn=True,do=False,reuse=None,ps=0):
-    ten=tf.nn.leaky_relu(current)
-    stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(ten.shape[3])))
-    if ps==0:
-        ten=tf.layers.conv2d_transpose(ten, output_shape, kernel_size=f, strides=s, padding="VALID",
-                         kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), data_format="channels_last",
-                         name="deconv" + str(depth), reuse=reuse)
-    elif ps==1:
-        ten=deconve_with_ps(ten,f[0],output_shape,depth,reuses=reuse)
-    else:
-        ten1 = tf.layers.conv2d_transpose(ten, output_shape, kernel_size=f, strides=s, padding="VALID",
-                               kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), data_format="channels_last",
-                               name="deconv" + str(depth), reuse=reuse)
-        ten2 = deconve_with_ps(ten, f[0], output_shape, depth, reuses=reuse)
-        ten = ten1 + ten2
-    if bn:
-        ten=tf.layers.batch_normalization(ten,axis=3,training=True,gamma_initializer=tf.random_normal_initializer(1.0, 0.2),name="bn_u"+str(depth),reuse=reuse)
-    return ten
-def down_layer(current,output_shape,f,s,reuse,depth):
-    ten=current
-    stddevs = math.sqrt(2.0 / (f[0] * f[1] * int(current.shape[3])))
-    if depth!=0:
-        ten=tf.layers.batch_normalization(ten,axis=3,training=True,gamma_initializer=tf.random_normal_initializer(1.0, 0.2),name="bn_d"+str(depth),reuse=reuse)
-
-    ten=tf.layers.conv2d(ten, output_shape,kernel_size=f ,strides=s, padding="VALID",kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),data_format="channels_last",name="conv"+str(depth),reuse=reuse)
-    ten=tf.nn.leaky_relu(ten)
-    return ten
 
 def isread(path):
     wf=wave.open(path,"rb")
