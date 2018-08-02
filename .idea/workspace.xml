@@ -6,7 +6,9 @@
   <component name="ChangeListManager">
     <list default="true" id="22fa9a76-09a0-4f62-a2d8-6f3210b56f42" name="Default" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/VRC/setting.json" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/setting.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/VRC/train/Model/model_seed.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/train/Model/model_seed.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/VRC/utils/voice_to_datasets.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/utils/voice_to_datasets.py" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/VRC/Network/to/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -21,17 +23,17 @@
       <file leaf-file-name="main.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/train/main.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="192">
+            <state>
               <caret line="12" selection-start-line="12" selection-end-line="12" />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="model_seed.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="model_seed.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_seed.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="281">
-              <caret line="429" column="57" selection-start-line="429" selection-start-column="57" selection-end-line="429" selection-end-column="57" />
+            <state relative-caret-position="4128">
+              <caret line="720" column="8" selection-start-line="715" selection-start-column="8" selection-end-line="720" selection-end-column="8" />
               <folding>
                 <element signature="e#0#21#0" expanded="true" />
               </folding>
@@ -39,11 +41,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="voice_to_datasets.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="voice_to_datasets.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1840">
-              <caret line="115" column="28" selection-start-line="115" selection-start-column="28" selection-end-line="115" selection-end-column="28" />
+            <state relative-caret-position="240">
+              <caret line="141" column="21" selection-start-line="141" selection-start-column="21" selection-end-line="141" selection-end-column="21" />
               <folding>
                 <element signature="e#0#14#0" expanded="true" />
               </folding>
@@ -54,8 +56,8 @@
       <file leaf-file-name="setting.json" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/setting.json">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="64">
-              <caret line="4" column="22" selection-start-line="4" selection-start-column="22" selection-end-line="4" selection-end-column="22" />
+            <state relative-caret-position="16">
+              <caret line="4" column="26" selection-start-line="4" selection-start-column="26" selection-end-line="4" selection-end-column="26" />
             </state>
           </provider>
         </entry>
@@ -125,10 +127,10 @@
         <option value="$PROJECT_DIR$/VRC/utils/tagging.py" />
         <option value="$PROJECT_DIR$/VRC/utils/voice.py" />
         <option value="$PROJECT_DIR$/VRC/train/Model/model_proto.py" />
-        <option value="$PROJECT_DIR$/VRC/utils/voice_to_datasets.py" />
         <option value="$PROJECT_DIR$/VRC/train/main.py" />
         <option value="$PROJECT_DIR$/VRC/setting.json" />
         <option value="$PROJECT_DIR$/VRC/train/Model/model_seed.py" />
+        <option value="$PROJECT_DIR$/VRC/utils/voice_to_datasets.py" />
       </list>
     </option>
   </component>
@@ -169,13 +171,6 @@
               <item name="vrc" type="462c0819:PsiDirectoryNode" />
               <item name="VRC" type="462c0819:PsiDirectoryNode" />
               <item name="train" type="462c0819:PsiDirectoryNode" />
-              <item name="logs" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
-              <item name="vrc" type="462c0819:PsiDirectoryNode" />
-              <item name="VRC" type="462c0819:PsiDirectoryNode" />
-              <item name="train" type="462c0819:PsiDirectoryNode" />
               <item name="Model" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
@@ -193,7 +188,17 @@
               <item name="train" type="462c0819:PsiDirectoryNode" />
               <item name="Model" type="462c0819:PsiDirectoryNode" />
               <item name="datasets" type="462c0819:PsiDirectoryNode" />
-              <item name="test" type="462c0819:PsiDirectoryNode" />
+              <item name="source" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
+              <item name="vrc" type="462c0819:PsiDirectoryNode" />
+              <item name="VRC" type="462c0819:PsiDirectoryNode" />
+              <item name="train" type="462c0819:PsiDirectoryNode" />
+              <item name="Model" type="462c0819:PsiDirectoryNode" />
+              <item name="datasets" type="462c0819:PsiDirectoryNode" />
+              <item name="source" type="462c0819:PsiDirectoryNode" />
+              <item name="02" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
@@ -203,16 +208,6 @@
               <item name="Model" type="462c0819:PsiDirectoryNode" />
               <item name="datasets" type="462c0819:PsiDirectoryNode" />
               <item name="train" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
-              <item name="vrc" type="462c0819:PsiDirectoryNode" />
-              <item name="VRC" type="462c0819:PsiDirectoryNode" />
-              <item name="train" type="462c0819:PsiDirectoryNode" />
-              <item name="Model" type="462c0819:PsiDirectoryNode" />
-              <item name="datasets" type="462c0819:PsiDirectoryNode" />
-              <item name="train" type="462c0819:PsiDirectoryNode" />
-              <item name="v2" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
@@ -232,19 +227,19 @@
     <property name="settings.editor.selected.configurable" value="application.passwordSafe" />
   </component>
   <component name="RecentsManager">
-    <key name="MoveFile.RECENT_KEYS">
-      <recent name="C:\Users\tadop\git\vrc\VRC\train\logs\[glr=0.0002,gb=0.5,dlr=0.0002,db=0.5]wave2wave3.3.001" />
-      <recent name="C:\Users\tadop\git\vrc\VRC\train\logs\0727run02" />
-      <recent name="C:\Users\tadop\git\vrc\VRC\train\logs\0727run01" />
-      <recent name="C:\Users\tadop\git\vrc\VRC\train\logs\0726run01" />
-      <recent name="C:\Users\tadop\git\vrc\VRC\train\logs\1-2" />
-    </key>
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\Users\tadop\git\vrc\VRC\train\logs" />
       <recent name="C:\Users\tadop\git\vrc\VRC\train\Model\datasets\test" />
       <recent name="C:\Users\tadop\git\vrc\VRC\train\Model" />
       <recent name="C:\Users\tadop\git\vrc\VRC" />
       <recent name="C:\Users\tadop\git\vrc\VRC\train\Model\datasets\train" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\tadop\git\vrc\VRC\train\logs\[glr=0.0002,gb=0.5,dlr=0.0002,db=0.5]wave2wave3.3.001" />
+      <recent name="C:\Users\tadop\git\vrc\VRC\train\logs\0727run02" />
+      <recent name="C:\Users\tadop\git\vrc\VRC\train\logs\0727run01" />
+      <recent name="C:\Users\tadop\git\vrc\VRC\train\logs\0726run01" />
+      <recent name="C:\Users\tadop\git\vrc\VRC\train\logs\1-2" />
     </key>
   </component>
   <component name="RunDashboard">
@@ -259,7 +254,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.main">
+  <component name="RunManager" selected="Python.voice_to_datasets">
     <configuration name="main debug" type="PythonConfigurationType" factoryName="Python">
       <module name="vrc" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -378,8 +373,8 @@
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.main" />
         <item itemvalue="Python.voice_to_datasets" />
+        <item itemvalue="Python.main" />
         <item itemvalue="Python.voice" />
         <item itemvalue="Python.tagging" />
         <item itemvalue="Python.size_fitter" />
@@ -398,13 +393,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1520153808625</updated>
-    </task>
-    <task id="LOCAL-00047" summary="[update] output update &lt;version 2.4.000&gt;&#10;&#10;[add] 発話情報の追加">
-      <created>1528963111596</created>
-      <option name="number" value="00047" />
-      <option name="presentableId" value="LOCAL-00047" />
-      <option name="project" value="LOCAL" />
-      <updated>1528963111596</updated>
     </task>
     <task id="LOCAL-00048" summary="[update] doubleblock update &lt;version 2.4.011&gt;&#10;&#10;[add] ダブルブロックの追加">
       <created>1529015730672</created>
@@ -742,7 +730,14 @@
       <option name="project" value="LOCAL" />
       <updated>1533073753442</updated>
     </task>
-    <option name="localTasksCounter" value="96" />
+    <task id="LOCAL-00096" summary="[3.5.000] テストアップデート(修正版)&#10;&#10;[fix] テストのデータを分離した。">
+      <created>1533073835929</created>
+      <option name="number" value="00096" />
+      <option name="presentableId" value="LOCAL-00096" />
+      <option name="project" value="LOCAL" />
+      <updated>1533073835930</updated>
+    </task>
+    <option name="localTasksCounter" value="97" />
     <servers />
   </component>
   <component name="TodoView">
@@ -770,11 +765,11 @@
       <window_info anchor="bottom" id="Debug" order="3" weight="0.39972898" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
-      <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="right" id="Commander" order="0" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
-      <window_info anchor="bottom" id="Find" order="2" weight="0.3292683" />
       <window_info anchor="bottom" id="Message" order="1" />
+      <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
+      <window_info anchor="bottom" id="Find" order="2" weight="0.3292683" />
       <window_info anchor="bottom" id="Messages" order="0" />
     </layout>
   </component>
@@ -792,7 +787,6 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[update] architect update &lt;version 2.5.006&gt;&#10;&#10;[change] psの変更&#10;[目的]　性能の向上" />
     <MESSAGE value="[update] architect update &lt;version 2.5.012&gt;&#10;&#10;[change] psの変更&#10;[目的]　性能の向上" />
     <MESSAGE value="[update] architect update &lt;version 2.5.014&gt;&#10;&#10;[change] double_netの変更&#10;[目的]　性能の向上" />
     <MESSAGE value="[update] architect update &lt;version 2.5.019&gt;&#10;&#10;[change] sizeの変更&#10;[目的]　性能の向上" />
@@ -817,7 +811,8 @@
     <MESSAGE value="[3.2.170] ハイパーパラメータの模索&#10;&#10;[fix] resBlockにGLUを適用した。&#10;[del] flatnetの廃止&#10;[add] API生成の文章を追加" />
     <MESSAGE value="[3.3.000] architectureアップデート&#10;&#10;[fix] resBlockにGLUを適用した。&#10;[del] flatnetの廃止&#10;[add] API生成の文章を追加" />
     <MESSAGE value="[3.5.000] テストアップデート&#10;&#10;[fix] テストのデータを分離した。" />
-    <option name="LAST_COMMIT_MESSAGE" value="[3.5.000] テストアップデート&#10;&#10;[fix] テストのデータを分離した。" />
+    <MESSAGE value="[3.5.000] テストアップデート(修正版)&#10;&#10;[fix] テストのデータを分離した。" />
+    <option name="LAST_COMMIT_MESSAGE" value="[3.5.000] テストアップデート(修正版)&#10;&#10;[fix] テストのデータを分離した。" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -825,13 +820,6 @@
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$USER_HOME$/AppData/Local/Programs/Python/Python36/Lib/site-packages/numpy/lib/function_base.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="385">
-          <caret line="5165" selection-start-line="5165" selection-end-line="5165" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$USER_HOME$/AppData/Local/Programs/Python/Python36/Lib/site-packages/matplotlib/cbook/deprecation.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="173">
@@ -843,13 +831,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="156">
           <caret line="79" selection-start-line="79" selection-end-line="79" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/AppData/Local/Programs/Python/Python36/Lib/site-packages/numpy/core/fromnumeric.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="173">
-          <caret line="2956" selection-start-line="2956" selection-end-line="2956" />
         </state>
       </provider>
     </entry>
@@ -872,13 +853,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="173">
           <caret line="431" selection-start-line="431" selection-end-line="431" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/utils/model_test.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="209">
-          <caret line="189" selection-start-line="189" selection-end-line="189" />
         </state>
       </provider>
     </entry>
@@ -1053,34 +1027,49 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/train/main.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="192">
+        <state>
           <caret line="12" selection-start-line="12" selection-end-line="12" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets.py">
+    <entry file="file://$PROJECT_DIR$/VRC/train/logs/[glr=0.0002,gb=0.5,dlr=0.0002,db=0.5]wave2wave3.5.002/events.out.tfevents.1533074235.DESKTOP-QFC16G3" />
+    <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_seed.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1840">
-          <caret line="115" column="28" selection-start-line="115" selection-start-column="28" selection-end-line="115" selection-end-column="28" />
+        <state relative-caret-position="4128">
+          <caret line="720" column="8" selection-start-line="715" selection-start-column="8" selection-end-line="720" selection-end-column="8" />
           <folding>
-            <element signature="e#0#14#0" expanded="true" />
+            <element signature="e#0#21#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/setting.json">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="64">
-          <caret line="4" column="22" selection-start-line="4" selection-start-column="22" selection-end-line="4" selection-end-column="22" />
+        <state relative-caret-position="16">
+          <caret line="4" column="26" selection-start-line="4" selection-start-column="26" selection-end-line="4" selection-end-column="26" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_seed.py">
+    <entry file="file://$PROJECT_DIR$/VRC/utils/model_test.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="281">
-          <caret line="429" column="57" selection-start-line="429" selection-start-column="57" selection-end-line="429" selection-end-column="57" />
+        <state relative-caret-position="305">
+          <caret line="117" selection-start-line="81" selection-end-line="117" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/AppData/Local/Programs/Python/Python36/Lib/site-packages/numpy/core/fromnumeric.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="173">
+          <caret line="2097" selection-start-line="2097" selection-end-line="2097" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="240">
+          <caret line="141" column="21" selection-start-line="141" selection-start-column="21" selection-end-line="141" selection-end-column="21" />
           <folding>
-            <element signature="e#0#21#0" expanded="true" />
+            <element signature="e#0#14#0" expanded="true" />
           </folding>
         </state>
       </provider>

@@ -4,16 +4,12 @@ import wave
 import time
 import glob
 import cupy
-import matplotlib.pyplot as plt
-NFFT=128
+NFFT=1024
 SHIFT=NFFT//2
-C1=32.703
 rate=16000
-Hz=C1*(2**0)
-now=317.6
-target=563.666
 term = 4096
-upidx=target/now
+cut=120
+target=440
 
 def fft(data):
     time_ruler=data.shape[0]//SHIFT
@@ -30,6 +26,11 @@ def fft(data):
     fft_rs=cupy.fft.fft(wined,n=NFFT,axis=-1)
     fft_rs=cupy.asnumpy(fft_rs)
     return fft_rs.reshape(time_ruler, -1)
+
+def shift(data_inps,pitch):
+    data_inp=data_inps.reshape(-1)
+    return scale(time_strech(data_inp,1/pitch),data_inp.shape[0])
+
 def scale(inputs,len_wave):
     x=np.linspace(0.0,inputs.shape[0]-1,len_wave)
     ref_x_n=(x+0.5).astype(int)
@@ -62,6 +63,8 @@ def time_strech(datanum,speed):
             spec=np.append(spec,dd[:-fade])
     return spec[1:]
 
+
+
 def complex_to_pp(fft_r):
     time_ruler=fft_r.shape[0]
     re = fft_r.real
@@ -80,8 +83,12 @@ WAVE_INPUT_FILENAME = "../train/Model/datasets/source/02"
 files=glob.glob(WAVE_INPUT_FILENAME+"/*.wav")
 name="4096-128-2/Answer_data"
 cnt=0
+cnt_ns=0
+freq=np.fft.fftfreq(NFFT,d=1.0/16000)
+file_freq_list=np.zeros(len(files))
+print(" [*] 変換プロセスを実行します。")
 for file in files:
-    print(file)
+    print(" [*] アナライズを開始します :", file)
     index=0
     dms=[]
     wf = wave.open(file, 'rb')
@@ -106,6 +113,9 @@ for file in files:
         times-=1
     ttm=time.time()
     resp=np.zeros([NFFT//2])
+    ala=np.zeros(NFFT)
+    ca=0
+    file_freq=0.0
     for i in range(times):
         ind=term+SHIFT
         startpos=term*i+data_realA.shape[0]%term
@@ -116,22 +126,91 @@ for file in files:
         dmn=data_realAb/32767.0
         r=SHIFT-dmn.shape[0]%SHIFT
         if r!=SHIFT:
-            dmn=np.pad(dmn,(0,r),"reflect")
+            dmn=np.pad(dmn,(0,r),"constant")
+        a=fft(dmn)
+        a=complex_to_pp(a)
+        c=a[:,:,0]
+        m=np.max(c,axis=1)
+        c=c[m>1.0]
+        if c.shape[0]!=0:
+            for v in c:
+                ala = np.fft.ifft(v).real
+                ala[cut:-cut] = 0
+                ala = np.fft.fft(ala).real[:SHIFT]
+                f = 0
+                ed = SHIFT
+                n = 3
+                ala=ala[f:ed]
+                bla = np.roll(ala.copy(), 1, axis=0)
+                alas = bla - ala
+                ana = np.argsort(alas)[-n:]
+                ana_weight = np.sort(alas)[-n:]+np.abs(np.min(alas))
+                ana_weight[ana_weight<np.mean(ala)]=0.0
+                ala = alas[:-1]
+
+                ang=0
+                ttm=0
+                for l in range(ana.shape[0]):
+                    t = 1
+                    while ana[l] + t < ala.shape[0] and ala[ana[l] + t] > 0 :
+                        t += 1
+                    if ana[l] + t!=ala.shape[0]:
+                        ang += (ana[l] + t)*ana_weight[l]
+                        ttm+=ana_weight[l]
+                if ttm!=0:
+                    file_freq += freq[int(ang/ttm) + f]
+                    ca+=1
+            cnt+=1
+    if ca==0:
+        print("Error!!")
+    file_freq/=ca
+    print(" [i] 基本周波数を算出しました。:",file_freq)
+    file_freq_list[cnt_ns]=file_freq
+    cnt_ns+=1
+print(" [*] アナライズ完了")
+print(file_freq_list)
+"""
+cnt=0
+cnt_ns=0
+for file in files:
+    print(" [*] パッチデータに変換を開始します。 :",file)
+    delta=file_freq_list[cnt_ns]/target
+    print(" [i] ピッチの倍率　:", delta)
+    index=0
+    dms=[]
+    wf = wave.open(file, 'rb')
+    dds = wf.readframes(CHUNK)
+    while dds != b'':
+        dms.append(dds)
+        dds = wf.readframes(CHUNK)
+    dms = b''.join(dms)
+    data = np.frombuffer(dms, 'int16')
+    data_real=data.reshape(-1)
+    data_realA=data_real
+    timee=data_realA.shape[0]
+    rate=16000
+    b=np.zeros([1])
+    ab=np.zeros([1,128,2])
+    abc=np.zeros([1,128,2])
+
+    times=data_realA.shape[0]//term+1
+    if data_realA.shape[0]%term==0:
+        times-=1
+    ttm=time.time()
+    resp=np.zeros([NFFT//2])
+    for i in range(times):
+        ind=term+SHIFT
+        startpos=term*i+data_realA.shape[0]%term
+        data_realAb = data_realA[max(startpos-ind,0):startpos]
+        r=ind-data_realAb.shape[0]
+        if r>0:
+            data_realAb=np.pad(data_realAb,(r,0),"constant")
+        dmn=data_realAb/32767.0
+        dmn=shift(dmn,delta)
         a=fft(dmn)
         a=complex_to_pp(a[:,:SHIFT])
-        c=a[:,:,0]
-        v=1/np.sqrt(np.var(c,axis=1)+1e-36)
-        # a[:, :, 0] -= np.tile(np.mean(c, axis=1).reshape(-1, 1), (1, SHIFT))
-        # a[:, :, 0]= np.einsum("ij,i->ij",a[:, :, 0],v)
-        bb=np.isnan(np.mean(a))
-        if bb:
-            print("NAN!!")
         np.save("../train/Model/datasets/train/"+str(name)+"/"+str(cnt) +".data", a)
         cnt+=1
-plt.subplot(211)
-plt.imshow(a[:,:,0],aspect="auto")
-plt.colorbar()
-plt.subplot(212)
-plt.imshow(a[:,:,1],aspect="auto")
-plt.colorbar()
-plt.show()
+    cnt_ns+=1
+print(" [*] プロセス完了!!　プログラムを終了します。")
+"""

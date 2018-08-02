@@ -421,11 +421,10 @@ class Model:
         # 回数計算
         train_data_num = len(data)
         print(" [*] data found",len(data))
-        batch_idxs = train_data_num // self.args["batch_size"]
         trainlist=[h for h in range(train_data_num)]
         testlist =trainlist[-self.args["batch_size"]*2:].copy()
         np.random.shuffle(trainlist)
-
+        batch_idxs = len(trainlist[:-self.args["batch_size"]*2]) // self.args["batch_size"]
         index_list=trainlist[:-self.args["batch_size"]*2].copy()
         index_list2=trainlist[:-self.args["batch_size"]*2].copy()
 
@@ -528,7 +527,6 @@ class Model:
             print(" [*] Epoch %3d started" % epoch)
 
             for idx in xrange(0, batch_idxs):
-                # トレーニングデータの読み込み
                 st=self.args["batch_size"]*idx
                 # トレーニングデータの取得
                 ism=[-1,self.input_size_model[1],self.input_size_model[2],self.input_size_model[3]]
