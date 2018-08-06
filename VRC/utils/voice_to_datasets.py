@@ -6,9 +6,20 @@ import glob
 NFFT=1024
 SHIFT=NFFT//2
 rate=16000
+dilations=15
 term = 4096
-cut=60
-target=750
+cut=200
+target=150
+save_num=100
+FORMAT = pyaudio.paInt16
+CHANNELS = 1        #モノラル
+RATE = 16000       #サンプルレート
+CHUNK = 1024     #データ点数
+RECORD_SECONDS = 5 #録音する時間の長さ
+WAVE_INPUT_FILENAME = "../train/Model/datasets/source/02"
+files=glob.glob(WAVE_INPUT_FILENAME+"/*.wav")
+name="v4/Source_data"
+sample_name="v4/Samples"
 
 def fft(data):
     time_ruler=data.shape[0]//SHIFT
@@ -71,18 +82,13 @@ def complex_to_pp(fft_r):
     spec = np.concatenate((c, d), 2)
     return spec
 
-FORMAT = pyaudio.paInt16
-CHANNELS = 1        #モノラル
-RATE = 16000       #サンプルレート
-CHUNK = 1024     #データ点数
-RECORD_SECONDS = 5 #録音する時間の長さ
-WAVE_INPUT_FILENAME = "../train/Model/datasets/source/02"
-files=glob.glob(WAVE_INPUT_FILENAME+"/*.wav")
-name="4096-128-2/Answer_data"
+
+
 cnt=0
 cnt_ns=0
 freq=np.fft.fftfreq(NFFT,d=1.0/16000)
 file_freq_list=np.zeros(len(files))
+scales_list=list()
 print(" [*] 変換プロセスを実行します。")
 for file in files:
     print(" [*] アナライズを開始します :", file)
@@ -112,7 +118,7 @@ for file in files:
     resp=np.zeros([NFFT//2])
     ala=np.zeros(NFFT)
     ca=0
-    file_freq=0.0
+    file_freqs=list()
     for i in range(times):
         ind=term+SHIFT
         startpos=term*i+data_realA.shape[0]%term
@@ -127,8 +133,8 @@ for file in files:
         a=fft(dmn)
         a=complex_to_pp(a)
         c=a[:,:,0]
-        m=np.max(c,axis=1)>3.5
-        me = np.mean(c, axis=1)>-6.5
+        m=np.max(c,axis=1)>3.0
+        me = np.mean(c, axis=1)>-5.5
         cs=list()
         for sd in range(c.shape[0]):
             if m[sd] and me[sd]:
@@ -138,49 +144,54 @@ for file in files:
                 ala = np.fft.ifft(v).real
                 ala[cut:-cut] = 0
                 ala = np.fft.fft(ala).real[:SHIFT]
-                f = 0
+                f = 12
                 ed = 450
-                n = 10
-
+                n = 6
                 alan=ala[f:ed]
-                # bla = np.roll(alan.copy(), -1, axis=0)
-                # ala = alan-bla
-                # alas=[]
-                # ank=0
-                # ask=0
-                # alas.append(-np.inf)
-                # for l in range(ala.shape[0]-1):
-                #     if ala[l]>= 0 and ala[l+1]<0 and l!=0:
-                #         alas.append(alan[l]-ank)
-                #         ask=l
-                #     elif ala[l]<= 0 and ala[l+1]>0 or l==0:
-                #         ank=alan[l]
-                #         if ask!=0 and alas[ask]<alan[ask]-ank:
-                #             alas[ask] = alan[ask] - ank
-                #         alas.append(-np.inf)
-                #     else:
-                #         alas.append(-np.inf)
-                # alas=np.asarray(alan[:-1])
-                ana = np.argsort(alan)[-n:]
-                aws=np.exp(alan[ana])
-                ana_weight = aws+np.exp((np.min(alan)))
-                ang=0
-                ttm=0
-                for l in range(ana.shape[0]):
-                    ang += (ana[l])*ana_weight[l]
-                    ttm += ana_weight[l]
-                if ttm!=0:
-                    file_freq += freq[int(ang/ttm) + f]
-                    ca+=1
+                alas=list()
+                alaa=alan.copy()
+                alab=np.roll(alan.copy(),1)
+                alad=alaa-alab
+                for k in range(alad.shape[0]-1):
+                    if alad[k]>=0 and alad[k+1]<=0:
+                        alas.append(v[k+f])
+                    else:
+                        alas.append(-np.inf)
+                alas=np.asarray(alas)
+                maximam_form=np.max(alas)
+                ana = np.argsort(alas)[-n:]
+                ana = np.sort(ana)
+                mini=np.nan
+                formants=list()
+                for k in ana:
+                    if k!=0 and not np.isnan(alas[k]) and alas[k]>maximam_form-3.5:
+                        formants.append(k+f)
+                for k in range(len(formants)-1):
+                    file_freqs.append(freq[formants[k+1]-formants[k]])
+
             cnt+=1
-    if ca==0:
-        print("Error!!")
-    file_freq/=ca
-    print(" [i] 基本周波数を算出しました。:",file_freq)
+    file_freqs=np.asarray(file_freqs)
+    scales=np.round(np.log2(file_freqs/27.5)*12).astype(np.int16)
+    counts=np.bincount(scales)
+    mode=np.argmax(counts)
+    file_freq=np.power(2,mode/12)*27.5
+    print(" [i] 基本周波数を算出しました。:",file_freq,scales.shape)
     file_freq_list[cnt_ns]=file_freq
+    scales_list.append(scales[:100])
     cnt_ns+=1
+scales_list=np.asarray(scales_list)
+
+with open("hist.csv","w") as f:
+    for hsm in file_freq_list:
+        f.write(str(hsm)+",")
+    f.writelines("\n")
+    for hsm in scales_list:
+        for hmm in hsm:
+            f.write(str(hmm)+",")
+        f.writelines("\n")
+
 print(" [*] アナライズ完了")
-print(file_freq_list)
+
 cnt=0
 cnt_ns=0
 for file in files:
@@ -196,13 +207,11 @@ for file in files:
         dds = wf.readframes(CHUNK)
     dms = b''.join(dms)
     data = np.frombuffer(dms, 'int16')
-    data_real=data.reshape(-1)
-    data_realA=data_real
+    data_real=data.reshape(-1)/32767.0
+    data_realA=dmn=shift(data_real.copy(),delta)
     timee=data_realA.shape[0]
     rate=16000
     b=np.zeros([1])
-    ab=np.zeros([1,128,2])
-    abc=np.zeros([1,128,2])
 
     times=data_realA.shape[0]//term+1
     if data_realA.shape[0]%term==0:
@@ -210,17 +219,26 @@ for file in files:
     ttm=time.time()
     resp=np.zeros([NFFT//2])
     for i in range(times):
-        ind=term+SHIFT
-        startpos=term*i+data_realA.shape[0]%term
-        data_realAb = data_realA[max(startpos-ind,0):startpos]
-        r=ind-data_realAb.shape[0]
-        if r>0:
-            data_realAb=np.pad(data_realAb,(r,0),"constant")
-        dmn=data_realAb/32767.0
-        dmn=shift(dmn,delta)
-        a=fft(dmn)
-        a=complex_to_pp(a[:,:SHIFT])
-        np.save("../train/Model/datasets/train/"+str(name)+"/"+str(cnt) +".data", a)
-        cnt+=1
+        if i < save_num:
+            ind=term+SHIFT*dilations+SHIFT
+            startpos=term*i+data_realA.shape[0]%term
+            data_realAb = data_realA[max(startpos-ind,0):startpos]
+            r=ind-data_realAb.shape[0]
+            if r>0:
+                data_realAb=np.pad(data_realAb,(r,0),"constant")
+            dmn=data_realAb
+            a=fft(dmn)
+            a=complex_to_pp(a[:,:SHIFT])
+            a=np.append(a,cnt_ns)
+            np.save("../train/Model/datasets/train/"+str(name)+"/"+str(cnt) +".data", a)
+            cnt+=1
+    p=pyaudio.PyAudio()
+    data_realA=(data_realA*32767).astype(np.int16)
+    ww = wave.open("../train/Model/datasets/train/"+str(sample_name)+"/"+str(cnt_ns) +".wav", 'wb')
+    ww.setnchannels(1)
+    ww.setsampwidth(p.get_sample_size(FORMAT))
+    ww.setframerate(RATE)
+    ww.writeframes(data_realA.tobytes())
+    ww.close()
     cnt_ns+=1
 print(" [*] プロセス完了!!　プログラムを終了します。")
