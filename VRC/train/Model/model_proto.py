@@ -712,7 +712,7 @@ def block_res(current,chs,rep_pos,depth,reuses,d,train=True):
         ten=tf.nn.leaky_relu(ten)
 
     tenA=ten
-    tenA = tf.layers.conv2d(tenA, 16, [1, 1], [1, 1], padding="SAME",
+    tenA = tf.layers.conv2d(tenA, 4, [1, 1], [1, 1], padding="SAME",
                             kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), use_bias=False,
                             data_format="channels_last", reuse=reuses, name="res_last1A"  + str(rep_pos))
     tenA = tf.layers.batch_normalization(tenA, axis=3, training=train, trainable=True, reuse=reuses,
@@ -723,7 +723,7 @@ def block_res(current,chs,rep_pos,depth,reuses,d,train=True):
                             data_format="channels_last", reuse=reuses, name="res_last2A" + str(rep_pos))
 
     tenB=ten
-    tenB = tf.layers.conv2d(tenB, 16, [1, 1], [1, 1], padding="SAME",
+    tenB = tf.layers.conv2d(tenB, 4, [1, 1], [1, 1], padding="SAME",
                            kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), use_bias=False,
                            data_format="channels_last", reuse=reuses, name="res_last1B" + str(rep_pos))
     tenB = tf.layers.batch_normalization(tenB, axis=3, training=train, trainable=True, reuse=reuses,

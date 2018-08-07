@@ -4,11 +4,10 @@
     <bookmark url="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py" line="635" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="22fa9a76-09a0-4f62-a2d8-6f3210b56f42" name="Default" comment="[3.9.910] アーキテクチャアップデート&#10;&#10;[fix]">
+    <list default="true" id="22fa9a76-09a0-4f62-a2d8-6f3210b56f42" name="Default" comment="[3.9.910] アーキテクチャアップデート&#10;&#10;[add] flat-net構造に変更">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/VRC/setting.json" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/setting.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/VRC/train/Model/model_proto.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/train/Model/model_proto.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/utils/model_proto_cpu.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/utils/model_proto_cpu.py" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/VRC/Network/to/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -33,16 +32,16 @@
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
-          <entry key="json" value="6" />
-          <entry key="py" value="57" />
-          <entry key="txt" value="36" />
+          <entry key="json" value="65" />
+          <entry key="py" value="64" />
+          <entry key="txt" value="54" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="JSON" value="6" />
-          <entry key="PLAIN_TEXT" value="36" />
-          <entry key="Python" value="57" />
+          <entry key="JSON" value="65" />
+          <entry key="PLAIN_TEXT" value="54" />
+          <entry key="Python" value="64" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.open">
@@ -64,11 +63,11 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="285">
-              <caret line="697" column="53" selection-start-line="697" selection-start-column="53" selection-end-line="697" selection-end-column="53" />
+            <state relative-caret-position="152">
+              <caret line="665" column="23" selection-start-line="665" selection-start-column="23" selection-end-line="665" selection-end-column="23" />
               <folding>
                 <element signature="e#0#21#0" expanded="true" />
               </folding>
@@ -88,20 +87,11 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/VRC/setting.json">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="64">
-              <caret line="4" column="26" selection-start-line="4" selection-start-column="26" selection-end-line="4" selection-end-column="26" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/VRC/utils/model_proto_cpu.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="330">
-              <caret line="341" column="53" selection-start-line="341" selection-start-column="53" selection-end-line="341" selection-end-column="53" />
+            <state relative-caret-position="128">
+              <caret line="11" column="38" selection-start-line="11" selection-start-column="38" selection-end-line="11" selection-end-column="38" />
             </state>
           </provider>
         </entry>
@@ -177,9 +167,9 @@
         <option value="$PROJECT_DIR$/VRC/utils/voice_to_datasets.py" />
         <option value="$PROJECT_DIR$/VRC/train/main.py" />
         <option value="$PROJECT_DIR$/VRC/train/Model/model_seed.py" />
-        <option value="$PROJECT_DIR$/VRC/setting.json" />
         <option value="$PROJECT_DIR$/VRC/utils/model_proto_cpu.py" />
         <option value="$PROJECT_DIR$/VRC/train/Model/model_proto.py" />
+        <option value="$PROJECT_DIR$/VRC/setting.json" />
       </list>
     </option>
   </component>
@@ -547,13 +537,6 @@
       <option name="presentableId" value="Default" />
       <updated>1520153808625</updated>
     </task>
-    <task id="LOCAL-00051" summary="[update] doubleblock update &lt;version 2.4.013&gt;&#10;&#10;[add] ダブルブロックの調整">
-      <created>1529019567592</created>
-      <option name="number" value="00051" />
-      <option name="presentableId" value="LOCAL-00051" />
-      <option name="project" value="LOCAL" />
-      <updated>1529019567592</updated>
-    </task>
     <task id="LOCAL-00052" summary="[update] doubleblock update &lt;version 2.4.016&gt;&#10;&#10;[add] ダブルブロックの調整2">
       <created>1529036031775</created>
       <option name="number" value="00052" />
@@ -890,7 +873,14 @@
       <option name="project" value="LOCAL" />
       <updated>1533606495272</updated>
     </task>
-    <option name="localTasksCounter" value="100" />
+    <task id="LOCAL-00100" summary="[3.9.910] アーキテクチャアップデート&#10;&#10;[add] flat-net構造に変更">
+      <created>1533609814052</created>
+      <option name="number" value="00100" />
+      <option name="presentableId" value="LOCAL-00100" />
+      <option name="project" value="LOCAL" />
+      <updated>1533609814052</updated>
+    </task>
+    <option name="localTasksCounter" value="101" />
     <servers />
   </component>
   <component name="TodoView">
@@ -940,7 +930,6 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[update] architect update &lt;version 2.6.000&gt;&#10;&#10;[change] dilation畳み込みに対応（イントネーションの改善の見込み）" />
     <MESSAGE value="[update] architect update &lt;version 2.6.001&gt;&#10;&#10;[change] dilation畳み込みに対応（イントネーションの改善の見込み）" />
     <MESSAGE value="[update] architect update &lt;version 2.6.004&gt;&#10;&#10;[fix] discriminatorの時系列方向へ畳み込むように修正（イントネーションの改善の見込み）" />
     <MESSAGE value="[update] activation update &lt;version 2.6.009&gt;&#10;&#10;[fix] gluの設定" />
@@ -965,7 +954,8 @@
     <MESSAGE value="[3.6.000] ピッチアップデート&#10;&#10;[fix] 音声のピッチを事前に変更できるようにする。" />
     <MESSAGE value="[3.9.900] 統合アップデート&#10;&#10;[add] １対１の音声変換機能を復活&#10;[add] dropoutレイヤーを追加" />
     <MESSAGE value="[3.9.901] 統合アップデート&#10;&#10;[fix] dropoutレイヤーを削除&#10;[fix] そのほかパラメータを調整" />
-    <option name="LAST_COMMIT_MESSAGE" value="[3.9.901] 統合アップデート&#10;&#10;[fix] dropoutレイヤーを削除&#10;[fix] そのほかパラメータを調整" />
+    <MESSAGE value="[3.9.910] アーキテクチャアップデート&#10;&#10;[add] flat-net構造に変更" />
+    <option name="LAST_COMMIT_MESSAGE" value="[3.9.910] アーキテクチャアップデート&#10;&#10;[add] flat-net構造に変更" />
   </component>
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/VRC/train/test.py">
@@ -1183,6 +1173,23 @@
     <entry file="file://$PROJECT_DIR$/VRC/train/logs/[glr=0.001,gb=0.5,dlr=0.001,db=0.5]wave2wave2.7.007run01/events.out.tfevents.1533595546.DESKTOP-QFC16G3">
       <provider selected="true" editor-type-id="LargeFileEditor" />
     </entry>
+    <entry file="file://$PROJECT_DIR$/VRC/utils/model_proto_cpu.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="330">
+          <caret line="341" column="53" selection-start-line="341" selection-start-column="53" selection-end-line="341" selection-end-column="53" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="152">
+          <caret line="665" column="23" selection-start-line="665" selection-start-column="23" selection-end-line="665" selection-end-column="23" />
+          <folding>
+            <element signature="e#0#21#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/VRC/utils/testing.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="437">
@@ -1195,25 +1202,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/setting.json">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="64">
-          <caret line="4" column="26" selection-start-line="4" selection-start-column="26" selection-end-line="4" selection-end-column="26" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/utils/model_proto_cpu.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="330">
-          <caret line="341" column="53" selection-start-line="341" selection-start-column="53" selection-end-line="341" selection-end-column="53" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="285">
-          <caret line="697" column="53" selection-start-line="697" selection-start-column="53" selection-end-line="697" selection-end-column="53" />
-          <folding>
-            <element signature="e#0#21#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="128">
+          <caret line="11" column="38" selection-start-line="11" selection-start-column="38" selection-end-line="11" selection-end-column="38" />
         </state>
       </provider>
     </entry>
