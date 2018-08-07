@@ -203,7 +203,7 @@ class Model:
 
         # L1 norm lossA
         saa=tf.losses.mean_squared_error(labels=self.input_modela[:,-ff:,:,0],predictions =self.fake_Ba_image[:,:,:,0])*2.0
-        sbb=tf.losses.mean_squared_error(labels=self.input_modela[:,-ff:,:,1] ,predictions = self.fake_Ba_image[:,:,:,1])*50.0
+        sbb=tf.losses.mean_squared_error(labels=self.input_modela[:,-ff:,:,1] ,predictions = self.fake_Ba_image[:,:,:,1])*80.0
         L1B=saa+sbb
 
         # Gan lossA
@@ -212,7 +212,7 @@ class Model:
         self.g_loss_aB = L1B * self.args["weight_Cycle"]+DSb* self.args["weight_GAN"]
         # L1 norm lossB
         sa=tf.losses.mean_squared_error(labels=self.input_modelb[:,-ff:,:,0] ,predictions = self.fake_Ab_image[:,:,:,0])*2.0
-        sb=tf.losses.mean_squared_error(labels=self.input_modelb[:,-ff:,:,1] , predictions =self.fake_Ab_image[:,:,:,1])*50.0
+        sb=tf.losses.mean_squared_error(labels=self.input_modelb[:,-ff:,:,1] , predictions =self.fake_Ab_image[:,:,:,1])*80.0
         L1bAAb = sa+sb
         # Gan loss
         DSA = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.ones([self.args["batch_size"],1]),predictions=self.d_judge_AF))
@@ -481,10 +481,10 @@ class Model:
                     res_t=batch_sounds1[:,max(0,start_pos-ipt):start_pos]
                     tar=batch_sounds2[:,max(0,start_pos-ipt):start_pos]
                     ts+=time.time()-tm
-                    rate = 1.0 - 0.5 ** (epoch // 50 + 1)
                     # Update G network
                     # G-netの学習
-                    self.sess.run([g_optim,self.update_ops],feed_dict={ self.input_modela:res_t,self.input_modelb:tar})
+                    for _ in range(2):
+                        self.sess.run([g_optim,self.update_ops],feed_dict={ self.input_modela:res_t,self.input_modelb:tar})
                     # Update D network (1times)
                     self.sess.run([d_optim],
                                   feed_dict={self.input_modelb: tar, self.input_modela: res_t})
@@ -631,7 +631,7 @@ def discriminator(inp,reuse,depth,chs,train=True):
         ten = tf.layers.conv2d(current, chs[i], kernel_size=[2,5], strides=[1,2], padding="VALID",kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), data_format="channels_last",name="disc_"+str(i),reuse=reuse)
         ten = tf.layers.batch_normalization(ten, axis=3, trainable=False, training=train, reuse=reuse,
                                             name="bn_disc" + str(i))
-        ten=tf.layers.dropout(ten,0.125,training=train)
+        # ten=tf.layers.dropout(ten,0.125,training=train)
         current = tf.nn.leaky_relu(ten)
     print(" [*] bottom shape:"+str(current.shape))
     h4=tf.reshape(current, [-1,current.shape[1]*current.shape[2]*current.shape[3]])
