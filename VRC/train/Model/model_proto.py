@@ -351,8 +351,6 @@ class Model:
         # initialize training info
         # 学習の情報の初期化
         start_time = time.time()
-        log_data_g = np.empty(0)
-        log_data_d = np.empty(0)
         ti=0
         # loading net
         # 過去の学習データの読み込み
@@ -483,8 +481,7 @@ class Model:
                     ts+=time.time()-tm
                     # Update G network
                     # G-netの学習
-                    for _ in range(2):
-                        self.sess.run([g_optim,self.update_ops],feed_dict={ self.input_modela:res_t,self.input_modelb:tar})
+                    self.sess.run([g_optim,self.update_ops],feed_dict={ self.input_modela:res_t,self.input_modelb:tar})
                     # Update D network (1times)
                     self.sess.run([d_optim],
                                   feed_dict={self.input_modelb: tar, self.input_modela: res_t})
@@ -682,11 +679,23 @@ def block_res(current,chs,rep_pos,depth,reuses,d,train=True):
         stddevs = math.sqrt(2.0 / (7 * int(ten.shape[3])))
 
         tenA=ten
-        ten = tf.layers.conv2d(tenA, chs[tms+i], [1,7], [1,1], padding="SAME",
-                                          kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),use_bias=False,
-                                          data_format="channels_last", reuse=reuses, name="res_convA"+str(i) + str(rep_pos))
+
+        # ten = tf.layers.conv2d(tenA, chs[tms+i], [1,7], [1,1], padding="SAME",
+        #                                   kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs),use_bias=False,
+        #                                   data_format="channels_last", reuse=reuses, name="res_convA"+str(i) + str(rep_pos))
+        #
+        ten = tf.layers.conv2d(tenA, chs[tms + i]*4, [1, 7], [1, 4], padding="SAME",
+                               kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), use_bias=False,
+                               data_format="channels_last", reuse=reuses, name="res_conv" + str(i) + str(rep_pos))
+
         ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
                                              name="bnA"+str(tms+i) + str(rep_pos))
+        ten = tf.nn.leaky_relu(ten)
+        ten = tf.layers.conv2d_transpose(ten, chs[tms + i], [1, 7], [1, 4], padding="SAME",
+                               kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), use_bias=False,
+                               data_format="channels_last", reuse=reuses, name="res_deconv" + str(i) + str(rep_pos))
+        ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
+                                            name="bnB" + str(tms + i) + str(rep_pos))
         ten = tf.nn.leaky_relu(ten)
 
         ten=ten+tenA

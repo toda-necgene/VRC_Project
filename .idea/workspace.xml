@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="BookmarkManager">
-    <bookmark url="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py" line="638" />
+    <bookmark url="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py" line="635" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="22fa9a76-09a0-4f62-a2d8-6f3210b56f42" name="Default" comment="">
+    <list default="true" id="22fa9a76-09a0-4f62-a2d8-6f3210b56f42" name="Default" comment="[3.9.910] アーキテクチャアップデート&#10;&#10;[fix]">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/VRC/setting.json" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/setting.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/VRC/train/Model/model_proto.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/train/Model/model_proto.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/VRC/utils/model_proto_cpu.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/utils/model_proto_cpu.py" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/VRC/Network/to/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -27,23 +28,27 @@
       <usages-collector id="statistics.file.extensions.open">
         <counts>
           <entry key="DESKTOP-QFC16G3" value="1" />
+          <entry key="py" value="1" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
-          <entry key="json" value="1" />
-          <entry key="py" value="30" />
+          <entry key="json" value="6" />
+          <entry key="py" value="57" />
+          <entry key="txt" value="36" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="JSON" value="1" />
-          <entry key="Python" value="30" />
+          <entry key="JSON" value="6" />
+          <entry key="PLAIN_TEXT" value="36" />
+          <entry key="Python" value="57" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.open">
         <counts>
           <entry key="PLAIN_TEXT" value="1" />
+          <entry key="Python" value="1" />
         </counts>
       </usages-collector>
     </session>
@@ -59,11 +64,11 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-778">
-              <caret line="205" column="123" selection-start-line="205" selection-start-column="123" selection-end-line="205" selection-end-column="123" />
+            <state relative-caret-position="285">
+              <caret line="697" column="53" selection-start-line="697" selection-start-column="53" selection-end-line="697" selection-end-column="53" />
               <folding>
                 <element signature="e#0#21#0" expanded="true" />
               </folding>
@@ -74,7 +79,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/utils/testing.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="3088">
+            <state relative-caret-position="437">
               <caret line="196" selection-start-line="196" selection-end-line="201" selection-end-column="10" />
               <folding>
                 <element signature="e#0#14#0" expanded="true" />
@@ -83,11 +88,20 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/setting.json">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-32">
+            <state relative-caret-position="64">
               <caret line="4" column="26" selection-start-line="4" selection-start-column="26" selection-end-line="4" selection-end-column="26" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/VRC/utils/model_proto_cpu.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="330">
+              <caret line="341" column="53" selection-start-line="341" selection-start-column="53" selection-end-line="341" selection-end-column="53" />
             </state>
           </provider>
         </entry>
@@ -155,7 +169,6 @@
         <option value="$PROJECT_DIR$/VRC/train/__init__.py" />
         <option value="$PROJECT_DIR$/VRC/train/setting.json" />
         <option value="$PROJECT_DIR$/VRC/setting_b.json" />
-        <option value="$PROJECT_DIR$/VRC/utils/model_proto_cpu.py" />
         <option value="$PROJECT_DIR$/gitignore" />
         <option value="$PROJECT_DIR$/VRC/utils/size_fitter.py" />
         <option value="$PROJECT_DIR$/VRC/utils/tagging.py" />
@@ -165,6 +178,7 @@
         <option value="$PROJECT_DIR$/VRC/train/main.py" />
         <option value="$PROJECT_DIR$/VRC/train/Model/model_seed.py" />
         <option value="$PROJECT_DIR$/VRC/setting.json" />
+        <option value="$PROJECT_DIR$/VRC/utils/model_proto_cpu.py" />
         <option value="$PROJECT_DIR$/VRC/train/Model/model_proto.py" />
       </list>
     </option>
@@ -220,33 +234,6 @@
               <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
               <item name="vrc" type="462c0819:PsiDirectoryNode" />
               <item name="VRC" type="462c0819:PsiDirectoryNode" />
-              <item name="train" type="462c0819:PsiDirectoryNode" />
-              <item name="Model" type="462c0819:PsiDirectoryNode" />
-              <item name="datasets" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
-              <item name="vrc" type="462c0819:PsiDirectoryNode" />
-              <item name="VRC" type="462c0819:PsiDirectoryNode" />
-              <item name="train" type="462c0819:PsiDirectoryNode" />
-              <item name="Model" type="462c0819:PsiDirectoryNode" />
-              <item name="datasets" type="462c0819:PsiDirectoryNode" />
-              <item name="train" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
-              <item name="vrc" type="462c0819:PsiDirectoryNode" />
-              <item name="VRC" type="462c0819:PsiDirectoryNode" />
-              <item name="train" type="462c0819:PsiDirectoryNode" />
-              <item name="Model" type="462c0819:PsiDirectoryNode" />
-              <item name="datasets" type="462c0819:PsiDirectoryNode" />
-              <item name="train" type="462c0819:PsiDirectoryNode" />
-              <item name="24ds" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
-              <item name="vrc" type="462c0819:PsiDirectoryNode" />
-              <item name="VRC" type="462c0819:PsiDirectoryNode" />
               <item name="utils" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
@@ -275,6 +262,120 @@
       <recent name="C:\Users\tadop\git\vrc\VRC\train\Model" />
       <recent name="C:\Users\tadop\git\vrc\VRC" />
     </key>
+  </component>
+  <component name="RestoreUpdateTree" date="Moments ago" ActionInfo="_Update">
+    <UpdatedFiles>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Updated from server" />
+        <option name="myStatusName" value="Changed on server" />
+        <option name="mySupportsDeletion" value="false" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="CHANGED_ON_SERVER" />
+        <FILE-GROUP>
+          <option name="myUpdateName" value="Updated" />
+          <option name="myStatusName" value="Changed" />
+          <option name="mySupportsDeletion" value="false" />
+          <option name="myCanBeAbsent" value="false" />
+          <option name="myId" value="UPDATED" />
+          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/.idea/workspace.xml</PATH>
+          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/run/Converter.py</PATH>
+          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/run/VRC_cpu.py</PATH>
+          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/utils/model_proto_cpu.py</PATH>
+          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/utils/model_test.py</PATH>
+        </FILE-GROUP>
+        <FILE-GROUP>
+          <option name="myUpdateName" value="Created" />
+          <option name="myStatusName" value="Created" />
+          <option name="mySupportsDeletion" value="false" />
+          <option name="myCanBeAbsent" value="false" />
+          <option name="myId" value="CREATED" />
+        </FILE-GROUP>
+        <FILE-GROUP>
+          <option name="myUpdateName" value="Deleted" />
+          <option name="myStatusName" value="Deleted" />
+          <option name="mySupportsDeletion" value="false" />
+          <option name="myCanBeAbsent" value="true" />
+          <option name="myId" value="REMOVED_FROM_REPOSITORY" />
+        </FILE-GROUP>
+        <FILE-GROUP>
+          <option name="myUpdateName" value="Restored" />
+          <option name="myStatusName" value="Will be restored" />
+          <option name="mySupportsDeletion" value="false" />
+          <option name="myCanBeAbsent" value="false" />
+          <option name="myId" value="RESTORED" />
+        </FILE-GROUP>
+      </FILE-GROUP>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Modified" />
+        <option name="myStatusName" value="Modified" />
+        <option name="mySupportsDeletion" value="false" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="MODIFIED" />
+      </FILE-GROUP>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Skipped" />
+        <option name="myStatusName" value="Skipped" />
+        <option name="mySupportsDeletion" value="false" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="SKIPPED" />
+      </FILE-GROUP>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Merged with conflicts" />
+        <option name="myStatusName" value="Will be merged with conflicts" />
+        <option name="mySupportsDeletion" value="false" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="MERGED_WITH_CONFLICTS" />
+      </FILE-GROUP>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Merged with tree conflicts" />
+        <option name="myStatusName" value="Merged with tree conflicts" />
+        <option name="mySupportsDeletion" value="false" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="MERGED_WITH_TREE_CONFLICT" />
+      </FILE-GROUP>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Merged with property conflicts" />
+        <option name="myStatusName" value="Will be merged with property conflicts" />
+        <option name="mySupportsDeletion" value="false" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="MERGED_WITH_PROPERTY_CONFLICT" />
+      </FILE-GROUP>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Merged" />
+        <option name="myStatusName" value="Will be merged" />
+        <option name="mySupportsDeletion" value="false" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="MERGED" />
+      </FILE-GROUP>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Not in repository" />
+        <option name="myStatusName" value="Not in repository" />
+        <option name="mySupportsDeletion" value="true" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="UNKNOWN" />
+      </FILE-GROUP>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Locally added" />
+        <option name="myStatusName" value="Locally added" />
+        <option name="mySupportsDeletion" value="false" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="LOCALLY_ADDED" />
+      </FILE-GROUP>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Locally removed" />
+        <option name="myStatusName" value="Locally removed" />
+        <option name="mySupportsDeletion" value="false" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="LOCALLY_REMOVED" />
+      </FILE-GROUP>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Switched" />
+        <option name="myStatusName" value="Switched" />
+        <option name="mySupportsDeletion" value="false" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="SWITCHED" />
+      </FILE-GROUP>
+    </UpdatedFiles>
   </component>
   <component name="RunDashboard">
     <option name="ruleStates">
@@ -445,13 +546,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1520153808625</updated>
-    </task>
-    <task id="LOCAL-00050" summary="[update] doubleblock update &lt;version 2.4.013&gt;&#10;&#10;[add] ダブルブロックの調整">
-      <created>1529019553813</created>
-      <option name="number" value="00050" />
-      <option name="presentableId" value="LOCAL-00050" />
-      <option name="project" value="LOCAL" />
-      <updated>1529019553814</updated>
     </task>
     <task id="LOCAL-00051" summary="[update] doubleblock update &lt;version 2.4.013&gt;&#10;&#10;[add] ダブルブロックの調整">
       <created>1529019567592</created>
@@ -789,7 +883,14 @@
       <option name="project" value="LOCAL" />
       <updated>1533594968968</updated>
     </task>
-    <option name="localTasksCounter" value="99" />
+    <task id="LOCAL-00099" summary="[3.9.901] 統合アップデート&#10;&#10;[fix] dropoutレイヤーを削除&#10;[fix] そのほかパラメータを調整">
+      <created>1533606495271</created>
+      <option name="number" value="00099" />
+      <option name="presentableId" value="LOCAL-00099" />
+      <option name="project" value="LOCAL" />
+      <updated>1533606495272</updated>
+    </task>
+    <option name="localTasksCounter" value="100" />
     <servers />
   </component>
   <component name="TodoView">
@@ -806,7 +907,7 @@
     <editor active="true" />
     <layout>
       <window_info anchor="top" id="TODO" order="0" show_stripe_button="false" type="FLOATING" weight="0.3282123" />
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.2496474" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.2496474" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Messages" order="0" />
@@ -815,7 +916,7 @@
       <window_info anchor="bottom" id="Debug" order="3" weight="0.39972898" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
-      <window_info anchor="bottom" id="Run" order="6" sideWeight="0.8286319" visible="true" weight="0.2991914" />
+      <window_info active="true" anchor="bottom" id="Run" order="6" sideWeight="0.8286319" visible="true" weight="0.2991914" />
       <window_info anchor="bottom" id="Python Console" order="7" weight="0.3292683" />
       <window_info anchor="bottom" id="Version Control" order="8" weight="0.3292683" />
       <window_info anchor="bottom" id="Event Log" order="9" sideWeight="0.17207335" side_tool="true" weight="0.2991914" />
@@ -839,7 +940,6 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[update] architect update &lt;version 2.5.019&gt;&#10;&#10;[change] sizeの変更&#10;[目的]　性能の向上" />
     <MESSAGE value="[update] architect update &lt;version 2.6.000&gt;&#10;&#10;[change] dilation畳み込みに対応（イントネーションの改善の見込み）" />
     <MESSAGE value="[update] architect update &lt;version 2.6.001&gt;&#10;&#10;[change] dilation畳み込みに対応（イントネーションの改善の見込み）" />
     <MESSAGE value="[update] architect update &lt;version 2.6.004&gt;&#10;&#10;[fix] discriminatorの時系列方向へ畳み込むように修正（イントネーションの改善の見込み）" />
@@ -864,7 +964,8 @@
     <MESSAGE value="[3.5.000] テストアップデート(修正版)&#10;&#10;[fix] テストのデータを分離した。" />
     <MESSAGE value="[3.6.000] ピッチアップデート&#10;&#10;[fix] 音声のピッチを事前に変更できるようにする。" />
     <MESSAGE value="[3.9.900] 統合アップデート&#10;&#10;[add] １対１の音声変換機能を復活&#10;[add] dropoutレイヤーを追加" />
-    <option name="LAST_COMMIT_MESSAGE" value="[3.9.900] 統合アップデート&#10;&#10;[add] １対１の音声変換機能を復活&#10;[add] dropoutレイヤーを追加" />
+    <MESSAGE value="[3.9.901] 統合アップデート&#10;&#10;[fix] dropoutレイヤーを削除&#10;[fix] そのほかパラメータを調整" />
+    <option name="LAST_COMMIT_MESSAGE" value="[3.9.901] 統合アップデート&#10;&#10;[fix] dropoutレイヤーを削除&#10;[fix] そのほかパラメータを調整" />
   </component>
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/VRC/train/test.py">
@@ -942,13 +1043,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="176">
           <caret line="215" selection-start-line="215" selection-end-line="228" selection-end-column="66" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/utils/model_proto_cpu.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="208">
-          <caret line="207" column="22" lean-forward="true" selection-start-line="200" selection-start-column="12" selection-end-line="207" selection-end-column="22" />
         </state>
       </provider>
     </entry>
@@ -1086,9 +1180,12 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/VRC/train/logs/[glr=0.001,gb=0.5,dlr=0.001,db=0.5]wave2wave2.7.007run01/events.out.tfevents.1533595546.DESKTOP-QFC16G3">
+      <provider selected="true" editor-type-id="LargeFileEditor" />
+    </entry>
     <entry file="file://$PROJECT_DIR$/VRC/utils/testing.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="3088">
+        <state relative-caret-position="437">
           <caret line="196" selection-start-line="196" selection-end-line="201" selection-end-column="10" />
           <folding>
             <element signature="e#0#14#0" expanded="true" />
@@ -1096,23 +1193,27 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/train/logs/[glr=0.001,gb=0.5,dlr=0.001,db=0.5]wave2wave2.7.007run01/events.out.tfevents.1533595546.DESKTOP-QFC16G3">
-      <provider selected="true" editor-type-id="LargeFileEditor" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
+    <entry file="file://$PROJECT_DIR$/VRC/setting.json">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-778">
-          <caret line="205" column="123" selection-start-line="205" selection-start-column="123" selection-end-line="205" selection-end-column="123" />
-          <folding>
-            <element signature="e#0#21#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="64">
+          <caret line="4" column="26" selection-start-line="4" selection-start-column="26" selection-end-line="4" selection-end-column="26" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/setting.json">
+    <entry file="file://$PROJECT_DIR$/VRC/utils/model_proto_cpu.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-32">
-          <caret line="4" column="26" selection-start-line="4" selection-start-column="26" selection-end-line="4" selection-end-column="26" />
+        <state relative-caret-position="330">
+          <caret line="341" column="53" selection-start-line="341" selection-start-column="53" selection-end-line="341" selection-end-column="53" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="285">
+          <caret line="697" column="53" selection-start-line="697" selection-start-column="53" selection-end-line="697" selection-end-column="53" />
+          <folding>
+            <element signature="e#0#21#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
