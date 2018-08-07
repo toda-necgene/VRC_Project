@@ -22,7 +22,6 @@ upidx=target/now
 upidx=1.0
 path="../setting.json"
 net=model(path)
-net.build_model()
 if not net.load():
     print(" [x] load failed...")
     exit(-1)
@@ -150,7 +149,7 @@ RECORD_SECONDS = 5 #録音する時間の長さ
 WAVE_OUTPUT_FILENAME = "./B.wav"
 WAVE_OUTPUT_FILENAME2 = "./B2.wav"
 file_ll="../train/Model/datasets/test/label2.wav"
-file_l="../train/Model/datasets/test/label.wav"
+file_l="../train/Model/datasets/test/test2.wav"
 file="../train/Model/datasets/test/test.wav"
 
 index=0
@@ -175,27 +174,25 @@ data = np.frombuffer(dms, 'int16')
 data_realB=data.reshape(-1)
 
 
-dms=[]
-wf = wave.open(file_ll, 'rb')
-dds = wf.readframes(CHUNK)
-while dds != b'':
-    dms.append(dds)
-    dds = wf.readframes(CHUNK)
-dms = b''.join(dms)
-data = np.frombuffer(dms, 'int16')
-data_realC=data.reshape(-1)
+# dms=[]
+# wf = wave.open(file_ll, 'rb')
+# dds = wf.readframes(CHUNK)
+# while dds != b'':
+#     dms.append(dds)
+#     dds = wf.readframes(CHUNK)
+# dms = b''.join(dms)
+# data = np.frombuffer(dms, 'int16')
+# data_realC=data.reshape(-1)
 
 tm=time.time()
 # data_realA=filter_pes(data_realA)
 print(" [*] conversion start!!")
-data_C,data_F=net.convert(data_realA/32767.0,data_realB /32767.0)
+# data_C,_,data_F=net.convert(data_realA/32767.0,data_realB /32767.0)
+data_C,_,data_F=net.convert(data_realA)
 
-data_D,data_E=net.convert(data_realA/32767.0,data_realC /32767.0)
+data_D,_,data_E=net.convert(data_realB)
 
 print(" [*] conversion finished in %3.3f!!" % (time.time()-tm))
-
-timee=80000
-times=data_realB.shape[0]//timee
 
 rate=16000
 
