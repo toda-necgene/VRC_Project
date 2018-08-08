@@ -53,7 +53,6 @@ def ifft(datanum_in, red):
 
 
 net=Model("../setting.json")
-net.build_model()
 net.load()
 p_in = pa.PyAudio()
 py_format = p_in.get_format_from_width(2)
@@ -65,7 +64,7 @@ data=np.zeros(TERM)
 #Process Of guess
 def process(data):
     tt = time.time()
-    output=net.sess.run(net.fake_B_image,feed_dict={net.input_model:data})
+    output,_,_=net.sess.run(net.fake_B_image,feed_dict={net.input_model:data})
     # print("TT:"+str(time.time()-tt))
     return output
 inf=p_in.get_default_output_device_info()
