@@ -4,12 +4,11 @@
     <bookmark url="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py" line="634" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="22fa9a76-09a0-4f62-a2d8-6f3210b56f42" name="Default" comment="[3.9.920] スタッキングアーキテクチャアップデート&#10;&#10;[fix] スタッキングするように変更した。">
+    <list default="true" id="22fa9a76-09a0-4f62-a2d8-6f3210b56f42" name="Default" comment="[3.9.927] スタッキングアーキテクチャアップデート&#10;&#10;[fix] パラメータの調整">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/setting.json" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/setting.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/train/Model/model_proto.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/train/Model/model_proto.py" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/VRC/Network/to/" />
+    <ignored path="C:\Users\tadop\git\vrc\.idea\shelf/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -36,13 +35,13 @@
         <counts>
           <entry key="json" value="224" />
           <entry key="py" value="539" />
-          <entry key="txt" value="127" />
+          <entry key="txt" value="137" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
           <entry key="JSON" value="224" />
-          <entry key="PLAIN_TEXT" value="127" />
+          <entry key="PLAIN_TEXT" value="137" />
           <entry key="Python" value="539" />
         </counts>
       </usages-collector>
@@ -425,13 +424,6 @@
       <option name="presentableId" value="Default" />
       <updated>1520153808625</updated>
     </task>
-    <task id="LOCAL-00054" summary="[update] doubleblock update &lt;version 2.4.034&gt;&#10;&#10;[add] ダブルブロックの調整4">
-      <created>1529065475898</created>
-      <option name="number" value="00054" />
-      <option name="presentableId" value="LOCAL-00054" />
-      <option name="project" value="LOCAL" />
-      <updated>1529065475898</updated>
-    </task>
     <task id="LOCAL-00055" summary="[update] doubleblock update &lt;version 2.4.034&gt;&#10;&#10;[add] ダブルブロックの調整5">
       <created>1529072642217</created>
       <option name="number" value="00055" />
@@ -768,7 +760,14 @@
       <option name="project" value="LOCAL" />
       <updated>1533645363024</updated>
     </task>
-    <option name="localTasksCounter" value="103" />
+    <task id="LOCAL-00103" summary="[3.9.927] スタッキングアーキテクチャアップデート&#10;&#10;[fix] パラメータの調整">
+      <created>1533855582048</created>
+      <option name="number" value="00103" />
+      <option name="presentableId" value="LOCAL-00103" />
+      <option name="project" value="LOCAL" />
+      <updated>1533855582048</updated>
+    </task>
+    <option name="localTasksCounter" value="104" />
     <servers />
   </component>
   <component name="TodoView">
@@ -818,7 +817,6 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[update] activation update &lt;version 2.6.009&gt;&#10;&#10;[fix] gluの設定" />
     <MESSAGE value="[update] activation update &lt;version 2.6.009&gt;&#10;&#10;[change] gluのメイン関数での変更&#10;[change] 対象の関数をlogから平方根に変更" />
     <MESSAGE value="[update] activation update &lt;version 2.6.020&gt;&#10;&#10;[change] LeakyReluに戻した&#10;[chnage] 最終層を分離させた" />
     <MESSAGE value="[update] hybrid update &lt;version 2.6.020&gt;&#10;&#10;[change] Reluに変更&#10;[add] 新しくハイブリッドモデルを追加した。" />
@@ -843,7 +841,8 @@
     <MESSAGE value="[3.9.910] アーキテクチャアップデート&#10;&#10;[add] flat-net構造に変更" />
     <MESSAGE value="[3.9.913] パラメータアップデート&#10;&#10;[fix] ハイパーパラメータの変更 CycleLoss 1.0-&gt;10.0" />
     <MESSAGE value="[3.9.920] スタッキングアーキテクチャアップデート&#10;&#10;[fix] スタッキングするように変更した。" />
-    <option name="LAST_COMMIT_MESSAGE" value="[3.9.920] スタッキングアーキテクチャアップデート&#10;&#10;[fix] スタッキングするように変更した。" />
+    <MESSAGE value="[3.9.927] スタッキングアーキテクチャアップデート&#10;&#10;[fix] パラメータの調整" />
+    <option name="LAST_COMMIT_MESSAGE" value="[3.9.927] スタッキングアーキテクチャアップデート&#10;&#10;[fix] パラメータの調整" />
   </component>
   <component name="editorHistoryManager">
     <entry file="file://$USER_HOME$/AppData/Local/Programs/Python/Python36/Lib/site-packages/dropbox/files.py">
