@@ -87,9 +87,6 @@ class Model:
                  print(' [x] JSONDecodeError: ', e)
         else:
             print( " [!] Setting file is not found")
-        if len(self.args["D_channels"]) != (self.args['d_depth'] + 1):
-            print(" [!] Channels length and depth+1 must be equal ." + str(len(self.args["D_channels"])) + "vs" + str(self.args['d_depth'] + 1))
-            self.args["D_channels"] = [min([2 ** (i + 1) - 2, 254]) for i in range(self.args['d_depth'] + 1)]
         self.args["SHIFT"] = self.args["NFFT"]//2
         self.args["name_save"] = self.args["model_name"] + self.args["version"]
         ss=self.args["input_size"]//self.args["SHIFT"]+self.args["dilation_size"]
@@ -623,12 +620,13 @@ class Model:
 
 def discriminator(inp,reuse,depth,chs,train=True):
     current=inp
-
     for i in range(depth):
-        stddevs=math.sqrt(2.0/(16*int(current.shape[3])))
-        ten = tf.layers.conv2d(current, chs[i], kernel_size=[2,5], strides=[1,2], padding="VALID",kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), data_format="channels_last",name="disc_"+str(i),reuse=reuse)
-        ten = tf.layers.batch_normalization(ten, axis=3, trainable=False, training=train, reuse=reuse,
-                                            name="bn_disc" + str(i))
+        stddevs=math.sqrt(2.0/(16*chs[i]))
+        ten = tf.layers.conv2d(current, chs[i], kernel_size=[2,7], strides=[1,4], padding="VALID",kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), data_format="channels_last",name="disc_"+str(i),reuse=reuse)
+        if i%2==0:
+            ten = tf.layers.batch_normalization(ten, axis=3, trainable=True, training=train, reuse=reuse,
+                                                name="bn_disc" + str(i))
+
         # ten=tf.layers.dropout(ten,0.125,training=train)
         current = tf.nn.leaky_relu(ten)
     print(" [*] bottom shape:"+str(current.shape))
@@ -676,44 +674,49 @@ def generator(current_outputs,reuse,depth,chs,d,train,r):
 
 def block_res(current,chs,rep_pos,depth,reuses,d,train=True):
     ten = current
-    times=1
+    times=depth[0]
     res=depth[1]
+    tenM=list()
     tms=len(d)
     stddevs = math.sqrt(2.0 / (4 * int(ten.shape[3])))
-    tenA = tf.layers.conv2d(ten, chs[0 + tms], kernel_size=[1, 4], strides=[1, 4], padding="VALID",
-                            kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), use_bias=False,
-                            data_format="channels_last", reuse=reuses, name="convSmaller" + str(rep_pos),
-                            dilation_rate=(1, 1))
-    tenA = tf.layers.batch_normalization(tenA, axis=3, training=train, trainable=True, reuse=reuses,name="bnA_en"+str(0) + str(rep_pos))
-    ten = tf.nn.leaky_relu(tenA)
-    tenM=ten
+    for i in range(times):
+        tenA = tf.layers.conv2d(ten, chs[i + tms], kernel_size=[1, 8], strides=[1, 8], padding="VALID",
+                                kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), use_bias=False,
+                                data_format="channels_last", reuse=reuses, name="convSmaller"+str(i) + str(rep_pos),
+                                dilation_rate=(1, 1))
+        tenA = tf.layers.batch_normalization(tenA, axis=3, training=train, trainable=True, reuse=reuses,name="bnA_en"+str(i) + str(rep_pos))
+        ten = tf.nn.leaky_relu(tenA)
+        tenM.append(ten)
 
     tms=times+len(d)
     for i in range(res):
         stddevs = math.sqrt(2.0 / (7 * int(ten.shape[3])))
 
         tenA=ten
-        ten = tf.layers.conv2d(tenA, chs[tms + i]*4, [1, 7], [1, 4], padding="SAME",
+        ten = tf.layers.conv2d(tenA, chs[tms + i], [1, 7], [1, 1], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), use_bias=False,
-                               data_format="channels_last", reuse=reuses, name="res_conv" + str(i) + str(rep_pos))
+                               data_format="channels_last", reuse=reuses, name="res_conv1" + str(i) + str(rep_pos))
 
         ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
-                                             name="bnA"+str(tms+i) + str(rep_pos))
+                                             name="bnA1"+str(tms+i) + str(rep_pos))
         ten = tf.nn.leaky_relu(ten)
-        ten = tf.layers.conv2d_transpose(ten, chs[tms + i], [1, 7], [1, 4], padding="SAME",
+        ten = tf.layers.conv2d(ten, chs[tms + i], [1, 7], [1, 1], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), use_bias=False,
-                               data_format="channels_last", reuse=reuses, name="res_deconv" + str(i) + str(rep_pos))
+                               data_format="channels_last", reuse=reuses, name="res_conv2" + str(i) + str(rep_pos))
+
         ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
-                                            name="bnB" + str(tms + i) + str(rep_pos))
+                                            name="bnA2" + str(tms + i) + str(rep_pos))
         ten = tf.nn.leaky_relu(ten)
+
         if i!=res-1:
             ten=ten+tenA
     tms+=res
-    ten += tenM[:, :8, :, :]
-    ten = deconve_with_ps(ten, [1, 4], chs[tms], rep_pos, reuses=reuses, name="00")
-    ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
-                                         name="bn"+str(times+res) + str(rep_pos))
-    ten = tf.nn.leaky_relu(ten)
+    for i in range(times):
+        ten += tenM[times-i-1][:, :8, :, :int(ten.shape[3])]
+        ten = deconve_with_ps(ten, [1, 8], chs[tms+i], rep_pos, reuses=reuses, name="00"+str(i))
+        ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
+                                             name="bn"+str(times+res+i) + str(rep_pos))
+        ten = tf.nn.leaky_relu(ten)
     ten+=current
     return ten
 def deconve_with_ps(inp,r,otp_shape,depth,reuses=None,name=""):

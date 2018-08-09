@@ -2,15 +2,15 @@
     "saving_config":{
         "checkpoint_dir":"Z://models/",
         "wave_otp_dir":"Z://waves/",
-        "version":"2.7.020"
+        "version":"2.7.027"
     },
     "network_architecture":{
         "repetations":1,
-        "repeatations":5,
-        "depth":[1,3],
-        "d_depth":7,
-        "D_channels":[16,16,32,32,64,32,16,8],
-        "G_channels":[4,8,16,16,16,16,16,16],
+        "repeatations":2,
+        "depth":[2,3],
+        "d_depth":4,
+        "D_channels":[64,64,32,16],
+        "G_channels":[4,8,16,16,32,32,32,32,16,16],
         "dilations":[1,2,4]
     },
     "training_config":{
@@ -18,13 +18,13 @@
         "batch_size":64,
         "start_epoch":0,
         "train_data_path":"./Model/datasets/train/24ds",
-        "g_lr":1e-3,
+        "g_lr":2e-3,
         "g_b1":0.5,
-        "d_b1":0.5,
+        "d_b1":0.1,
         "train_d_scale":1.0,
         "test_interval":300,
         "save_interval":10,
-        "weight_Cycle":1.0,
+        "weight_Cycle":0.5,
         "weight_GAN":1.0,
         "weight_Cycle_Pow":2.0,
         "weight_Cycle_Fre":2.0,
@@ -44,10 +44,10 @@
         "cupy":true,
         "test":true,
         "tensorboard":true,
-        "hyperdash":false,
+        "hyperdash":true,
         "debug":false,
-        "_dropbox":"5dH2TfVI9EAAAAAAAAAANT0cIMk1mIbEvtKrEHFtZSEk__iicyHH6w5htQqdbCu1",
-        "dropbox":"False"
+        "dropbox":"5dH2TfVI9EAAAAAAAAAANT0cIMk1mIbEvtKrEHFtZSEk__iicyHH6w5htQqdbCu1",
+        "_dropbox":"False"
     }
 
 }
