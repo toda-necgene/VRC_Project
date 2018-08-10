@@ -479,7 +479,7 @@ class Model:
                     # Update G network
                     # G-netの学習
                     self.sess.run([g_optim,self.update_ops],feed_dict={ self.input_modela:res_t,self.input_modelb:tar})
-                    # Update D network (1times)
+                    # Update D network (1time)
                     self.sess.run([d_optim],
                                   feed_dict={self.input_modelb: tar, self.input_modela: res_t})
                     # saving tensorboard
@@ -501,30 +501,14 @@ class Model:
                     f.write("\n")
                     f.flush()
 
-            # initializing epoch info
-            # エポック情報の初期化
-            log_data_g = np.empty(0)
-            log_data_d = np.empty(0)
 
-            if self.args["stop_itr"] != -1:
-                count=counter+ti*epoch
-                # console outputs
-                taken_time = time.time() - start_time
-                start_time = time.time()
-                ft = taken_time * (self.args["stop_itr"] - count - 1)
-                print(" [*] Epoch %5d finished in %.2f (preprocess %.3f) ETA: %3d:%2d:%2.1f" % (
-                epoch, taken_time, ts, ft // 3600, ft // 60 % 60, ft % 60))
-                time_of_epoch = np.append(time_of_epoch, np.asarray([taken_time, ts]))
-                if count>self.args["stop_itr"]:
-                    break
-            else :
-                #console outputs
-                count = counter + ti * epoch
-                taken_time = time.time() - start_time
-                start_time = time.time()
-                ft=taken_time*(self.args["train_epoch"]-epoch-1)
-                print(" [*] Epoch %5d (iterations: %10d)finished in %.2f (preprocess %.3f) ETA: %3d:%2d:%2.1f" % (epoch,count,taken_time,ts,ft//3600,ft//60%60,ft%60))
-                time_of_epoch=np.append(time_of_epoch,np.asarray([taken_time,ts]))
+            #console outputs
+            count = counter + ti * epoch
+            taken_time = time.time() - start_time
+            start_time = time.time()
+            ft=taken_time*(self.args["train_epoch"]-epoch-1)
+            print(" [*] Epoch %5d (iterations: %10d)finished in %.2f (preprocess %.3f) ETA: %3d:%2d:%2.1f" % (epoch,count,taken_time,ts,ft//3600,ft//60%60,ft%60))
+            time_of_epoch=np.append(time_of_epoch,np.asarray([taken_time,ts]))
 
 
         print(" [*] Finished!! in "+ str(np.sum(time_of_epoch[::2])))
@@ -647,21 +631,21 @@ def generator(current_outputs,reuse,depth,chs,d,train,r):
     for l in range(r):
         tenC=ten
         ten = block_res(ten, chs, l, depth, reuse, d, train)
-        if l!=r-1:
-            ten+=tenC
+        # if l!=r-1:
+        ten+=tenC
     tenA = ten
-    tenA = tf.layers.conv2d(tenA, 4, [1, 1], [1, 1], padding="SAME",
+    tenA = tf.layers.conv2d(tenA, 4, [1, 7], [1, 1], padding="SAME",
                             kernel_initializer=tf.truncated_normal_initializer(stddev=0.002), use_bias=False,
                             data_format="channels_last", reuse=reuse, name="res_last1A")
     tenA = tf.layers.batch_normalization(tenA, axis=3, training=train, trainable=True, reuse=reuse,
                                          name="bnAL")
     tenA = tf.nn.leaky_relu(tenA)
-    tenA = tf.layers.conv2d(tenA, 1, [1, 1], [1, 1], padding="SAME",
+    tenA = tf.layers.conv2d(tenA, 1, [1, 5], [1, 1], padding="SAME",
                             kernel_initializer=tf.truncated_normal_initializer(stddev=0.002), use_bias=False,
                             data_format="channels_last", reuse=reuse, name="res_last2A")
 
     tenB = ten
-    tenB = tf.layers.conv2d(tenB, 4, [1, 1], [1, 1], padding="SAME",
+    tenB = tf.layers.conv2d(tenB, 4, [1, 3], [1, 1], padding="SAME",
                             kernel_initializer=tf.truncated_normal_initializer(stddev=0.002), use_bias=False,
                             data_format="channels_last", reuse=reuse, name="res_last1B" )
     tenB = tf.layers.batch_normalization(tenB, axis=3, training=train, trainable=True, reuse=reuse,
@@ -682,7 +666,7 @@ def block_res(current,chs,rep_pos,depth,reuses,d,train=True):
     tms=len(d)
     stddevs = math.sqrt(2.0 / (4 * int(ten.shape[3])))
     for i in range(times):
-        tenA = tf.layers.conv2d(ten, chs[i + tms], kernel_size=[1, 8], strides=[1, 8], padding="VALID",
+        tenA = tf.layers.conv2d(ten, chs[i + tms], kernel_size=[1, 4], strides=[1, 4], padding="VALID",
                                 kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), use_bias=False,
                                 data_format="channels_last", reuse=reuses, name="convSmaller"+str(i) + str(rep_pos),
                                 dilation_rate=(1, 1))
@@ -715,7 +699,7 @@ def block_res(current,chs,rep_pos,depth,reuses,d,train=True):
     tms+=res
     for i in range(times):
         ten += tenM[times-i-1][:, :8, :, :int(ten.shape[3])]
-        ten = deconve_with_ps(ten, [1, 8], chs[tms+i], rep_pos, reuses=reuses, name="00"+str(i))
+        ten = deconve_with_ps(ten, [1, 4], chs[tms+i], rep_pos, reuses=reuses, name="00"+str(i))
         ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
                                              name="bn"+str(times+res+i) + str(rep_pos))
         ten = tf.nn.leaky_relu(ten)
