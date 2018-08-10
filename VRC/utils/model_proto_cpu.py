@@ -191,10 +191,10 @@ class Model:
             resD = response[3].copy()[:, ::-1, :]
             resD = np.append(response[3].copy(), resD, axis=1)
             resD[:, self.args["SHIFT"]:, 1] *= -1
-            a=res.copy()
-            b=resB.copy()
-            c=resC.copy()
-            d=resD.copy()
+            a=np.clip(res.copy(),-60.0,10.0)
+            b=np.clip(resB.copy(),-60.0,10.0)
+            c=np.clip(resC.copy(),-60.0,10.0)
+            d=np.clip(resD.copy(),-60.0,10.0)
             res3 = np.append(res3, a).reshape(-1,self.args["NFFT"],2)
 
 
