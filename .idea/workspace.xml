@@ -4,8 +4,10 @@
     <bookmark url="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py" line="634" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="22fa9a76-09a0-4f62-a2d8-6f3210b56f42" name="Default" comment="[3.9.927] スタッキングアーキテクチャアップデート&#10;&#10;[fix] パラメータの調整">
+    <list default="true" id="22fa9a76-09a0-4f62-a2d8-6f3210b56f42" name="Default" comment="[3.9.928] パラメータアップデート&#10;&#10;[fix] パラメータの調整">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/VRC/setting.json" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/setting.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/VRC/train/Model/model_proto.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/train/Model/model_proto.py" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/VRC/Network/to/" />
     <ignored path="C:\Users\tadop\git\vrc\.idea\shelf/" />
@@ -27,27 +29,27 @@
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
         <counts>
-          <entry key="DESKTOP-QFC16G3" value="1" />
+          <entry key="DESKTOP-QFC16G3" value="2" />
           <entry key="py" value="2" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
-          <entry key="json" value="224" />
-          <entry key="py" value="539" />
-          <entry key="txt" value="137" />
+          <entry key="json" value="281" />
+          <entry key="py" value="581" />
+          <entry key="txt" value="143" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="JSON" value="224" />
-          <entry key="PLAIN_TEXT" value="137" />
-          <entry key="Python" value="539" />
+          <entry key="JSON" value="281" />
+          <entry key="PLAIN_TEXT" value="143" />
+          <entry key="Python" value="581" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.open">
         <counts>
-          <entry key="PLAIN_TEXT" value="1" />
+          <entry key="PLAIN_TEXT" value="2" />
           <entry key="Python" value="2" />
         </counts>
       </usages-collector>
@@ -67,8 +69,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="221">
-              <caret line="702" column="48" selection-start-line="702" selection-start-column="48" selection-end-line="702" selection-end-column="48" />
+            <state relative-caret-position="288">
+              <caret line="662" column="14" selection-start-line="662" selection-start-column="14" selection-end-line="662" selection-end-column="14" />
               <folding>
                 <element signature="e#0#21#0" expanded="true" />
               </folding>
@@ -79,7 +81,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/utils/testing.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="3088">
+            <state relative-caret-position="437">
               <caret line="196" selection-start-line="196" selection-end-line="201" selection-end-column="10" />
               <folding>
                 <element signature="e#0#14#0" expanded="true" />
@@ -91,8 +93,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/VRC/setting.json">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="280">
-              <caret line="46" column="24" selection-start-line="46" selection-start-column="24" selection-end-line="46" selection-end-column="24" />
+            <state relative-caret-position="64">
+              <caret line="4" column="26" selection-start-line="4" selection-start-column="26" selection-end-line="4" selection-end-column="26" />
             </state>
           </provider>
         </entry>
@@ -211,13 +213,6 @@
               <item name="vrc" type="462c0819:PsiDirectoryNode" />
               <item name="VRC" type="462c0819:PsiDirectoryNode" />
               <item name="train" type="462c0819:PsiDirectoryNode" />
-              <item name="logs" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
-              <item name="vrc" type="462c0819:PsiDirectoryNode" />
-              <item name="VRC" type="462c0819:PsiDirectoryNode" />
-              <item name="train" type="462c0819:PsiDirectoryNode" />
               <item name="Model" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
@@ -240,18 +235,18 @@
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\tadop\git\vrc\VRC\train\logs\0.5-3" />
       <recent name="C:\Users\tadop\git\vrc\VRC\train\logs" />
       <recent name="C:\Users\tadop\git\vrc\VRC\train\Model\datasets\source\01" />
       <recent name="C:\Users\tadop\git\vrc\VRC\train\Model\datasets\test" />
       <recent name="C:\Users\tadop\git\vrc\VRC\train\Model" />
-      <recent name="C:\Users\tadop\git\vrc\VRC" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\tadop\git\vrc\VRC\train\logs\0.01-0.1" />
+      <recent name="C:\Users\tadop\git\vrc\VRC\train\logs\1.0-2e-4" />
+      <recent name="C:\Users\tadop\git\vrc\VRC\train\logs\0.5-2" />
       <recent name="C:\Users\tadop\git\vrc\VRC\train\logs\0.9" />
       <recent name="C:\Users\tadop\git\vrc\VRC\train\logs\[glr=0.0002,gb=0.5,dlr=0.0002,db=0.5]wave2wave3.3.001" />
-      <recent name="C:\Users\tadop\git\vrc\VRC\train\logs\0727run02" />
-      <recent name="C:\Users\tadop\git\vrc\VRC\train\logs\0727run01" />
-      <recent name="C:\Users\tadop\git\vrc\VRC\train\logs\0726run01" />
     </key>
   </component>
   <component name="RunDashboard">
@@ -423,20 +418,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1520153808625</updated>
-    </task>
-    <task id="LOCAL-00055" summary="[update] doubleblock update &lt;version 2.4.034&gt;&#10;&#10;[add] ダブルブロックの調整5">
-      <created>1529072642217</created>
-      <option name="number" value="00055" />
-      <option name="presentableId" value="LOCAL-00055" />
-      <option name="project" value="LOCAL" />
-      <updated>1529072642217</updated>
-    </task>
-    <task id="LOCAL-00056" summary="[update] doubleblock update &lt;version 2.4.038&gt;&#10;&#10;[add] ダブルブロックの調整6">
-      <created>1529073013537</created>
-      <option name="number" value="00056" />
-      <option name="presentableId" value="LOCAL-00056" />
-      <option name="project" value="LOCAL" />
-      <updated>1529073013537</updated>
     </task>
     <task id="LOCAL-00057" summary="[update] doubleblock update &lt;version 2.4.038&gt;&#10;&#10;[add] ダブルブロックの調整6">
       <created>1529130004780</created>
@@ -767,7 +748,21 @@
       <option name="project" value="LOCAL" />
       <updated>1533855582048</updated>
     </task>
-    <option name="localTasksCounter" value="104" />
+    <task id="LOCAL-00104" summary="[3.9.927] スタッキングアーキテクチャアップデート&#10;&#10;[fix] パラメータの調整">
+      <created>1533858191407</created>
+      <option name="number" value="00104" />
+      <option name="presentableId" value="LOCAL-00104" />
+      <option name="project" value="LOCAL" />
+      <updated>1533858191408</updated>
+    </task>
+    <task id="LOCAL-00105" summary="[3.9.928] パラメータアップデート&#10;&#10;[fix] パラメータの調整">
+      <created>1533891624205</created>
+      <option name="number" value="00105" />
+      <option name="presentableId" value="LOCAL-00105" />
+      <option name="project" value="LOCAL" />
+      <updated>1533891624205</updated>
+    </task>
+    <option name="localTasksCounter" value="106" />
     <servers />
   </component>
   <component name="TodoView">
@@ -790,10 +785,10 @@
       <window_info anchor="bottom" id="Messages" order="0" />
       <window_info anchor="bottom" id="Message" order="1" />
       <window_info anchor="bottom" id="Find" order="2" weight="0.3292683" />
-      <window_info anchor="bottom" id="Debug" order="3" weight="0.39972898" />
+      <window_info active="true" anchor="bottom" id="Debug" order="3" visible="true" weight="0.39892185" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
-      <window_info active="true" anchor="bottom" id="Run" order="6" sideWeight="0.8286319" visible="true" weight="0.2991914" />
+      <window_info anchor="bottom" id="Run" order="6" sideWeight="0.8286319" weight="0.2991914" />
       <window_info anchor="bottom" id="Python Console" order="7" weight="0.3292683" />
       <window_info anchor="bottom" id="Version Control" order="8" weight="0.3292683" />
       <window_info anchor="bottom" id="Event Log" order="9" sideWeight="0.17207335" side_tool="true" weight="0.2991914" />
@@ -817,7 +812,6 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[update] activation update &lt;version 2.6.009&gt;&#10;&#10;[change] gluのメイン関数での変更&#10;[change] 対象の関数をlogから平方根に変更" />
     <MESSAGE value="[update] activation update &lt;version 2.6.020&gt;&#10;&#10;[change] LeakyReluに戻した&#10;[chnage] 最終層を分離させた" />
     <MESSAGE value="[update] hybrid update &lt;version 2.6.020&gt;&#10;&#10;[change] Reluに変更&#10;[add] 新しくハイブリッドモデルを追加した。" />
     <MESSAGE value="[update] bug fix update &lt;version 2.6.047&gt;&#10;&#10;[fix] 誤差関数のバグの修正" />
@@ -842,16 +836,10 @@
     <MESSAGE value="[3.9.913] パラメータアップデート&#10;&#10;[fix] ハイパーパラメータの変更 CycleLoss 1.0-&gt;10.0" />
     <MESSAGE value="[3.9.920] スタッキングアーキテクチャアップデート&#10;&#10;[fix] スタッキングするように変更した。" />
     <MESSAGE value="[3.9.927] スタッキングアーキテクチャアップデート&#10;&#10;[fix] パラメータの調整" />
-    <option name="LAST_COMMIT_MESSAGE" value="[3.9.927] スタッキングアーキテクチャアップデート&#10;&#10;[fix] パラメータの調整" />
+    <MESSAGE value="[3.9.928] パラメータアップデート&#10;&#10;[fix] パラメータの調整" />
+    <option name="LAST_COMMIT_MESSAGE" value="[3.9.928] パラメータアップデート&#10;&#10;[fix] パラメータの調整" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$USER_HOME$/AppData/Local/Programs/Python/Python36/Lib/site-packages/dropbox/files.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="173">
-          <caret line="431" selection-start-line="431" selection-end-line="431" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/VRC/train/logs/[glr=0.0001,gb=0.9,dlr=0.0001,db=0.5]wave2wave2.2.010/events.out.tfevents.1527911673.DESKTOP-QFC16G3" />
     <entry file="file://$PROJECT_DIR$/VRC/setting_b.json" />
     <entry file="file://$PROJECT_DIR$/VRC/__main__.py">
@@ -1065,9 +1053,12 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/VRC/train/logs/0.5-3/events.out.tfevents.1533879537.DESKTOP-QFC16G3">
+      <provider selected="true" editor-type-id="LargeFileEditor" />
+    </entry>
     <entry file="file://$PROJECT_DIR$/VRC/utils/testing.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="3088">
+        <state relative-caret-position="437">
           <caret line="196" selection-start-line="196" selection-end-line="201" selection-end-column="10" />
           <folding>
             <element signature="e#0#14#0" expanded="true" />
@@ -1077,8 +1068,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/train/Model/model_proto.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="221">
-          <caret line="702" column="48" selection-start-line="702" selection-start-column="48" selection-end-line="702" selection-end-column="48" />
+        <state relative-caret-position="288">
+          <caret line="662" column="14" selection-start-line="662" selection-start-column="14" selection-end-line="662" selection-end-column="14" />
           <folding>
             <element signature="e#0#21#0" expanded="true" />
           </folding>
@@ -1087,8 +1078,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/setting.json">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="280">
-          <caret line="46" column="24" selection-start-line="46" selection-start-column="24" selection-end-line="46" selection-end-column="24" />
+        <state relative-caret-position="64">
+          <caret line="4" column="26" selection-start-line="4" selection-start-column="26" selection-end-line="4" selection-end-column="26" />
         </state>
       </provider>
     </entry>

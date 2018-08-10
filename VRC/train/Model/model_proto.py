@@ -645,8 +645,10 @@ def generator(current_outputs,reuse,depth,chs,d,train,r):
 
         ten = tf.nn.leaky_relu(ten)
     for l in range(r):
-       ten = block_res(ten, chs, l, depth, reuse, d, train)
-
+        tenC=ten
+        ten = block_res(ten, chs, l, depth, reuse, d, train)
+        if l!=r-1:
+            ten+=tenC
     tenA = ten
     tenA = tf.layers.conv2d(tenA, 4, [1, 1], [1, 1], padding="SAME",
                             kernel_initializer=tf.truncated_normal_initializer(stddev=0.002), use_bias=False,
@@ -717,7 +719,6 @@ def block_res(current,chs,rep_pos,depth,reuses,d,train=True):
         ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
                                              name="bn"+str(times+res+i) + str(rep_pos))
         ten = tf.nn.leaky_relu(ten)
-    ten+=current
     return ten
 def deconve_with_ps(inp,r,otp_shape,depth,reuses=None,name=""):
     chs_r=r[0]*r[1]*otp_shape
