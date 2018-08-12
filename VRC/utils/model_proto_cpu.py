@@ -191,10 +191,10 @@ class Model:
             resD = response[3].copy()[:, ::-1, :]
             resD = np.append(response[3].copy(), resD, axis=1)
             resD[:, self.args["SHIFT"]:, 1] *= -1
-            a=np.clip(res.copy(),-60.0,10.0)
-            b=np.clip(resB.copy(),-60.0,10.0)
-            c=np.clip(resC.copy(),-60.0,10.0)
-            d=np.clip(resD.copy(),-60.0,10.0)
+            a=np.clip(res.copy(),-60.0,12.0)
+            b=np.clip(resB.copy(),-60.0,12.0)
+            c=np.clip(resC.copy(),-60.0,12.0)
+            d=np.clip(resD.copy(),-60.0,12.0)
             res3 = np.append(res3, a).reshape(-1,self.args["NFFT"],2)
 
 
@@ -328,8 +328,10 @@ def generator(current_outputs,reuse,depth,chs,d,train,r):
 
         ten = tf.nn.leaky_relu(ten)
     for l in range(r):
-       ten = block_res(ten, chs, l, depth, reuse, d, train)
-
+        tenC=ten
+        ten = block_res(ten, chs, l, depth, reuse, d, train)
+        # if l!=r-1:
+        ten+=tenC
     tenA = ten
     tenA = tf.layers.conv2d(tenA, 4, [1, 1], [1, 1], padding="SAME",
                             kernel_initializer=tf.truncated_normal_initializer(stddev=0.002), use_bias=False,
@@ -376,14 +378,14 @@ def block_res(current,chs,rep_pos,depth,reuses,d,train=True):
         stddevs = math.sqrt(2.0 / (7 * int(ten.shape[3])))
 
         tenA=ten
-        ten = tf.layers.conv2d(tenA, chs[tms + i], [1, 7], [1, 1], padding="SAME",
+        ten = tf.layers.conv2d(tenA, chs[tms + i], [1, 5], [1, 1], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), use_bias=False,
                                data_format="channels_last", reuse=reuses, name="res_conv1" + str(i) + str(rep_pos))
 
         ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
                                              name="bnA1"+str(tms+i) + str(rep_pos))
         ten = tf.nn.leaky_relu(ten)
-        ten = tf.layers.conv2d(ten, chs[tms + i], [1, 7], [1, 1], padding="SAME",
+        ten = tf.layers.conv2d(ten, chs[tms + i], [1, 5], [1, 1], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), use_bias=False,
                                data_format="channels_last", reuse=reuses, name="res_conv2" + str(i) + str(rep_pos))
 
@@ -400,7 +402,6 @@ def block_res(current,chs,rep_pos,depth,reuses,d,train=True):
         ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
                                              name="bn"+str(times+res+i) + str(rep_pos))
         ten = tf.nn.leaky_relu(ten)
-    ten+=current
     return ten
 def deconve_with_ps(inp,r,otp_shape,depth,reuses=None,name=""):
     chs_r=r[0]*r[1]*otp_shape
