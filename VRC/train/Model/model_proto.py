@@ -37,7 +37,6 @@ class Model:
         self.args["weight_GAN"] = 1.0
         self.args["NFFT"]=128
         self.args["debug"] = False
-        self.args["noise"] = False
         self.args["cupy"] = False
         self.args["D_channels"] =[2]
         self.args["G_channels"] = [32]
@@ -61,6 +60,7 @@ class Model:
         self.args["dilations"]=[1]
         self.args["dilation_size"]=7
         self.args["repeatations"]=1
+        self.args["lr_decay_term"]=100
         self.args["train_data_path"]="./train/Model/datasets/train/"
         if os.path.exists(path):
             try:
@@ -181,11 +181,9 @@ class Model:
 
         #getting individual variabloes
         #それぞれの変数取得
-        self.g_vars_aB=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"generators")
-        self.g_vars_bA = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, "generators")
+        self.g_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"generators")
 
-        self.d_vars_1=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"discrims")
-        self.d_vars_2=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"discrims")
+        self.d_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"discrims")
         #objective-functions of discriminator
         #D-netの目的関数
         self.d_loss_AR = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.ones([self.args["batch_size"],1]),predictions=self.d_judge_AR))
@@ -327,13 +325,21 @@ class Model:
         lr_d_opt=lr_g_opt*tln
         beta_d_opt=self.args["d_b1"]
         beta_2_d_opt=self.args["d_b2"]
+        lr_d_opt3 = lr_d_opt * (0.1 ** (self.args["start_epoch"] // 100))
+        lr_g_opt3 = lr_g_opt * (0.1 ** (self.args["start_epoch"] // 100))
+
         # naming output-directory
         # 出力ディレクトリ
 
 
         self.lod="[glr="+str(lr_g_opt)+",gb="+str(beta_g_opt)+",dlr="+str(lr_d_opt)+",db="+str(beta_d_opt)+"]"
-        g_optim =tf.train.AdamOptimizer(lr_g_opt,beta_g_opt,beta_2_g_opt).minimize(self.g_loss, var_list=self.g_vars_bA)
-        d_optim = tf.train.AdamOptimizer(lr_d_opt,beta_d_opt,beta_2_d_opt).minimize(self.d_loss, var_list=self.d_vars_1)
+        lr_g = tf.placeholder(tf.float32, None, name="g_lr")
+        lr_d = tf.placeholder(tf.float32, None, name="d_lr")
+        g_optim = tf.train.AdamOptimizer(lr_g, beta_g_opt, beta_2_g_opt).minimize(self.g_loss,
+                                                                                  var_list=self.g_vars)
+        d_optim = tf.train.AdamOptimizer(lr_d, beta_d_opt, beta_2_d_opt).minimize(self.d_loss,
+                                                                                  var_list=self.d_vars)
+
 
         time_of_epoch=np.zeros(1)
 
@@ -363,8 +369,8 @@ class Model:
         data2 = glob(self.args["train_data_path"] + '/Answer_data/*')
         # loading test data
         # テストデータの読み込み
-        test=isread('./Model/datasets/test/test.wav')[0:160000].astype(np.float32)
-        label=isread('./Model/datasets/test/label.wav')[0:160000].astype(np.float32)
+        test=isread('./train/Model/datasets/test/test.wav')[0:160000].astype(np.float32)
+        label=isread('./train/Model/datasets/test/label.wav')[0:160000].astype(np.float32)
         # times of one epoch
         # 回数計算
         train_data_num = min(len(data),len(data2))
@@ -421,18 +427,17 @@ class Model:
                 #saving test result
                 #テストの結果の保存
                 if os.path.exists(self.args["wave_otp_dir"]):
+                    plt.clf()
                     plt.subplot(211)
                     ins=np.transpose(im[:,:,0],(1,0))
                     plt.imshow(ins,aspect="auto")
                     plt.clim(-30,10)
-                    if epoch==self.args["start_epoch"]:
-                        plt.colorbar()
+                    plt.colorbar()
                     plt.subplot(212)
                     ins = np.transpose(im[:, :, 1], (1, 0))
                     plt.imshow(ins, aspect="auto")
                     plt.clim(-3.141593, 3.141593)
-                    if epoch == self.args["start_epoch"]:
-                        plt.colorbar()
+                    plt.colorbar()
                     path=self.args["wave_otp_dir"]+nowtime()
                     plt.savefig(path+".png")
                     upload(out_puts,path)
@@ -478,10 +483,10 @@ class Model:
                     ts+=time.time()-tm
                     # Update G network
                     # G-netの学習
-                    self.sess.run([g_optim,self.update_ops],feed_dict={ self.input_modela:res_t,self.input_modelb:tar})
+                    self.sess.run([g_optim,self.update_ops],feed_dict={ self.input_modela:res_t,self.input_modelb:tar,lr_g:lr_g_opt3})
                     # Update D network (1time)
                     self.sess.run([d_optim],
-                                  feed_dict={self.input_modelb: tar, self.input_modela: res_t})
+                                  feed_dict={self.input_modelb: tar, self.input_modela: res_t,lr_d:lr_d_opt3})
                     # saving tensorboard
                     # tensorboardの保存
                     if self.args["tensorboard"] and (counter+ti*epoch)%self.args["train_interval"]==0:
@@ -495,12 +500,6 @@ class Model:
             #saving model
             #モデルの保存
             self.save(self.args["checkpoint_dir"], epoch)
-            if self.args["log"] and self.args["wave_otp_dir"]!="False":
-                with open(self.args["log_file"],"a") as f:
-                    f.write("%6d,%10.5f" % (epoch, float(test1)))
-                    f.write("\n")
-                    f.flush()
-
 
             #console outputs
             count = counter + ti * epoch
@@ -509,15 +508,12 @@ class Model:
             ft=taken_time*(self.args["train_epoch"]-epoch-1)
             print(" [*] Epoch %5d (iterations: %10d)finished in %.2f (preprocess %.3f) ETA: %3d:%2d:%2.1f" % (epoch,count,taken_time,ts,ft//3600,ft//60%60,ft%60))
             time_of_epoch=np.append(time_of_epoch,np.asarray([taken_time,ts]))
-
+            if epoch % self.args["lr_decay_term"] == 0:
+                lr_d_opt3 = lr_d_opt * (0.1 ** (epoch // 100))
+                lr_g_opt3 = lr_g_opt * (0.1 ** (epoch // 100))
 
         print(" [*] Finished!! in "+ str(np.sum(time_of_epoch[::2])))
 
-        if self.args["log"] and self.args["wave_otp_dir"] != "False":
-            with open(self.args["log_file"], "a") as f:
-                f.write("\n time on 1 epoch:" +str(np.mean(time_of_epoch[::2]))+" preprocess :"+str(np.mean(time_of_epoch[1::2])))
-                f.write("\n")
-                f.flush()
         # hyperdash
         if self.args["hyperdash"]:
             self.experiment.end()
@@ -605,12 +601,10 @@ class Model:
 def discriminator(inp,reuse,depth,chs,train=True):
     current=inp
     for i in range(depth):
-        stddevs=math.sqrt(2.0/(16*chs[i]))
+        stddevs=math.sqrt(2.0/(10*chs[i]))
         ten = tf.layers.conv2d(current, chs[i], kernel_size=[2,5], strides=[1,2], padding="VALID",kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), data_format="channels_last",name="disc_"+str(i),reuse=reuse)
-        if i%2==0:
-            ten = tf.layers.batch_normalization(ten, axis=3, trainable=True, training=train, reuse=reuse,
-                                                name="bn_disc" + str(i))
-
+        # ten = tf.layers.batch_normalization(ten, axis=3, trainable=True, training=train, reuse=reuse,
+        #                                         name="bn_disc" + str(i))
         # ten=tf.layers.dropout(ten,0.125,training=train)
         current = tf.nn.leaky_relu(ten)
     print(" [*] bottom shape:"+str(current.shape))
@@ -631,21 +625,20 @@ def generator(current_outputs,reuse,depth,chs,d,train,r):
     for l in range(r):
         tenC=ten
         ten = block_res(ten, chs, l, depth, reuse, d, train)
-        # if l!=r-1:
         ten+=tenC
     tenA = ten
-    tenA = tf.layers.conv2d(tenA, 4, [1, 7], [1, 1], padding="SAME",
+    tenA = tf.layers.conv2d(tenA, 4, [1, 1], [1, 1], padding="SAME",
                             kernel_initializer=tf.truncated_normal_initializer(stddev=0.002), use_bias=False,
                             data_format="channels_last", reuse=reuse, name="res_last1A")
     tenA = tf.layers.batch_normalization(tenA, axis=3, training=train, trainable=True, reuse=reuse,
                                          name="bnAL")
     tenA = tf.nn.leaky_relu(tenA)
-    tenA = tf.layers.conv2d(tenA, 1, [1, 5], [1, 1], padding="SAME",
+    tenA = tf.layers.conv2d(tenA, 1, [1, 1], [1, 1], padding="SAME",
                             kernel_initializer=tf.truncated_normal_initializer(stddev=0.002), use_bias=False,
                             data_format="channels_last", reuse=reuse, name="res_last2A")
 
     tenB = ten
-    tenB = tf.layers.conv2d(tenB, 4, [1, 3], [1, 1], padding="SAME",
+    tenB = tf.layers.conv2d(tenB, 4, [1, 1], [1, 1], padding="SAME",
                             kernel_initializer=tf.truncated_normal_initializer(stddev=0.002), use_bias=False,
                             data_format="channels_last", reuse=reuse, name="res_last1B" )
     tenB = tf.layers.batch_normalization(tenB, axis=3, training=train, trainable=True, reuse=reuse,
@@ -666,7 +659,7 @@ def block_res(current,chs,rep_pos,depth,reuses,d,train=True):
     tms=len(d)
     stddevs = math.sqrt(2.0 / (4 * int(ten.shape[3])))
     for i in range(times):
-        tenA = tf.layers.conv2d(ten, chs[i + tms], kernel_size=[1, 4], strides=[1, 4], padding="VALID",
+        tenA = tf.layers.conv2d(ten, chs[i + tms], kernel_size=[1, 8], strides=[1, 8], padding="VALID",
                                 kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), use_bias=False,
                                 data_format="channels_last", reuse=reuses, name="convSmaller"+str(i) + str(rep_pos),
                                 dilation_rate=(1, 1))
@@ -679,14 +672,14 @@ def block_res(current,chs,rep_pos,depth,reuses,d,train=True):
         stddevs = math.sqrt(2.0 / (7 * int(ten.shape[3])))
 
         tenA=ten
-        ten = tf.layers.conv2d(tenA, chs[tms + i], [1, 7], [1, 1], padding="SAME",
+        ten = tf.layers.conv2d(tenA, chs[tms + i], [1, 5], [1, 1], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), use_bias=False,
                                data_format="channels_last", reuse=reuses, name="res_conv1" + str(i) + str(rep_pos))
 
         ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
                                              name="bnA1"+str(tms+i) + str(rep_pos))
         ten = tf.nn.leaky_relu(ten)
-        ten = tf.layers.conv2d(ten, chs[tms + i], [1, 7], [1, 1], padding="SAME",
+        ten = tf.layers.conv2d(ten, chs[tms + i], [1, 5], [1, 1], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), use_bias=False,
                                data_format="channels_last", reuse=reuses, name="res_conv2" + str(i) + str(rep_pos))
 
@@ -699,7 +692,7 @@ def block_res(current,chs,rep_pos,depth,reuses,d,train=True):
     tms+=res
     for i in range(times):
         ten += tenM[times-i-1][:, :8, :, :int(ten.shape[3])]
-        ten = deconve_with_ps(ten, [1, 4], chs[tms+i], rep_pos, reuses=reuses, name="00"+str(i))
+        ten = deconve_with_ps(ten, [1, 8], chs[tms+i], rep_pos, reuses=reuses, name="00"+str(i))
         ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
                                              name="bn"+str(times+res+i) + str(rep_pos))
         ten = tf.nn.leaky_relu(ten)

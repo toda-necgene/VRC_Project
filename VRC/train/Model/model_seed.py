@@ -616,11 +616,6 @@ class Model:
         self.save(self.args["checkpoint_dir"],self.args["train_epoch"])
         print(" [*] Finished!! in "+ str(np.sum(time_of_epoch[::2])))
 
-        if self.args["log"] and self.args["wave_otp_dir"] != "False":
-            with open(self.args["log_file"], "a") as f:
-                f.write("\n time on 1 epoch:" +str(np.mean(time_of_epoch[::2]))+" preprocess :"+str(np.mean(time_of_epoch[1::2])))
-                f.write("\n")
-                f.flush()
         # hyperdash
         if self.args["hyperdash"]:
             self.experiment.end()
