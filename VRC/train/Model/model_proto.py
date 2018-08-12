@@ -33,7 +33,8 @@ class Model:
         self.args["tensorboard"]=False
         self.args["hyperdash"]=False
         self.args["input_size"] = 8192
-        self.args["weight_Cycle"]=1.0
+        self.args["weight_Cycle_Pow"]=1.0
+        self.args["weight_Cycle_Fre"]=1.0
         self.args["weight_GAN"] = 1.0
         self.args["NFFT"]=128
         self.args["debug"] = False
@@ -198,24 +199,24 @@ class Model:
         # G-netの目的関数
 
         # L1 norm lossA
-        saa=tf.losses.mean_squared_error(labels=self.input_modela[:,-ff:,:,0],predictions =self.fake_Ba_image[:,:,:,0])*2.0
-        sbb=tf.losses.mean_squared_error(labels=self.input_modela[:,-ff:,:,1] ,predictions = self.fake_Ba_image[:,:,:,1])*80.0
+        saa=tf.reduce_mean(tf.abs(self.input_modela[:,-ff:,:,0]-self.fake_Ba_image[:,:,:,0]))* self.args["weight_Cycle_Pow"]
+        sbb=tf.reduce_mean(tf.abs(self.input_modela[:,-ff:,:,1]-self.fake_Ba_image[:,:,:,1]))* self.args["weight_Cycle_Fre"]
         L1B=saa+sbb
 
         # Gan lossA
         DSb=tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.ones([self.args["batch_size"],1]),predictions=self.d_judge_BF))
         # generator lossA
-        self.g_loss_aB = L1B * self.args["weight_Cycle"]+DSb* self.args["weight_GAN"]
+        self.g_loss_aB = L1B +DSb* self.args["weight_GAN"]
         # L1 norm lossB
-        sa=tf.losses.mean_squared_error(labels=self.input_modelb[:,-ff:,:,0] ,predictions = self.fake_Ab_image[:,:,:,0])*2.0
-        sb=tf.losses.mean_squared_error(labels=self.input_modelb[:,-ff:,:,1] , predictions =self.fake_Ab_image[:,:,:,1])*80.0
+        sa=tf.reduce_mean(tf.abs(self.input_modelb[:,-ff:,:,0]- self.fake_Ab_image[:,:,:,0]))* self.args["weight_Cycle_Pow"]
+        sb=tf.reduce_mean(tf.abs(self.input_modelb[:,-ff:,:,1] -self.fake_Ab_image[:,:,:,1]))* self.args["weight_Cycle_Fre"]
         L1bAAb = sa+sb
         # Gan loss
         DSA = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.ones([self.args["batch_size"],1]),predictions=self.d_judge_AF))
         # L1UBA =16.0/(tf.abs(self.fake_bA_image[:,:,:,0]-self.fake_aB_image[:,:,:,0])+1e-8)
         # L1UBA =tf.maximum(L1UBA,tf.ones_like(L1UBA))
         # generator loss
-        self.g_loss_bA = L1bAAb * self.args["weight_Cycle"] + DSA * self.args["weight_GAN"]
+        self.g_loss_bA = L1bAAb + DSA * self.args["weight_GAN"]
         self.g_loss=self.g_loss_aB+self.g_loss_bA
         #BN_UPDATE
         self.update_ops=tf.get_collection(tf.GraphKeys.UPDATE_OPS)

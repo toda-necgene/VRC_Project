@@ -2,7 +2,7 @@
     "saving_config":{
         "checkpoint_dir":"Z://models/",
         "wave_otp_dir":"Z://waves/",
-        "version":"2.7.044"
+        "version":"2.7.045"
     },
     "network_architecture":{
         "repetations":1,
@@ -21,16 +21,14 @@
         "g_lr":2e-3,
         "g_b1":0.5,
         "d_b1":0.5,
-        "train_d_scale":0.1,
+        "train_d_scale":0.5,
         "train_interval":300,
         "test_interval":300,
         "save_interval":10,
         "weight_Cycle":0.1,
         "weight_GAN":1.0,
         "weight_Cycle_Pow":2.0,
-        "weight_Cycle_Fre":2.0,
-        "weight_GAN_Cluster":1.0,
-        "weight_GAN_Reality":1.0,
+        "weight_Cycle_Fre":40.0,
         "lr_decay_term":100,
         "cluster_weight":0.01
     },
