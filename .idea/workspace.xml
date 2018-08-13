@@ -2,9 +2,10 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="bcabb495-93d4-437a-b14b-9cb2802ec5b1" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/VRC/model/model_proto_cpu.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/VRC/readme.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vrc.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vrc.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/VRC/setting.json" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/setting.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/VRC/train/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/train/main.py" afterDir="false" />
     </list>
     <ignored path="C:\Users\tadop\git\vrc\.idea\shelf/" />
     <ignored path="$PROJECT_DIR$/VRC/Network/to/" />
@@ -30,7 +31,7 @@
           <entry key="gitignore" value="1" />
           <entry key="json" value="4" />
           <entry key="md" value="1" />
-          <entry key="py" value="14" />
+          <entry key="py" value="15" />
           <entry key="xml" value="1" />
         </counts>
       </usages-collector>
@@ -39,7 +40,7 @@
           <entry key="JSON" value="4" />
           <entry key="Markdown" value="1" />
           <entry key="PLAIN_TEXT" value="2" />
-          <entry key="Python" value="14" />
+          <entry key="Python" value="15" />
           <entry key="XML" value="1" />
         </counts>
       </usages-collector>
@@ -47,18 +48,18 @@
         <counts>
           <entry key="dummy" value="4" />
           <entry key="gitignore" value="5" />
-          <entry key="json" value="157" />
+          <entry key="json" value="184" />
           <entry key="md" value="643" />
-          <entry key="py" value="289" />
-          <entry key="txt" value="187" />
+          <entry key="py" value="296" />
+          <entry key="txt" value="199" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="JSON" value="157" />
+          <entry key="JSON" value="184" />
           <entry key="Markdown" value="643" />
-          <entry key="PLAIN_TEXT" value="196" />
-          <entry key="Python" value="289" />
+          <entry key="PLAIN_TEXT" value="208" />
+          <entry key="Python" value="296" />
         </counts>
       </usages-collector>
     </session>
@@ -68,20 +69,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets_cycle.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="440">
-              <caret line="155" column="36" selection-start-line="155" selection-start-column="36" selection-end-line="155" selection-end-column="36" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/VRC/model/model_proto.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="96">
-              <caret line="576" column="36" selection-start-line="576" selection-start-column="36" selection-end-line="576" selection-end-column="36" />
-              <folding>
-                <element signature="e#0#21#0" expanded="true" />
-              </folding>
+            <state relative-caret-position="2008">
+              <caret line="142" column="35" selection-start-line="142" selection-start-column="35" selection-end-line="142" selection-end-column="35" />
             </state>
           </provider>
         </entry>
@@ -89,8 +78,17 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/setting.json">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="8">
+            <state relative-caret-position="64">
               <caret line="4" column="26" selection-start-line="4" selection-start-column="26" selection-end-line="4" selection-end-column="26" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/VRC/train/main.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="64">
+              <caret line="4" column="5" selection-start-line="4" selection-start-column="5" selection-end-line="4" selection-end-column="5" />
             </state>
           </provider>
         </entry>
@@ -110,16 +108,16 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/VRC/train/main.py" />
         <option value="$PROJECT_DIR$/VRC/train/Model/model_proto.py" />
         <option value="$PROJECT_DIR$/.gitignore" />
         <option value="$PROJECT_DIR$/VRC/readme.md" />
         <option value="$PROJECT_DIR$/VRC/utils/voice_to_datasets_cycle.py" />
-        <option value="$PROJECT_DIR$/VRC/setting.json" />
         <option value="$PROJECT_DIR$/VRC/model/model_proto.py" />
         <option value="$PROJECT_DIR$/VRC/run/VRC_cpu.py" />
         <option value="$PROJECT_DIR$/VRC/utils/model_proto_cpu.py" />
         <option value="$PROJECT_DIR$/VRC/model/model_proto_cpu.py" />
+        <option value="$PROJECT_DIR$/VRC/setting.json" />
+        <option value="$PROJECT_DIR$/VRC/train/main.py" />
       </list>
     </option>
   </component>
@@ -204,15 +202,9 @@
           <option name="mySupportsDeletion" value="false" />
           <option name="myCanBeAbsent" value="false" />
           <option name="myId" value="UPDATED" />
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/.gitignore</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/.gitignore</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/.idea/workspace.xml</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/__main__.py</PATH>
+          <PATH vcs="Git" revision="">$PROJECT_DIR$/.idea/vrc.iml</PATH>
           <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/run/VRC_cpu.py</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/setting.json</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/train/main.py</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/utils/model_proto_cpu.py</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/utils/voice_to_datasets_cycle.py</PATH>
+          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/utils/model_test.py</PATH>
         </FILE-GROUP>
         <FILE-GROUP>
           <option name="myUpdateName" value="Created" />
@@ -220,10 +212,9 @@
           <option name="mySupportsDeletion" value="false" />
           <option name="myCanBeAbsent" value="false" />
           <option name="myId" value="CREATED" />
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/model/__init__.py</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/model/model_proto.py</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/run/VRC_NCS.py</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/utils/model_ncs_Converter.py</PATH>
+          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/model/model.py</PATH>
+          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/model/model_cpu.py</PATH>
+          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/model/model_train.py</PATH>
         </FILE-GROUP>
         <FILE-GROUP>
           <option name="myUpdateName" value="Deleted" />
@@ -231,45 +222,8 @@
           <option name="mySupportsDeletion" value="false" />
           <option name="myCanBeAbsent" value="true" />
           <option name="myId" value="REMOVED_FROM_REPOSITORY" />
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/.editorconfig</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/.pydevproject</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/Data/datasets/test/音声　未加工.wav</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/Data/noise.wav</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/run/Converter.py</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/run/VRC.py</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/test.txt</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/tmp.wav</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/train/Model/__init__.py</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/train/Model/colab.py</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/train/Model/datasets/test/label.wav</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/train/Model/datasets/test/test.wav</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/train/Model/model_proto.py</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/train/Model/model_seed.py</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/train/Model/model_unet.py</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/train/tmp.wav</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/utils/Converter.py</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/utils/VoiceConverter.py</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/utils/testing.py</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/utils/voice.py</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/utils/voice_to_datasets.py</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/utils/検査用.wav</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/_windows/git.xml</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/_windows/keymap.xml</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/_windows/laf.xml</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/baseRefactoring.xml</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/code.style.schemes</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/codestyles/Default.xml</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/colors.scheme.xml</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/debugger.xml</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/editor.codeinsight.xml</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/editor.xml</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/filetypes.xml</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/gitignore</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/ide.general.xml</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/inspection/Default.xml</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/project.default.xml</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/projectView.xml</PATH>
-          <PATH vcs="Git" revision="">$PROJECT_DIR$/ui.lnf.xml</PATH>
+          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/model/model_proto.py</PATH>
+          <PATH vcs="Git" revision="">$PROJECT_DIR$/VRC/model/model_proto_cpu.py</PATH>
         </FILE-GROUP>
         <FILE-GROUP>
           <option name="myUpdateName" value="Restored" />
@@ -450,18 +404,26 @@
       <option name="project" value="LOCAL" />
       <updated>1534138401541</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="[4.0.5] テストの修正&#10;&#10;[add] CPU版を追加">
+      <created>1534138642171</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1534138642171</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1456" height="886" extended-state="6" />
+    <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.23977433" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.23977433" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
-      <window_info anchor="bottom" id="Run" order="2" visible="true" weight="0.32978722" />
+      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.32978722" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
@@ -483,7 +445,8 @@
     <MESSAGE value="[4.0.1] 損失関数アップデート&#10;&#10;[fix] サイクルの損失関数をL1ノルム（絶対値）に変更" />
     <MESSAGE value="[4.0.3] リードミー追加&#10;&#10;[add] Readme" />
     <MESSAGE value="[4.0.4] テストの修正&#10;&#10;[fix] モデルの統一" />
-    <option name="LAST_COMMIT_MESSAGE" value="[4.0.4] テストの修正&#10;&#10;[fix] モデルの統一" />
+    <MESSAGE value="[4.0.5] テストの修正&#10;&#10;[add] CPU版を追加" />
+    <option name="LAST_COMMIT_MESSAGE" value="[4.0.5] テストの修正&#10;&#10;[add] CPU版を追加" />
   </component>
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/ui.lnf.xml">
@@ -518,13 +481,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/train/main.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="32">
-          <caret line="2" selection-start-line="2" selection-end-line="2" selection-end-column="26" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/VRC/train/__init__.py">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
@@ -538,24 +494,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/setting.json">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="8">
-          <caret line="4" column="26" selection-start-line="4" selection-start-column="26" selection-end-line="4" selection-end-column="26" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/VRC/run/VRC_cpu.py">
       <provider selected="true" editor-type-id="text-editor">
         <state>
           <caret column="36" selection-start-column="36" selection-end-column="36" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets_cycle.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="440">
-          <caret line="155" column="36" selection-start-line="155" selection-start-column="36" selection-end-line="155" selection-end-column="36" />
         </state>
       </provider>
     </entry>
@@ -582,6 +524,27 @@
           <folding>
             <element signature="e#0#21#0" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets_cycle.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2008">
+          <caret line="142" column="35" selection-start-line="142" selection-start-column="35" selection-end-line="142" selection-end-column="35" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/VRC/setting.json">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="64">
+          <caret line="4" column="26" selection-start-line="4" selection-start-column="26" selection-end-line="4" selection-end-column="26" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/VRC/train/main.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="64">
+          <caret line="4" column="5" selection-start-line="4" selection-start-column="5" selection-end-line="4" selection-end-column="5" />
         </state>
       </provider>
     </entry>
