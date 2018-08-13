@@ -104,8 +104,9 @@ def deconve_with_ps(inp,r,otp_shape,depth,reuses=None,name=""):
     ten = tf.reshape(ten, [b_size, in_h * r[0], in_w * r[1], otp_shape])
     return ten[:,:,:,:]
 def ShakeShake(ten,prop,train):
-    f_rand=tf.random_uniform(ten.shape,0.0,1.0)
-    b_rand=tf.random_uniform(ten.shape,0.0,1.0)
+    s=[int(ten.shape[1]),int(ten.shape[2]),int(ten.shape[3])]
+    f_rand=tf.random_uniform(s,0.0,1.0)
+    b_rand=tf.random_uniform(s,0.0,1.0)
     if train:
         tenA=tf.layers.dropout(ten,prop)
         tenB = tf.layers.dropout(ten, 1-prop)
