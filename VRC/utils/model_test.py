@@ -3,11 +3,8 @@ import numpy as np
 import wave
 import matplotlib.pyplot as pl
 import time
-import os
 
-from .model_proto_cpu import Model as model
-from datetime import datetime
-import glob
+from VRC.model.model_proto_cpu import Model as model
 
 Add_Effect=True
 NFFT=1024

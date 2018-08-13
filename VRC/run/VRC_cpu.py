@@ -1,4 +1,4 @@
-from Converter import Model
+from ..model.model_proto import Model
 import numpy as np
 import scipy
 import pyaudio as pa
