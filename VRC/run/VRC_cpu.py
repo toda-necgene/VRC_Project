@@ -1,4 +1,4 @@
-from Converter import Model
+from ..model.model_train import Model
 import numpy as np
 import scipy
 import pyaudio as pa
@@ -6,13 +6,19 @@ import atexit
 import time
 path_to_networks = './Network'
 graph_filename = './graph'
-NFFT=128
-SHIFT=64
+NFFT=1024
+SHIFT=512
 TERM=4096
-ac=1
-ab=0
-
-
+dilation_size=7
+boost=1.0
+otp_boost=1.0
+bass_cut=20.0
+noise_filter_rate=0.95
+print(np.fft.fftfreq(NFFT,1.0/16000)[13])
+def preem(data):
+    dd=np.roll(data.copy(), -1)
+    dd[-1]=0.0
+    return data - 0.97*dd
 def fft(data):
     time_ruler = data.shape[0] // SHIFT
     if data.shape[0] % SHIFT == 0:
@@ -34,7 +40,7 @@ def fft(data):
 
 
 def ifft(datanum_in, red):
-    data = datanum_in[ac:, ab:, :]
+    data = datanum_in
     a = np.clip(data[:, :, 0], a_min=-60, a_max=10)
     sss = np.exp(a)
     p = np.sqrt(sss)
@@ -63,9 +69,7 @@ data=np.zeros(TERM)
 
 #Process Of guess
 def process(data):
-    tt = time.time()
-    output,_,_=net.sess.run(net.fake_B_image,feed_dict={net.input_model:data})
-    # print("TT:"+str(time.time()-tt))
+    output=net.sess.run(net.fake_aB_image_test,feed_dict={net.input_model_test:data})
     return output
 inf=p_in.get_default_output_device_info()
 print(inf)
@@ -76,6 +80,9 @@ stream=p_in.open(format = pa.paInt16,
 		input = True,
 		output = True)
 rdd=np.zeros(SHIFT)
+rdd2=np.zeros(SHIFT)
+rdd3=np.zeros(SHIFT)
+rdd4=np.zeros(SHIFT)
 tt=time.time()
 def terminate():
     stream.stop_stream()
@@ -84,38 +91,67 @@ def terminate():
     print("Stream Stop")
 la=np.zeros([5])
 atexit.register(terminate)
-las=np.zeros([SHIFT])
+las=np.zeros([SHIFT*dilation_size+SHIFT])
+noise_filter=np.zeros(SHIFT)
+print("ノイズ取得中")
+t=0.0
+while t<3:
+    ins = stream.read(TERM)
+    inp = np.frombuffer(ins, dtype=np.int16).reshape(TERM).astype(np.float32) / 32767.0 * boost
+    s = fft(inp.copy())[:, :SHIFT, :].astype(np.float32)
+    if np.mean(noise_filter)!=0.0:
+        noise_filter=(np.mean(s[:,:,0],axis=0)+noise_filter)/2
+    else:
+        noise_filter = np.mean(s[:, :, 0], axis=0)
+    t+=TERM/fs
+print("変換　開始")
 while stream.is_active():
-    inputs = np.frombuffer(stream.read(TERM),dtype=np.int16).reshape(TERM).astype(np.float32)/32767.0
+    ins=stream.read(TERM)
     tt = time.time()
-    inp=np.append(las,inputs).reshape(1,TERM+SHIFT,1)
-    las = inputs[-SHIFT:]
-    res = np.zeros([1, TERM//SHIFT, SHIFT, 2])
-    n = fft(inp.reshape(-1))[:,:SHIFT,:]
-    scales = np.sqrt(np.var(n[ :, :, 0], axis=1) + 1e-8)
-    means = np.mean(n[:, :, 0], axis=1)
-    # scales=np.var(n[:, :, 0], axis=1)
-    mms = 1 / scales
-    scl = np.tile(np.reshape(means, (-1, 1)), (1, SHIFT))
-    n[ :, :, 0] = np.einsum("ij,i->ij", n[ :, :, 0] - scl, mms)
+    inputs = np.frombuffer(ins,dtype=np.int16).reshape(TERM).astype(np.float32)/32767.0*boost
+    inputs=np.clip(inputs,-1.0,1.0)
+    # inputs=preem(inputs)
+    inp=np.append(las,inputs).reshape(TERM+SHIFT*(dilation_size+1))
+    las = inputs[-SHIFT*dilation_size-SHIFT:]
+    roll_stride=SHIFT//2
+    n = fft(inp.copy())[:,:SHIFT,:].astype(np.float32)
+    n[:,:,0]-=noise_filter*noise_filter_rate
+    inp2=np.roll(inp.copy(),roll_stride)
+    inp2[:roll_stride]=0.0
+    n2 = fft(inp2)[:, :SHIFT, :].astype(np.float32)
+    n2[:, :, 0] -= noise_filter*noise_filter_rate
+    inp3 = np.roll(inp.copy(), roll_stride*2)
+    inp3[:roll_stride*2] = 0.0
+    n3 = fft(inp3)[:, :SHIFT, :].astype(np.float32)
+    inp4 = np.roll(inp.copy(), roll_stride*3)
+    inp4[:roll_stride*3] = 0.0
+    n4 = fft(inp4)[:, :SHIFT, :].astype(np.float32)
 
-    res[0] = n.astype(np.float32)
-    res = process(res)
-    filter=-5.0
-    means[means < filter] = -32.0
-    scales[means < filter] = 0.1
-
-    res[0,:, :, 0] = np.einsum("ij,i->ij", res[0,:, :, 0] , scales)
-    res[0,:, :, 0]+= scl
-
-    res2 = res.copy()[:, :, ::-1, :]
-    res = np.append(res, res2, axis=2)
-
-    res,rdd = ifft(res[0],rdd)
-    res = np.clip(res,-0.8,0.8).reshape(-1)*32767
-
-    vs=(res[-TERM:].astype(np.int16)).tobytes()
+    res=np.asarray([n,n2,n3,n4])
+    # res=np.asarray([n,n2])
+    resp = process(res.copy())
+    resp[:,:,:,:]-=res[:,:8,:,:]*0.2
+    resp[:, :, 48:, 0] -= 2.1
+    # resp[:, :, 100:, 0] -= 4.1
+    # resp[:, :, :, 0]-=-noise_filter*0.2
+    # res = res
+    res2 = resp.copy()[:, :, ::-1, :]
+    ress = np.append(resp, res2, axis=2)
+    res,rdd = ifft(ress[0],rdd)
+    res2,rdd2 = ifft(ress[1],rdd2)
+    res2=np.roll(res2,-roll_stride)
+    res2[-roll_stride:]=0.0
+    res3,rdd3 = ifft(ress[2],rdd3)
+    res3 = np.roll(res3, -roll_stride*2)
+    res3[-roll_stride*2:] = 0.0
+    res4,rdd4 = ifft(ress[3],rdd4)
+    res4 = np.roll(res4, -roll_stride*3)
+    res4[-roll_stride*3:] = 0.0
+    respond=(res+res2+res3+res4)/4
+    # respond = (res + res2) / 2
+    res = (np.clip((respond)*otp_boost,-0.8,0.8).reshape(-1)*32767)
+    vs=(res.astype(np.int16)).tobytes()
     la=np.append(la,time.time() - tt)
     la=la[-5:]
-    print("CPS:%1.3f" % (np.mean(la)))
+    # print("CPS:%1.3f" % (np.mean(la)/(TERM/fs)))
     output = stream.write(vs)

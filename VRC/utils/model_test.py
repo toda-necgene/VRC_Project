@@ -3,11 +3,8 @@ import numpy as np
 import wave
 import matplotlib.pyplot as pl
 import time
-import os
 
-from .model_proto_cpu import Model as model
-from datetime import datetime
-import glob
+from VRC.model.model_cpu import Model as model
 
 Add_Effect=True
 NFFT=1024
@@ -20,7 +17,7 @@ target=563.666
 term=4096
 upidx=target/now
 upidx=1.0
-path="../setting.json"
+path="setting.json"
 net=model(path)
 if not net.load():
     print(" [x] load failed...")
@@ -148,9 +145,9 @@ CHUNK = 1024     #データ点数
 RECORD_SECONDS = 5 #録音する時間の長さ
 WAVE_OUTPUT_FILENAME = "./B.wav"
 WAVE_OUTPUT_FILENAME2 = "./B2.wav"
-file_ll="../train/Model/datasets/test/label2.wav"
-file_l="../train/Model/datasets/test/test2.wav"
-file="../train/Model/datasets/test/test.wav"
+file_ll="./datasets/test/label2.wav"
+file_l="./datasets/test/test2.wav"
+file="./datasets/test/test.wav"
 
 index=0
 dms=[]
@@ -174,20 +171,8 @@ data = np.frombuffer(dms, 'int16')
 data_realB=data.reshape(-1)
 
 
-# dms=[]
-# wf = wave.open(file_ll, 'rb')
-# dds = wf.readframes(CHUNK)
-# while dds != b'':
-#     dms.append(dds)
-#     dds = wf.readframes(CHUNK)
-# dms = b''.join(dms)
-# data = np.frombuffer(dms, 'int16')
-# data_realC=data.reshape(-1)
-
 tm=time.time()
-# data_realA=filter_pes(data_realA)
 print(" [*] conversion start!!")
-# data_C,_,data_F=net.convert(data_realA/32767.0,data_realB /32767.0)
 data_C,_,data_F=net.convert(data_realA)
 
 data_D,_,data_E=net.convert(data_realB)
@@ -255,15 +240,6 @@ pl.clim(-3.141592, 3.141592)
 pl.colorbar()
 
 FORMAT=pyaudio.paInt16
-
-
-p=pyaudio.PyAudio()
-ww = wave.open("S1.wav", 'wb')
-ww.setnchannels(1)
-ww.setsampwidth(p.get_sample_size(FORMAT))
-ww.setframerate(RATE)
-ww.writeframes(data_realA.tobytes())
-ww.close()
 
 p=pyaudio.PyAudio()
 ww = wave.open(WAVE_OUTPUT_FILENAME, 'wb')
