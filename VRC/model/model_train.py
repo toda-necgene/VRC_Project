@@ -385,7 +385,6 @@ class Model:
             self.experiment.param("lr_g_opt", lr_g_opt)
             self.experiment.param("beta_g_opt", beta_g_opt)
             self.experiment.param("training_interval", self.args["train_interval"])
-            self.experiment.param("learning_rate_scale", tln)
 
 
         for epoch in range(self.args["start_epoch"],self.args["train_epoch"]):

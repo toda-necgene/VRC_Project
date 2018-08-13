@@ -30,22 +30,23 @@ def generator(current_outputs,reuse,depth,chs,d,train,r):
                             data_format="channels_last", reuse=reuse, name="res_last1A")
     tenA = tf.layers.batch_normalization(tenA, axis=3, training=train, trainable=True, reuse=reuse,
                                          name="bnAL")
-    tenA = tf.nn.leaky_relu(tenA)
+    tenA = tf.nn.relu(tenA)
     tenA = tf.layers.conv2d(tenA, 1, [1, 1], [1, 1], padding="SAME",
-                            kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=False,
+                            kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=True,
                             data_format="channels_last", reuse=reuse, name="res_last2A")
 
+    tenA=(tenA-0.25)*30
     tenB = ten
     tenB = tf.layers.conv2d(tenB, 4, [1, 1], [1, 1], padding="SAME",
                             kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=False,
                             data_format="channels_last", reuse=reuse, name="res_last1B" )
     tenB = tf.layers.batch_normalization(tenB, axis=3, training=train, trainable=True, reuse=reuse,
                                          name="bnBL" )
-    tenB = tf.nn.leaky_relu(tenB)
+    tenB = tf.nn.relu(tenB)
     tenB = tf.layers.conv2d(tenB, 1, [1, 1], [1, 1], padding="SAME",
-                            kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=False,
+                            kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=True,
                             data_format="channels_last", reuse=reuse, name="res_last2B" )
-    ten = tf.concat([tenA*30, tenB*3.15], 3)
+    ten = tf.concat([tenA, tenB], 3)
 
     return ten
 
@@ -78,8 +79,8 @@ def block_res(current,chs,rep_pos,depth,reuses,d,train=True):
         ten = tf.layers.conv2d_transpose(ten, chs[tms + i], [1, 7], [1, 4], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=False,
                                data_format="channels_last", reuse=reuses, name="res_conv2" + str(i) + str(rep_pos))
-
-
+        prop=1-i/res
+        ten=ShakeShake(ten,prop,train)
         if i!=res-1:
             ten=ten+tenA
     tms+=res
@@ -102,3 +103,13 @@ def deconve_with_ps(inp,r,otp_shape,depth,reuses=None,name=""):
     ten = tf.transpose(ten, [0, 2, 3, 4, 1, 5])
     ten = tf.reshape(ten, [b_size, in_h * r[0], in_w * r[1], otp_shape])
     return ten[:,:,:,:]
+def ShakeShake(ten,prop,train):
+    f_rand=tf.random_uniform(ten.shape,0.0,1.0)
+    b_rand=tf.random_uniform(ten.shape,0.0,1.0)
+    if train:
+        tenA=tf.layers.dropout(ten,prop)
+        tenB = tf.layers.dropout(ten, 1-prop)
+        return tenA+tenB*b_rand-tf.stop_gradient(tenB*f_rand-tenB*b_rand)
+    else:
+        return ten*prop
+
