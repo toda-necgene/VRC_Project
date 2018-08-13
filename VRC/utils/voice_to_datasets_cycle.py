@@ -113,6 +113,7 @@ for file in files:
         dmn=data_realAb
         a=fft(dmn)
         a=complex_to_pp(a[:,:SHIFT])
+        a = np.clip(a, -10, 10)
         np.save("./datasets/train/"+str(name)+"/"+str(cnt) +".npy", a)
         cnt+=1
 
@@ -154,6 +155,7 @@ for file in files:
         dmn=data_realAb
         a=fft(dmn)
         a=complex_to_pp(a[:,:SHIFT])
+        a=np.clip(a,-10,10)
         np.save("./datasets/train/"+str(name)+"/"+str(cnt) +".npy", a)
         cnt+=1
 
