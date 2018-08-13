@@ -5,21 +5,15 @@ import time
 import glob
 NFFT=1024
 SHIFT=NFFT//2
-rate=16000
 dilations=15
 term = 4096
-cut=200
-target=150
-save_num=10000
 FORMAT = pyaudio.paInt16
 CHANNELS = 1        #モノラル
 RATE = 16000       #サンプルレート
 CHUNK = 1024     #データ点数
-RECORD_SECONDS = 5 #録音する時間の長さ
-WAVE_INPUT_FILENAME = "../train/Model/datasets/source/C01"
-files=glob.glob(WAVE_INPUT_FILENAME+"/*.wav")
-name="v2.7/Source_data"
-sample_name="v4/Samples"
+WAVE_INPUT_FILENAME = "./datasets/source/01"
+WAVE_INPUT_FILENAME2 = "./datasets/source/02"
+
 
 def fft(data):
     time_ruler=data.shape[0]//SHIFT
@@ -82,10 +76,11 @@ def complex_to_pp(fft_r):
     spec = np.concatenate((c, d), 2)
     return spec
 
-print(" [*] アナライズ完了")
 
+
+files=glob.glob(WAVE_INPUT_FILENAME+"/*.wav")
+name="/Source_data"
 cnt=0
-cnt_ns=0
 for file in files:
     print(" [*] パッチデータに変換を開始します。 :",file)
     index=0
@@ -109,16 +104,94 @@ for file in files:
     ttm=time.time()
     resp=np.zeros([NFFT//2])
     for i in range(times):
-        if i < save_num:
-            ind=term+SHIFT*dilations+SHIFT
-            startpos=term*i+data_realA.shape[0]%term
-            data_realAb = data_realA[max(startpos-ind,0):startpos]
-            r=ind-data_realAb.shape[0]
-            if r>0:
-                data_realAb=np.pad(data_realAb,(r,0),"constant")
-            dmn=data_realAb
-            a=fft(dmn)
-            a=complex_to_pp(a[:,:SHIFT])
-            np.save("../train/Model/datasets/train/"+str(name)+"/"+str(cnt) +".npy", a)
-            cnt+=1
+        ind=term+SHIFT*dilations+SHIFT
+        startpos=term*i+data_realA.shape[0]%term
+        data_realAb = data_realA[max(startpos-ind,0):startpos]
+        r=ind-data_realAb.shape[0]
+        if r>0:
+            data_realAb=np.pad(data_realAb,(r,0),"constant")
+        dmn=data_realAb
+        a=fft(dmn)
+        a=complex_to_pp(a[:,:SHIFT])
+        np.save("./datasets/train/"+str(name)+"/"+str(cnt) +".npy", a)
+        cnt+=1
+
+print(" [*] ソースデータ変換完了")
+
+
+files=glob.glob(WAVE_INPUT_FILENAME2+"/*.wav")
+name="/Answer_data"
+cnt=0
+for file in files:
+    print(" [*] パッチデータに変換を開始します。 :",file)
+    index=0
+    dms=[]
+    wf = wave.open(file, 'rb')
+    dds = wf.readframes(CHUNK)
+    while dds != b'':
+        dms.append(dds)
+        dds = wf.readframes(CHUNK)
+    dms = b''.join(dms)
+    data = np.frombuffer(dms, 'int16')
+    data_real=data.reshape(-1)/32767.0
+    data_realA=dmn=data_real.copy()
+    timee=data_realA.shape[0]
+    rate=16000
+    b=np.zeros([1])
+
+    times=data_realA.shape[0]//term+1
+    if data_realA.shape[0]%term==0:
+        times-=1
+    ttm=time.time()
+    resp=np.zeros([NFFT//2])
+    for i in range(times):
+        ind=term+SHIFT*dilations+SHIFT
+        startpos=term*i+data_realA.shape[0]%term
+        data_realAb = data_realA[max(startpos-ind,0):startpos]
+        r=ind-data_realAb.shape[0]
+        if r>0:
+            data_realAb=np.pad(data_realAb,(r,0),"constant")
+        dmn=data_realAb
+        a=fft(dmn)
+        a=complex_to_pp(a[:,:SHIFT])
+        np.save("./datasets/train/"+str(name)+"/"+str(cnt) +".npy", a)
+        cnt+=1
+
+        for file in files:
+            print(" [*] パッチデータに変換を開始します。 :", file)
+            index = 0
+            dms = []
+            wf = wave.open(file, 'rb')
+            dds = wf.readframes(CHUNK)
+            while dds != b'':
+                dms.append(dds)
+                dds = wf.readframes(CHUNK)
+            dms = b''.join(dms)
+            data = np.frombuffer(dms, 'int16')
+            data_real = data.reshape(-1) / 32767.0
+            data_realA = dmn = data_real.copy()
+            timee = data_realA.shape[0]
+            rate = 16000
+            b = np.zeros([1])
+
+            times = data_realA.shape[0] // term + 1
+            if data_realA.shape[0] % term == 0:
+                times -= 1
+            ttm = time.time()
+            resp = np.zeros([NFFT // 2])
+            for i in range(times):
+                ind = term + SHIFT * dilations + SHIFT
+                startpos = term * i + data_realA.shape[0] % term
+                data_realAb = data_realA[max(startpos - ind, 0):startpos]
+                r = ind - data_realAb.shape[0]
+                if r > 0:
+                    data_realAb = np.pad(data_realAb, (r, 0), "constant")
+                dmn = data_realAb
+                a = fft(dmn)
+                a = complex_to_pp(a[:, :SHIFT])
+                np.save("./datasets/train/" + str(name) + "/" + str(cnt) + ".npy", a)
+                cnt += 1
+
+print(" [*] アンサーデータ変換完了")
+
 print(" [*] プロセス完了!!　プログラムを終了します。")

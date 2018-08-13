@@ -1,11 +1,4 @@
-/logs/
-/datasets/
-/OAuth
-/OAuth.yaml
-/tmp.wav
-/setting.yaml
-/credentials.json
-/client_secrets.json
-/Data.txt
-/Network/
-/test.txt
+/logs/*
+/datasets/*
+*.wav
+*.npy
