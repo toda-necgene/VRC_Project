@@ -15,7 +15,6 @@ import shutil
 import cupy
 import dropbox
 from .model import discriminator,generator
-import math
 import matplotlib.pyplot as plt
 class Model:
     def __init__(self,path):
@@ -43,11 +42,11 @@ class Model:
         self.args["model_name"] = "wave2wave"
         self.args["version"] = "1.0.0"
         self.args["g_lr"]=2e-4
+        self.args["d_lr"] = 2e-4
         self.args["g_b1"] = 0.5
         self.args["g_b2"] = 0.999
         self.args["d_b1"] = 0.5
         self.args["d_b2"] = 0.999
-        self.args["train_d_scale"]=1.0
         self.args["train_interval"]=10
         self.args["save_interval"]=1
         self.args["test_dir"] = "./test"
@@ -313,11 +312,10 @@ class Model:
 
         # setting paramaters
         # パラメータ
-        tln=self.args["train_d_scale"]
         lr_g_opt=self.args["g_lr"]
         beta_g_opt=self.args["g_b1"]
         beta_2_g_opt=self.args["g_b2"]
-        lr_d_opt=lr_g_opt*tln
+        lr_d_opt=self.args["d_lr"]
         beta_d_opt=self.args["d_b1"]
         beta_2_d_opt=self.args["d_b2"]
         lr_d_opt3 = lr_d_opt * (0.1 ** (self.args["start_epoch"] // 100))

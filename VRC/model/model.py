@@ -7,7 +7,7 @@ def discriminator(inp,reuse,depth,chs,train=True):
     for i in range(depth):
         ten = tf.layers.conv2d(current, chs[i], kernel_size=[2,5], strides=[1,2], padding="VALID",kernel_initializer=tf.truncated_normal_initializer(stddev=0.02),use_bias=False, data_format="channels_last",name="disc_"+str(i),reuse=reuse)
         current = tf.nn.leaky_relu(ten)
-    print(" [*] bottom shape:"+str(current.shape))
+    # print(" [*] bottom shape:"+str(current.shape))
     h4=tf.reshape(current, [-1,current.shape[1]*current.shape[2]*current.shape[3]])
     ten=tf.layers.dense(h4,1,name="dence",reuse=reuse)
     return ten
@@ -68,14 +68,14 @@ def block_res(current,chs,rep_pos,depth,reuses,d,train=True):
     for i in range(res):
 
         tenA=ten
-        ten = tf.layers.conv2d(tenA, chs[tms + i], [1, 5], [1, 2], padding="SAME",
+        ten = tf.layers.conv2d(tenA, chs[tms + i]*4, [1, 7], [1, 4], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=False,
                                data_format="channels_last", reuse=reuses, name="res_conv1" + str(i) + str(rep_pos))
 
         ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
                                              name="bnA1"+str(tms+i) + str(rep_pos))
         ten = tf.nn.relu(ten)
-        ten = tf.layers.conv2d_transpose(ten, chs[tms + i], [1, 5], [1, 2], padding="SAME",
+        ten = tf.layers.conv2d_transpose(ten, chs[tms + i], [1, 7], [1, 4], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=False,
                                data_format="channels_last", reuse=reuses, name="res_conv2" + str(i) + str(rep_pos))
 
@@ -84,7 +84,7 @@ def block_res(current,chs,rep_pos,depth,reuses,d,train=True):
             ten=ten+tenA
     tms+=res
     for i in range(times):
-        ten += tenM[times-i-1][:, :8, :, :int(ten.shape[3])]
+        ten += tenM[times-i-1][:, -8:, :, :int(ten.shape[3])]
         ten = deconve_with_ps(ten, [1, 4], chs[tms+i], rep_pos, reuses=reuses, name="00"+str(i))
         ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
                                              name="bn"+str(times+res+i) + str(rep_pos))
