@@ -25,16 +25,9 @@ def generator(current_outputs,reuse,depth,chs,d,train,r):
     for l in range(r):
         ten = block_res(ten, chs, l, depth, reuse, d, train)
     tenA = ten
-    tenA = tf.layers.conv2d(tenA, 4, [1, 1], [1, 1], padding="SAME",
-                            kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=False,
-                            data_format="channels_last", reuse=reuse, name="res_last1A")
-    tenA = tf.layers.batch_normalization(tenA, axis=3, training=train, trainable=True, reuse=reuse,
-                                         name="bnAL")
-    tenA = tf.nn.relu(tenA)
     tenA = tf.layers.conv2d(tenA, 1, [1, 1], [1, 1], padding="SAME",
                             kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=True,
                             data_format="channels_last", reuse=reuse, name="res_last2A")
-
     tenA=(tenA-0.25)*30
     tenB = ten
     tenB = tf.layers.conv2d(tenB, 4, [1, 1], [1, 1], padding="SAME",
@@ -42,10 +35,11 @@ def generator(current_outputs,reuse,depth,chs,d,train,r):
                             data_format="channels_last", reuse=reuse, name="res_last1B" )
     tenB = tf.layers.batch_normalization(tenB, axis=3, training=train, trainable=True, reuse=reuse,
                                          name="bnBL" )
-    tenB = tf.nn.relu(tenB)
+    tenB = tf.nn.leaky_relu(tenB)
     tenB = tf.layers.conv2d(tenB, 1, [1, 1], [1, 1], padding="SAME",
                             kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=True,
                             data_format="channels_last", reuse=reuse, name="res_last2B" )
+    tenB = tenB * 3.141593
     ten = tf.concat([tenA, tenB], 3)
 
     return ten
@@ -69,18 +63,27 @@ def block_res(current,chs,rep_pos,depth,reuses,d,train=True):
     for i in range(res):
 
         tenA=ten
-        ten = tf.layers.conv2d(tenA, chs[tms + i]*4, [1, 7], [1, 4], padding="SAME",
+        ten = tf.layers.conv2d(tenA, chs[tms + i]//2, [3, 3], [1, 1], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=False,
                                data_format="channels_last", reuse=reuses, name="res_conv1" + str(i) + str(rep_pos))
 
         ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
                                              name="bnA1"+str(tms+i) + str(rep_pos))
         ten = tf.nn.relu(ten)
-        ten = tf.layers.conv2d_transpose(ten, chs[tms + i], [1, 7], [1, 4], padding="SAME",
+        ten=tf.layers.conv2d(ten, chs[tms + i]//2, [5, 5], [1, 1], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=False,
                                data_format="channels_last", reuse=reuses, name="res_conv2" + str(i) + str(rep_pos))
-        prop=1-i/res
+        ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
+                                            name="bnA2" + str(tms + i) + str(rep_pos))
+        ten = tf.nn.relu(ten)
+        ten = tf.layers.conv2d(ten, chs[tms + i], [3, 3], [1, 1], padding="SAME",
+                               kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=False,
+                               data_format="channels_last", reuse=reuses, name="res_conv3" + str(i) + str(rep_pos))
+        ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
+                                             name="bnA3"+str(tms+i) + str(rep_pos))
+        prop=(1-i/res)*0.8
         ten=ShakeShake(ten,prop,train)
+        ten = tf.nn.relu(ten)
         if i!=res-1:
             ten=ten+tenA
     tms+=res
@@ -105,12 +108,12 @@ def deconve_with_ps(inp,r,otp_shape,depth,reuses=None,name=""):
     return ten[:,:,:,:]
 def ShakeShake(ten,prop,train):
     s=[int(ten.shape[1]),int(ten.shape[2]),int(ten.shape[3])]
-    f_rand=tf.random_uniform(s,0.0,1.0)
+    f_rand=tf.random_uniform(s,-1.0,1.0)
     b_rand=tf.random_uniform(s,0.0,1.0)
     if train:
         tenA=tf.layers.dropout(ten,prop)
         tenB = tf.layers.dropout(ten, 1-prop)
-        return tenA+tenB*b_rand-tf.stop_gradient(tenB*f_rand-tenB*b_rand)
+        return tenA+tenB*b_rand-tf.stop_gradient(tenB*(f_rand-b_rand))
     else:
         return ten*prop
 
