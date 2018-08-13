@@ -157,41 +157,6 @@ for file in files:
         np.save("./datasets/train/"+str(name)+"/"+str(cnt) +".npy", a)
         cnt+=1
 
-        for file in files:
-            print(" [*] パッチデータに変換を開始します。 :", file)
-            index = 0
-            dms = []
-            wf = wave.open(file, 'rb')
-            dds = wf.readframes(CHUNK)
-            while dds != b'':
-                dms.append(dds)
-                dds = wf.readframes(CHUNK)
-            dms = b''.join(dms)
-            data = np.frombuffer(dms, 'int16')
-            data_real = data.reshape(-1) / 32767.0
-            data_realA = dmn = data_real.copy()
-            timee = data_realA.shape[0]
-            rate = 16000
-            b = np.zeros([1])
-
-            times = data_realA.shape[0] // term + 1
-            if data_realA.shape[0] % term == 0:
-                times -= 1
-            ttm = time.time()
-            resp = np.zeros([NFFT // 2])
-            for i in range(times):
-                ind = term + SHIFT * dilations + SHIFT
-                startpos = term * i + data_realA.shape[0] % term
-                data_realAb = data_realA[max(startpos - ind, 0):startpos]
-                r = ind - data_realAb.shape[0]
-                if r > 0:
-                    data_realAb = np.pad(data_realAb, (r, 0), "constant")
-                dmn = data_realAb
-                a = fft(dmn)
-                a = complex_to_pp(a[:, :SHIFT])
-                np.save("./datasets/train/" + str(name) + "/" + str(cnt) + ".npy", a)
-                cnt += 1
-
 print(" [*] アンサーデータ変換完了")
 
 print(" [*] プロセス完了!!　プログラムを終了します。")

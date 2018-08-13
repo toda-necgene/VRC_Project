@@ -22,31 +22,25 @@ class Model:
         self.args["checkpoint_dir"]="./trained_models"
         self.args["wave_otp_dir"] = "False"
         self.args["test_data_dir"] ="None"
-        self.args["train_data_num"]=500
         self.args["batch_size"]=1
         self.args["depth"] =[4]
         self.args["d_depth"] = 4
         self.args["train_epoch"]=500
-        self.args["stop_itr"] = -1
         self.args["start_epoch"]=0
         self.args["test"]=True
-        self.args["log"] = True
         self.args["tensorboard"]=False
         self.args["hyperdash"]=False
         self.args["input_size"] = 8192
         self.args["weight_Cycle_Pow"]=1.0
         self.args["weight_Cycle_Fre"]=1.0
         self.args["weight_GAN"] = 1.0
-        self.args["NFFT"]=128
+        self.args["NFFT"]=1024
         self.args["debug"] = False
         self.args["cupy"] = False
         self.args["D_channels"] =[2]
         self.args["G_channels"] = [32]
-        self.args["strides_d"] = [2,2]
-        self.args["filter_d"] = [4,4]
         self.args["model_name"] = "wave2wave"
         self.args["version"] = "1.0.0"
-        self.args["log_eps"] = 1e-8
         self.args["g_lr"]=2e-4
         self.args["g_b1"] = 0.5
         self.args["g_b2"] = 0.999
@@ -57,8 +51,6 @@ class Model:
         self.args["save_interval"]=1
         self.args["test_dir"] = "./test"
         self.args["dropbox"]="False"
-        self.args["architect"] = "flatnet"
-        self.args["label_noise"]=0.0
         self.args["dilations"]=[1]
         self.args["dilation_size"]=7
         self.args["repeatations"]=1
@@ -485,10 +477,13 @@ class Model:
                     ts+=time.time()-tm
                     # Update G network
                     # G-netの学習
-                    self.sess.run([g_optim,self.update_ops],feed_dict={ self.input_modela:res_t,self.input_modelb:tar,lr_g:lr_g_opt3})
+                    # self.sess.run([g_optim,self.update_ops],feed_dict={ self.input_modela:res_t,self.input_modelb:tar,lr_g:lr_g_opt3})
                     # Update D network (1time)
                     self.sess.run([d_optim],
                                   feed_dict={self.input_modelb: tar, self.input_modela: res_t,lr_d:lr_d_opt3})
+                    # G-netの学習
+                    self.sess.run([g_optim, self.update_ops],
+                                  feed_dict={self.input_modela: res_t, self.input_modelb: tar, lr_g: lr_g_opt3})
                     # saving tensorboard
                     # tensorboardの保存
                     if self.args["tensorboard"] and (counter+ti*epoch)%self.args["train_interval"]==0:
@@ -605,8 +600,8 @@ def discriminator(inp,reuse,depth,chs,train=True):
     for i in range(depth):
         stddevs=math.sqrt(2.0/(10*chs[i]))
         ten = tf.layers.conv2d(current, chs[i], kernel_size=[2,5], strides=[1,2], padding="VALID",kernel_initializer=tf.truncated_normal_initializer(stddev=stddevs), data_format="channels_last",name="disc_"+str(i),reuse=reuse)
-        # ten = tf.layers.batch_normalization(ten, axis=3, trainable=True, training=train, reuse=reuse,
-        #                                         name="bn_disc" + str(i))
+        ten = tf.layers.batch_normalization(ten, axis=3, trainable=True, training=train, reuse=reuse,
+                                                name="bn_disc" + str(i))
         # ten=tf.layers.dropout(ten,0.125,training=train)
         current = tf.nn.leaky_relu(ten)
     print(" [*] bottom shape:"+str(current.shape))
