@@ -385,7 +385,6 @@ class Model:
             self.experiment.param("lr_g_opt", lr_g_opt)
             self.experiment.param("beta_g_opt", beta_g_opt)
             self.experiment.param("training_interval", self.args["train_interval"])
-            self.experiment.param("learning_rate_scale", tln)
 
 
         for epoch in range(self.args["start_epoch"],self.args["train_epoch"]):
@@ -402,7 +401,7 @@ class Model:
                 #テスト
                 out_puts,taken_time_test,im=self.convert(test.reshape(1,-1,1))
                 im = im.reshape([-1, self.args["NFFT"], 2])
-                otp_im=np.append(np.clip((im[:,:,0]+30)/40,0.0,1.0).reshape([1,-1,self.args["NFFT"],1]),np.clip((im[:,:,1]+3.15)/6.30,0.0,1.0).reshape([1,-1,self.args["NFFT"],1]),axis=3)
+                otp_im=np.append(np.clip((im[:,:,0]+10)/20,0.0,1.0).reshape([1,-1,self.args["NFFT"],1]),np.clip((im[:,:,1]+3.15)/6.30,0.0,1.0).reshape([1,-1,self.args["NFFT"],1]),axis=3)
                 out_put=out_puts.astype(np.float32)/32767.0
                 # loss of tesing
                 #テストの誤差
@@ -424,7 +423,7 @@ class Model:
                     plt.subplot(211)
                     ins=np.transpose(im[:,:,0],(1,0))
                     plt.imshow(ins,aspect="auto")
-                    plt.clim(-30,10)
+                    plt.clim(-10,10)
                     plt.colorbar()
                     plt.subplot(212)
                     ins = np.transpose(im[:, :, 1], (1, 0))
@@ -563,12 +562,13 @@ class Model:
         re = fft_r.real.reshape(time_ruler, -1)
         im = fft_r.imag.reshape(time_ruler, -1)
         c = np.log(np.power(re, 2) + np.power(im, 2) + 1e-24).reshape(time_ruler, -1, 1)
+        c = np.clip(c, -10, 10)
         d = np.arctan2(im, re).reshape(time_ruler, -1, 1)
         spec = np.concatenate((c, d), 2)
         return spec
     def ifft(self,data,redi):
         a=data
-        a[:, :, 0]=np.clip(a[:, :, 0],a_min=-100000,a_max=88)
+        a[:, :, 0]=np.clip(a[:, :, 0],a_min=-10,a_max=88)
         sss=np.exp(a[:,:,0])
         p = np.sqrt(sss)
         r = p * (np.cos(a[:, :, 1]))

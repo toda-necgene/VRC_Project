@@ -257,12 +257,13 @@ class Model:
         re = fft_r.real.reshape(time_ruler, -1)
         im = fft_r.imag.reshape(time_ruler, -1)
         c = np.log(np.power(re, 2) + np.power(im, 2) + 1e-24).reshape(time_ruler, -1, 1)
+        c=np.clip(c,-10,10)
         d = np.arctan2(im, re).reshape(time_ruler, -1, 1)
         spec = np.concatenate((c, d), 2)
         return spec
     def ifft(self,data,redi):
         a=data
-        a[:, :, 0]=np.clip(a[:, :, 0],a_min=-100000,a_max=88)
+        a[:, :, 0]=np.clip(a[:, :, 0],a_min=-10,a_max=88)
         sss=np.exp(a[:,:,0])
         p = np.sqrt(sss)
         r = p * (np.cos(a[:, :, 1]))
