@@ -192,8 +192,8 @@ class Model:
         # G-netの目的関数
 
         # L1 norm lossA
-        saa=tf.reduce_mean(tf.abs(self.input_modela[:,-ff:,:,0]-self.fake_Ba_image[:,:,:,0]))* self.args["weight_Cycle_Pow"]
-        sbb=tf.reduce_mean(tf.abs(self.input_modela[:,-ff:,:,1]-self.fake_Ba_image[:,:,:,1]))* self.args["weight_Cycle_Fre"]
+        saa=tf.reduce_mean(tf.abs(self.fake_Ba_image[:,:,:,0]-self.input_modela[:,-ff:,:,0]))* self.args["weight_Cycle_Pow"]
+        sbb=tf.reduce_mean(tf.abs(self.fake_Ba_image[:,:,:,1]-self.input_modela[:,-ff:,:,1]))* self.args["weight_Cycle_Fre"]
         L1B=saa+sbb
 
         # Gan lossA
