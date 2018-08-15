@@ -25,10 +25,12 @@ def generator(current_outputs,reuse,depth,chs,d,train,r):
 
         ten = tf.nn.leaky_relu(ten)
     rs=list()
+    rms=ten
     for l in range(r):
         ten = block_res(ten, chs, l, depth, reuse, d, train)
         if l!=r-1:
             rs.append(ten)
+            ten+=rms
     tenA = ten
     tenA = tf.layers.conv2d(tenA, 1, [1, 1], [1, 1], padding="SAME",
                             kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=True,
