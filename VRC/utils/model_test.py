@@ -4,7 +4,7 @@ import wave
 import matplotlib.pyplot as pl
 import time
 
-from VRC.model.model_cpu import Model as model
+from model.model_cpu import Model as model
 
 Add_Effect=True
 NFFT=1024

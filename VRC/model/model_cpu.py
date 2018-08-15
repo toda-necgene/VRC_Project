@@ -91,15 +91,7 @@ class Model:
         if bool(self.args["debug"]):
             self.sess=tf_debug.LocalCLIDebugWrapperSession(self.sess)
             self.sess.add_tensor_filter('has_inf_or_nan', has_inf_or_nan)
-        if  self.args["wave_otp_dir"] is not "False" :
-            self.args["wave_otp_dir"]=self.args["wave_otp_dir"]+ self.args["name_save"]+"/"
-            if not os.path.exists(self.args["wave_otp_dir"]):
-                os.makedirs(self.args["wave_otp_dir"])
-            shutil.copy(path,self.args["wave_otp_dir"]+"setting.json")
-            self.args["log_file"]=self.args["wave_otp_dir"]+"log.txt"
-
-        else:
-            self.dbx=None
+        self.dbx=None
         self.checkpoint_dir = self.args["checkpoint_dir"]
         self.build_model()
     def build_model(self):
