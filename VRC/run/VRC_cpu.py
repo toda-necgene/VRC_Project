@@ -1,4 +1,4 @@
-from ..model.model_train import Model
+from model.model_cpu import Model
 import numpy as np
 import scipy
 import pyaudio as pa
@@ -58,7 +58,7 @@ def ifft(datanum_in, red):
     return spec, reds
 
 
-net=Model("../setting.json")
+net=Model("./setting.json")
 net.load()
 p_in = pa.PyAudio()
 py_format = p_in.get_format_from_width(2)
@@ -128,10 +128,11 @@ while stream.is_active():
     n4 = fft(inp4)[:, :SHIFT, :].astype(np.float32)
 
     res=np.asarray([n,n2,n3,n4])
+    res=np.clip(res,-10,10)
     # res=np.asarray([n,n2])
     resp = process(res.copy())
-    resp[:,:,:,:]-=res[:,:8,:,:]*0.2
-    resp[:, :, 48:, 0] -= 2.1
+    # resp[:,:,:,:]-=res[:,:8,:,:]*0.2
+    # resp[:, :, 48:, 0] -= 2.1
     # resp[:, :, 100:, 0] -= 4.1
     # resp[:, :, :, 0]-=-noise_filter*0.2
     # res = res

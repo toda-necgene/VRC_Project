@@ -6,7 +6,7 @@ if len(sys.argv)!=0 and sys.argv.__contains__("--train"):
 elif len(sys.argv)!=0 and sys.argv.__contains__("--test"):
     from utils import model_test
 elif len(sys.argv)!=0 and sys.argv.__contains__("--run"):
-     import run
+     import run.VRC_cpu
 elif len(sys.argv)!=0 and sys.argv.__contains__("--create_dataset"):
     from utils import voice_to_datasets_cycle
 else :
