@@ -4,7 +4,9 @@
 *.wav
 *.npy
 *.pyc
+*.cpython-35.pyc
+*.cpython-36.pyc
 *.xml
 VRC/logs/*
 VRC/datasets/*
-VRC/,idea/*
+VRC/.idea/*
