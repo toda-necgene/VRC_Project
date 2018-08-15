@@ -166,7 +166,7 @@ class Model:
 
                 self.d_judge_BF = discriminator(self.fake_aB_image12, True, self.args["d_depth"],
                                                                        self.args["D_channels"])
-                for bnbn in bx1:
+                for bnbn in ax1:
                     self.d_judge_BF2 = discriminator(bnbn, True, self.args["d_depth"],
                                                     self.args["D_channels"])
 
@@ -175,7 +175,7 @@ class Model:
                                                                         self.args["D_channels"])
                 self.d_judge_AF = discriminator(self.fake_bA_image12, True,  self.args["d_depth"],
                                                                         self.args["D_channels"])
-                for bnbn in ax1:
+                for bnbn in bx1:
                     self.d_judge_AF2 = discriminator(bnbn, True, self.args["d_depth"],
                                                     self.args["D_channels"])
 
