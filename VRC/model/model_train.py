@@ -125,7 +125,7 @@ class Model:
             with tf.variable_scope("generator_1"):
                 self.fake_aB_image12,ax1 = generator(self.input_modela1, reuse=None,
                                               chs=self.args["G_channels"], depth=self.args["depth"], d=self.args["dilations"],train=True,r=self.args["repeatations"])
-                self.fake_aB_image23,ax2 = generator(self.input_modela2, reuse=True,
+                self.fake_aB_image23,_ = generator(self.input_modela2, reuse=True,
                                                  chs=self.args["G_channels"], depth=self.args["depth"],
                                                  d=self.args["dilations"], train=True,r=self.args["repeatations"])
 
@@ -136,7 +136,7 @@ class Model:
             with tf.variable_scope("generator_2"):
                 self.fake_bA_image12,bx1 = generator(self.input_modelb1, reuse=None,
                                               chs=self.args["G_channels"], depth=self.args["depth"],d=self.args["dilations"],train=True,r=self.args["repeatations"])
-                self.fake_bA_image23,bx2 = generator(self.input_modelb2, reuse=True,
+                self.fake_bA_image23,_ = generator(self.input_modelb2, reuse=True,
                                                chs=self.args["G_channels"], depth=self.args["depth"],
                                                d=self.args["dilations"], train=True,r=self.args["repeatations"])
             self.fake_aB_image = tf.concat([self.fake_aB_image12, self.fake_aB_image23], axis=1)[:,1:,:,:]
@@ -166,7 +166,7 @@ class Model:
 
                 self.d_judge_BF = discriminator(self.fake_aB_image12, True, self.args["d_depth"],
                                                                        self.args["D_channels"])
-                for bnbn in ax1:
+                for bnbn in bx1:
                     self.d_judge_BF2 = discriminator(bnbn, True, self.args["d_depth"],
                                                     self.args["D_channels"])
 
@@ -175,7 +175,7 @@ class Model:
                                                                         self.args["D_channels"])
                 self.d_judge_AF = discriminator(self.fake_bA_image12, True,  self.args["d_depth"],
                                                                         self.args["D_channels"])
-                for bnbn in bx1:
+                for bnbn in ax1:
                     self.d_judge_AF2 = discriminator(bnbn, True, self.args["d_depth"],
                                                     self.args["D_channels"])
 
