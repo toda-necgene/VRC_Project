@@ -105,7 +105,7 @@ class Model:
         with tf.variable_scope("generators"):
 
             with tf.variable_scope("generator_1"):
-                self.fake_aB_image_test = generator(self.input_model_test, reuse=None,
+                self.fake_aB_image_test,_ = generator(self.input_model_test, reuse=None,
                                                 chs=self.args["G_channels"], depth=self.args["depth"],
                                                 d=self.args["dilations"],r=self.args["repeatations"], train=False)
 

@@ -123,30 +123,30 @@ class Model:
         with tf.variable_scope("generators"):
 
             with tf.variable_scope("generator_1"):
-                self.fake_aB_image12 = generator(self.input_modela1, reuse=None,
+                self.fake_aB_image12,ax1 = generator(self.input_modela1, reuse=None,
                                               chs=self.args["G_channels"], depth=self.args["depth"], d=self.args["dilations"],train=True,r=self.args["repeatations"])
-                self.fake_aB_image23 = generator(self.input_modela2, reuse=True,
+                self.fake_aB_image23,ax2 = generator(self.input_modela2, reuse=True,
                                                  chs=self.args["G_channels"], depth=self.args["depth"],
                                                  d=self.args["dilations"], train=True,r=self.args["repeatations"])
 
-                self.fake_aB_image_test = generator(self.input_model_test, reuse=True,
+                self.fake_aB_image_test ,_= generator(self.input_model_test, reuse=True,
                                                 chs=self.args["G_channels"], depth=self.args["depth"],
                                                 d=self.args["dilations"],
                                                 train=False,r=self.args["repeatations"])
             with tf.variable_scope("generator_2"):
-                self.fake_bA_image12 = generator(self.input_modelb1, reuse=None,
+                self.fake_bA_image12,bx1 = generator(self.input_modelb1, reuse=None,
                                               chs=self.args["G_channels"], depth=self.args["depth"],d=self.args["dilations"],train=True,r=self.args["repeatations"])
-                self.fake_bA_image23 = generator(self.input_modelb2, reuse=True,
+                self.fake_bA_image23,bx2 = generator(self.input_modelb2, reuse=True,
                                                chs=self.args["G_channels"], depth=self.args["depth"],
                                                d=self.args["dilations"], train=True,r=self.args["repeatations"])
             self.fake_aB_image = tf.concat([self.fake_aB_image12, self.fake_aB_image23], axis=1)[:,1:,:,:]
             self.fake_bA_image = tf.concat([self.fake_bA_image12, self.fake_bA_image23], axis=1)[:,1:,:,:]
 
             with tf.variable_scope("generator_2",reuse=True):
-                self.fake_Ba_image = generator(self.fake_aB_image, reuse=True,
+                self.fake_Ba_image,_ = generator(self.fake_aB_image, reuse=True,
                                               chs=self.args["G_channels"], depth=self.args["depth"], d=self.args["dilations"],train=True,r=self.args["repeatations"])
             with tf.variable_scope("generator_1",reuse=True):
-                self.fake_Ab_image = generator(self.fake_bA_image, reuse=True,
+                self.fake_Ab_image,_ = generator(self.fake_bA_image, reuse=True,
                                                chs=self.args["G_channels"], depth=self.args["depth"],d=self.args["dilations"],train=True,r=self.args["repeatations"])
 
         ff=self.args["input_size"]//self.args["SHIFT"]
@@ -166,11 +166,18 @@ class Model:
 
                 self.d_judge_BF = discriminator(self.fake_aB_image12, True, self.args["d_depth"],
                                                                        self.args["D_channels"])
+                for bnbn in ax1:
+                    self.d_judge_BF2 = discriminator(bnbn, True, self.args["d_depth"],
+                                                    self.args["D_channels"])
+
             with tf.variable_scope("discrimA"):
                 self.d_judge_AR = discriminator(a_true_noised, None,  self.args["d_depth"],
                                                                         self.args["D_channels"])
                 self.d_judge_AF = discriminator(self.fake_bA_image12, True,  self.args["d_depth"],
                                                                         self.args["D_channels"])
+                for bnbn in bx1:
+                    self.d_judge_AF2 = discriminator(bnbn, True, self.args["d_depth"],
+                                                    self.args["D_channels"])
 
 
         #getting individual variabloes
@@ -182,8 +189,13 @@ class Model:
         #D-netの目的関数
         self.d_loss_AR = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.ones([self.args["batch_size"],1]),predictions=self.d_judge_AR))
         self.d_loss_AF = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.zeros([self.args["batch_size"],1]),predictions=self.d_judge_AF))
+        self.d_loss_AF2 = tf.reduce_mean(
+            tf.losses.mean_squared_error(labels=tf.zeros([self.args["batch_size"], 1]), predictions=self.d_judge_AF2))
+
         self.d_loss_BR = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.ones([self.args["batch_size"],1]), predictions=self.d_judge_BR))
         self.d_loss_BF = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.zeros([self.args["batch_size"],1]),predictions=self.d_judge_BF))
+        self.d_loss_BF2 = tf.reduce_mean(
+            tf.losses.mean_squared_error(labels=tf.zeros([self.args["batch_size"], 1]), predictions=self.d_judge_BF2))
 
         self.d_lossA=(self.d_loss_AR+self.d_loss_AF)
         self.d_lossB= (self.d_loss_BR + self.d_loss_BF)
@@ -197,19 +209,22 @@ class Model:
         L1B=saa+sbb
 
         # Gan lossA
-        DSb=tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.ones([self.args["batch_size"],1]),predictions=self.d_judge_BF))
+        DSb = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.ones([self.args["batch_size"],1]),predictions=self.d_judge_BF))
+        DSb2 = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.ones([self.args["batch_size"], 1]), predictions=self.d_judge_BF2))
+
         # generator lossA
-        self.g_loss_aB = L1B +DSb* self.args["weight_GAN"]
+        self.g_loss_aB = L1B +(DSb+DSb2)* self.args["weight_GAN"]
         # L1 norm lossB
         sa=tf.reduce_mean(tf.abs(self.fake_Ab_image[:,:,:,0]-self.input_modelb[:,-ff:,:,0]))* self.args["weight_Cycle_Pow"]
         sb=tf.reduce_mean(tf.abs(self.fake_Ab_image[:,:,:,1]-self.input_modelb[:,-ff:,:,1] ))* self.args["weight_Cycle_Fre"]
         L1bAAb = sa+sb
         # Gan loss
         DSA = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.ones([self.args["batch_size"],1]),predictions=self.d_judge_AF))
+        DSA2 = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.ones([self.args["batch_size"], 1]), predictions=self.d_judge_AF2))
         # L1UBA =16.0/(tf.abs(self.fake_bA_image[:,:,:,0]-self.fake_aB_image[:,:,:,0])+1e-8)
         # L1UBA =tf.maximum(L1UBA,tf.ones_like(L1UBA))
         # generator loss
-        self.g_loss_bA = L1bAAb + DSA * self.args["weight_GAN"]
+        self.g_loss_bA = L1bAAb + (DSA2+DSA) * self.args["weight_GAN"]
         self.g_loss=self.g_loss_aB+self.g_loss_bA
         #BN_UPDATE
         self.update_ops=tf.get_collection(tf.GraphKeys.UPDATE_OPS)
