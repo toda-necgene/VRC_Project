@@ -108,7 +108,7 @@ def block_res(current,chs,rep_pos,depth,reuses,d,train=True):
                                data_format="channels_last", reuse=reuses, name="res_conv3" + str(i) + str(rep_pos))
         ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
                                              name="bnA3"+str(tms+i) + str(rep_pos))
-        prop=min((1-i/res)+0.5,1.0)
+        prop=(1-i/res)
         ten=ShakeShake(ten,prop,train)
         ten = tf.nn.relu(ten)
         if i!=res-1:
@@ -133,14 +133,16 @@ def deconve_with_ps(inp,r,otp_shape,depth,reuses=None,name=""):
     ten = tf.transpose(ten, [0, 2, 3, 4, 1, 5])
     ten = tf.reshape(ten, [b_size, in_h * r[0], in_w * r[1], otp_shape])
     return ten[:,:,:,:]
-def ShakeShake(ten,prop,train):
+def ShakeShake(ten,rate,train):
     s=[int(ten.shape[1]),int(ten.shape[2]),int(ten.shape[3])]
     f_rand=tf.random_uniform(s,0.0,1.0)
     b_rand=tf.random_uniform(s,0.0,1.0)
     if train:
-        tenA=tf.layers.dropout(ten,prop)
-        tenB = tf.layers.dropout(ten, 1-prop)
+        prop=tf.random_uniform(s,0.0,1.0)+rate
+        prop=tf.floor(prop)
+        tenA=ten*prop
+        tenB = ten*(1-prop)
         return tenA+tenB*b_rand+tf.stop_gradient(tenB*(f_rand-b_rand))
     else:
-        return ten*(prop+(1-prop)*0.5)
+        return ten*(rate+(1-rate)*0.5)
 
