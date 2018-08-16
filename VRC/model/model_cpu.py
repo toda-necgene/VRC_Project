@@ -5,7 +5,6 @@ import numpy as np
 from tensorflow.python import debug as tf_debug
 from tensorflow.python.debug.lib.debug_data import has_inf_or_nan
 import json
-import shutil
 from .model import discriminator,generator
 class Model:
     def __init__(self,path):
