@@ -140,7 +140,7 @@ def ShakeShake(ten,prop,train):
     if train:
         tenA=tf.layers.dropout(ten,prop)
         tenB = tf.layers.dropout(ten, 1-prop)
-        return tenA+tenB*b_rand-tf.stop_gradient(tenB*(f_rand-b_rand))
+        return tenA+tenB*b_rand+tf.stop_gradient(tenB*(f_rand-b_rand))
     else:
         return ten*(prop+(1-prop)*0.5)
 
