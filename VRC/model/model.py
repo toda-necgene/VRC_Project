@@ -5,7 +5,7 @@ import tensorflow as tf
 def discriminator(inp,reuse,depth,chs,train=True):
     current=inp
     for i in range(depth):
-        ten = tf.layers.conv2d(current, chs[i], kernel_size=[2,5], strides=[1,2], padding="VALID",kernel_initializer=tf.truncated_normal_initializer(stddev=0.02),use_bias=True, data_format="channels_last",name="disc_"+str(i),reuse=reuse)
+        ten = tf.layers.conv2d(current, chs[i], kernel_size=[2,5], strides=[1,2], padding="VALID",kernel_initializer=tf.truncated_normal_initializer(stddev=0.02),use_bias=False, data_format="channels_last",name="disc_"+str(i),reuse=reuse)
         # ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuse,
         #                                     name="bnD" + str(i))
         ten=tf.layers.dropout(ten,0.125)
@@ -78,7 +78,7 @@ def block_res(current,chs,rep_pos,depth,reuses,d,train=True):
     tenM=list()
     tms=len(d)
     for i in range(times):
-        tenA = tf.layers.conv2d(ten, chs[i + tms], kernel_size=[1, 2], strides=[1, 2], padding="VALID",
+        tenA = tf.layers.conv2d(ten, chs[i + tms], kernel_size=[1, 2**(i+1)], strides=[1, 2**(i+1)], padding="VALID",
                                 kernel_initializer=tf.truncated_normal_initializer(stddev=0.02),use_bias=False,
                                 data_format="channels_last", reuse=reuses, name="convSmaller"+str(i) + str(rep_pos),
                                 dilation_rate=(1, 1))
@@ -116,7 +116,7 @@ def block_res(current,chs,rep_pos,depth,reuses,d,train=True):
     tms+=res
     for i in range(times):
         ten += tenM[times-i-1][:, -8:, :, :int(ten.shape[3])]
-        ten = deconve_with_ps(ten, [1, 2], chs[tms+i], rep_pos, reuses=reuses, name="00"+str(i))
+        ten = deconve_with_ps(ten, [1, 2**(times-i)], chs[tms+i], rep_pos, reuses=reuses, name="00"+str(i))
         ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
                                              name="bn"+str(times+res+i) + str(rep_pos))
         ten = tf.nn.relu(ten)
