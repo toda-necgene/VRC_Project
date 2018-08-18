@@ -5,12 +5,12 @@ import tensorflow as tf
 def discriminator(inp,reuse,depth,chs,train=True):
     current=inp
     for i in range(depth):
-        ten = tf.layers.conv2d(current, chs[i], kernel_size=[2,7], strides=[1,4], padding="VALID",kernel_initializer=tf.truncated_normal_initializer(stddev=0.02),use_bias=False, data_format="channels_last",name="disc_"+str(i),reuse=reuse)
+        ten = tf.layers.conv2d(current, chs[i], kernel_size=[2,5], strides=[1,2], padding="VALID",kernel_initializer=tf.truncated_normal_initializer(stddev=0.02),use_bias=False, data_format="channels_last",name="disc_"+str(i),reuse=reuse)
         # ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuse,
         #                                     name="bnD" + str(i))
-        ten=tf.layers.dropout(ten,0.4)
+        # ten=tf.layers.dropout(ten,0.25)
         current = tf.nn.leaky_relu(ten)
-    print(" [*] bottom shape:"+str(current.shape))
+    # print(" [*] bottom shape:"+str(current.shape))
     h4=tf.reshape(current, [-1,current.shape[1]*current.shape[2]*current.shape[3]])
     ten=tf.layers.dense(h4,1,name="dence",reuse=reuse)
     return ten
@@ -108,7 +108,7 @@ def block_res(current,chs,rep_pos,depth,reuses,d,train=True):
                                data_format="channels_last", reuse=reuses, name="res_conv3" + str(i) + str(rep_pos))
         ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
                                              name="bnA3"+str(tms+i) + str(rep_pos))
-        prop=(1-i/res)
+        prop=(1-i/(res*2))
         ten=ShakeShake(ten,prop,train)
         ten = tf.nn.relu(ten)
         if i!=res-1:

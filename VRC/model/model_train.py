@@ -349,7 +349,7 @@ class Model:
         d_optim = tf.train.AdamOptimizer(lr_d, beta_d_opt, beta_2_d_opt).minimize(self.d_loss,
                                                                                   var_list=self.d_vars)
 
-
+        tt_me=list()
         time_of_epoch=np.zeros(1)
 
         # logging
@@ -362,8 +362,6 @@ class Model:
                 f.write("epochs,test_varidation")
                 f.flush()
         # initialize training info
-        # 学習の情報の初期化
-        start_time = time.time()
         ti=0
         # loading net
         # 過去の学習データの読み込み
@@ -402,7 +400,8 @@ class Model:
             self.experiment.param("beta_g_opt", beta_g_opt)
             self.experiment.param("training_interval", self.args["train_interval"])
 
-
+        # 学習の情報の初期化
+        start_time = time.time()
         for epoch in range(self.args["start_epoch"],self.args["train_epoch"]):
             # shuffling training data
             # トレーニングデータのシャッフル
@@ -516,7 +515,10 @@ class Model:
             count = counter + ti * epoch
             taken_time = time.time() - start_time
             start_time = time.time()
-            ft=taken_time*(self.args["train_epoch"]-epoch-1)
+            tt_me.append(taken_time)
+            if len(tt_me)>20:
+                tt_me=tt_me[0:20]
+            ft=np.mean(tt_me)*(self.args["train_epoch"]-epoch-1)
             print(" [*] Epoch %5d (iterations: %10d)finished in %.2f (preprocess %.3f) ETA: %3d:%2d:%2.1f" % (epoch,count,taken_time,ts,ft//3600,ft//60%60,ft%60))
             time_of_epoch=np.append(time_of_epoch,np.asarray([taken_time,ts]))
             if epoch % self.args["lr_decay_term"] == 0:
