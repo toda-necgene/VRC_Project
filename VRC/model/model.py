@@ -36,17 +36,17 @@ def generator(current_outputs,reuse,depth,chs,d,train,r):
     tenA = tf.layers.conv2d(tenA, 1, [1, 1], [1, 1], padding="SAME",
                             kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=True,
                             data_format="channels_last", reuse=reuse, name="res_last2A")
-    tenA=tenA*10
-    tenB = ten
+    tenA = tenA * 10
+    tenB = tenA+ten[:,:,:,-1:]
     tenB = tf.layers.conv2d(tenB, 4, [1, 1], [1, 1], padding="SAME",
                             kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=False,
-                            data_format="channels_last", reuse=reuse, name="res_last1B" )
+                            data_format="channels_last", reuse=reuse, name="res_last1B")
     tenB = tf.layers.batch_normalization(tenB, axis=3, training=train, trainable=True, reuse=reuse,
-                                         name="bnBL" )
+                                         name="bnBL")
     tenB = tf.nn.leaky_relu(tenB)
     tenB = tf.layers.conv2d(tenB, 1, [1, 1], [1, 1], padding="SAME",
                             kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=True,
-                            data_format="channels_last", reuse=reuse, name="res_last2B" )
+                            data_format="channels_last", reuse=reuse, name="res_last2B")
     tenB = tenB * 3.141593
     ten = tf.concat([tenA, tenB], 3)
     tent=list()
@@ -56,7 +56,7 @@ def generator(current_outputs,reuse,depth,chs,d,train,r):
                                 kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=True,
                                 data_format="channels_last", reuse=True, name="res_last2A")
         tenA = tenA * 10
-        tenB = f
+        tenB = tenA+ten[:,:,:,-1:]
         tenB = tf.layers.conv2d(tenB, 4, [1, 1], [1, 1], padding="SAME",
                                 kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=False,
                                 data_format="channels_last", reuse=True, name="res_last1B")
