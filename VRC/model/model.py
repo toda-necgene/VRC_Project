@@ -38,6 +38,8 @@ def generator(current_outputs,reuse,depth,chs,d,train,r):
                             data_format="channels_last", reuse=reuse, name="res_last2A")
     tenA = tenA * 10
     tenB = tf.concat([tf.stop_gradient(tenA),ten],axis=3)
+    tenB = tf.layers.batch_normalization(tenB, axis=3, training=train, trainable=True, reuse=reuse,
+                                         name="bnBLA")
     tenB = tf.layers.conv2d(tenB, 4, [1, 1], [1, 1], padding="SAME",
                             kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=False,
                             data_format="channels_last", reuse=reuse, name="res_last1B")
@@ -57,6 +59,8 @@ def generator(current_outputs,reuse,depth,chs,d,train,r):
                                 data_format="channels_last", reuse=True, name="res_last2A")
         tenA = tenA * 10
         tenB = tf.concat([tf.stop_gradient(tenA),f],axis=3)
+        tenB = tf.layers.batch_normalization(tenB, axis=3, training=train, trainable=True, reuse=True,
+                                             name="bnBLA")
         tenB = tf.layers.conv2d(tenB, 4, [1, 1], [1, 1], padding="SAME",
                                 kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=False,
                                 data_format="channels_last", reuse=True, name="res_last1B")
