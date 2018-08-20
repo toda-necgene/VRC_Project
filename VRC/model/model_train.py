@@ -5,6 +5,7 @@ import time
 from six.moves import xrange
 import numpy as np
 import wave
+import librosa,sklearn
 from tensorflow.python import debug as tf_debug
 from tensorflow.python.debug.lib.debug_data import has_inf_or_nan
 import pyaudio
@@ -253,7 +254,8 @@ class Model:
         self.fake_B_sum2 = tf.summary.image("fake_B_image01", im1, 1)
         self.fake_B_sum3 = tf.summary.image("fake_B_image02", im2, 1)
         self.g_test_epo=tf.placeholder(tf.float32,name="g_test_epoch_end")
-        self.g_test_epoch = tf.summary.merge([tf.summary.scalar("g_test_epoch_end", self.g_test_epo,family="test")])
+        self.g_test_epo2=tf.placeholder(tf.float32,name="g_test_epoch_end_mfcc")
+        self.g_test_epoch = tf.summary.merge([tf.summary.scalar("g_test_epoch_end", self.g_test_epo,family="test"),tf.summary.scalar("g_test_mfcc_loss", self.g_test_epo2,family="test")])
 
         self.tb_results=tf.summary.merge([self.fake_B_sum,self.fake_B_sum2,self.fake_B_sum3,self.g_test_epoch])
 
@@ -401,6 +403,9 @@ class Model:
             self.experiment.param("training_interval", self.args["train_interval"])
 
         # 学習の情報の初期化
+        radeon_x,radeon_fs=librosa.load(self.args["test_data_dir"]+'/label.wav',sr=16000)
+        radeon = librosa.feature.mfcc(radeon_x, sr=radeon_fs)
+        radeon = sklearn.preprocessing.scale(radeon, axis=1)
         start_time = time.time()
         for epoch in range(self.args["start_epoch"],self.args["train_epoch"]):
             # shuffling training data
@@ -421,14 +426,17 @@ class Model:
                 # loss of tesing
                 #テストの誤差
                 test1=np.mean(np.abs(out_puts.reshape(1,-1,1)[0]-label.reshape(1,-1,1)[0]))
-
+                raxis = librosa.feature.mfcc(out_puts.reshape(-1)*1.0, sr=radeon_fs)
+                raxis = sklearn.preprocessing.scale(raxis, axis=1)
+                rnx=min(raxis.shape[1],radeon.shape[1])
+                test_mfcc=np.sum(np.abs(radeon[:,-rnx:]-raxis[:,-rnx:]))
                 #hyperdash
                 if self.args["hyperdash"]:
                     self.experiment.metric("testG",test1)
                 #writing epoch-result into tensorboard
                 #tensorboardの書き込み
                 if self.args["tensorboard"]:
-                    rs=self.sess.run(self.tb_results,feed_dict={ self.result:out_put.reshape(1,1,-1),self.result1:otp_im,self.g_test_epo:test1})
+                    rs=self.sess.run(self.tb_results,feed_dict={ self.result:out_put.reshape(1,1,-1),self.result1:otp_im,self.g_test_epo:test1,self.g_test_epo2:test_mfcc})
                     self.writer.add_summary(rs, epoch)
 
                 #saving test result
