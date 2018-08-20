@@ -10,10 +10,9 @@ NFFT=1024
 SHIFT=512
 TERM=4096
 dilation_size=7
-boost=1.0
+boost=1.5
 otp_boost=1.0
-bass_cut=20.0
-noise_filter_rate=0.95
+noise_filter_rate=0.0
 print(np.fft.fftfreq(NFFT,1.0/16000)[13])
 def preem(data):
     dd=np.roll(data.copy(), -1)
@@ -128,7 +127,6 @@ while stream.is_active():
     n4 = fft(inp4)[:, :SHIFT, :].astype(np.float32)
 
     res=np.asarray([n,n2,n3,n4])
-    res=np.clip(res,-10,10)
     # res=np.asarray([n,n2])
     resp = process(res.copy())
     # resp[:,:,:,:]-=res[:,:8,:,:]*0.2

@@ -5,6 +5,7 @@ import numpy as np
 from tensorflow.python import debug as tf_debug
 from tensorflow.python.debug.lib.debug_data import has_inf_or_nan
 import json
+import shutil
 from .model import discriminator,generator
 class Model:
     def __init__(self,path):
@@ -121,7 +122,7 @@ class Model:
         #テスト用関数
         #wave file　変換用
 
-
+        use_num = 4
         tt=time.time()
         ipt=self.args["input_size"]+self.args["SHIFT"]*self.args["dilation_size"]+self.args["SHIFT"]
         times=in_put.shape[0]//(self.args["input_size"])+1
@@ -129,10 +130,7 @@ class Model:
             times-=1
         otp=np.array([],dtype=np.int16)
         res3 = np.zeros([1,self.args["NFFT"],2], dtype=np.float32)
-        rss=np.zeros([self.input_size_model[2]],dtype=np.float64)
-        rss2 = np.zeros([self.input_size_model[2]], dtype=np.float64)
-        rssC = np.zeros([self.input_size_model[2]], dtype=np.float64)
-        rssD = np.zeros([self.input_size_model[2]], dtype=np.float64)
+        rss=np.zeros([use_num,self.input_size_model[2]],dtype=np.float64)
 
         for t in range(times):
             # Preprocess
@@ -147,67 +145,44 @@ class Model:
                 resorce=np.pad(resorce,(r,0),'constant')
             # FFT
             # 短時間高速離散フーリエ変換
+            ters=self.args["NFFT"]//use_num
             res=self.fft(resorce.copy()/32767.0)
-            resorce2=np.roll(resorce.copy(),self.args["SHIFT"]//2,axis=0)
-            resorce2[:self.args["SHIFT"]//2]=0.0
-            resorce3 = np.roll(resorce.copy(), self.args["SHIFT"] // 2+self.args["SHIFT"], axis=0)
-            resorce3[:self.args["SHIFT"] // 2+self.args["SHIFT"]] = 0.0
-            resorce4 = np.roll(resorce.copy(), self.args["SHIFT"], axis=0)
-            resorce4[:self.args["SHIFT"] ] = 0.0
-
-            res2 = self.fft(resorce2.reshape(-1) / 32767.0)
-            res3C=self.fft(resorce3.reshape(-1) / 32767.0)
-            res4D=self.fft(resorce4.reshape(-1) / 32767.0)
+            res=res[:,:self.args["SHIFT"],:].reshape(1,-1,self.args["SHIFT"],2)
+            for r in range(1,use_num):
+                resorce2=np.roll(resorce.copy(),ters*r,axis=0)
+                resorce2[:ters*r]=0.0
+                resorce2=self.fft(resorce2/32767)[:,:self.args["SHIFT"],:].reshape(1,-1,self.args["SHIFT"],2)
+                res=np.append(res,resorce2,axis=0)
             # running network
             # ネットワーク実行
-            res=np.asarray([res[:,:self.args["SHIFT"],:],res2[:,:self.args["SHIFT"],:],res3C[:,:self.args["SHIFT"],:],res4D[:,:self.args["SHIFT"],:]]).reshape([4,-1,self.args["SHIFT"],2])
-            # res =res[:, :self.args["SHIFT"], :].reshape([1, -1, self.args["SHIFT"], 2])
-
             response=self.sess.run(self.fake_aB_image_test,feed_dict={ self.input_model_test:res})
-            res2=response[0].copy()[:,::-1,:]
-            res=np.append(response[0].copy(),res2,axis=1)
-            res[:,self.args["SHIFT"]:,1]*=-1
-            resB = response[1].copy()[ :, ::-1, :]
-            resB = np.append(response[1].copy(), resB, axis=1)
-            resB[:, self.args["SHIFT"]:, 1] *= -1
-            resC = response[2].copy()[:, ::-1, :]
-            resC = np.append(response[1].copy(), resC, axis=1)
-            resC[:, self.args["SHIFT"]:, 1] *= -1
-            resD = response[3].copy()[:, ::-1, :]
-            resD = np.append(response[3].copy(), resD, axis=1)
-            resD[:, self.args["SHIFT"]:, 1] *= -1
-            a=np.clip(res.copy(),-60.0,12.0)
-            b=np.clip(resB.copy(),-60.0,12.0)
-            c=np.clip(resC.copy(),-60.0,12.0)
-            d=np.clip(resD.copy(),-60.0,12.0)
-            res3 = np.append(res3, a).reshape(-1,self.args["NFFT"],2)
-
-
+            res2 = response.copy()[:, :, ::-1, :]
+            response = np.append(response, res2, axis=2)
+            response[:,:,self.args["SHIFT"]:,1]*=-1
+            response=np.clip(response,-60.0,12.0)
             # Postprocess
             # 後処理
 
             # IFFT
             # 短時間高速離散逆フーリエ変換
-            res,rss=self.ifft(a,rss)
-            resB2, rss2 = self.ifft(b, rss2)
-            resC3, rssC = self.ifft(c, rssC)
-            resD4, rssD = self.ifft(d, rssD)
+            rest=np.zeros(self.args["input_size"])
+            last=np.zeros(self.args["input_size"])
+            for i in range(response.shape[0]):
+                resa, rss[i] = self.ifft(response[i], rss[i])
+                if i != 0:
+                    resa = np.roll(resa, -ters*i, axis=0)
+                    resa[-ters*i:] = last[-ters*i:]
+                rest+=(resa/use_num)[-self.args["input_size"]:]
+                last=(resa/use_num)[-self.args["input_size"]:]
+            res3 = np.append(res3, response[0,:,:,:]).reshape(-1,self.args["NFFT"],2)
 
             # 変換後処理
-            resB2=np.roll(resB2,-self.args["SHIFT"]//2,axis=0)
-            resB2[-self.args["SHIFT"]//2:]=0.0
-            resC3 = np.roll(resC3, -self.args["SHIFT"] // 2-self.args["SHIFT"], axis=0)
-            resC3[-self.args["SHIFT"] // 2-self.args["SHIFT"]:] = 0.0
-            resD4 = np.roll(resD4, -self.args["SHIFT"], axis=0)
-            resD4[-self.args["SHIFT"]:] = 0.0
-
-            res=(res+resB2+resC3+resD4)/4
-            res = np.clip(res, -1.0, 1.0)*32767
+            res = np.clip(rest, -1.0, 1.0)*32767
 
             # chaching results
             # 結果の保存
             res=res.reshape(-1).astype(np.int16)
-            otp=np.append(otp,res[-self.args["input_size"]:])
+            otp=np.append(otp,res)
         h=otp.shape[0]-in_put.shape[0]
         if h>0:
             otp=otp[h:]
@@ -254,7 +229,7 @@ class Model:
         return spec
     def ifft(self,data,redi):
         a=data
-        a[:, :, 0]=np.clip(a[:, :, 0],a_min=-10,a_max=88)
+        a[:, :, 0]=np.clip(a[:, :, 0],a_min=-20,a_max=20)
         sss=np.exp(a[:,:,0])
         p = np.sqrt(sss)
         r = p * (np.cos(a[:, :, 1]))

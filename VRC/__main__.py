@@ -5,7 +5,7 @@ if len(sys.argv)!=0 and sys.argv.__contains__("--train"):
     import train
 elif len(sys.argv)!=0 and sys.argv.__contains__("--test"):
     from utils import model_test
-elif len(sys.argv)!=0 and sys.argv.__contains__("--run"):
+elif len(sys.argv)!=0 and sys.argv.__contains__("--vrc"):
      import run.VRC_cpu
 elif len(sys.argv)!=0 and sys.argv.__contains__("--create_dataset"):
     from utils import voice_to_datasets_cycle
@@ -16,6 +16,6 @@ else :
     print("[command]")
     print("--train          学習を行います。")
     print("--test           学習済みモデルの実行テストを行います。")
-    print("--run            リアルタイム変換を行います。")
+    print("--vrc            リアルタイム変換を行います。")
     print("--create_dataset データセットを音声から生成します。")
     print("各設定は\"setting.json\"ファイルを使用します。\nなお、詳しい使い方はリードミーをご覧ください。")

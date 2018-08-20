@@ -3,7 +3,7 @@ import numpy as np
 import wave
 import matplotlib.pyplot as pl
 import time
-
+import sklearn,librosa.display
 from model.model_cpu import Model as model
 
 Add_Effect=True
@@ -39,16 +39,14 @@ def filter_clip(dd,f=1.5):
     dxf=np.maximum(dd,-f)+f+np.minimum(dd,f)-f
     return dxf
 
-def filter_mean(dd):
-    dxx1=np.roll(dd,1)
-    dxx1[:1]=dd[:1]
-    dxx2=np.roll(dd,2)
-    dxx2[:2] = dd[:2]
-    dxx3= np.roll(dd, 3)
-    dxx3[:3] = dd[:3]
-    dxx4 = np.roll(dd, 4)
-    dxx4[:4] = dd[:4]
-    return (dd+dxx1+dxx2+dxx3+dxx4)/5.0
+def filter_mean(dd,t=4):
+    sum_dig=(t+1)*t//2
+    nn=dd.copy()/sum_dig*(t+1)
+    for i in range(1,t+1):
+        dxx1=np.roll(dd,i)
+        dxx1[:i]=dd[:i]
+        nn+=dxx1/sum_dig*(t+1-i)
+    return nn.astype(np.int16)
 
 def filter_pes(dd):
     dxx1=np.roll(dd,-1)
@@ -174,71 +172,14 @@ data_realB=data.reshape(-1)
 tm=time.time()
 print(" [*] conversion start!!")
 data_C,_,data_F=net.convert(data_realA)
+# data_N=filter_mean(data_C,4)
 
 data_D,_,data_E=net.convert(data_realB)
+# data_D=filter_mean(data_D)
 
 print(" [*] conversion finished in %3.3f!!" % (time.time()-tm))
 
 rate=16000
-
-ab=np.zeros([NFFT,2])
-abc=np.zeros([1,NFFT,2])
-abb=np.zeros([1,NFFT,2])
-vvr=np.zeros([1])
-times=data_realA.shape[0]//term+1
-if data_realA.shape[0]%term==0:
-    times-=1
-ttm=time.time()
-resp=np.zeros([NFFT//2])
-print("----------------------------------------------------------------")
-for i in range(times):
-    ind=term+SHIFT
-    startpos=term*i+data_realA.shape[0]%term
-    data_realAb = data_realA[max(startpos - ind, 0):startpos]
-    r=ind-data_realAb.shape[0]
-    if r>0:
-        data_realAb=np.pad(data_realAb,(r,0),"constant")
-    ddms=data_realAb.astype(np.float32)/32767.0
-    bss=fft(ddms)
-    bss=complex_to_pp(bss)
-    abc = np.append(abc, bss, axis=0)
-data_E=data_E.reshape([-1,NFFT,2])
-data_F=data_F.reshape([-1,NFFT,2])
-pl.subplot(6,1,1)
-aba=abc[1:,:,0].transpose((1,0))
-pl.imshow(aba,aspect="auto")
-pl.clim(-10,10)
-pl.colorbar()
-
-pl.subplot(6,1,2)
-aba=abc[1:,:,1].transpose((1,0))
-pl.imshow(aba,aspect="auto")
-pl.clim(-3.141592,3.141592)
-pl.colorbar()
-
-pl.subplot(6,1,3)
-abn=np.transpose(data_F[1:,:,0],(1,0))
-pl.imshow(abn,aspect="auto")
-pl.clim(-10,10)
-pl.colorbar()
-pl.subplot(6,1,4)
-abn=np.transpose(data_F[1:,:,1],(1,0))
-pl.imshow(abn,aspect="auto")
-pl.clim(-3.141592,3.141592)
-pl.colorbar()
-
-pl.subplot(6, 1, 5)
-data_E=data_E.reshape([-1,NFFT,2])
-abn = np.transpose(data_E[1:, :, 0], (1, 0))
-pl.imshow(abn, aspect="auto")
-pl.clim(-10, 10)
-pl.colorbar()
-pl.subplot(6, 1, 6)
-aba = data_E[:, :, 1].transpose((1, 0))
-pl.imshow(aba, aspect="auto")
-pl.clim(-3.141592, 3.141592)
-pl.colorbar()
-
 FORMAT=pyaudio.paInt16
 
 p=pyaudio.PyAudio()
@@ -257,4 +198,45 @@ ww.setframerate(RATE)
 ww.writeframes(data_D.tobytes())
 ww.close()
 
+data_E=data_E.reshape([-1,NFFT,2])
+data_F=data_F.reshape([-1,NFFT,2])
+pl.subplot(7,1,1)
+x, fs = librosa.load('./datasets/test/label.wav', sr=16000)
+mfccsa =librosa.feature.mfcc(x, sr=fs)
+mfccsa = sklearn.preprocessing.scale(mfccsa, axis=1)
+librosa.display.specshow(mfccsa, sr=fs, x_axis='time')
+pl.colorbar()
+
+pl.subplot(7,1,4)
+mfccs =librosa.feature.melspectrogram(x, sr=fs)
+pl.imshow(mfccs,aspect="auto")
+pl.clim(0,100)
+pl.colorbar()
+pl.subplot(7,1,3)
+x, fs = librosa.load(WAVE_OUTPUT_FILENAME, sr=16000)
+mfccsb = librosa.feature.mfcc(x, sr=fs)
+mfccsb = sklearn.preprocessing.scale(mfccsb, axis=1)
+librosa.display.specshow(mfccsb, sr=fs, x_axis='time')
+pl.colorbar()
+pl.subplot(7,1,6)
+mfccs =librosa.feature.melspectrogram(x, sr=fs)
+pl.imshow(mfccs,aspect="auto")
+pl.clim(0,100)
+pl.colorbar()
+pl.subplot(7,1,2)
+x, fs = librosa.load('./datasets/test/test.wav', sr=16000)
+mfccsc =librosa.feature.mfcc(x, sr=fs)
+mfccsc = sklearn.preprocessing.scale(mfccsc, axis=1)
+librosa.display.specshow(mfccsc, sr=fs, x_axis='time')
+pl.colorbar()
+pl.subplot(7,1,5)
+mfccs =librosa.feature.melspectrogram(x, sr=fs)
+pl.imshow(mfccs,aspect="auto")
+pl.clim(0,100)
+pl.colorbar()
+pl.subplot(7,1,7)
+pl.imshow(mfccsa[:,2:]-mfccsb[:,:])
+pl.colorbar()
+print(np.mean(np.abs(mfccsa[:,2:]-mfccsb[:,:])))
+print(np.mean(np.abs(mfccsc[:,:]-mfccsb[:,:])))
 pl.show()
