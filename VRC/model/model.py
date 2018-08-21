@@ -104,14 +104,14 @@ def block_res(current,chs,rep_pos,depth,reuses,d,train=True):
     for i in range(res):
 
         tenA=ten
-        ten = tf.layers.conv2d(tenA, chs[tms + i]//4, [1, 3], [1, 1], padding="SAME",
+        ten = tf.layers.conv2d(tenA, chs[tms + i]//2, [1, 3], [1, 1], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=False,
                                data_format="channels_last", reuse=reuses, name="res_conv1" + str(i) + str(rep_pos))
 
         ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
                                              name="bnA1"+str(tms+i) + str(rep_pos))
         ten = tf.nn.relu(ten)
-        ten=tf.layers.conv2d(ten, chs[tms + i]//4, [3, 5], [1, 1], padding="SAME",
+        ten=tf.layers.conv2d(ten, chs[tms + i]//2, [3, 5], [1, 1], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=False,
                                data_format="channels_last", reuse=reuses, name="res_conv2" + str(i) + str(rep_pos))
         ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
