@@ -3,7 +3,6 @@
   <component name="ChangeListManager">
     <list default="true" id="bcabb495-93d4-437a-b14b-9cb2802ec5b1" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/model/model.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/model/model.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/VRC/setting.json" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/setting.json" afterDir="false" />
     </list>
     <ignored path="C:\Users\tadop\git\vrc\.idea\shelf/" />
@@ -55,18 +54,18 @@
         <counts>
           <entry key="dummy" value="4" />
           <entry key="gitignore" value="5" />
-          <entry key="json" value="850" />
+          <entry key="json" value="867" />
           <entry key="md" value="643" />
-          <entry key="py" value="2206" />
-          <entry key="txt" value="923" />
+          <entry key="py" value="2207" />
+          <entry key="txt" value="935" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="JSON" value="850" />
+          <entry key="JSON" value="867" />
           <entry key="Markdown" value="643" />
-          <entry key="PLAIN_TEXT" value="932" />
-          <entry key="Python" value="2206" />
+          <entry key="PLAIN_TEXT" value="944" />
+          <entry key="Python" value="2207" />
         </counts>
       </usages-collector>
     </session>
@@ -109,8 +108,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/model/model.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="248">
-              <caret line="132" column="22" lean-forward="true" selection-start-line="132" selection-start-column="22" selection-end-line="132" selection-end-column="22" />
+            <state relative-caret-position="112">
+              <caret line="7" column="64" selection-start-line="7" selection-start-column="64" selection-end-line="7" selection-end-column="64" />
             </state>
           </provider>
         </entry>
@@ -588,7 +587,21 @@
       <option name="project" value="LOCAL" />
       <updated>1534891526852</updated>
     </task>
-    <option name="localTasksCounter" value="43" />
+    <task id="LOCAL-00043" summary="[4.1.93]　アーキテクチャを修正&#10;&#10;[fix] 結合を復活">
+      <created>1534903577104</created>
+      <option name="number" value="00043" />
+      <option name="presentableId" value="LOCAL-00043" />
+      <option name="project" value="LOCAL" />
+      <updated>1534903577104</updated>
+    </task>
+    <task id="LOCAL-00044" summary="[4.1.96]　アーキテクチャを修正&#10;&#10;[fix] Dを複雑に">
+      <created>1534903806165</created>
+      <option name="number" value="00044" />
+      <option name="presentableId" value="LOCAL-00044" />
+      <option name="project" value="LOCAL" />
+      <updated>1534903806165</updated>
+    </task>
+    <option name="localTasksCounter" value="45" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -618,8 +631,6 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[4.1.40]　初期データの追加&#10;&#10;[fix] stacking に初期のデータ項を追加" />
-    <MESSAGE value="[4.1.45]　モデルの複雑化&#10;&#10;[fix] レイヤー層の増加" />
     <MESSAGE value="[4.1.45]　SHAKEDROPの修正&#10;&#10;[fix] 不具合修正" />
     <MESSAGE value="[4.1.49]　SHAKEDROPの修正&#10;&#10;[fix] 不具合修正" />
     <MESSAGE value="[4.1.49]　パラメータの変更&#10;&#10;[fix] LRの変更" />
@@ -643,7 +654,9 @@
     <MESSAGE value="[4.1.89]　アーキテクチャを修正&#10;&#10;[fix] 6層から7層に変更&#10;[fix] 学習率を減衰するように変更" />
     <MESSAGE value="[4.1.93]　アーキテクチャを修正&#10;&#10;[fix] 6層に変更&#10;[fix] チャンネル数を64に変更&#10;[del] エンコーダーとデコーダーの接続を消去" />
     <MESSAGE value="[4.1.93]　アーキテクチャを修正&#10;&#10;[fix] チャンネル数を32に変更&#10;[fix] ボトルネックの倍率を0.25から0.5に変更" />
-    <option name="LAST_COMMIT_MESSAGE" value="[4.1.93]　アーキテクチャを修正&#10;&#10;[fix] チャンネル数を32に変更&#10;[fix] ボトルネックの倍率を0.25から0.5に変更" />
+    <MESSAGE value="[4.1.93]　アーキテクチャを修正&#10;&#10;[fix] 結合を復活" />
+    <MESSAGE value="[4.1.96]　アーキテクチャを修正&#10;&#10;[fix] Dを複雑に" />
+    <option name="LAST_COMMIT_MESSAGE" value="[4.1.96]　アーキテクチャを修正&#10;&#10;[fix] Dを複雑に" />
   </component>
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/ui.lnf.xml" />
@@ -726,6 +739,13 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/VRC/model/model.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="112">
+          <caret line="7" column="64" selection-start-line="7" selection-start-column="64" selection-end-line="7" selection-end-column="64" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/VRC/utils/model_test.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="112">
@@ -733,13 +753,6 @@
           <folding>
             <element signature="e#0#14#0" expanded="true" />
           </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/model/model.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="248">
-          <caret line="132" column="22" lean-forward="true" selection-start-line="132" selection-start-column="22" selection-end-line="132" selection-end-column="22" />
         </state>
       </provider>
     </entry>
