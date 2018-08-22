@@ -129,7 +129,7 @@ def block_res(current,chs,rep_pos,depth,reuses,d,train=True):
             ten=ten+tenA
     tms+=res
     for i in range(times):
-        # ten += tenM[times-i-1][:, -8:, :, :int(ten.shape[3])]
+        ten += tenM[times-i-1][:, -8:, :, :int(ten.shape[3])]
         ten = deconve_with_ps(ten, [1, 4], chs[tms+i], rep_pos, reuses=reuses, name="00"+str(i))
         ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
                                              name="bn"+str(times+res+i) + str(rep_pos))
