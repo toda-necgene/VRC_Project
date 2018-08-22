@@ -126,9 +126,9 @@ def block_res(current,chs,rep_pos,depth,reuses,d,train=True):
                                              name="bnA3"+str(tms+i) + str(rep_pos))
         prop=(1-i/(res*2))
         ten=ShakeShake(ten,prop,train)
-        ten = tf.nn.relu(ten)
-        if i!=res-1 and i!=0:
+        if i!=res-1 :
             ten=ten+tenA
+        ten = tf.nn.relu(ten)
     tms+=res
     for i in range(times):
         ten += tenM[times-i-1][:, -8:, :, :int(ten.shape[3])]
