@@ -118,7 +118,6 @@ class Model:
         self.input_modela1 = self.input_modela[:, -8:, :, :]
         self.input_modelb1 = self.input_modelb[:, -8:, :, :]
         self.input_model_tests=self.input_model_test[:,-8:,:,:]
-        # self.input_modelb2 = self.input_modelb[:, -self.input_size_test[1]:, :, :]
         self.training=tf.placeholder(tf.float32,[1],name="Training")
         #creating generator
         #G-net（生成側）の作成
@@ -127,9 +126,6 @@ class Model:
             with tf.variable_scope("generator_1"):
                 self.fake_aB_image12,ax1 = generator(self.input_modela1, reuse=None,
                                               chs=self.args["G_channels"], depth=self.args["depth"], d=self.args["dilations"],train=True,r=self.args["repeatations"])
-                # self.fake_aB_image23,_ = generator(self.input_modela2, reuse=True,
-                #                                  chs=self.args["G_channels"], depth=self.args["depth"],
-                #                                  d=self.args["dilations"], train=True,r=self.args["repeatations"])
 
                 self.fake_aB_image_test ,_= generator(self.input_model_tests, reuse=True,
                                                 chs=self.args["G_channels"], depth=self.args["depth"],
@@ -138,11 +134,6 @@ class Model:
             with tf.variable_scope("generator_2"):
                 self.fake_bA_image12,bx1 = generator(self.input_modelb1, reuse=None,
                                               chs=self.args["G_channels"], depth=self.args["depth"],d=self.args["dilations"],train=True,r=self.args["repeatations"])
-                # self.fake_bA_image23,_ = generator(self.input_modelb2, reuse=True,
-                #                                chs=self.args["G_channels"], depth=self.args["depth"],
-                #                                d=self.args["dilations"], train=True,r=self.args["repeatations"])
-            # self.fake_aB_image = tf.concat([self.fake_aB_image12, self.fake_aB_image23], axis=1)[:,1:,:,:]
-            # self.fake_bA_image = tf.concat([self.fake_bA_image12, self.fake_bA_image23], axis=1)[:,1:,:,:]
             self.fake_aB_image = self.fake_aB_image12
             self.fake_bA_image = self.fake_bA_image12
 
@@ -428,7 +419,7 @@ class Model:
                 out_put=out_puts.astype(np.float32)/32767.0
                 # loss of tesing
                 #テストの誤差
-                test1=np.mean(np.abs(out_puts.reshape(1,-1,1)[0]-label.reshape(1,-1,1)[0]))
+                test1=np.mean(np.abs(np.abs(out_puts.reshape(1,-1,1)[0])-np.abs(label.reshape(1,-1,1)[0])))
                 raxis = librosa.feature.mfcc(out_puts.reshape(-1)*1.0, sr=radeon_fs)
                 raxis = sklearn.preprocessing.scale(raxis, axis=1)
                 rnx=min(raxis.shape[1],radeon.shape[1])

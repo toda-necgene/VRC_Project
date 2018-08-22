@@ -2,15 +2,15 @@
     "saving_config":{
         "checkpoint_dir":"Z://models/",
         "wave_otp_dir":"Z://waves/",
-        "version":"4.2.102"
+        "version":"4.2.110"
     },
     "network_architecture":{
         "repeatations":2,
-        "depth":[2,4],
-        "d_depth":4,
-        "D_channels":[32,32,32,32],
-        "G_channels":[0,0,0,8,16,16,16,16,8,8,2],
-        "dilations":[1,2,4]
+        "depth":[2,7],
+        "d_depth":6,
+        "D_channels":[16,16,32,32,32,32],
+        "G_channels":[16,32,32,32,32,32,32,32,32,16,1],
+        "dilations":[]
     },
     "training_config":{
         "train_epoch": 1000,
@@ -24,8 +24,8 @@
         "d_b1":0.5,
         "save_interval":5,
         "weight_GAN":1.0,
-        "weight_Cycle_Pow":0.5,
-        "weight_Cycle_Fre":0.5,
+        "weight_Cycle_Pow":1.0,
+        "weight_Cycle_Fre":1.0,
         "lr_decay_term":1000
     },
 
