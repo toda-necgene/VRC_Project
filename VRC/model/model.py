@@ -55,6 +55,7 @@ def generator(current_outputs,reuse,depth,chs,d,train,r):
     tenB = tf.layers.conv2d(tenB, 1, [1, 1], [1, 1], padding="SAME",
                             kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=False,
                             data_format="channels_last", reuse=reuse, name="res_last3B")
+    tenB=tenB*3.1416
     ten = tf.concat([tenA, tenB], 3)
     tent=list()
     for f in rs:
@@ -81,6 +82,7 @@ def generator(current_outputs,reuse,depth,chs,d,train,r):
         tenB = tf.layers.conv2d(tenB, 1, [1, 1], [1, 1], padding="SAME",
                                 kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=False,
                                 data_format="channels_last", reuse=True, name="res_last3B")
+        tenB *= 3.1416
         tens = tf.concat([tenA, tenB], 3)
         tent.append(tens)
     return ten,tent
