@@ -85,7 +85,8 @@ class Model:
         self.args["SHIFT"] = self.args["NFFT"]//2
         self.args["name_save"] = self.args["model_name"] + self.args["version"]
         ss=self.args["input_size"]//self.args["SHIFT"]+self.args["dilation_size"]
-        self.input_size_model=[None,ss+self.args["dilation_size"]+1,self.args["NFFT"]//2,2]
+        self.input_size_model=[None,ss+self.args["dilation_size"],self.args["NFFT"]//2,2]
+        # self.input_size_test = [None, ss, self.args["NFFT"] // 2, 2]
         self.input_size_test = [None, ss, self.args["NFFT"] // 2, 2]
         print("model input size:"+str(self.input_size_model))
         self.sess=tf.InteractiveSession(config=tf.ConfigProto(gpu_options=tf.GPUOptions()))
@@ -114,10 +115,10 @@ class Model:
         self.input_modelb = tf.placeholder(tf.float32, self.input_size_model, "inputs_G-net_B")
         self.input_model_test = tf.placeholder(tf.float32, self.input_size_test, "inputs_G-net_A")
 
-        self.input_modela1 = self.input_modela[:, :self.input_size_test[1], :, :]
-        self.input_modela2 = self.input_modela[:, -self.input_size_test[1]:, :, :]
-        self.input_modelb1 = self.input_modelb[:, :self.input_size_test[1], :, :]
-        self.input_modelb2 = self.input_modelb[:, -self.input_size_test[1]:, :, :]
+        self.input_modela1 = self.input_modela[:, -8:, :, :]
+        self.input_modelb1 = self.input_modelb[:, -8:, :, :]
+        self.input_model_tests=self.input_model_test[:,-8:,:,:]
+        # self.input_modelb2 = self.input_modelb[:, -self.input_size_test[1]:, :, :]
         self.training=tf.placeholder(tf.float32,[1],name="Training")
         #creating generator
         #G-net（生成側）の作成
@@ -126,22 +127,24 @@ class Model:
             with tf.variable_scope("generator_1"):
                 self.fake_aB_image12,ax1 = generator(self.input_modela1, reuse=None,
                                               chs=self.args["G_channels"], depth=self.args["depth"], d=self.args["dilations"],train=True,r=self.args["repeatations"])
-                self.fake_aB_image23,_ = generator(self.input_modela2, reuse=True,
-                                                 chs=self.args["G_channels"], depth=self.args["depth"],
-                                                 d=self.args["dilations"], train=True,r=self.args["repeatations"])
+                # self.fake_aB_image23,_ = generator(self.input_modela2, reuse=True,
+                #                                  chs=self.args["G_channels"], depth=self.args["depth"],
+                #                                  d=self.args["dilations"], train=True,r=self.args["repeatations"])
 
-                self.fake_aB_image_test ,_= generator(self.input_model_test, reuse=True,
+                self.fake_aB_image_test ,_= generator(self.input_model_tests, reuse=True,
                                                 chs=self.args["G_channels"], depth=self.args["depth"],
                                                 d=self.args["dilations"],
                                                 train=False,r=self.args["repeatations"])
             with tf.variable_scope("generator_2"):
                 self.fake_bA_image12,bx1 = generator(self.input_modelb1, reuse=None,
                                               chs=self.args["G_channels"], depth=self.args["depth"],d=self.args["dilations"],train=True,r=self.args["repeatations"])
-                self.fake_bA_image23,_ = generator(self.input_modelb2, reuse=True,
-                                               chs=self.args["G_channels"], depth=self.args["depth"],
-                                               d=self.args["dilations"], train=True,r=self.args["repeatations"])
-            self.fake_aB_image = tf.concat([self.fake_aB_image12, self.fake_aB_image23], axis=1)[:,1:,:,:]
-            self.fake_bA_image = tf.concat([self.fake_bA_image12, self.fake_bA_image23], axis=1)[:,1:,:,:]
+                # self.fake_bA_image23,_ = generator(self.input_modelb2, reuse=True,
+                #                                chs=self.args["G_channels"], depth=self.args["depth"],
+                #                                d=self.args["dilations"], train=True,r=self.args["repeatations"])
+            # self.fake_aB_image = tf.concat([self.fake_aB_image12, self.fake_aB_image23], axis=1)[:,1:,:,:]
+            # self.fake_bA_image = tf.concat([self.fake_bA_image12, self.fake_bA_image23], axis=1)[:,1:,:,:]
+            self.fake_aB_image = self.fake_aB_image12
+            self.fake_bA_image = self.fake_bA_image12
 
             with tf.variable_scope("generator_2",reuse=True):
                 self.fake_Ba_image,_ = generator(self.fake_aB_image, reuse=True,
@@ -569,9 +572,7 @@ class Model:
 
     def fft(self,data):
 
-        time_ruler = data.shape[0] // self.args["SHIFT"]
-        if data.shape[0] % self.args["SHIFT"] == 0:
-            time_ruler -= 1
+        time_ruler = data.shape[0] // self.args["SHIFT"]-1
         window = np.hamming(self.args["NFFT"])
         pos = 0
         wined = np.zeros([time_ruler, self.args["NFFT"]])

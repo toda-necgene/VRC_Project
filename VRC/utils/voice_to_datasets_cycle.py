@@ -5,7 +5,7 @@ import time
 import glob
 NFFT=1024
 SHIFT=NFFT//2
-dilations=15
+dilations=0
 term = 4096
 FORMAT = pyaudio.paInt16
 CHANNELS = 1        #モノラル
@@ -16,9 +16,7 @@ WAVE_INPUT_FILENAME2 = "./datasets/source/02"
 
 
 def fft(data):
-    time_ruler=data.shape[0]//SHIFT
-    if data.shape[0]%SHIFT==0:
-        time_ruler-=1
+    time_ruler=data.shape[0]//SHIFT-1
     window=np.hamming(NFFT)
     pos=0
     wined=np.zeros([time_ruler,NFFT])

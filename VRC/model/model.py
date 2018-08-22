@@ -8,7 +8,7 @@ def discriminator(inp,reuse,depth,chs,train=True):
         ten = tf.layers.conv2d(current, chs[i], kernel_size=[2,5], strides=[1,2], padding="VALID",kernel_initializer=tf.truncated_normal_initializer(stddev=0.02),use_bias=False, data_format="channels_last",name="disc_"+str(i),reuse=reuse)
         # ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuse,
         #                                     name="bnD" + str(i))
-        ten=tf.layers.dropout(ten,0.25)
+        ten=tf.layers.dropout(ten,0.2)
         current = tf.nn.leaky_relu(ten)
     print(" [*] bottom shape:"+str(current.shape))
     h4=tf.reshape(current, [-1,current.shape[1]*current.shape[2]*current.shape[3]])
@@ -16,15 +16,15 @@ def discriminator(inp,reuse,depth,chs,train=True):
     return ten
 def generator(current_outputs,reuse,depth,chs,d,train,r):
     ten=current_outputs
-    for i in range(len(d)):
-        ten = tf.layers.conv2d(ten, chs[i], kernel_size=[2, 1], strides=[1, 1], padding="VALID",
-                               kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=False,
-                               data_format="channels_last", reuse=reuse, name="conv_p" + str(i),
-                               dilation_rate=(d[i], 1))
-        ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuse,
-                                            name="bn_p" + str(i))
-
-        ten = tf.nn.leaky_relu(ten)
+    # for i in range(len(d)):
+    #     ten = tf.layers.conv2d(ten, chs[i], kernel_size=[2, 1], strides=[1, 1], padding="VALID",
+    #                            kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=False,
+    #                            data_format="channels_last", reuse=reuse, name="conv_p" + str(i),
+    #                            dilation_rate=(d[i], 1))
+    #     ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuse,
+    #                                         name="bn_p" + str(i))
+    #
+    #     ten = tf.nn.leaky_relu(ten)
     rs=list()
     rms=ten
     for l in range(r):
@@ -124,7 +124,7 @@ def block_res(current,chs,rep_pos,depth,reuses,d,train=True):
                                data_format="channels_last", reuse=reuses, name="res_conv3" + str(i) + str(rep_pos))
         ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
                                              name="bnA3"+str(tms+i) + str(rep_pos))
-        prop=(1-i/(res*2))
+        prop=(1-(i/(res*2)**2))
         ten=ShakeShake(ten,prop,train)
         if i!=res-1 :
             ten=ten+tenA
