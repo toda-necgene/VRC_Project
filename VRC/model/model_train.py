@@ -305,7 +305,7 @@ class Model:
             res=np.append(res,res2,axis=2)
             res[:,:,self.args["SHIFT"]:,1]*=-1
             a=res[0].copy()
-            res3 = np.append(res3, a).reshape(-1,self.args["NFFT"],2)
+            res3 = np.append(res3, a[-7:,:,:]).reshape(-1,self.args["NFFT"],2)
 
 
             # Postprocess
@@ -439,6 +439,13 @@ class Model:
                 #writing epoch-result into tensorboard
                 #tensorboardの書き込み
                 if self.args["tensorboard"]:
+                    hg, hd, hg2, hd2 = self.sess.run(
+                        [self.g_loss_sum_1, self.d_loss_sumA, self.g_loss_sum_2, self.d_loss_sumB],
+                        feed_dict={self.input_modela: batch_sounds_r[0:self.args["batch_size"]], self.input_modelb: batch_sounds_t[0:self.args["batch_size"]]})
+                    self.writer.add_summary(hg, counter + ti * epoch)
+                    self.writer.add_summary(hd, counter + ti * epoch)
+                    self.writer.add_summary(hg2, counter + ti * epoch)
+                    self.writer.add_summary(hd2, counter + ti * epoch)
                     rs=self.sess.run(self.tb_results,feed_dict={ self.result:out_put.reshape(1,1,-1),self.result1:otp_im,self.g_test_epo:test1,self.g_test_epo2:test_mfcc})
                     self.writer.add_summary(rs, epoch)
 
@@ -510,12 +517,6 @@ class Model:
                                   feed_dict={self.input_modela: res_t, self.input_modelb: tar, lr_g: lr_g_opt3})
                     # saving tensorboard
                     # tensorboardの保存
-                    if self.args["tensorboard"] and (counter+ti*epoch)%self.args["train_interval"]==0:
-                        hg,hd,hg2, hd2=self.sess.run([self.g_loss_sum_1,self.d_loss_sumA,self.g_loss_sum_2, self.d_loss_sumB],feed_dict={self.input_modela:res_t, self.input_modelb:tar  })
-                        self.writer.add_summary(hg, counter + ti * epoch)
-                        self.writer.add_summary(hd, counter + ti * epoch)
-                        self.writer.add_summary(hg2, counter+ti*epoch)
-                        self.writer.add_summary(hd2, counter+ti*epoch)
                     counter+=1
 
             #saving model
