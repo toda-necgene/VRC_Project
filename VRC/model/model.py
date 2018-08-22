@@ -112,13 +112,13 @@ def block_res(current,chs,rep_pos,depth,reuses,d,train=True):
 
         ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
                                              name="bnA1"+str(tms+i) + str(rep_pos))
-        ten = tf.nn.relu(ten)
+        ten = tf.nn.leaky_relu(ten)
         ten=tf.layers.conv2d(ten, chs[tms + i]//2, [3, 5], [1, 1], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=False,
                                data_format="channels_last", reuse=reuses, name="res_conv2" + str(i) + str(rep_pos))
         ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
                                             name="bnA2" + str(tms + i) + str(rep_pos))
-        ten = tf.nn.relu(ten)
+        ten = tf.nn.leaky_relu(ten)
         ten = tf.layers.conv2d(ten, chs[tms + i], [1, 3], [1, 1], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=False,
                                data_format="channels_last", reuse=reuses, name="res_conv3" + str(i) + str(rep_pos))
@@ -128,14 +128,14 @@ def block_res(current,chs,rep_pos,depth,reuses,d,train=True):
         ten=ShakeShake(ten,prop,train)
         if i!=res-1 :
             ten=ten+tenA
-        ten = tf.nn.relu(ten)
+        ten = tf.nn.leaky_relu(ten)
     tms+=res
     for i in range(times):
         ten += tenM[times-i-1][:, -8:, :, :int(ten.shape[3])]
         ten = deconve_with_ps(ten, [1, 4], chs[tms+i], rep_pos, reuses=reuses, name="00"+str(i))
         ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
                                              name="bn"+str(times+res+i) + str(rep_pos))
-        ten = tf.nn.relu(ten)
+        ten = tf.nn.leaky_relu(ten)
     return ten
 def deconve_with_ps(inp,r,otp_shape,depth,reuses=None,name=""):
     chs_r=r[0]*r[1]*otp_shape
