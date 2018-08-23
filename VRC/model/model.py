@@ -5,7 +5,7 @@ import tensorflow as tf
 def discriminator(inp,reuse,depth,chs,train=True):
     current=inp
     for i in range(depth):
-        ten = tf.layers.conv2d(current, chs[i], kernel_size=[2,4], strides=[1,4], padding="VALID",kernel_initializer=tf.truncated_normal_initializer(stddev=0.02),use_bias=True, data_format="channels_last",name="disc_"+str(i),reuse=reuse)
+        ten = tf.layers.conv2d(current, chs[i], kernel_size=[2,5], strides=[1,2], padding="VALID",kernel_initializer=tf.truncated_normal_initializer(stddev=0.02),use_bias=True, data_format="channels_last",name="disc_"+str(i),reuse=reuse)
         # ten= tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuse,name="bnn"+str(i) )
         # ten=tf.layers.dropout(ten,0.4)
         current = tf.nn.leaky_relu(ten)
