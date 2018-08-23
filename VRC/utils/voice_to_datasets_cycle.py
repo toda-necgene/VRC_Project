@@ -61,7 +61,7 @@ def time_strech(datanum,speed):
             if fn!=data_s.shape[0]:
                 ifs = dd[-fade:] * ds_out
             spec=np.append(spec,dd[:-fade])
-    return spec[1:]
+    return spec
 
 
 
@@ -104,7 +104,7 @@ for file in files:
     for i in range(times):
         ind=term+SHIFT*dilations+SHIFT
         startpos=term*i+data_realA.shape[0]%term
-        data_realAb = data_realA[max(startpos-ind,0):startpos]
+        data_realAb = data_realA[max(startpos-ind,0):startpos].copy()
         r=ind-data_realAb.shape[0]
         if r>0:
             data_realAb=np.pad(data_realAb,(r,0),"constant")
@@ -114,9 +114,27 @@ for file in files:
         a = np.clip(a, -10, 10)
         np.save("./datasets/train/"+str(name)+"/"+str(cnt) +".npy", a)
         cnt+=1
+        for s in range(0):
+            p=np.random.randint(1,10)/5+0.001
+            n=np.random.randint(1,7)/5
+            ind = term + SHIFT * dilations + SHIFT
+            startpos = term * i + data_realA.shape[0] % term
+            data_realAb = data_realA[max(startpos - ind, 0):startpos]
+            data_realAb=shift(data_realAb.copy(),p)
+            data_realAb*=n
+            data_realAb=np.clip(data_realAb,-1.0,1.0)
+            r = ind - data_realAb.shape[0]
+            if r > 0:
+                data_realAb = np.pad(data_realAb, (r, 0), "constant")
+            dmn = data_realAb
+            a = fft(dmn)
+            a = complex_to_pp(a[:, :SHIFT])
+            a = np.clip(a, -10, 10)
+            np.save("./datasets/train/" + str(name) + "/" + str(cnt) + ".npy", a)
+            cnt += 1
 
 print(" [*] ソースデータ変換完了")
-
+print(cnt)
 
 files=glob.glob(WAVE_INPUT_FILENAME2+"/*.wav")
 name="/Answer_data"
@@ -156,7 +174,21 @@ for file in files:
         a=np.clip(a,-10,10)
         np.save("./datasets/train/"+str(name)+"/"+str(cnt) +".npy", a)
         cnt+=1
-
+        for s in range(0):
+            p=np.random.randint(2,10)/6
+            ind = term + SHIFT * dilations + SHIFT
+            startpos = term * i + data_realA.shape[0] % term
+            data_realAb = data_realA[max(startpos - ind, 0):startpos].copy()
+            data_realAb=shift(data_realAb.copy(),p)
+            r = ind - data_realAb.shape[0]
+            if r > 0:
+                data_realAb = np.pad(data_realAb, (r, 0), "constant")
+            dmn = data_realAb
+            a = fft(dmn)
+            a = complex_to_pp(a[:, :SHIFT])
+            a = np.clip(a, -10, 10)
+            np.save("./datasets/train/" + str(name) + "/" + str(cnt) + ".npy", a)
+            cnt += 1
 print(" [*] アンサーデータ変換完了")
-
+print(cnt)
 print(" [*] プロセス完了!!　プログラムを終了します。")
