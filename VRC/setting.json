@@ -2,14 +2,14 @@
     "saving_config":{
         "checkpoint_dir":"Z://models/",
         "wave_otp_dir":"Z://waves/",
-        "version":"4.2.130"
+        "version":"4.2.131"
     },
     "network_architecture":{
-        "repeatations":4,
+        "repeatations":2,
         "depth":[2,4],
-        "d_depth":7,
-        "D_channels":[16,16,32,32,32,32,64],
-        "G_channels":[8,32,32,32,32,32,8,1],
+        "d_depth":4,
+        "D_channels":[16,32,32,64],
+        "G_channels":[16,64,64,64,64,64,16,1],
         "dilations":[]
     },
     "training_config":{
