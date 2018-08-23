@@ -161,18 +161,20 @@ class Model:
 
                 self.d_judge_BF = discriminator(self.fake_aB_image12, True, self.args["d_depth"],
                                                                        self.args["D_channels"])
+                self.d_judge_BF2 = list()
                 for bnbn in ax1:
-                    self.d_judge_BF2 = discriminator(bnbn, True, self.args["d_depth"],
-                                                    self.args["D_channels"])
+                    self.d_judge_BF2.append(discriminator(bnbn, True, self.args["d_depth"],
+                                                    self.args["D_channels"]))
 
             with tf.variable_scope("discrimA"):
                 self.d_judge_AR = discriminator(a_true_noised, None,  self.args["d_depth"],
                                                                         self.args["D_channels"])
                 self.d_judge_AF = discriminator(self.fake_bA_image12, True,  self.args["d_depth"],
                                                                         self.args["D_channels"])
+                self.d_judge_AF2=list()
                 for bnbn in bx1:
-                    self.d_judge_AF2 = discriminator(bnbn, True, self.args["d_depth"],
-                                                    self.args["D_channels"])
+                    self.d_judge_AF2.append(discriminator(bnbn, True, self.args["d_depth"],
+                                                    self.args["D_channels"]))
 
 
         #getting individual variabloes
@@ -184,14 +186,16 @@ class Model:
         #D-netの目的関数
         self.d_loss_AR = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.ones([self.args["batch_size"],1]),predictions=self.d_judge_AR))
         self.d_loss_AF = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.zeros([self.args["batch_size"],1]),predictions=self.d_judge_AF))
-        self.d_loss_AF2 = tf.reduce_mean(
-            tf.losses.mean_squared_error(labels=tf.zeros([self.args["batch_size"], 1]), predictions=self.d_judge_AF2))
-
+        self.d_loss_AF2=list()
+        for n in self.d_judge_AF2:
+            self.d_loss_AF2.append(tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.zeros([self.args["batch_size"], 1]), predictions=n)))
+        self.d_loss_AF2 =tf.add_n(self.d_loss_AF2)
         self.d_loss_BR = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.ones([self.args["batch_size"],1]), predictions=self.d_judge_BR))
         self.d_loss_BF = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.zeros([self.args["batch_size"],1]),predictions=self.d_judge_BF))
-        self.d_loss_BF2 = tf.reduce_mean(
-            tf.losses.mean_squared_error(labels=tf.zeros([self.args["batch_size"], 1]), predictions=self.d_judge_BF2))
-
+        self.d_loss_BF2=list()
+        for n in self.d_judge_BF2:
+            self.d_loss_BF2.append(tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.zeros([self.args["batch_size"], 1]), predictions=n)))
+        self.d_loss_BF2 = tf.add_n(self.d_loss_BF2)
         self.d_lossA=(self.d_loss_AR+self.d_loss_AF)
         self.d_lossB= (self.d_loss_BR + self.d_loss_BF)
         dl2norm=tf.add_n([tf.nn.l2_loss(w) for w in self.d_vars])*1e-4
@@ -206,8 +210,10 @@ class Model:
 
         # Gan lossA
         DSb = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.ones([self.args["batch_size"],1]),predictions=self.d_judge_BF))
-        DSb2 = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.ones([self.args["batch_size"], 1]), predictions=self.d_judge_BF2))
-
+        DSb2= list()
+        for n in self.d_judge_BF2:
+            DSb2.append(tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.ones([self.args["batch_size"], 1]), predictions=n)))
+        DSb2=tf.add_n(DSb2)
         # generator lossA
         self.g_loss_aB = L1B +(DSb+DSb2)* self.args["weight_GAN"]
         # L1 norm lossB
@@ -216,7 +222,10 @@ class Model:
         L1bAAb = sa+sb
         # Gan loss
         DSA = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.ones([self.args["batch_size"],1]),predictions=self.d_judge_AF))
-        DSA2 = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.ones([self.args["batch_size"], 1]), predictions=self.d_judge_AF2))
+        DSA2=list()
+        for n in self.d_judge_AF2:
+            DSA2.append(tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.ones([self.args["batch_size"], 1]), predictions=n)))
+        DSA2=tf.add_n(DSA2)
         # L1UBA =16.0/(tf.abs(self.fake_bA_image[:,:,:,0]-self.fake_aB_image[:,:,:,0])+1e-8)
         # L1UBA =tf.maximum(L1UBA,tf.ones_like(L1UBA))
         # generator loss

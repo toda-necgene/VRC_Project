@@ -114,7 +114,7 @@ for file in files:
         a = np.clip(a, -10, 10)
         np.save("./datasets/train/"+str(name)+"/"+str(cnt) +".npy", a)
         cnt+=1
-        for s in range(0):
+        for s in range(1):
             p=np.random.randint(1,10)/5+0.001
             n=np.random.randint(1,7)/5
             ind = term + SHIFT * dilations + SHIFT
@@ -174,7 +174,7 @@ for file in files:
         a=np.clip(a,-10,10)
         np.save("./datasets/train/"+str(name)+"/"+str(cnt) +".npy", a)
         cnt+=1
-        for s in range(0):
+        for s in range(1):
             p=np.random.randint(2,10)/6
             ind = term + SHIFT * dilations + SHIFT
             startpos = term * i + data_realA.shape[0] % term
