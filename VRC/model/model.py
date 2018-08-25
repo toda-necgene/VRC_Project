@@ -63,7 +63,7 @@ def block_res(current,chs,rep_pos,depth,reuses,d,train=True):
                                              name="bnA3"+str(tms+i) + str(rep_pos))
         prop=(1-i/(res*2))
         # ten=ShakeShake(ten,prop,train)
-        ten=tf.layers.dropout(ten,0.2,training=train)
+        # ten=tf.layers.dropout(ten,0.2,training=train)
         if i!=res-1 :
             ten=ten+tenA
         ten = tf.nn.leaky_relu(ten)
