@@ -339,8 +339,8 @@ class Model:
         lr_d_opt=self.args["d_lr"]
         beta_d_opt=self.args["d_b1"]
         beta_2_d_opt=self.args["d_b2"]
-        lr_d_opt3 = lr_d_opt * (0.1 ** (self.args["start_epoch"] // 100))
-        lr_g_opt3 = lr_g_opt * (0.1 ** (self.args["start_epoch"] // 100))
+        lr_d_opt3 = lr_d_opt * (0.5 ** (self.args["start_epoch"] // 100))
+        lr_g_opt3 = lr_g_opt * (0.5 ** (self.args["start_epoch"] // 100))
 
         # naming output-directory
         # 出力ディレクトリ
@@ -534,8 +534,8 @@ class Model:
             print(" [*] Epoch %5d (iterations: %10d)finished in %.2f (preprocess %.3f) ETA: %3d:%2d:%2.1f" % (epoch,count,taken_time,ts,ft//3600,ft//60%60,ft%60))
             time_of_epoch=np.append(time_of_epoch,np.asarray([taken_time,ts]))
             if epoch % self.args["lr_decay_term"] == 0:
-                lr_d_opt3 = lr_d_opt * (0.1 ** (epoch // 100))
-                lr_g_opt3 = lr_g_opt * (0.1 ** (epoch // 100))
+                lr_d_opt3 = lr_d_opt * (0.5 ** (epoch // 100))
+                lr_g_opt3 = lr_g_opt * (0.5 ** (epoch // 100))
 
         print(" [*] Finished!! in "+ str(np.sum(time_of_epoch[::2])))
 
