@@ -198,7 +198,7 @@ class Model:
         self.d_loss_BF2 = tf.add_n(self.d_loss_BF2)
         self.d_lossA=(self.d_loss_AR+self.d_loss_AF+self.d_loss_AF2)
         self.d_lossB= (self.d_loss_BR + self.d_loss_BF+self.d_loss_BF2)
-        dl2norm=tf.add_n([tf.nn.l2_loss(w) for w in self.d_vars])*1e-4
+        # dl2norm=tf.add_n([tf.nn.l2_loss(w) for w in self.d_vars])*1e-4
         self.d_loss=self.d_lossA+self.d_lossB
         # objective-functions of generator
         # G-netの目的関数
