@@ -351,7 +351,7 @@ class Model:
         lr_d = tf.placeholder(tf.float32, None, name="d_lr")
         g_optim = tf.train.AdamOptimizer(lr_g, beta_g_opt, beta_2_g_opt).minimize(self.g_loss,
                                                                                   var_list=self.g_vars)
-        d_optim = tf.train.RMSPropOptimizer(lr_d, beta_d_opt).minimize(self.d_loss,
+        d_optim = tf.train.AdamOptimizer(lr_d, beta_d_opt, beta_2_d_opt).minimize(self.d_loss,
                                                                                   var_list=self.d_vars)
 
         tt_me=list()
