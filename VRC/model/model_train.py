@@ -510,8 +510,9 @@ class Model:
                     # G-netの学習
                     # self.sess.run([g_optim,self.update_ops],feed_dict={ self.input_modela:res_t,self.input_modelb:tar,lr_g:lr_g_opt3})
                     # Update D network (1time)
-                    self.sess.run([d_optim],
-                                  feed_dict={self.input_modelb: tar, self.input_modela: res_t,lr_d:lr_d_opt3})
+                    for _ in range(2):
+                        self.sess.run([d_optim],
+                                      feed_dict={self.input_modelb: tar, self.input_modela: res_t,lr_d:lr_d_opt3})
                     # G-netの学習
                     self.sess.run([g_optim, self.update_ops],
                                   feed_dict={self.input_modela: res_t, self.input_modelb: tar, lr_g: lr_g_opt3})
