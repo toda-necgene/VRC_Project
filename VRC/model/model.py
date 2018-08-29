@@ -61,8 +61,8 @@ def block_res(current,chs,rep_pos,depth,reuses,d,train=True):
                                data_format="channels_last", reuse=reuses, name="res_conv3" + str(i) + str(rep_pos))
         ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
                                              name="bnA3"+str(tms+i) + str(rep_pos))
-        # prop=(1-i/(res*2))
-        # ten=ShakeShake(ten,prop,train)
+        prop=(1-i/(res*2))
+        ten=ShakeShake(ten,prop,train)
         # ten=tf.layers.dropout(ten,0.2,training=train)
         if i!=res-1 :
             ten=ten+tenA

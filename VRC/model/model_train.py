@@ -42,8 +42,10 @@ class Model:
         self.args["G_channels"] = [32]
         self.args["model_name"] = "wave2wave"
         self.args["version"] = "1.0.0"
-        self.args["g_lr"]=2e-4
-        self.args["d_lr"] = 2e-4
+        self.args["g_lr_max"]=2e-4
+        self.args["g_lr_min"] = 2e-8
+        self.args["d_lr_max"] = 2e-4
+        self.args["d_lr_min"] = 2e-8
         self.args["g_b1"] = 0.5
         self.args["g_b2"] = 0.999
         self.args["d_b1"] = 0.5
@@ -333,20 +335,22 @@ class Model:
 
         # setting paramaters
         # パラメータ
-        lr_g_opt=self.args["g_lr"]
+        lr_g_opt_max=self.args["g_lr_max"]
+        lr_g_opt_min=self.args["g_lr_min"]
         beta_g_opt=self.args["g_b1"]
         beta_2_g_opt=self.args["g_b2"]
-        lr_d_opt=self.args["d_lr"]
+        lr_d_opt_max=self.args["d_lr_max"]
+        lr_d_opt_min = self.args["d_lr_min"]
         beta_d_opt=self.args["d_b1"]
         beta_2_d_opt=self.args["d_b2"]
-        lr_d_opt3 = lr_d_opt * (0.5 ** (self.args["start_epoch"] // 100))
-        lr_g_opt3 = lr_g_opt * (0.5 ** (self.args["start_epoch"] // 100))
-
+        T_cur=0
+        T_pow=1.0
+        T=self.args["lr_decay_term"]
         # naming output-directory
         # 出力ディレクトリ
 
 
-        self.lod="[glr="+str(lr_g_opt)+",gb="+str(beta_g_opt)+",dlr="+str(lr_d_opt)+",db="+str(beta_d_opt)+"]"
+        self.lod="[glr="+str(lr_g_opt_max)+",gb="+str(beta_g_opt)+",dlr="+str(lr_d_opt_max)+",db="+str(beta_d_opt)+"]"
         lr_g = tf.placeholder(tf.float32, None, name="g_lr")
         lr_d = tf.placeholder(tf.float32, None, name="d_lr")
         g_optim = tf.train.AdamOptimizer(lr_g, beta_g_opt, beta_2_g_opt).minimize(self.g_loss,
@@ -401,7 +405,7 @@ class Model:
         # hyperdash
         if self.args["hyperdash"]:
             self.experiment=Experiment(self.args["name_save"]+"_G1")
-            self.experiment.param("lr_g_opt", lr_g_opt)
+            self.experiment.param("lr_g_opt", lr_g_opt_max)
             self.experiment.param("beta_g_opt", beta_g_opt)
             self.experiment.param("training_interval", self.args["train_interval"])
 
@@ -411,7 +415,9 @@ class Model:
         radeon = sklearn.preprocessing.scale(radeon, axis=1)
         start_time = time.time()
         for epoch in range(self.args["start_epoch"],self.args["train_epoch"]):
-            # shuffling training data
+            # 学習率の計算
+            lr_d_opt3 = lr_d_opt_min+0.5*(lr_d_opt_max-lr_d_opt_min)*(1+np.cos(T_cur/T*np.pi))*T_pow
+            lr_g_opt3 = lr_g_opt_min+0.5*(lr_d_opt_max-lr_g_opt_min)*(1+np.cos(T_cur/T*np.pi))*T_pow
             # トレーニングデータのシャッフル
             np.random.shuffle(index_list)
             np.random.shuffle(index_list2)
@@ -426,7 +432,6 @@ class Model:
                 im = im.reshape([-1, self.args["NFFT"], 2])
                 otp_im=np.append(np.clip((im[:,:,0]+10)/20,0.0,1.0).reshape([1,-1,self.args["NFFT"],1]),np.clip((im[:,:,1]+3.15)/6.30,0.0,1.0).reshape([1,-1,self.args["NFFT"],1]),axis=3)
                 out_put=out_puts.astype(np.float32)/32767.0
-                # loss of tesing
                 #テストの誤差
                 test1=np.mean(np.abs(np.abs(out_puts.reshape(1,-1,1)[0])-np.abs(label.reshape(1,-1,1)[0])))
                 raxis = librosa.feature.mfcc(out_puts.reshape(-1)*1.0, sr=radeon_fs)
@@ -436,6 +441,7 @@ class Model:
                 #hyperdash
                 if self.args["hyperdash"]:
                     self.experiment.metric("testG",test1)
+                    self.experiment.metric("testMFCC", test_mfcc)
                 #writing epoch-result into tensorboard
                 #tensorboardの書き込み
                 if self.args["tensorboard"]:
@@ -534,9 +540,12 @@ class Model:
             ft=np.mean(tt_me)*(self.args["train_epoch"]-epoch-1)
             print(" [*] Epoch %5d (iterations: %10d)finished in %.2f (preprocess %.3f) ETA: %3d:%2d:%2.1f" % (epoch,count,taken_time,ts,ft//3600,ft//60%60,ft%60))
             time_of_epoch=np.append(time_of_epoch,np.asarray([taken_time,ts]))
-            if epoch % self.args["lr_decay_term"] == 0:
-                lr_d_opt3 = lr_d_opt * (0.5 ** (epoch // 100))
-                lr_g_opt3 = lr_g_opt * (0.5 ** (epoch // 100))
+
+            T_cur += 1
+            if T==T_cur:
+                T*=2
+                T_cur=0
+                T_pow*=0.5
 
         print(" [*] Finished!! in "+ str(np.sum(time_of_epoch[::2])))
 
