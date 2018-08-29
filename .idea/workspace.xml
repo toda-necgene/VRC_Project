@@ -57,18 +57,18 @@
         <counts>
           <entry key="dummy" value="4" />
           <entry key="gitignore" value="5" />
-          <entry key="json" value="1431" />
+          <entry key="json" value="1488" />
           <entry key="md" value="643" />
-          <entry key="py" value="3366" />
-          <entry key="txt" value="1521" />
+          <entry key="py" value="3618" />
+          <entry key="txt" value="1581" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="JSON" value="1431" />
+          <entry key="JSON" value="1488" />
           <entry key="Markdown" value="643" />
-          <entry key="PLAIN_TEXT" value="1530" />
-          <entry key="Python" value="3366" />
+          <entry key="PLAIN_TEXT" value="1590" />
+          <entry key="Python" value="3618" />
         </counts>
       </usages-collector>
     </session>
@@ -78,8 +78,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/model/model_train.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="248">
-              <caret line="512" column="38" selection-start-line="512" selection-start-column="38" selection-end-line="512" selection-end-column="38" />
+            <state relative-caret-position="200">
+              <caret line="545" column="22" selection-start-line="545" selection-start-column="22" selection-end-line="545" selection-end-column="22" />
               <folding>
                 <element signature="e#0#21#0" expanded="true" />
               </folding>
@@ -99,8 +99,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/model/model.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="928">
-              <caret line="58" column="30" selection-start-line="58" selection-start-column="30" selection-end-line="58" selection-end-column="30" />
+            <state relative-caret-position="187">
+              <caret line="64" column="22" selection-start-line="64" selection-start-column="22" selection-end-line="64" selection-end-column="22" />
             </state>
           </provider>
         </entry>
@@ -138,10 +138,9 @@
     </option>
   </component>
   <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="615" />
-    <option name="y" value="-20" />
+    <option name="x" value="-7" />
     <option name="width" value="734" />
-    <option name="height" value="860" />
+    <option name="height" value="877" />
   </component>
   <component name="ProjectInspectionProfilesVisibleTreeState">
     <entry key="Project Default">
@@ -185,12 +184,6 @@
               <item name="VRC" type="462c0819:PsiDirectoryNode" />
               <item name="datasets" type="462c0819:PsiDirectoryNode" />
               <item name="train" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
-              <item name="vrc" type="462c0819:PsiDirectoryNode" />
-              <item name="VRC" type="462c0819:PsiDirectoryNode" />
-              <item name="logs" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
@@ -306,20 +299,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1534034935853</updated>
-    </task>
-    <task id="LOCAL-00022" summary="[4.1.49]　パラメータの変更&#10;&#10;[fix] LRの変更">
-      <created>1534420096507</created>
-      <option name="number" value="00022" />
-      <option name="presentableId" value="LOCAL-00022" />
-      <option name="project" value="LOCAL" />
-      <updated>1534420096507</updated>
-    </task>
-    <task id="LOCAL-00023" summary="[4.1.49]　パラメータの変更&#10;&#10;[fix] GのEncode-Decodeの倍率を4から2に変更">
-      <created>1534460251792</created>
-      <option name="number" value="00023" />
-      <option name="presentableId" value="LOCAL-00023" />
-      <option name="project" value="LOCAL" />
-      <updated>1534460251792</updated>
     </task>
     <task id="LOCAL-00024" summary="[4.1.49]　パラメータの変更&#10;&#10;[fix] Gのレイヤー数を3から7に変更">
       <created>1534467969093</created>
@@ -650,7 +629,21 @@
       <option name="project" value="LOCAL" />
       <updated>1535426677630</updated>
     </task>
-    <option name="localTasksCounter" value="71" />
+    <task id="LOCAL-00071" summary="[4.3.005] 11層に変更&#10;&#10;[fix] １１層に変更&#10;[fix] 学習の安定化">
+      <created>1535515305145</created>
+      <option name="number" value="00071" />
+      <option name="presentableId" value="LOCAL-00071" />
+      <option name="project" value="LOCAL" />
+      <updated>1535515305145</updated>
+    </task>
+    <task id="LOCAL-00072" summary="[4.3.011] 学習の低速化&#10;&#10;[fix] 学習率減衰&#10;[add] Shakedrop">
+      <created>1535575364695</created>
+      <option name="number" value="00072" />
+      <option name="presentableId" value="LOCAL-00072" />
+      <option name="project" value="LOCAL" />
+      <updated>1535575364695</updated>
+    </task>
+    <option name="localTasksCounter" value="73" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -699,8 +692,6 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[4.1.98]　Gを変更&#10;&#10;[fix] チャンネル数を32から16に変更" />
-    <MESSAGE value="[4.1.99]　Gを変更&#10;&#10;[fix] チャンネル数を32から16に変更" />
     <MESSAGE value="[4.1.101]　Gの構造変更&#10;&#10;[fix] 結合の後にreluレイヤーを配置" />
     <MESSAGE value="[4.1.101]　dilation畳み込みを排除&#10;&#10;[del] dilation_Block" />
     <MESSAGE value="[4.2.100]　バッチサイズ変更&#10;&#10;[fix] Batch_size 64-&gt;128&#10;[fix] relu -&gt; leaky_relu" />
@@ -724,7 +715,9 @@
     <MESSAGE value="[4.2.170] Stackingの廃止&#10;&#10;[fix] スタッキングを廃止&#10;[fix] Lr_Decayを100に" />
     <MESSAGE value="[4.2.171] Stackingの廃止&#10;&#10;[fix] スタッキングを廃止&#10;[fix] Lr_Decayを100に" />
     <MESSAGE value="[4.2.179] Stackingの廃止&#10;&#10;[fix] 諸々の修正" />
-    <option name="LAST_COMMIT_MESSAGE" value="[4.2.179] Stackingの廃止&#10;&#10;[fix] 諸々の修正" />
+    <MESSAGE value="[4.3.005] 11層に変更&#10;&#10;[fix] １１層に変更&#10;[fix] 学習の安定化" />
+    <MESSAGE value="[4.3.011] 学習の低速化&#10;&#10;[fix] 学習率減衰&#10;[add] Shakedrop" />
+    <option name="LAST_COMMIT_MESSAGE" value="[4.3.011] 学習の低速化&#10;&#10;[fix] 学習率減衰&#10;[add] Shakedrop" />
   </component>
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/ui.lnf.xml" />
@@ -807,15 +800,15 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/model/model.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="928">
-          <caret line="58" column="30" selection-start-line="58" selection-start-column="30" selection-end-line="58" selection-end-column="30" />
+        <state relative-caret-position="187">
+          <caret line="64" column="22" selection-start-line="64" selection-start-column="22" selection-end-line="64" selection-end-column="22" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/model/model_train.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="248">
-          <caret line="512" column="38" selection-start-line="512" selection-start-column="38" selection-end-line="512" selection-end-column="38" />
+        <state relative-caret-position="200">
+          <caret line="545" column="22" selection-start-line="545" selection-start-column="22" selection-end-line="545" selection-end-column="22" />
           <folding>
             <element signature="e#0#21#0" expanded="true" />
           </folding>
