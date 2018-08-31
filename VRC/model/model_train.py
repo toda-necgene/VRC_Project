@@ -546,7 +546,7 @@ class Model:
 
             T_cur += 1
             if T==T_cur:
-                T*=0.5
+                T=T//2
                 T_cur=0
                 T_pow*=0.1
 

@@ -73,6 +73,8 @@ def block_res(current,chs,rep_pos,depth,reuses,d,train=True):
         tenA += tenM[times-i-1]
         tenA = deconve_with_ps(tenA, [1, 4], chs[tms+i], rep_pos, reuses=reuses, name="00"+str(i))
         if i!=times-1:
+            tenA = tf.layers.dropout(tenA,0.4,train)
+
             tenA = tf.layers.batch_normalization(tenA, axis=3, training=train, trainable=True, reuse=reuses,
                                                  name="bnAD"+str(times+res+i) + str(rep_pos))
             tenA = tf.nn.leaky_relu(tenA)
@@ -81,6 +83,7 @@ def block_res(current,chs,rep_pos,depth,reuses,d,train=True):
         tenB += tenM[times-i-1]
         tenB = deconve_with_ps(tenB, [1, 4], chs[tms+i], rep_pos, reuses=reuses, name="01"+str(i))
         if i != times - 1:
+            tenB = tf.layers.dropout(tenB, 0.4, train)
             tenB = tf.layers.batch_normalization(tenB, axis=3, training=train, trainable=True, reuse=reuses,
                                                  name="bnBD"+str(times+res+i) + str(rep_pos))
             tenB = tf.nn.leaky_relu(tenB)
