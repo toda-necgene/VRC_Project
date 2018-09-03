@@ -2,7 +2,7 @@
     "saving_config":{
         "checkpoint_dir":"Z://models/",
         "wave_otp_dir":"Z://waves/",
-        "version":"4.3.039"
+        "version":"4.3.040"
     },
     "network_architecture":{
         "repeatations":1,
@@ -20,8 +20,8 @@
         "test_data_dir":"./datasets/test",
         "g_lr_max":2e-4,
         "d_lr_max":2e-4,
-        "g_lr_min":2e-12,
-        "d_lr_min":2e-12,
+        "g_lr_min":2e-8,
+        "d_lr_min":2e-8,
         "g_b1":0.5,
         "d_b1":0.5,
         "lr_decay_term":200,
