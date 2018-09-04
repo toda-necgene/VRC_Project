@@ -18,21 +18,22 @@
     <session id="715546864">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
-          <entry key="project.closed" value="16" />
+          <entry key="project.closed" value="17" />
           <entry key="project.open.time.10" value="3" />
           <entry key="project.open.time.11" value="3" />
           <entry key="project.open.time.12" value="3" />
           <entry key="project.open.time.20" value="1" />
           <entry key="project.open.time.24" value="1" />
           <entry key="project.open.time.28" value="1" />
-          <entry key="project.open.time.30" value="1" />
+          <entry key="project.open.time.30" value="2" />
           <entry key="project.open.time.32" value="2" />
           <entry key="project.open.time.34" value="1" />
           <entry key="project.open.time.38" value="1" />
           <entry key="project.open.time.40" value="1" />
           <entry key="project.open.time.47" value="1" />
           <entry key="project.open.time.53" value="1" />
-          <entry key="project.opened" value="20" />
+          <entry key="project.open.time.9" value="1" />
+          <entry key="project.opened" value="22" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
@@ -58,17 +59,17 @@
         <counts>
           <entry key="dummy" value="4" />
           <entry key="gitignore" value="5" />
-          <entry key="json" value="1637" />
+          <entry key="json" value="1654" />
           <entry key="md" value="643" />
           <entry key="py" value="3840" />
-          <entry key="txt" value="1618" />
+          <entry key="txt" value="1621" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="JSON" value="1637" />
+          <entry key="JSON" value="1654" />
           <entry key="Markdown" value="643" />
-          <entry key="PLAIN_TEXT" value="1627" />
+          <entry key="PLAIN_TEXT" value="1630" />
           <entry key="Python" value="3840" />
         </counts>
       </usages-collector>
@@ -79,7 +80,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/model/model_train.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="286">
+            <state relative-caret-position="6464">
               <caret line="422" selection-start-line="422" selection-end-line="422" />
               <folding>
                 <element signature="e#0#21#0" expanded="true" />
@@ -100,7 +101,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/model/model.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="240">
+            <state relative-caret-position="1312">
               <caret line="82" column="42" selection-start-line="82" selection-start-column="42" selection-end-line="82" selection-end-column="42" />
             </state>
           </provider>
@@ -160,7 +161,6 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -202,6 +202,7 @@
           <select />
         </subPane>
       </pane>
+      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -300,20 +301,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1534034935853</updated>
-    </task>
-    <task id="LOCAL-00031" summary="[4.1.70]　ハイパーパラメータを修正&#10;&#10;[fix] DにL2正則化に訂正&#10;[fix] Dのドロップアウト率を変更（0.4）">
-      <created>1534635781774</created>
-      <option name="number" value="00031" />
-      <option name="presentableId" value="LOCAL-00031" />
-      <option name="project" value="LOCAL" />
-      <updated>1534635781775</updated>
-    </task>
-    <task id="LOCAL-00032" summary="[4.1.70]　ハイパーパラメータを修正&#10;&#10;[fix] Gのアーキテクチャを変更">
-      <created>1534641615698</created>
-      <option name="number" value="00032" />
-      <option name="presentableId" value="LOCAL-00032" />
-      <option name="project" value="LOCAL" />
-      <updated>1534641615698</updated>
     </task>
     <task id="LOCAL-00033" summary="[4.1.80]　ハイパーパラメータを修正&#10;&#10;[fix] Gのアーキテクチャを変更">
       <created>1534664639948</created>
@@ -644,12 +631,25 @@
       <option name="project" value="LOCAL" />
       <updated>1535957091144</updated>
     </task>
-    <option name="localTasksCounter" value="80" />
+    <task id="LOCAL-00080" summary="[4.3.041] 学習の確認&#10;&#10;[fix] ハイパーパラメータの調整が成功しているかを確認">
+      <created>1535969102319</created>
+      <option name="number" value="00080" />
+      <option name="presentableId" value="LOCAL-00080" />
+      <option name="project" value="LOCAL" />
+      <updated>1535969102319</updated>
+    </task>
+    <task id="LOCAL-00081" summary="[4.3.042] 学習の確認&#10;&#10;[fix] ハイパーパラメータの調整が成功しているかを確認">
+      <created>1535980648653</created>
+      <option name="number" value="00081" />
+      <option name="presentableId" value="LOCAL-00081" />
+      <option name="project" value="LOCAL" />
+      <updated>1535980648653</updated>
+    </task>
+    <option name="localTasksCounter" value="82" />
     <servers />
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1456" height="886" extended-state="6" />
-    <editor active="true" />
     <layout>
       <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.23977433" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
@@ -693,8 +693,6 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[4.2.130]　スタッキング増量版&#10;&#10;[fix] ２層から４層に変更" />
-    <MESSAGE value="[4.2.131] レイヤーのチャンネル数増量　&#10;&#10;[fix] 64に変更" />
     <MESSAGE value="[4.2.132] レイヤー数増加　&#10;&#10;[fix] G　4から7　D　4から6" />
     <MESSAGE value="[4.2.133] レイヤー数増加　&#10;&#10;[fix] G　7から9" />
     <MESSAGE value="[4.2.140] スタッキング廃止　&#10;&#10;[fix] G　7から9" />
@@ -718,7 +716,9 @@
     <MESSAGE value="[4.3.023] 学習の確認&#10;&#10;[fix] ハイパーパラメータの調整が成功しているかを確認" />
     <MESSAGE value="[4.3.030] 学習の確認&#10;&#10;[fix] ハイパーパラメータの調整が成功しているかを確認" />
     <MESSAGE value="[4.3.040] 学習の確認&#10;&#10;[fix] ハイパーパラメータの調整が成功しているかを確認" />
-    <option name="LAST_COMMIT_MESSAGE" value="[4.3.040] 学習の確認&#10;&#10;[fix] ハイパーパラメータの調整が成功しているかを確認" />
+    <MESSAGE value="[4.3.041] 学習の確認&#10;&#10;[fix] ハイパーパラメータの調整が成功しているかを確認" />
+    <MESSAGE value="[4.3.042] 学習の確認&#10;&#10;[fix] ハイパーパラメータの調整が成功しているかを確認" />
+    <option name="LAST_COMMIT_MESSAGE" value="[4.3.042] 学習の確認&#10;&#10;[fix] ハイパーパラメータの調整が成功しているかを確認" />
   </component>
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/ui.lnf.xml" />
@@ -800,20 +800,20 @@
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/logs/[glr=0.0002,gb=0.5,dlr=0.0002,db=0.5]wave2wave4.3.024/events.out.tfevents.1535717867.DESKTOP-QFC16G3" />
-    <entry file="file://$PROJECT_DIR$/VRC/model/model.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="240">
-          <caret line="82" column="42" selection-start-line="82" selection-start-column="42" selection-end-line="82" selection-end-column="42" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/VRC/model/model_train.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="286">
+        <state relative-caret-position="6464">
           <caret line="422" selection-start-line="422" selection-end-line="422" />
           <folding>
             <element signature="e#0#21#0" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/VRC/model/model.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1312">
+          <caret line="82" column="42" selection-start-line="82" selection-start-column="42" selection-end-line="82" selection-end-column="42" />
         </state>
       </provider>
     </entry>
