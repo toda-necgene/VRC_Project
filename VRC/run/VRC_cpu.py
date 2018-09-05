@@ -9,10 +9,10 @@ graph_filename = './graph'
 NFFT=1024
 SHIFT=512
 TERM=4096
-dilation_size=7
-boost=1.5
+dilation_size=0
+boost=1.0
 otp_boost=1.0
-noise_filter_rate=0.0
+noise_filter_rate=0.9
 print(np.fft.fftfreq(NFFT,1.0/16000)[13])
 def preem(data):
     dd=np.roll(data.copy(), -1)
@@ -96,7 +96,7 @@ print("ノイズ取得中")
 t=0.0
 while t<3:
     ins = stream.read(TERM)
-    inp = np.frombuffer(ins, dtype=np.int16).reshape(TERM).astype(np.float32) / 32767.0 * boost
+    inp = np.frombuffer(ins, dtype=np.int16).reshape(TERM).astype(np.float32) / 32767.0
     s = fft(inp.copy())[:, :SHIFT, :].astype(np.float32)
     if np.mean(noise_filter)!=0.0:
         noise_filter=(np.mean(s[:,:,0],axis=0)+noise_filter)/2
@@ -114,19 +114,8 @@ while stream.is_active():
     las = inputs[-SHIFT*dilation_size-SHIFT:]
     roll_stride=SHIFT//2
     n = fft(inp.copy())[:,:SHIFT,:].astype(np.float32)
-    n[:,:,0]-=noise_filter*noise_filter_rate
-    inp2=np.roll(inp.copy(),roll_stride)
-    inp2[:roll_stride]=0.0
-    n2 = fft(inp2)[:, :SHIFT, :].astype(np.float32)
-    n2[:, :, 0] -= noise_filter*noise_filter_rate
-    inp3 = np.roll(inp.copy(), roll_stride*2)
-    inp3[:roll_stride*2] = 0.0
-    n3 = fft(inp3)[:, :SHIFT, :].astype(np.float32)
-    inp4 = np.roll(inp.copy(), roll_stride*3)
-    inp4[:roll_stride*3] = 0.0
-    n4 = fft(inp4)[:, :SHIFT, :].astype(np.float32)
-
-    res=np.asarray([n,n2,n3,n4])
+    n[:,:,0]-=noise_filter*noise_filter_rate * boost
+    res=np.asarray([n])
     # res=np.asarray([n,n2])
     resp = process(res.copy())
     # resp[:,:,:,:]-=res[:,:8,:,:]*0.2
@@ -137,18 +126,8 @@ while stream.is_active():
     res2 = resp.copy()[:, :, ::-1, :]
     ress = np.append(resp, res2, axis=2)
     res,rdd = ifft(ress[0],rdd)
-    res2,rdd2 = ifft(ress[1],rdd2)
-    res2=np.roll(res2,-roll_stride)
-    res2[-roll_stride:]=0.0
-    res3,rdd3 = ifft(ress[2],rdd3)
-    res3 = np.roll(res3, -roll_stride*2)
-    res3[-roll_stride*2:] = 0.0
-    res4,rdd4 = ifft(ress[3],rdd4)
-    res4 = np.roll(res4, -roll_stride*3)
-    res4[-roll_stride*3:] = 0.0
-    respond=(res+res2+res3+res4)/4
     # respond = (res + res2) / 2
-    res = (np.clip((respond)*otp_boost,-0.8,0.8).reshape(-1)*32767)
+    res = (np.clip((res)*otp_boost,-1.0,1.0).reshape(-1)*32767)
     vs=(res.astype(np.int16)).tobytes()
     la=np.append(la,time.time() - tt)
     la=la[-5:]

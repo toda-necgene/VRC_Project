@@ -145,7 +145,7 @@ class Model:
                 resorce=np.pad(resorce,(r,0),'constant')
             # FFT
             # 短時間高速離散フーリエ変換
-            ters=self.args["NFFT"]//use_num
+            ters=self.args["SHIFT"]//use_num
             res=self.fft(resorce.copy()/32767.0)
             res=res[:,:self.args["SHIFT"],:].reshape(1,-1,self.args["SHIFT"],2)
             for r in range(1,use_num):

@@ -175,7 +175,7 @@ data_C,_,data_F=net.convert(data_realA)
 # data_N=filter_mean(data_C,4)
 
 data_D,_,data_E=net.convert(data_realB)
-# data_D=filter_mean(data_D)
+data_D=filter_mean(data_D)
 
 print(" [*] conversion finished in %3.3f!!" % (time.time()-tm))
 
@@ -237,6 +237,7 @@ pl.colorbar()
 pl.subplot(7,1,7)
 pl.imshow(mfccsa[:,2:]-mfccsb[:,:])
 pl.colorbar()
-print(np.mean(np.abs(mfccsa[:,2:]-mfccsb[:,:])))
-print(np.mean(np.abs(mfccsc[:,:]-mfccsb[:,:])))
+rnx=min(mfccsa.shape[1],mfccsb.shape[1])
+print(np.sum(np.abs(mfccsa[:,-rnx:]-mfccsb[:,-rnx:])))
+print(np.sum(np.abs(mfccsc[:,:]-mfccsb[:,:])))
 pl.show()
