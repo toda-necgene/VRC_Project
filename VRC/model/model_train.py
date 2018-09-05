@@ -416,9 +416,9 @@ class Model:
         start_time = time.time()
         for epoch in range(self.args["start_epoch"],self.args["train_epoch"]):
             # 学習率の計算
-            lr_d_opt3 = lr_d_opt_min+0.5*(lr_d_opt_max-lr_d_opt_min)*(1+np.cos(T_cur/T*np.pi))
+            lr_d_opt3 = lr_d_opt_min+0.5*(lr_d_opt_max-lr_d_opt_min)*(1+np.cos(T_cur/T*np.pi))*T_pow
             # lr_d_opt3 =lr_d_opt_min+(lr_d_opt_max-lr_d_opt_min)*T_pow
-            lr_g_opt3 = lr_g_opt_min+0.5*(lr_d_opt_max-lr_g_opt_min)*(1+np.cos(T_cur/T*np.pi))
+            lr_g_opt3 = lr_g_opt_min+0.5*(lr_d_opt_max-lr_g_opt_min)*(1+np.cos(T_cur/T*np.pi))*T_pow
             # lr_g_opt3 = lr_g_opt_min+(lr_g_opt_max-lr_g_opt_min) * T_pow
 
             # トレーニングデータのシャッフル
@@ -548,7 +548,7 @@ class Model:
             if T==T_cur:
                 # T=T//2
                 T_cur=0
-                T_pow*=0.1
+                T_pow*=0.5
 
         print(" [*] Finished!! in "+ str(np.sum(time_of_epoch[::2])))
 
