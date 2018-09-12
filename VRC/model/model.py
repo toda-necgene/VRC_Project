@@ -43,7 +43,7 @@ def block_res(current,chs,rep_pos,depth,reuses,d,train=True):
     for i in range(res):
 
         tenA=ten
-        ten = tf.layers.conv2d(tenA, chs[tms + i], [3, 5], [1, 2], padding="SAME",
+        ten = tf.layers.conv2d(tenA, chs[tms + i]//2, [3, 5], [1, 2], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=True,
                                data_format="channels_last", reuse=reuses, name="res_conv1" + str(i) + str(rep_pos))
 
