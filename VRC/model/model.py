@@ -45,7 +45,7 @@ def block_res(current,chs,rep_pos,depth,reuses,d,train=True):
     for i in range(res):
 
         tenA=tf.concat(tens,3)
-        ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
+        ten = tf.layers.batch_normalization(tenA, axis=3, training=train, trainable=True, reuse=reuses,
                                             name="bnA1" + str(tms + i) + str(rep_pos))
 
         ten = tf.layers.conv2d(ten, 64, [3, 5], [1, 2], padding="SAME",

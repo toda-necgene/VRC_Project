@@ -472,7 +472,7 @@ class Model:
                     plt.imshow(ins, aspect="auto")
                     plt.clim(-3.141593, 3.141593)
                     plt.colorbar()
-                    path=self.args["wave_otp_dir"]+nowtime()
+                    path=self.args["wave_otp_dir"]+nowtime()+"_e"+str(epoch)
                     plt.savefig(path+".png")
                     upload(out_puts,path)
                     if self.dbx is not None:
