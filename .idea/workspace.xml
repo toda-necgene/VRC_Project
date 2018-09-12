@@ -3,7 +3,6 @@
   <component name="ChangeListManager">
     <list default="true" id="bcabb495-93d4-437a-b14b-9cb2802ec5b1" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/model/model_train.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/model/model_train.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/VRC/setting.json" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/setting.json" afterDir="false" />
     </list>
     <ignored path="C:\Users\tadop\git\vrc\.idea\shelf/" />
@@ -59,17 +58,17 @@
         <counts>
           <entry key="dummy" value="4" />
           <entry key="gitignore" value="5" />
-          <entry key="json" value="1687" />
+          <entry key="json" value="1711" />
           <entry key="md" value="643" />
           <entry key="py" value="3964" />
-          <entry key="txt" value="1678" />
+          <entry key="txt" value="1680" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="JSON" value="1687" />
+          <entry key="JSON" value="1711" />
           <entry key="Markdown" value="643" />
-          <entry key="PLAIN_TEXT" value="1687" />
+          <entry key="PLAIN_TEXT" value="1689" />
           <entry key="Python" value="3964" />
         </counts>
       </usages-collector>
@@ -81,7 +80,7 @@
         <entry file="file://$PROJECT_DIR$/VRC/model/model_train.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="-1760">
-              <caret line="418" column="97" lean-forward="true" selection-start-line="418" selection-start-column="97" selection-end-line="418" selection-end-column="97" />
+              <caret line="418" column="97" selection-start-line="418" selection-start-column="97" selection-end-line="418" selection-end-column="97" />
             </state>
           </provider>
         </entry>
@@ -99,7 +98,7 @@
         <entry file="file://$PROJECT_DIR$/VRC/model/model.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="112">
-              <caret line="7" column="30" lean-forward="true" selection-start-line="7" selection-start-column="30" selection-end-line="7" selection-end-column="30" />
+              <caret line="7" column="30" selection-start-line="7" selection-start-column="30" selection-end-line="7" selection-end-column="30" />
             </state>
           </provider>
         </entry>
@@ -313,20 +312,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1534034935853</updated>
-    </task>
-    <task id="LOCAL-00040" summary="[4.1.89]　アーキテクチャを修正&#10;&#10;[fix] 6層から7層に変更&#10;[fix] 学習率を減衰するように変更">
-      <created>1534818063040</created>
-      <option name="number" value="00040" />
-      <option name="presentableId" value="LOCAL-00040" />
-      <option name="project" value="LOCAL" />
-      <updated>1534818063040</updated>
-    </task>
-    <task id="LOCAL-00041" summary="[4.1.93]　アーキテクチャを修正&#10;&#10;[fix] 6層に変更&#10;[fix] チャンネル数を64に変更&#10;[del] エンコーダーとデコーダーの接続を消去">
-      <created>1534890897676</created>
-      <option name="number" value="00041" />
-      <option name="presentableId" value="LOCAL-00041" />
-      <option name="project" value="LOCAL" />
-      <updated>1534890897676</updated>
     </task>
     <task id="LOCAL-00042" summary="[4.1.93]　アーキテクチャを修正&#10;&#10;[fix] チャンネル数を32に変更&#10;[fix] ボトルネックの倍率を0.25から0.5に変更">
       <created>1534891526852</created>
@@ -657,7 +642,21 @@
       <option name="project" value="LOCAL" />
       <updated>1536727301573</updated>
     </task>
-    <option name="localTasksCounter" value="89" />
+    <task id="LOCAL-00089" summary="[5.6.011] レイヤー数の変更&#10;&#10;[fix] 8に変更">
+      <created>1536741900509</created>
+      <option name="number" value="00089" />
+      <option name="presentableId" value="LOCAL-00089" />
+      <option name="project" value="LOCAL" />
+      <updated>1536741900510</updated>
+    </task>
+    <task id="LOCAL-00090" summary="[5.6.012] レイヤー数の変更&#10;&#10;[fix] 8に変更">
+      <created>1536748673542</created>
+      <option name="number" value="00090" />
+      <option name="presentableId" value="LOCAL-00090" />
+      <option name="project" value="LOCAL" />
+      <updated>1536748673542</updated>
+    </task>
+    <option name="localTasksCounter" value="91" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -687,8 +686,6 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[4.2.154] 予測最高モデルの実験&#10;&#10;[fix] BN1(128)&#10;[add] ShakeDrop&#10;[add] Stacking&#10;[fix] D-Optimizer RMSProp(Adam)" />
-    <MESSAGE value="[4.2.156] 予測最高モデルの実験&#10;&#10;[fix] 学習で学習率を減衰させる" />
     <MESSAGE value="[4.2.157] Shakedropの実験&#10;&#10;[del] Shakedrop" />
     <MESSAGE value="[4.2.160] B1実験&#10;&#10;[fix] batch_size を1に" />
     <MESSAGE value="[4.2.170] Stackingの廃止&#10;&#10;[fix] スタッキングを廃止&#10;[fix] Lr_Decayを100に" />
@@ -712,7 +709,9 @@
     <MESSAGE value="[5.6.006] strideの変更&#10;&#10;[fix] 4に変更" />
     <MESSAGE value="[5.6.009] strideの変更&#10;&#10;[fix] 4に変更" />
     <MESSAGE value="[5.6.010] レイヤー数の変更&#10;&#10;[fix] 8に変更" />
-    <option name="LAST_COMMIT_MESSAGE" value="[5.6.010] レイヤー数の変更&#10;&#10;[fix] 8に変更" />
+    <MESSAGE value="[5.6.011] レイヤー数の変更&#10;&#10;[fix] 8に変更" />
+    <MESSAGE value="[5.6.012] レイヤー数の変更&#10;&#10;[fix] 8に変更" />
+    <option name="LAST_COMMIT_MESSAGE" value="[5.6.012] レイヤー数の変更&#10;&#10;[fix] 8に変更" />
   </component>
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/ui.lnf.xml" />
@@ -797,14 +796,14 @@
     <entry file="file://$PROJECT_DIR$/VRC/model/model.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="112">
-          <caret line="7" column="30" lean-forward="true" selection-start-line="7" selection-start-column="30" selection-end-line="7" selection-end-column="30" />
+          <caret line="7" column="30" selection-start-line="7" selection-start-column="30" selection-end-line="7" selection-end-column="30" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/model/model_train.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-1760">
-          <caret line="418" column="97" lean-forward="true" selection-start-line="418" selection-start-column="97" selection-end-line="418" selection-end-column="97" />
+          <caret line="418" column="97" selection-start-line="418" selection-start-column="97" selection-end-line="418" selection-end-column="97" />
         </state>
       </provider>
     </entry>
