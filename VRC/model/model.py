@@ -40,13 +40,15 @@ def block_res(current,chs,rep_pos,depth,reuses,d,train=True):
         tenM.append(ten)
 
     tms=times+len(d)
+    tens=list()
+    tens.append(ten)
     for i in range(res):
 
-        tenA=ten
+        tenA=tf.concat(tens,3)
         ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
                                             name="bnA1" + str(tms + i) + str(rep_pos))
 
-        ten = tf.layers.conv2d(ten, chs[tms + i]//2, [3, 5], [1, 2], padding="SAME",
+        ten = tf.layers.conv2d(ten, 64, [3, 5], [1, 2], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=True,
                                data_format="channels_last", reuse=reuses, name="res_conv1" + str(i) + str(rep_pos))
 
@@ -58,15 +60,15 @@ def block_res(current,chs,rep_pos,depth,reuses,d,train=True):
         ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
                                             name="bnA2" + str(tms + i) + str(rep_pos))
         ten = tf.nn.leaky_relu(ten)
-        ten = tf.layers.conv2d_transpose(ten, chs[tms + i], [3, 5], [1, 2], padding="SAME",
+        ten = tf.layers.conv2d_transpose(ten, 16, [3, 5], [1, 2], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=True,
                                data_format="channels_last", reuse=reuses, name="res_conv3" + str(i) + str(rep_pos))
         prop=(1-i/(res*2))
         ten=ShakeShake(ten,prop,train)
+        ten = tf.nn.leaky_relu(ten)
         # ten=tf.layers.dropout(ten,0.2,training=train)
         if i!=res-1 :
-            ten=ten+tenA
-        ten = tf.nn.leaky_relu(ten)
+            tens.append(ten)
     tms+=res
     tenA=ten
     for i in range(times):
