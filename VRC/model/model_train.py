@@ -113,9 +113,9 @@ class Model:
 
         #inputs place holder
         #入力
-        self.input_modela=tf.placeholder(tf.float32, self.input_size_model, "inputs_G-net_A")
-        self.input_modelb = tf.placeholder(tf.float32, self.input_size_model, "inputs_G-net_B")
-        self.input_model_test = tf.placeholder(tf.float32, self.input_size_test, "inputs_G-net_A")
+        self.input_modela=tf.placeholder(tf.float32, self.input_size_model, "inputs_G-net_A")/10
+        self.input_modelb = tf.placeholder(tf.float32, self.input_size_model, "inputs_G-net_B")/10
+        self.input_model_test = tf.placeholder(tf.float32, self.input_size_test, "inputs_G-net_A")/10
 
         self.input_modela1 = self.input_modela[:, -8:, :, :]
         self.input_modelb1 = self.input_modelb[:, -8:, :, :]
@@ -133,6 +133,7 @@ class Model:
                                                 chs=self.args["G_channels"], depth=self.args["depth"],
                                                 d=self.args["dilations"],
                                                 train=False,r=self.args["repeatations"])
+                self.fake_aB_image_test*=10
             with tf.variable_scope("generator_2"):
                 self.fake_bA_image12,bx1 = generator(self.input_modelb1, reuse=None,
                                               chs=self.args["G_channels"], depth=self.args["depth"],d=self.args["dilations"],train=True,r=self.args["repeatations"])
@@ -345,8 +346,8 @@ class Model:
         beta_2_d_opt=self.args["d_b2"]
         T_cur=0
         T_pow=1.0
-        ch=4000
-        test_mfcc=9999
+        ch=80000
+        test_mfcc=999999
         T=self.args["lr_decay_term"]
         # naming output-directory
         # 出力ディレクトリ
@@ -414,7 +415,7 @@ class Model:
         # 学習の情報の初期化
         radeon_x,radeon_fs=librosa.load(self.args["test_data_dir"]+'/label.wav',sr=16000)
         radeon = librosa.feature.mfcc(radeon_x, sr=radeon_fs)
-        radeon = sklearn.preprocessing.scale(radeon, axis=1)
+        # radeon = sklearn.preprocessing.scale(radeon, axis=1)
         start_time = time.time()
         for epoch in range(self.args["start_epoch"],self.args["train_epoch"]):
             # 学習率の計算
@@ -440,7 +441,7 @@ class Model:
                 #テストの誤差
                 test1=np.mean(np.abs(np.abs(out_puts.reshape(1,-1,1)[0])-np.abs(label.reshape(1,-1,1)[0])))
                 raxis = librosa.feature.mfcc(out_puts.reshape(-1)*1.0, sr=radeon_fs)
-                raxis = sklearn.preprocessing.scale(raxis, axis=1)
+                # raxis = sklearn.preprocessing.scale(raxis, axis=1)
                 rnx=min(raxis.shape[1],radeon.shape[1])
                 test_mfcc=np.sum(np.abs(radeon[:,-rnx:]-raxis[:,-rnx:]))
                 #hyperdash
@@ -552,9 +553,9 @@ class Model:
                 T_cur=0
                 T_pow*=0.5
             elif epoch%self.args["save_interval"]==0 and test_mfcc<ch :
-                ch -= 100
+                ch -= 5000
                 T_cur=0
-                T_pow*=0.1
+                T_pow*=0.5
         print(" [*] Finished!! in "+ str(np.sum(time_of_epoch[::2])))
 
         # hyperdash
