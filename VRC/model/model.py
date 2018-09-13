@@ -72,7 +72,7 @@ def block_res(current,chs,rep_pos,depth,reuses,d,train=True):
     tms+=res
     tenA=ten
     for i in range(times):
-        tenA += tenM[times-i-1]
+        # tenA += tenM[times-i-1]
         tenA = deconve_with_ps(tenA, [1, 2], chs[tms+i], rep_pos, reuses=reuses, name="00"+str(i))
         if i!=times-1:
 
