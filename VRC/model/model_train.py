@@ -345,6 +345,8 @@ class Model:
         beta_2_d_opt=self.args["d_b2"]
         T_cur=0
         T_pow=1.0
+        ch=4000
+        test_mfcc=9999
         T=self.args["lr_decay_term"]
         # naming output-directory
         # 出力ディレクトリ
@@ -549,7 +551,10 @@ class Model:
                 # T=T//2
                 T_cur=0
                 T_pow*=0.5
-
+            elif epoch%self.args["save_interval"]==0 and test_mfcc<ch :
+                ch -= 100
+                T_cur=0
+                T_pow*=0.1
         print(" [*] Finished!! in "+ str(np.sum(time_of_epoch[::2])))
 
         # hyperdash
