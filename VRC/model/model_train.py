@@ -552,10 +552,10 @@ class Model:
                 # T=T//2
                 T_cur=0
                 T_pow*=0.9
-            elif epoch%self.args["save_interval"]==0 and test_mfcc<ch :
-                ch -= 5000
-                T_cur=0
-                T_pow*=0.9
+            # elif epoch%self.args["save_interval"]==0 and test_mfcc<ch :
+            #     ch -= 5000
+            #     T_cur=0
+            #     T_pow*=0.9
         print(" [*] Finished!! in "+ str(np.sum(time_of_epoch[::2])))
 
         # hyperdash
