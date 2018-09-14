@@ -87,6 +87,7 @@ def block_res(current,chs,rep_pos,depth,reuses,d,train=True):
                                                  name="bnBD"+str(times+res+i) + str(rep_pos))
             tenB = tf.nn.leaky_relu(tenB)
     ten=tf.concat([tenA,tenB],axis=3)
+    ten=tf.tanh(ten)
     return ten
 def deconve_with_ps(inp,r,otp_shape,depth,reuses=None,name=""):
     chs_r=r[0]*r[1]*otp_shape

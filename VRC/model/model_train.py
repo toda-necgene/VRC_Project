@@ -113,13 +113,13 @@ class Model:
 
         #inputs place holder
         #入力
-        self.input_modela=tf.placeholder(tf.float32, self.input_size_model, "inputs_G-net_A")/10
-        self.input_modelb = tf.placeholder(tf.float32, self.input_size_model, "inputs_G-net_B")/10
-        self.input_model_test = tf.placeholder(tf.float32, self.input_size_test, "inputs_G-net_A")/10
+        self.input_modela=tf.placeholder(tf.float32, self.input_size_model, "inputs_G-net_A")
+        self.input_modelb = tf.placeholder(tf.float32, self.input_size_model, "inputs_G-net_B")
+        self.input_model_test = tf.placeholder(tf.float32, self.input_size_test, "inputs_G-net_A")
 
-        self.input_modela1 = self.input_modela[:, -8:, :, :]
-        self.input_modelb1 = self.input_modelb[:, -8:, :, :]
-        self.input_model_tests=self.input_model_test[:,-8:,:,:]
+        self.input_modela1 = self.input_modela[:, -8:, :, :]*0.1
+        self.input_modelb1 = self.input_modelb[:, -8:, :, :]*0.1
+        self.input_model_tests=self.input_model_test[:,-8:,:,:]*0.1
         self.training=tf.placeholder(tf.float32,[1],name="Training")
         #creating generator
         #G-net（生成側）の作成
@@ -148,8 +148,8 @@ class Model:
                                                chs=self.args["G_channels"], depth=self.args["depth"],d=self.args["dilations"],train=True,r=self.args["repeatations"])
 
         ff=self.args["input_size"]//self.args["SHIFT"]
-        a_true_noised=self.input_modela[:,-ff:,:,:]
-        b_true_noised = self.input_modelb[:,-ff:,:,:]
+        a_true_noised=self.input_modela1[:,-ff:,:,:]
+        b_true_noised = self.input_modelb1[:,-ff:,:,:]
 
         #creating discriminator inputs
         #D-netの入力の作成
@@ -207,9 +207,9 @@ class Model:
         # G-netの目的関数
 
         # L1 norm lossA
-        saa=tf.reduce_mean(tf.abs(self.fake_Ba_image[:,:,:,0]-self.input_modela[:,-ff:,:,0]))* self.args["weight_Cycle_Pow"]
-        sbb=tf.reduce_mean(tf.abs(self.fake_Ba_image[:,:,:,1]-self.input_modela[:,-ff:,:,1]))* self.args["weight_Cycle_Fre"]
-        L1B=saa+sbb
+        saa=tf.reduce_mean(tf.abs(self.fake_Ba_image[:,:,:,0]-self.input_modela1[:,-ff:,:,0]))* self.args["weight_Cycle_Pow"]
+        sbb=tf.reduce_mean(tf.abs(self.fake_Ba_image[:,:,:,1]-self.input_modela1[:,-ff:,:,1]))* self.args["weight_Cycle_Fre"]
+        L1B=0.5*(saa+sbb)
 
         # Gan lossA
         DSb = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.ones([self.args["batch_size"],1]),predictions=self.d_judge_BF))
@@ -218,11 +218,11 @@ class Model:
             DSb2.append(tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.ones([self.args["batch_size"], 1]), predictions=n)))
         # DSb2=tf.add_n(DSb2)
         # generator lossA
-        self.g_loss_aB = L1B +(DSb)* self.args["weight_GAN"]
+        self.g_loss_aB = L1B +DSb* self.args["weight_GAN"]
         # L1 norm lossB
-        sa=tf.reduce_mean(tf.abs(self.fake_Ab_image[:,:,:,0]-self.input_modelb[:,-ff:,:,0]))* self.args["weight_Cycle_Pow"]
-        sb=tf.reduce_mean(tf.abs(self.fake_Ab_image[:,:,:,1]-self.input_modelb[:,-ff:,:,1] ))* self.args["weight_Cycle_Fre"]
-        L1bAAb = sa+sb
+        sa=tf.reduce_mean(tf.abs(self.fake_Ab_image[:,:,:,0]-self.input_modelb1[:,-ff:,:,0]))* self.args["weight_Cycle_Pow"]
+        sb=tf.reduce_mean(tf.abs(self.fake_Ab_image[:,:,:,1]-self.input_modelb1[:,-ff:,:,1] ))* self.args["weight_Cycle_Fre"]
+        L1bAAb = 0.5*(sa+sb)
         # Gan loss
         DSA = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.ones([self.args["batch_size"],1]),predictions=self.d_judge_AF))
         DSA2=list()
@@ -232,7 +232,7 @@ class Model:
         # L1UBA =16.0/(tf.abs(self.fake_bA_image[:,:,:,0]-self.fake_aB_image[:,:,:,0])+1e-8)
         # L1UBA =tf.maximum(L1UBA,tf.ones_like(L1UBA))
         # generator loss
-        self.g_loss_bA = L1bAAb + (DSA) * self.args["weight_GAN"]
+        self.g_loss_bA = L1bAAb + DSA * self.args["weight_GAN"]
         self.g_loss=self.g_loss_aB+self.g_loss_bA
         #BN_UPDATE
         self.update_ops=tf.get_collection(tf.GraphKeys.UPDATE_OPS)
