@@ -440,7 +440,7 @@ class Model:
                 out_put=out_puts.astype(np.float32)/32767.0
                 #テストの誤差
                 test1=np.mean(np.abs(np.abs(out_puts.reshape(1,-1,1)[0])-np.abs(label.reshape(1,-1,1)[0])))
-                raxis = librosa.feature.mfcc(out_puts.reshape(-1)*1.0, sr=radeon_fs)
+                raxis = librosa.feature.mfcc(out_put.reshape(-1)*1.0, sr=radeon_fs)
                 # raxis = sklearn.preprocessing.scale(raxis, axis=1)
                 rnx=min(raxis.shape[1],radeon.shape[1])
                 test_mfcc=np.sum(np.abs(radeon[:,-rnx:]-raxis[:,-rnx:]))
