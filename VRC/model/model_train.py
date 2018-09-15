@@ -88,9 +88,9 @@ class Model:
         self.args["SHIFT"] = self.args["NFFT"]//2
         self.args["name_save"] = self.args["model_name"] + self.args["version"]
         ss=self.args["input_size"]//self.args["SHIFT"]+self.args["dilation_size"]
-        self.input_size_model=[None,ss+self.args["dilation_size"],self.args["NFFT"]//2,2]
+        self.input_size_model=[self.args["batch_size"],ss+self.args["dilation_size"],self.args["NFFT"]//2,2]
         # self.input_size_test = [None, ss, self.args["NFFT"] // 2, 2]
-        self.input_size_test = [None, ss, self.args["NFFT"] // 2, 2]
+        self.input_size_test = [1, ss, self.args["NFFT"] // 2, 2]
         print("model input size:"+str(self.input_size_model))
         self.sess=tf.InteractiveSession(config=tf.ConfigProto(gpu_options=tf.GPUOptions()))
         if bool(self.args["debug"]):
@@ -262,15 +262,15 @@ class Model:
         self.fake_B_sum3 = tf.summary.image("fake_B_image02", im2, 1)
         self.g_test_epo=tf.placeholder(tf.float32,name="g_test_epoch_end")
         self.g_test_epo2=tf.placeholder(tf.float32,name="g_test_epoch_end_mfcc")
-        self.g_test_epoch = tf.summary.merge([tf.summary.scalar("g_test_epoch_end", self.g_test_epo,family="test"),tf.summary.scalar("g_test_mfcc_loss", self.g_test_epo2,family="test")])
-
+        self.g_test_epo3 = tf.placeholder(tf.float32, name="g_test_epoch_end_mfcc2")
+        self.g_test_epoch = tf.summary.merge([tf.summary.scalar("g_test_epoch_end", self.g_test_epo,family="test"),tf.summary.scalar("g_test_mfcc_loss", self.g_test_epo2,family="test"),tf.summary.scalar("g_test_mfcc_loss", self.g_test_epo3,family="test")])
         self.tb_results=tf.summary.merge([self.fake_B_sum,self.fake_B_sum2,self.fake_B_sum3,self.g_test_epoch])
 
         #saver
         #保存の準備
         self.saver = tf.train.Saver()
 
-
+        self.saver2 = tf.train.Saver()
 
     def convert(self,in_put):
         #function of test
@@ -439,7 +439,7 @@ class Model:
         # 学習の情報の初期化
         radeon_x,radeon_fs=librosa.load(self.args["test_data_dir"]+'/label.wav',sr=16000)
         radeon = librosa.feature.mfcc(radeon_x, sr=radeon_fs)
-        # radeon = sklearn.preprocessing.scale(radeon, axis=1)
+        radeon2 = sklearn.preprocessing.scale(radeon, axis=1)
         start_time = time.time()
         for epoch in range(self.args["start_epoch"],self.args["train_epoch"]):
             # 学習率の計算
@@ -463,16 +463,19 @@ class Model:
                 otp_im=np.append(np.clip((im[:,:,0]+10)/20,0.0,1.0).reshape([1,-1,self.args["NFFT"],1]),np.clip((im[:,:,1]+3.15)/6.30,0.0,1.0).reshape([1,-1,self.args["NFFT"],1]),axis=3)
                 out_put=out_puts.astype(np.float32)/32767.0
                 #テストの誤差
-                r = min(out_s.shape[0], otp_im.shape[0])
-                test1=np.mean(np.abs(out_s[:r]-otp_im[:r]))
+                r = min(out_s.shape[0], im.shape[0])
+                test1=np.mean(np.abs(out_s[:r,:,0]-im[:r,:,0]))
                 raxis = librosa.feature.mfcc(out_put.reshape(-1)*1.0, sr=radeon_fs)
-                # raxis = sklearn.preprocessing.scale(raxis, axis=1)
+                raxis2 = sklearn.preprocessing.scale(raxis, axis=1)
                 rnx=min(raxis.shape[1],radeon.shape[1])
                 test_mfcc=np.sum(np.abs(radeon[:,-rnx:]-raxis[:,-rnx:]))
+                test_mfcc2 = np.sum(np.abs(radeon2[:, -rnx:] - raxis2[:, -rnx:]))
+
                 #hyperdash
                 if self.args["hyperdash"]:
                     self.experiment.metric("testG",test1)
                     self.experiment.metric("testMFCC", test_mfcc)
+                    self.experiment.metric("testMFCC_normalized", test_mfcc2)
                 #writing epoch-result into tensorboard
                 #tensorboardの書き込み
                 if self.args["tensorboard"]:
@@ -483,7 +486,7 @@ class Model:
                     self.writer.add_summary(hd, counter + ti * epoch)
                     self.writer.add_summary(hg2, counter + ti * epoch)
                     self.writer.add_summary(hd2, counter + ti * epoch)
-                    rs=self.sess.run(self.tb_results,feed_dict={ self.result:out_put.reshape(1,1,-1),self.result1:otp_im,self.g_test_epo:test1,self.g_test_epo2:test_mfcc})
+                    rs=self.sess.run(self.tb_results,feed_dict={ self.result:out_put.reshape(1,1,-1),self.result1:otp_im,self.g_test_epo:test1,self.g_test_epo2:test_mfcc,self.g_test_epo3:test_mfcc2})
                     self.writer.add_summary(rs, epoch)
 
                 #saving test result
@@ -559,9 +562,9 @@ class Model:
 
             #saving model
             #モデルの保存
-            self.save(self.args["checkpoint_dir"], epoch)
+            self.save(self.args["checkpoint_dir"], epoch,self.saver)
             if epoch%self.args["save_interval"]==0 and test_mfcc<best:
-                self.save(self.args["best_checkpoint_dir"], epoch)
+                self.save(self.args["best_checkpoint_dir"], epoch,self.saver2)
                 best=test_mfcc
             #console outputs
             count = counter + ti * epoch
@@ -588,7 +591,7 @@ class Model:
         # hyperdash
         if self.args["hyperdash"]:
             self.experiment.end()
-    def save(self, checkpoint_dir, step):
+    def save(self, checkpoint_dir, step,saver):
         model_name = "wave2wave.model"
         model_dir =  self.args["name_save"]
         checkpoint_dir = os.path.join(checkpoint_dir, model_dir)
@@ -596,7 +599,7 @@ class Model:
         if not os.path.exists(checkpoint_dir):
             os.makedirs(checkpoint_dir)
 
-        self.saver.save(self.sess,
+        saver.save(self.sess,
                         os.path.join(checkpoint_dir, model_name),
                         global_step=step)
     def load(self):

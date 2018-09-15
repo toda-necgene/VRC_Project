@@ -3,13 +3,13 @@
         "checkpoint_dir":"Z://models/",
         "best_checkpoint_dir":"Z://bestmodel/",
         "wave_otp_dir":"Z://waves/",
-        "version":"5.6.058"
+        "version":"5.6.065"
     },
     "network_architecture":{
         "repeatations":1,
         "depth":[4,16],
         "d_depth":4,
-        "D_channels":[64,128,256,512],
+        "D_channels":[32,64,128,256,512],
         "G_channels":[8,16,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,16,8,1],
         "dilations":[]
     },
@@ -28,8 +28,8 @@
         "lr_decay_term":100,
         "save_interval":1,
         "weight_GAN":1.0,
-        "weight_Cycle_Pow":100.0,
-        "weight_Cycle_Fre":100.0
+        "weight_Cycle_Pow":5.0,
+        "weight_Cycle_Fre":5.0
 
     },
 
