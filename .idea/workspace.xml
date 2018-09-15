@@ -1,10 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="bcabb495-93d4-437a-b14b-9cb2802ec5b1" name="Default Changelist" comment="[5.6.059] 層の変更&#10;&#10;[fix] 16に変更">
+    <list default="true" id="bcabb495-93d4-437a-b14b-9cb2802ec5b1" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/model/model.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/model/model.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/model/model_train.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/model/model_train.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/VRC/setting.json" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/setting.json" afterDir="false" />
     </list>
     <ignored path="C:\Users\tadop\git\vrc\.idea\shelf/" />
@@ -66,18 +64,18 @@
         <counts>
           <entry key="dummy" value="4" />
           <entry key="gitignore" value="5" />
-          <entry key="json" value="1989" />
+          <entry key="json" value="2013" />
           <entry key="md" value="643" />
-          <entry key="py" value="4530" />
-          <entry key="txt" value="2143" />
+          <entry key="py" value="4616" />
+          <entry key="txt" value="2193" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="JSON" value="1989" />
+          <entry key="JSON" value="2013" />
           <entry key="Markdown" value="643" />
-          <entry key="PLAIN_TEXT" value="2152" />
-          <entry key="Python" value="4530" />
+          <entry key="PLAIN_TEXT" value="2202" />
+          <entry key="Python" value="4616" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.vcs.git.usages" />
@@ -89,7 +87,7 @@
         <entry file="file://$PROJECT_DIR$/VRC/model/model_train.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="208">
-              <caret line="92" column="33" selection-start-line="92" selection-start-column="33" selection-end-line="92" selection-end-column="33" />
+              <caret line="552" column="36" selection-start-line="552" selection-start-column="36" selection-end-line="552" selection-end-column="36" />
             </state>
           </provider>
         </entry>
@@ -106,8 +104,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/model/model.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="107">
-              <caret line="107" column="25" selection-start-line="107" selection-start-column="25" selection-end-line="107" selection-end-column="25" />
+            <state relative-caret-position="848">
+              <caret line="65" column="24" selection-start-line="65" selection-start-column="24" selection-end-line="65" selection-end-column="24" />
             </state>
           </provider>
         </entry>
@@ -138,8 +136,8 @@
         <option value="$PROJECT_DIR$/VRC/train/main.py" />
         <option value="$PROJECT_DIR$/VRC/model/model_cpu.py" />
         <option value="$PROJECT_DIR$/VRC/utils/voice_to_datasets_cycle.py" />
-        <option value="$PROJECT_DIR$/VRC/model/model_train.py" />
         <option value="$PROJECT_DIR$/VRC/model/model.py" />
+        <option value="$PROJECT_DIR$/VRC/model/model_train.py" />
         <option value="$PROJECT_DIR$/VRC/setting.json" />
       </list>
     </option>
@@ -313,20 +311,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1534034935853</updated>
-    </task>
-    <task id="LOCAL-00065" summary="[4.2.156] 予測最高モデルの実験&#10;&#10;[fix] 学習で学習率を減衰させる">
-      <created>1535333666574</created>
-      <option name="number" value="00065" />
-      <option name="presentableId" value="LOCAL-00065" />
-      <option name="project" value="LOCAL" />
-      <updated>1535333666574</updated>
-    </task>
-    <task id="LOCAL-00066" summary="[4.2.157] Shakedropの実験&#10;&#10;[del] Shakedrop">
-      <created>1535333884849</created>
-      <option name="number" value="00066" />
-      <option name="presentableId" value="LOCAL-00066" />
-      <option name="project" value="LOCAL" />
-      <updated>1535333884849</updated>
     </task>
     <task id="LOCAL-00067" summary="[4.2.160] B1実験&#10;&#10;[fix] batch_size を1に">
       <created>1535343136965</created>
@@ -657,7 +641,21 @@
       <option name="project" value="LOCAL" />
       <updated>1536985235628</updated>
     </task>
-    <option name="localTasksCounter" value="114" />
+    <task id="LOCAL-00114" summary="[5.6.065] shakedropの変更&#10;&#10;[fix] batch-&gt;pixel">
+      <created>1537008078560</created>
+      <option name="number" value="00114" />
+      <option name="presentableId" value="LOCAL-00114" />
+      <option name="project" value="LOCAL" />
+      <updated>1537008078560</updated>
+    </task>
+    <task id="LOCAL-00115" summary="[5.6.075] パラメータの変更">
+      <created>1537020166567</created>
+      <option name="number" value="00115" />
+      <option name="presentableId" value="LOCAL-00115" />
+      <option name="project" value="LOCAL" />
+      <updated>1537020166567</updated>
+    </task>
+    <option name="localTasksCounter" value="116" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -706,8 +704,6 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[5.6.011] レイヤー数の変更&#10;&#10;[fix] 8に変更" />
-    <MESSAGE value="[5.6.012] レイヤー数の変更&#10;&#10;[fix] 8に変更" />
     <MESSAGE value="[5.6.013] レイヤー数の変更&#10;&#10;[fix] 8に変更" />
     <MESSAGE value="[5.6.014] レイヤー数の変更&#10;&#10;[fix] 8に変更" />
     <MESSAGE value="[5.6.015] Densenetの実装&#10;&#10;[fix] densenet(k=16)を作成" />
@@ -731,7 +727,9 @@
     <MESSAGE value="[5.6.055] 学習率の変更&#10;&#10;[fix] 調整" />
     <MESSAGE value="[5.6.057] 学習率の変更&#10;&#10;[fix] 調整" />
     <MESSAGE value="[5.6.059] 層の変更&#10;&#10;[fix] 16に変更" />
-    <option name="LAST_COMMIT_MESSAGE" value="[5.6.059] 層の変更&#10;&#10;[fix] 16に変更" />
+    <MESSAGE value="[5.6.065] shakedropの変更&#10;&#10;[fix] batch-&gt;pixel" />
+    <MESSAGE value="[5.6.075] パラメータの変更" />
+    <option name="LAST_COMMIT_MESSAGE" value="[5.6.075] パラメータの変更" />
   </component>
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/ui.lnf.xml" />
@@ -814,17 +812,17 @@
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/logs/[glr=0.1,gb=0.5,dlr=0.0002,db=0.5]wave2wave5.6.061/events.out.tfevents.1536991202.DESKTOP-QFC16G3" />
-    <entry file="file://$PROJECT_DIR$/VRC/model/model_train.py">
+    <entry file="file://$PROJECT_DIR$/VRC/model/model.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="208">
-          <caret line="92" column="33" selection-start-line="92" selection-start-column="33" selection-end-line="92" selection-end-column="33" />
+        <state relative-caret-position="848">
+          <caret line="65" column="24" selection-start-line="65" selection-start-column="24" selection-end-line="65" selection-end-column="24" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/model/model.py">
+    <entry file="file://$PROJECT_DIR$/VRC/model/model_train.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="107">
-          <caret line="107" column="25" selection-start-line="107" selection-start-column="25" selection-end-line="107" selection-end-column="25" />
+        <state relative-caret-position="208">
+          <caret line="552" column="36" selection-start-line="552" selection-start-column="36" selection-end-line="552" selection-end-column="36" />
         </state>
       </provider>
     </entry>
