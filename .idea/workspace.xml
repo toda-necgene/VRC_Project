@@ -65,18 +65,18 @@
         <counts>
           <entry key="dummy" value="4" />
           <entry key="gitignore" value="5" />
-          <entry key="json" value="1871" />
+          <entry key="json" value="1896" />
           <entry key="md" value="643" />
-          <entry key="py" value="4308" />
-          <entry key="txt" value="2041" />
+          <entry key="py" value="4313" />
+          <entry key="txt" value="2106" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="JSON" value="1871" />
+          <entry key="JSON" value="1896" />
           <entry key="Markdown" value="643" />
-          <entry key="PLAIN_TEXT" value="2050" />
-          <entry key="Python" value="4308" />
+          <entry key="PLAIN_TEXT" value="2115" />
+          <entry key="Python" value="4313" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.vcs.git.usages" />
@@ -84,19 +84,19 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/VRC/model/model_train.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="3328">
-              <caret line="427" selection-start-line="427" selection-end-line="427" />
+            <state relative-caret-position="208">
+              <caret line="427" lean-forward="true" selection-start-line="427" selection-end-line="427" />
             </state>
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/setting.json">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="80">
+            <state relative-caret-position="32">
               <caret line="5" column="26" selection-start-line="5" selection-start-column="26" selection-end-line="5" selection-end-column="26" />
             </state>
           </provider>
@@ -105,8 +105,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/model/model.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="240">
-              <caret line="60" column="65" selection-start-line="60" selection-start-column="65" selection-end-line="60" selection-end-column="65" />
+            <state relative-caret-position="251">
+              <caret line="77" column="16" selection-start-line="77" selection-start-column="16" selection-end-line="77" selection-end-column="16" />
             </state>
           </provider>
         </entry>
@@ -146,9 +146,9 @@
         <option value="$PROJECT_DIR$/VRC/train/main.py" />
         <option value="$PROJECT_DIR$/VRC/model/model_cpu.py" />
         <option value="$PROJECT_DIR$/VRC/utils/voice_to_datasets_cycle.py" />
-        <option value="$PROJECT_DIR$/VRC/model/model_train.py" />
         <option value="$PROJECT_DIR$/VRC/model/model.py" />
         <option value="$PROJECT_DIR$/VRC/setting.json" />
+        <option value="$PROJECT_DIR$/VRC/model/model_train.py" />
       </list>
     </option>
   </component>
@@ -198,6 +198,12 @@
               <item name="VRC" type="462c0819:PsiDirectoryNode" />
               <item name="datasets" type="462c0819:PsiDirectoryNode" />
               <item name="train" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
+              <item name="vrc" type="462c0819:PsiDirectoryNode" />
+              <item name="VRC" type="462c0819:PsiDirectoryNode" />
+              <item name="logs" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
@@ -314,13 +320,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1534034935853</updated>
-    </task>
-    <task id="LOCAL-00060" summary="[4.2.142] スタッキング廃止　&#10;&#10;[fix] D　5から7">
-      <created>1535181229155</created>
-      <option name="number" value="00060" />
-      <option name="presentableId" value="LOCAL-00060" />
-      <option name="project" value="LOCAL" />
-      <updated>1535181229155</updated>
     </task>
     <task id="LOCAL-00061" summary="[4.2.144] Shakedropの検証　&#10;&#10;[fix] D　7　G　9">
       <created>1535235557866</created>
@@ -658,7 +657,14 @@
       <option name="project" value="LOCAL" />
       <updated>1536926525720</updated>
     </task>
-    <option name="localTasksCounter" value="109" />
+    <task id="LOCAL-00109" summary="[5.6.043] 構造の変更&#10;&#10;[fix] GのEレイヤーとDレイヤーを4から3に変更&#10;[fix] 学習率減衰を適用&#10;[fix] BNを削減">
+      <created>1536970372393</created>
+      <option name="number" value="00109" />
+      <option name="presentableId" value="LOCAL-00109" />
+      <option name="project" value="LOCAL" />
+      <updated>1536970372393</updated>
+    </task>
+    <option name="localTasksCounter" value="110" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -707,7 +713,6 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[5.6.005] レイヤー数の変更&#10;&#10;[fix] １２レイヤーに変更" />
     <MESSAGE value="[5.6.006] レイヤー数の変更&#10;&#10;[fix] 16レイヤーに変更" />
     <MESSAGE value="[5.6.006] strideの変更&#10;&#10;[fix] 4に変更" />
     <MESSAGE value="[5.6.009] strideの変更&#10;&#10;[fix] 4に変更" />
@@ -732,7 +737,8 @@
     <MESSAGE value="[5.6.035] ハイパーパラメータの修正&#10;&#10;[fix] バッチサイズを削減" />
     <MESSAGE value="[5.6.038] 構造の変更&#10;&#10;[fix] conv2d構造に変更" />
     <MESSAGE value="[5.6.039] 構造の変更&#10;&#10;[add] DにBNを追加" />
-    <option name="LAST_COMMIT_MESSAGE" value="[5.6.039] 構造の変更&#10;&#10;[add] DにBNを追加" />
+    <MESSAGE value="[5.6.043] 構造の変更&#10;&#10;[fix] GのEレイヤーとDレイヤーを4から3に変更&#10;[fix] 学習率減衰を適用&#10;[fix] BNを削減" />
+    <option name="LAST_COMMIT_MESSAGE" value="[5.6.043] 構造の変更&#10;&#10;[fix] GのEレイヤーとDレイヤーを4から3に変更&#10;[fix] 学習率減衰を適用&#10;[fix] BNを削減" />
   </component>
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/ui.lnf.xml" />
@@ -807,6 +813,20 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/logs/[glr=0.0002,gb=0.5,dlr=0.0002,db=0.5]wave2wave4.2.140/events.out.tfevents.1535163488.DESKTOP-QFC16G3" />
     <entry file="file://$PROJECT_DIR$/VRC/logs/[glr=0.0002,gb=0.5,dlr=0.0002,db=0.5]wave2wave4.3.024/events.out.tfevents.1535717867.DESKTOP-QFC16G3" />
+    <entry file="file://$PROJECT_DIR$/VRC/setting.json">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="32">
+          <caret line="5" column="26" selection-start-line="5" selection-start-column="26" selection-end-line="5" selection-end-column="26" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/VRC/model/model.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="251">
+          <caret line="77" column="16" selection-start-line="77" selection-start-column="16" selection-end-line="77" selection-end-column="16" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets_cycle.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="2057">
@@ -816,22 +836,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/model/model_train.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="3328">
-          <caret line="427" selection-start-line="427" selection-end-line="427" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/model/model.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="240">
-          <caret line="60" column="65" selection-start-line="60" selection-start-column="65" selection-end-line="60" selection-end-column="65" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/setting.json">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="80">
-          <caret line="5" column="26" selection-start-line="5" selection-start-column="26" selection-end-line="5" selection-end-column="26" />
+        <state relative-caret-position="208">
+          <caret line="427" lean-forward="true" selection-start-line="427" selection-end-line="427" />
         </state>
       </provider>
     </entry>
