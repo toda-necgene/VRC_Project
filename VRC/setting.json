@@ -3,14 +3,14 @@
         "checkpoint_dir":"Z://models/",
         "best_checkpoint_dir":"Z://bestmodel/",
         "wave_otp_dir":"Z://waves/",
-        "version":"5.6.055"
+        "version":"5.6.057"
     },
     "network_architecture":{
         "repeatations":1,
-        "depth":[4,8],
+        "depth":[4,9],
         "d_depth":4,
         "D_channels":[64,128,256,512],
-        "G_channels":[8,16,32,64,64,64,64,64,64,64,64,64,32,16,8,1],
+        "G_channels":[8,16,32,32,32,32,32,32,32,32,32,32,32,32,16,8,1],
         "dilations":[]
     },
     "training_config":{
@@ -28,8 +28,8 @@
         "lr_decay_term":100,
         "save_interval":1,
         "weight_GAN":1.0,
-        "weight_Cycle_Pow":3.0,
-        "weight_Cycle_Fre":3.0
+        "weight_Cycle_Pow":100.0,
+        "weight_Cycle_Fre":100.0
 
     },
 
