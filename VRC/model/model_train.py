@@ -208,8 +208,8 @@ class Model:
         # G-netの目的関数
 
         # L1 norm lossA
-        saa=tf.reduce_mean(tf.abs(self.fake_Ba_image[:,:,:,0]-self.input_modela1[:,-ff:,:,0]))* self.args["weight_Cycle_Pow"]
-        sbb=tf.reduce_mean(tf.abs(self.fake_Ba_image[:,:,:,1]-self.input_modela1[:,-ff:,:,1]))* self.args["weight_Cycle_Fre"]
+        saa=tf.reduce_mean(tf.losses.mean_squared_error(predictions=self.fake_Ba_image[:,:,:,0],labels=self.input_modela1[:,-ff:,:,0]))* self.args["weight_Cycle_Pow"]
+        sbb=tf.reduce_mean(tf.losses.mean_squared_error(predictions=self.fake_Ba_image[:,:,:,1],labels=self.input_modela1[:,-ff:,:,1]))* self.args["weight_Cycle_Fre"]
         L1B=0.5*(saa+sbb)
 
         # Gan lossA
@@ -221,8 +221,8 @@ class Model:
         # generator lossA
         self.g_loss_aB = L1B +DSb* self.args["weight_GAN"]
         # L1 norm lossB
-        sa=tf.reduce_mean(tf.abs(self.fake_Ab_image[:,:,:,0]-self.input_modelb1[:,-ff:,:,0]))* self.args["weight_Cycle_Pow"]
-        sb=tf.reduce_mean(tf.abs(self.fake_Ab_image[:,:,:,1]-self.input_modelb1[:,-ff:,:,1] ))* self.args["weight_Cycle_Fre"]
+        sa=tf.reduce_mean(tf.losses.mean_squared_error(predictions=self.fake_Ab_image[:,:,:,0],labels=self.input_modelb1[:,-ff:,:,0]))* self.args["weight_Cycle_Pow"]
+        sb=tf.reduce_mean(tf.losses.mean_squared_error(predictions=self.fake_Ab_image[:,:,:,1],labels=self.input_modelb1[:,-ff:,:,1] ))* self.args["weight_Cycle_Fre"]
         L1bAAb = 0.5*(sa+sb)
         # Gan loss
         DSA = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.ones([self.args["batch_size"],1]),predictions=self.d_judge_AF))
@@ -550,7 +550,7 @@ class Model:
                     # G-netの学習
                     # self.sess.run([g_optim,self.update_ops],feed_dict={ self.input_modela:res_t,self.input_modelb:tar,lr_g:lr_g_opt3})
                     # Update D network (1time)
-                    for _ in range(2):
+                    for _ in range(3):
                         self.sess.run([d_optim],
                                       feed_dict={self.input_modelb: tar, self.input_modela: res_t,lr_d:lr_d_opt3})
                     # G-netの学習
@@ -581,7 +581,7 @@ class Model:
             if T==T_cur:
                 # T=T//2
                 T_cur=0
-                T_pow*=0.9
+                T_pow*=0.5
             # elif epoch%self.args["save_interval"]==0 and test_mfcc<ch :
             #     ch -= 5000
             #     T_cur=0
