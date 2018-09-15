@@ -21,6 +21,7 @@ class Model:
     def __init__(self,path):
         self.args=dict()
         self.args["checkpoint_dir"]="./trained_models"
+        self.args["best_checkpoint_dir"]="./trained_models2"
         self.args["wave_otp_dir"] = "False"
         self.args["test_data_dir"] ="None"
         self.args["batch_size"]=1
@@ -348,6 +349,7 @@ class Model:
         T_pow=1.0
         ch=50000
         test_mfcc=999999
+        best=999999
         T=self.args["lr_decay_term"]
         # naming output-directory
         # 出力ディレクトリ
@@ -419,10 +421,10 @@ class Model:
         start_time = time.time()
         for epoch in range(self.args["start_epoch"],self.args["train_epoch"]):
             # 学習率の計算
-            # lr_d_opt3 = lr_d_opt_min+0.5*(lr_d_opt_max-lr_d_opt_min)*(1+np.cos(T_cur/T*np.pi))*T_pow
-            lr_d_opt3 =lr_d_opt_min+(lr_d_opt_max-lr_d_opt_min)*T_pow
-            # lr_g_opt3 = lr_g_opt_min+0.5*(lr_d_opt_max-lr_g_opt_min)*(1+np.cos(T_cur/T*np.pi))*T_pow
-            lr_g_opt3 = lr_g_opt_min+(lr_g_opt_max-lr_g_opt_min) * T_pow
+            lr_d_opt3 = lr_d_opt_min+0.5*(lr_d_opt_max-lr_d_opt_min)*(1+np.cos(T_cur/T*np.pi))*T_pow
+            # lr_d_opt3 =lr_d_opt_min+(lr_d_opt_max-lr_d_opt_min)*T_pow
+            lr_g_opt3 = lr_g_opt_min+0.5*(lr_d_opt_max-lr_g_opt_min)*(1+np.cos(T_cur/T*np.pi))*T_pow
+            # lr_g_opt3 = lr_g_opt_min+(lr_g_opt_max-lr_g_opt_min) * T_pow
 
             # トレーニングデータのシャッフル
             np.random.shuffle(index_list)
@@ -523,7 +525,7 @@ class Model:
                     # self.sess.run([g_optim,self.update_ops],feed_dict={ self.input_modela:res_t,self.input_modelb:tar,lr_g:lr_g_opt3})
                     # Update D network (1time)
                     for _ in range(2):
-                        self.sess.run([d_optim,self.update_ops],
+                        self.sess.run([d_optim],
                                       feed_dict={self.input_modelb: tar, self.input_modela: res_t,lr_d:lr_d_opt3})
                     # G-netの学習
                     self.sess.run([g_optim, self.update_ops],
@@ -535,7 +537,9 @@ class Model:
             #saving model
             #モデルの保存
             self.save(self.args["checkpoint_dir"], epoch)
-
+            if epoch%self.args["save_interval"]==0 and test_mfcc<best:
+                self.save(self.args["best_checkpoint_dir"], epoch)
+                best=test_mfcc
             #console outputs
             count = counter + ti * epoch
             taken_time = time.time() - start_time
@@ -552,10 +556,10 @@ class Model:
                 # T=T//2
                 T_cur=0
                 T_pow*=0.1
-            # elif epoch%self.args["save_interval"]==0 and test_mfcc<ch :
-            #     ch -= 5000
-            #     T_cur=0
-            #     T_pow*=0.1
+            elif epoch%self.args["save_interval"]==0 and test_mfcc<ch :
+                ch -= 5000
+                T_cur=0
+                T_pow*=0.1
         print(" [*] Finished!! in "+ str(np.sum(time_of_epoch[::2])))
 
         # hyperdash

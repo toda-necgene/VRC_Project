@@ -6,7 +6,7 @@ def discriminator(inp,reuse,depth,chs,train=True):
     current=inp
     for i in range(depth):
         ten = tf.layers.conv2d(current, chs[i], kernel_size=[2,6], strides=[1,4], padding="SAME",kernel_initializer=tf.truncated_normal_initializer(stddev=0.02),use_bias=True, data_format="channels_last",name="disc_"+str(i),reuse=reuse)
-        ten= tf.layers.batch_normalization(ten, trainable=True,training=train,name="bnS"+str(i),reuse=reuse )
+        # ten= tf.layers.batch_normalization(ten, trainable=True,training=train,name="bnS"+str(i),reuse=reuse )
         # ten=tf.layers.dropout(ten,0.4,training=True)
         current = tf.nn.leaky_relu(ten)
     print(" [*] bottom shape:"+str(current.shape))
@@ -44,35 +44,31 @@ def block_res(current,chs,rep_pos,depth,reuses,d,train=True):
 
         tenA=ten
 
-        ten = tf.layers.conv2d(ten, chs[tms + i]//2, [3, 7], [1, 1], padding="SAME",
+        ten = tf.layers.conv2d(ten, chs[tms + i]//2, [3, 2], [1, 2], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=True,
                                data_format="channels_last", reuse=reuses, name="res_conv1" + str(i) + str(rep_pos))
-        ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
-                                            name="bnA1" + str(tms + i) + str(rep_pos))
+        # ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
+        #                                     name="bnA1" + str(tms + i) + str(rep_pos))
 
         ten = tf.nn.leaky_relu(ten)
-        # ten=tf.transpose(ten,[0,1,3,2])
-        # r=ten.get_shape()[-1]
-        # ten=tf.layers.dense(ten, r,kernel_initializer=tf.random_normal_initializer(stddev=0.02),  reuse=reuses, name="res_dense" + str(i) + str(rep_pos))
-        # ten = tf.transpose(ten, [0, 1, 3, 2])
-        ten = tf.layers.conv2d(ten, chs[tms + i] // 2, [5, 9], [1, 1], padding="SAME",
-                               kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=True,
-                               data_format="channels_last", reuse=reuses, name="res_conv2" + str(i) + str(rep_pos))
-
+        ten=tf.transpose(ten,[0,1,3,2])
+        r=ten.get_shape()[-1]
+        ten=tf.layers.dense(ten, r,kernel_initializer=tf.random_normal_initializer(stddev=0.02),  reuse=reuses, name="res_dense" + str(i) + str(rep_pos))
+        ten = tf.transpose(ten, [0, 1, 3, 2])
         ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
                                             name="bnA2" + str(tms + i) + str(rep_pos))
         ten = tf.nn.leaky_relu(ten)
-        ten = tf.layers.conv2d(ten, chs[tms + i], [3, 7], [1, 1], padding="SAME",
+        ten = tf.layers.conv2d_transpose(ten, chs[tms + i], [3, 2], [1, 2], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=True,
                                data_format="channels_last", reuse=reuses, name="res_conv3" + str(i) + str(rep_pos))
         ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
                                             name="bnA3" + str(tms + i) + str(rep_pos))
         prop=(1-i/(res*2))
+        ten = tf.nn.leaky_relu(ten)
         ten=ShakeShake(ten,prop,train)
         # ten=tf.layers.dropout(ten,0.2,training=train)
         if i!=res-1 :
             ten=ten+tenA
-        ten = tf.nn.leaky_relu(ten)
     tms+=res
     tenA=ten
     for i in range(times):
