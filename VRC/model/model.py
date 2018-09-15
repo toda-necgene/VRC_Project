@@ -63,19 +63,19 @@ def block_res(current,chs,rep_pos,depth,reuses,d,train=True):
                                data_format="channels_last", reuse=reuses, name="res_conv3" + str(i) + str(rep_pos))
         ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
                                             name="bnA3" + str(tms + i) + str(rep_pos))
-        prop=(1-i/(res*2))
-        ten = tf.nn.leaky_relu(ten)
+        prop=(1-i/(res*2.5))
         ten=ShakeShake(ten,prop,train)
         # ten=tf.layers.dropout(ten,0.2,training=train)
         if i!=res-1 :
             ten=ten+tenA
+        ten = tf.nn.leaky_relu(ten)
     tms+=res
     tenA=ten
     for i in range(times):
         tenA += tenM[times-i-1]
         tenA = deconve_with_ps(tenA, [1, 2], chs[tms+i], rep_pos, reuses=reuses, name="00"+str(i))
         if i!=times-1:
-            tenA = tf.layers.dropout(tenA, 0.2, train)
+            # tenA = tf.layers.dropout(tenA, 0.2, train)
 
             tenA = tf.layers.batch_normalization(tenA, axis=3, training=train, trainable=True, reuse=reuses,
                                                  name="bnAD"+str(times+res+i) + str(rep_pos))
@@ -85,7 +85,7 @@ def block_res(current,chs,rep_pos,depth,reuses,d,train=True):
         tenB += tenM[times-i-1]
         tenB = deconve_with_ps(tenB, [1, 2], chs[tms+i], rep_pos, reuses=reuses, name="01"+str(i))
         if i != times - 1:
-            tenB = tf.layers.dropout(tenB, 0.2, train)
+            # tenB = tf.layers.dropout(tenB, 0.2, train)
             tenB = tf.layers.batch_normalization(tenB, axis=3, training=train, trainable=True, reuse=reuses,
                                                  name="bnBD"+str(times+res+i) + str(rep_pos))
             tenB = tf.nn.leaky_relu(tenB)
