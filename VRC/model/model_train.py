@@ -392,6 +392,28 @@ class Model:
         # テストデータの読み込み
         test=isread(self.args["test_data_dir"]+'/test.wav')[0:160000].astype(np.float32)
         label=isread(self.args["test_data_dir"]+'/label.wav')[0:160000].astype(np.float32)
+
+        ipt = self.args["input_size"] + self.args["SHIFT"] * self.args["dilation_size"] + self.args["SHIFT"]
+        out_s= np.zeros([1, self.args["NFFT"], 2], dtype=np.float32)
+        timesl = label.shape[0] // (self.args["input_size"]) + 1
+        if label.shape[0] % ((self.args["input_size"]) * self.args["batch_size"]) == 0:
+            timesl -= 1
+        for t in range(timesl):
+            # Preprocess
+            # 前処理
+
+            # Padiing
+            # サイズ合わせ
+            start_pos = self.args["input_size"] * t + (label.shape[0] % self.args["input_size"])
+            resorce = np.reshape(label[ max(0, start_pos - ipt):start_pos], (1, -1))
+            r = max(0, ipt - resorce.shape[1])
+            if r > 0:
+                resorce = np.pad(resorce, ((0, 0), (r, 0)), 'constant')
+            # FFT
+            # 短時間高速離散フーリエ変換
+            res = self.fft(resorce.reshape(-1) / 32767.0)
+            out_s=np.append(out_s,res,axis=0)
+        out_s=out_s[1:]
         # times of one epoch
         # 回数計算
         train_data_num = min(len(data),len(data2))
@@ -441,7 +463,8 @@ class Model:
                 otp_im=np.append(np.clip((im[:,:,0]+10)/20,0.0,1.0).reshape([1,-1,self.args["NFFT"],1]),np.clip((im[:,:,1]+3.15)/6.30,0.0,1.0).reshape([1,-1,self.args["NFFT"],1]),axis=3)
                 out_put=out_puts.astype(np.float32)/32767.0
                 #テストの誤差
-                test1=np.mean(np.abs(np.abs(out_puts.reshape(1,-1,1)[0])-np.abs(label.reshape(1,-1,1)[0])))
+                r = min(out_s.shape[0], otp_im.shape[0])
+                test1=np.mean(np.abs(out_s[:r]-otp_im[:r]))
                 raxis = librosa.feature.mfcc(out_put.reshape(-1)*1.0, sr=radeon_fs)
                 # raxis = sklearn.preprocessing.scale(raxis, axis=1)
                 rnx=min(raxis.shape[1],radeon.shape[1])
