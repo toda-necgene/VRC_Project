@@ -8,7 +8,7 @@ def discriminator(inp,reuse,depth,chs,train=True):
         ten = tf.layers.conv2d(current, chs[i], kernel_size=[2,4], strides=[1,4], padding="VALID",kernel_initializer=tf.truncated_normal_initializer(stddev=0.02),use_bias=True, data_format="channels_last",name="disc_"+str(i),reuse=reuse)
         # ten= tf.layers.batch_normalization(ten, trainable=True,training=train,name="bnS"+str(i),reuse=reuse )
         # ten=tf.layers.dropout(ten,0.2,training=True)
-        current = tf.nn.leaky_relu(ten)
+        current = tf.nn.relu(ten)
     print(" [*] bottom shape:"+str(current.shape))
     h4=tf.reshape(current, [-1,current.shape[1]*current.shape[2]*current.shape[3]])
     ten=tf.layers.dense(h4,1,name="dence",reuse=reuse)
@@ -76,7 +76,7 @@ def block_res(current,chs,rep_pos,depth,reuses,d,train,training_time):
     tenA=ten
     for i in range(times):
         # tenA += tenM[times-i-1]
-        tenA = deconve_with_ps(tenA, [1, 2], chs[tms+i], rep_pos, reuses=reuses, name="00"+str(i))
+        tenA = deconve_with_ps(tenA, [1, 2], chs[tms+i], rep_pos, reuses=reuses, name="00"+str(i),t=(i == times - 1))
         if i!=times-1:
             # tenA = tf.layers.dropout(tenA, 0.2, train)
 
@@ -109,9 +109,9 @@ def deconve_with_ps(inp,r,otp_shape,depth,reuses=None,name="",t=True):
     return ten[:,:,:,:]
 def ShakeShake(ten,rate,train,training_time):
     s=[int(ten.shape[0]),int(ten.shape[1]),int(ten.shape[2]),int(ten.shape[3])]
-    f_rand=tf.random_normal(s,stddev=training_time*0.1)
+    f_rand=tf.random_uniform(s,-training_time,training_time)
     # f_rand = 0.0
-    b_rand=tf.random_uniform(s,1.0-training_time,1.0)
+    b_rand=tf.random_uniform(s,0.0,1.0)
     # b_rand = 0.5
     if train:
         prop=tf.random_uniform(s,0.0,1.0)+rate

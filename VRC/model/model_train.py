@@ -130,11 +130,11 @@ class Model:
                 self.fake_aB_image12,ax1 = generator(self.input_modela1, reuse=None,
                                               chs=self.args["G_channels"], depth=self.args["depth"], d=self.args["dilations"],train=True,r=self.args["repeatations"],training_time=self.tts)
 
-                self.fake_aB_image_test ,_= generator(self.input_model_tests, reuse=True,
+                fake_aB_imag_test ,_= generator(self.input_model_tests, reuse=True,
                                                 chs=self.args["G_channels"], depth=self.args["depth"],
                                                 d=self.args["dilations"],
                                                 train=False,r=self.args["repeatations"])
-                self.fake_aB_image_test*=10
+                self.fake_aB_image_test=fake_aB_imag_test*10
             with tf.variable_scope("generator_2"):
                 self.fake_bA_image12,bx1 = generator(self.input_modelb1, reuse=None,
                                               chs=self.args["G_channels"], depth=self.args["depth"],d=self.args["dilations"],train=True,r=self.args["repeatations"],training_time=self.tts)
@@ -441,6 +441,9 @@ class Model:
         radeon = librosa.feature.mfcc(radeon_x, sr=radeon_fs)
         radeon2 = sklearn.preprocessing.scale(radeon, axis=1)
         start_time = time.time()
+        start_time_all=time.time()
+        test_score=100.0
+        epoch=0
         for epoch in range(self.args["start_epoch"],self.args["train_epoch"]):
             # 学習率の計算
             lr_d_opt3 = lr_d_opt_min+0.5*(lr_d_opt_max-lr_d_opt_min)*(1+np.cos(T_cur/T*np.pi))*T_pow
@@ -454,7 +457,7 @@ class Model:
             ts = 0.0
             ipt = self.input_size_model[1]
             counter=0
-            ttm=np.asarray([1.0-epoch/self.args["train_epoch"]])
+            ttm=np.asarray([1.0])
             if self.args["test"] and epoch%self.args["save_interval"]==0:
                 print(" [*] Epoch %3d testing" % epoch)
                 #testing
@@ -589,7 +592,80 @@ class Model:
             #     ch -= 5000
             #     T_cur=0
             #     T_pow*=0.9
-        print(" [*] Finished!! in "+ str(np.sum(time_of_epoch[::2])))
+        print(" [*] Epoch %3d testing" % epoch)
+        # testing
+        # テスト
+        out_puts, taken_time_test, im = self.convert(test.reshape(1, -1, 1))
+        im = im.reshape([-1, self.args["NFFT"], 2])
+        otp_im = np.append(np.clip((im[:, :, 0] + 10) / 20, 0.0, 1.0).reshape([1, -1, self.args["NFFT"], 1]),
+                           np.clip((im[:, :, 1] + 3.15) / 6.30, 0.0, 1.0).reshape([1, -1, self.args["NFFT"], 1]),
+                           axis=3)
+        out_put = out_puts.astype(np.float32) / 32767.0
+        # テストの誤差
+        r = min(out_s.shape[0], im.shape[0])
+        test1 = np.sum(np.abs(out_s[:r, :, 0] - im[:r, :, 0]))
+        raxis = librosa.feature.mfcc(out_put.reshape(-1) * 1.0, sr=radeon_fs)
+        raxis2 = sklearn.preprocessing.scale(raxis, axis=1)
+        rnx = min(raxis.shape[1], radeon.shape[1])
+        test_mfcc = np.sum(np.abs(radeon[:, -rnx:] - raxis[:, -rnx:]))
+        test_mfcc2 = np.sum(np.abs(radeon2[:, -rnx:] - raxis2[:, -rnx:]))
+        test_score = 0.3 * (test1 * 0.01 + test_mfcc * 0.1 + test_mfcc2)
+        # hyperdash
+        if self.args["hyperdash"]:
+            self.experiment.metric("test_LogPow", test1)
+            self.experiment.metric("testMFCC", test_mfcc)
+            self.experiment.metric("testMFCC_norm", test_mfcc2)
+            self.experiment.metric("score", test_score)
+        # writing epoch-result into tensorboard
+        # tensorboardの書き込み
+        if self.args["tensorboard"]:
+            hg, hd, hg2, hd2 = self.sess.run(
+                [self.g_loss_sum_1, self.d_loss_sumA, self.g_loss_sum_2, self.d_loss_sumB],
+                feed_dict={self.input_modela: batch_sounds_r[0:self.args["batch_size"]],
+                           self.input_modelb: batch_sounds_t[0:self.args["batch_size"]], self.tts: np.zeros(1)})
+            self.writer.add_summary(hg,  ti * epoch)
+            self.writer.add_summary(hd,  ti * epoch)
+            self.writer.add_summary(hg2, ti * epoch)
+            self.writer.add_summary(hd2, ti * epoch)
+            rs = self.sess.run(self.tb_results, feed_dict={self.result: out_put.reshape(1, 1, -1), self.result1: otp_im,
+                                                           self.g_test_epo: test1, self.g_test_epo2: test_mfcc,
+                                                           self.g_test_epo3: test_score})
+            self.writer.add_summary(rs, epoch)
+
+        # saving test result
+        # テストの結果の保存
+        if os.path.exists(self.args["wave_otp_dir"]):
+            plt.clf()
+            plt.subplot(211)
+            ins = np.transpose(im[:, :, 0], (1, 0))
+            plt.imshow(ins, aspect="auto")
+            plt.clim(-10, 10)
+            plt.colorbar()
+            plt.subplot(212)
+            ins = np.transpose(im[:, :, 1], (1, 0))
+            plt.imshow(ins, aspect="auto")
+            plt.clim(-3.141593, 3.141593)
+            plt.colorbar()
+            path = self.args["wave_otp_dir"] + nowtime() + "_e" + str(epoch)
+            plt.savefig(path + ".png")
+            upload(out_puts, path)
+            if self.dbx is not None:
+                print(" [*] Files uploading")
+                with open(path + ".png", "rb") as ff:
+                    self.dbx.files_upload(ff.read(), "/apps/tensorflow_watching_app/Latestimage.png",
+                                          mode=dropbox.files.WriteMode.overwrite)
+                with open(path + ".wav", "rb") as ff:
+                    self.dbx.files_upload(ff.read(), "/apps/tensorflow_watching_app/Latestwave.wav",
+                                          mode=dropbox.files.WriteMode.overwrite)
+                print(" [*] Files uploaded!!")
+        self.save(self.args["checkpoint_dir"], epoch, self.saver)
+        if test_score < best:
+            self.save(self.args["best_checkpoint_dir"], epoch, self.saver2)
+        tnt=time.time()-start_time_all
+        hour_f=tnt//3600
+        minute_f=tnt//60%60
+        second_f=tnt%60
+        print(" [*] Finished!! in %04d : %02d : %02.5f"%(hour_f,minute_f,second_f))
 
         # hyperdash
         if self.args["hyperdash"]:
