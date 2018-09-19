@@ -3,7 +3,7 @@
         "checkpoint_dir":"Z://models/",
         "best_checkpoint_dir":"Z://bestmodel/",
         "wave_otp_dir":"Z://waves/",
-        "version":"5.7.008"
+        "version":"5.7.016"
     },
     "network_architecture":{
         "repeatations":1,

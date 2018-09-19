@@ -85,7 +85,7 @@ class Model:
         self.args["name_save"] = self.args["model_name"] + self.args["version"]
         ss=self.args["input_size"]//self.args["SHIFT"]+self.args["dilation_size"]
         self.input_size_model=[None,ss+self.args["dilation_size"]+1,self.args["NFFT"]//2,2]
-        self.input_size_test = [None, ss, self.args["NFFT"] // 2, 2]
+        self.input_size_test = [4, ss, self.args["NFFT"] // 2, 2]
         print("model input size:"+str(self.input_size_model))
         self.sess=tf.InteractiveSession(config=tf.ConfigProto(gpu_options=tf.GPUOptions()))
         if bool(self.args["debug"]):
@@ -99,16 +99,16 @@ class Model:
         #inputs place holder
         #入力
         self.input_model_test = tf.placeholder(tf.float32, self.input_size_test, "inputs_G-net_A")
-
+        self.input_model_testa =self.input_model_test*0.1
         #creating generator
         #G-net（生成側）の作成
         with tf.variable_scope("generators"):
 
             with tf.variable_scope("generator_1"):
-                self.fake_aB_image_test,_ = generator(self.input_model_test, reuse=None,
+                self.fake_aB_image_testa,_ = generator(self.input_model_testa, reuse=None,
                                                 chs=self.args["G_channels"], depth=self.args["depth"],
                                                 d=self.args["dilations"],r=self.args["repeatations"], train=False)
-
+                self.fake_aB_image_test=10*self.fake_aB_image_testa
 
         #saver
         #保存の準備
