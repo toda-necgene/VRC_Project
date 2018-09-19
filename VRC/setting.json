@@ -3,7 +3,7 @@
         "checkpoint_dir":"Z://models/",
         "best_checkpoint_dir":"Z://bestmodel/",
         "wave_otp_dir":"Z://waves/",
-        "version":"5.7.007"
+        "version":"5.7.008"
     },
     "network_architecture":{
         "repeatations":1,
@@ -21,8 +21,8 @@
         "test_data_dir":"./datasets/test",
         "g_lr_max":2e-4,
         "d_lr_max":2e-4,
-        "g_lr_min":1e-6,
-        "d_lr_min":1e-6,
+        "g_lr_min":1e-4,
+        "d_lr_min":1e-4,
         "g_b1":0.5,
         "d_b1":0.5,
         "lr_decay_term":100,
