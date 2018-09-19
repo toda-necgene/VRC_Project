@@ -3,13 +3,13 @@
         "checkpoint_dir":"Z://models/",
         "best_checkpoint_dir":"Z://bestmodel/",
         "wave_otp_dir":"Z://waves/",
-        "version":"5.7.008"
+        "version":"5.7.018"
     },
     "network_architecture":{
         "repeatations":1,
         "depth":[4,8],
         "d_depth":4,
-        "D_channels":[64,64,128,256],
+        "D_channels":[64,64,128,128],
         "G_channels":[8,16,32,32,32,32,32,32,32,32,32,32,32,16,8,1],
         "dilations":[]
     },
@@ -21,15 +21,15 @@
         "test_data_dir":"./datasets/test",
         "g_lr_max":2e-4,
         "d_lr_max":2e-4,
-        "g_lr_min":1e-4,
-        "d_lr_min":1e-4,
+        "g_lr_min":2e-4,
+        "d_lr_min":2e-4,
         "g_b1":0.5,
         "d_b1":0.5,
         "lr_decay_term":100,
-        "save_interval":5,
+        "save_interval":50,
         "weight_GAN":1.0,
-        "weight_Cycle_Pow":5.0,
-        "weight_Cycle_Fre":5.0
+        "weight_Cycle_Pow":10.0,
+        "weight_Cycle_Fre":10.0
 
     },
 
