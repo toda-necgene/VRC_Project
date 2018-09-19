@@ -3,33 +3,33 @@
         "checkpoint_dir":"Z://models/",
         "best_checkpoint_dir":"Z://bestmodel/",
         "wave_otp_dir":"Z://waves/",
-        "version":"5.6.076"
+        "version":"5.7.007"
     },
     "network_architecture":{
         "repeatations":1,
-        "depth":[4,16],
+        "depth":[4,8],
         "d_depth":4,
-        "D_channels":[64,128,256,512],
-        "G_channels":[8,16,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,16,8,1],
+        "D_channels":[64,64,128,256],
+        "G_channels":[8,16,32,32,32,32,32,32,32,32,32,32,32,16,8,1],
         "dilations":[]
     },
     "training_config":{
-        "train_epoch": 100,
-        "batch_size":64,
+        "train_epoch": 1000,
+        "batch_size":128,
         "start_epoch":0,
         "train_data_dir":"./datasets/train",
         "test_data_dir":"./datasets/test",
-        "g_lr_max":1e-1,
+        "g_lr_max":2e-4,
         "d_lr_max":2e-4,
-        "g_lr_min":1e-4,
-        "d_lr_min":2e-4,
+        "g_lr_min":1e-6,
+        "d_lr_min":1e-6,
         "g_b1":0.5,
         "d_b1":0.5,
-        "lr_decay_term":20,
-        "save_interval":1,
+        "lr_decay_term":100,
+        "save_interval":5,
         "weight_GAN":1.0,
-        "weight_Cycle_Pow":7.0,
-        "weight_Cycle_Fre":7.0
+        "weight_Cycle_Pow":5.0,
+        "weight_Cycle_Fre":5.0
 
     },
 

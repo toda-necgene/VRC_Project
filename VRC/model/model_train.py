@@ -117,7 +117,7 @@ class Model:
         self.input_modela=tf.placeholder(tf.float32, self.input_size_model, "inputs_G-net_A")
         self.input_modelb = tf.placeholder(tf.float32, self.input_size_model, "inputs_G-net_B")
         self.input_model_test = tf.placeholder(tf.float32, self.input_size_test, "inputs_G-net_A")
-
+        self.tts=tf.placeholder(tf.float32,shape=[1],name="time_of_training")
         self.input_modela1 = self.input_modela[:, -8:, :, :]*0.1
         self.input_modelb1 = self.input_modelb[:, -8:, :, :]*0.1
         self.input_model_tests=self.input_model_test[:,-8:,:,:]*0.1
@@ -128,7 +128,7 @@ class Model:
 
             with tf.variable_scope("generator_1"):
                 self.fake_aB_image12,ax1 = generator(self.input_modela1, reuse=None,
-                                              chs=self.args["G_channels"], depth=self.args["depth"], d=self.args["dilations"],train=True,r=self.args["repeatations"])
+                                              chs=self.args["G_channels"], depth=self.args["depth"], d=self.args["dilations"],train=True,r=self.args["repeatations"],training_time=self.tts)
 
                 self.fake_aB_image_test ,_= generator(self.input_model_tests, reuse=True,
                                                 chs=self.args["G_channels"], depth=self.args["depth"],
@@ -137,16 +137,16 @@ class Model:
                 self.fake_aB_image_test*=10
             with tf.variable_scope("generator_2"):
                 self.fake_bA_image12,bx1 = generator(self.input_modelb1, reuse=None,
-                                              chs=self.args["G_channels"], depth=self.args["depth"],d=self.args["dilations"],train=True,r=self.args["repeatations"])
+                                              chs=self.args["G_channels"], depth=self.args["depth"],d=self.args["dilations"],train=True,r=self.args["repeatations"],training_time=self.tts)
             self.fake_aB_image = self.fake_aB_image12
             self.fake_bA_image = self.fake_bA_image12
 
             with tf.variable_scope("generator_2",reuse=True):
                 self.fake_Ba_image,_ = generator(self.fake_aB_image, reuse=True,
-                                              chs=self.args["G_channels"], depth=self.args["depth"], d=self.args["dilations"],train=True,r=self.args["repeatations"])
+                                              chs=self.args["G_channels"], depth=self.args["depth"], d=self.args["dilations"],train=True,r=self.args["repeatations"],training_time=self.tts)
             with tf.variable_scope("generator_1",reuse=True):
                 self.fake_Ab_image,_ = generator(self.fake_bA_image, reuse=True,
-                                               chs=self.args["G_channels"], depth=self.args["depth"],d=self.args["dilations"],train=True,r=self.args["repeatations"])
+                                               chs=self.args["G_channels"], depth=self.args["depth"],d=self.args["dilations"],train=True,r=self.args["repeatations"],training_time=self.tts)
 
         ff=self.args["input_size"]//self.args["SHIFT"]
         a_true_noised=self.input_modela1[:,-ff:,:,:]
@@ -262,8 +262,8 @@ class Model:
         self.fake_B_sum3 = tf.summary.image("fake_B_image02", im2, 1)
         self.g_test_epo=tf.placeholder(tf.float32,name="g_test_epoch_end")
         self.g_test_epo2=tf.placeholder(tf.float32,name="g_test_epoch_end_mfcc")
-        self.g_test_epo3 = tf.placeholder(tf.float32, name="g_test_epoch_end_mfcc2")
-        self.g_test_epoch = tf.summary.merge([tf.summary.scalar("g_test_epoch_end", self.g_test_epo,family="test"),tf.summary.scalar("g_test_mfcc_loss", self.g_test_epo2,family="test"),tf.summary.scalar("g_test_mfcc_loss", self.g_test_epo3,family="test")])
+        self.g_test_epo3 = tf.placeholder(tf.float32, name="g_test_epoch_end_total")
+        self.g_test_epoch = tf.summary.merge([tf.summary.scalar("g_test_epoch_end", self.g_test_epo,family="test"),tf.summary.scalar("g_test_mfcc_loss", self.g_test_epo2,family="test"),tf.summary.scalar("g_test_score", self.g_test_epo3,family="test")])
         self.tb_results=tf.summary.merge([self.fake_B_sum,self.fake_B_sum2,self.fake_B_sum3,self.g_test_epoch])
 
         #saver
@@ -454,6 +454,7 @@ class Model:
             ts = 0.0
             ipt = self.input_size_model[1]
             counter=0
+            ttm=np.asarray([1.0-epoch/self.args["train_epoch"]])
             if self.args["test"] and epoch%self.args["save_interval"]==0:
                 print(" [*] Epoch %3d testing" % epoch)
                 #testing
@@ -464,29 +465,30 @@ class Model:
                 out_put=out_puts.astype(np.float32)/32767.0
                 #テストの誤差
                 r = min(out_s.shape[0], im.shape[0])
-                test1=np.mean(np.abs(out_s[:r,:,0]-im[:r,:,0]))
+                test1=np.sum(np.abs(out_s[:r,:,0]-im[:r,:,0]))
                 raxis = librosa.feature.mfcc(out_put.reshape(-1)*1.0, sr=radeon_fs)
                 raxis2 = sklearn.preprocessing.scale(raxis, axis=1)
                 rnx=min(raxis.shape[1],radeon.shape[1])
                 test_mfcc=np.sum(np.abs(radeon[:,-rnx:]-raxis[:,-rnx:]))
                 test_mfcc2 = np.sum(np.abs(radeon2[:, -rnx:] - raxis2[:, -rnx:]))
-
+                test_score =0.3*(test1*0.01+test_mfcc*0.1+test_mfcc2)
                 #hyperdash
                 if self.args["hyperdash"]:
-                    self.experiment.metric("testG",test1)
+                    self.experiment.metric("test_LogPow",test1)
                     self.experiment.metric("testMFCC", test_mfcc)
-                    self.experiment.metric("testMFCC_normalized", test_mfcc2)
+                    self.experiment.metric("testMFCC_norm", test_mfcc2)
+                    self.experiment.metric("score",test_score)
                 #writing epoch-result into tensorboard
                 #tensorboardの書き込み
                 if self.args["tensorboard"]:
                     hg, hd, hg2, hd2 = self.sess.run(
                         [self.g_loss_sum_1, self.d_loss_sumA, self.g_loss_sum_2, self.d_loss_sumB],
-                        feed_dict={self.input_modela: batch_sounds_r[0:self.args["batch_size"]], self.input_modelb: batch_sounds_t[0:self.args["batch_size"]]})
+                        feed_dict={self.input_modela: batch_sounds_r[0:self.args["batch_size"]], self.input_modelb: batch_sounds_t[0:self.args["batch_size"]],self.tts:ttm})
                     self.writer.add_summary(hg, counter + ti * epoch)
                     self.writer.add_summary(hd, counter + ti * epoch)
                     self.writer.add_summary(hg2, counter + ti * epoch)
                     self.writer.add_summary(hd2, counter + ti * epoch)
-                    rs=self.sess.run(self.tb_results,feed_dict={ self.result:out_put.reshape(1,1,-1),self.result1:otp_im,self.g_test_epo:test1,self.g_test_epo2:test_mfcc,self.g_test_epo3:test_mfcc2})
+                    rs=self.sess.run(self.tb_results,feed_dict={ self.result:out_put.reshape(1,1,-1),self.result1:otp_im,self.g_test_epo:test1,self.g_test_epo2:test_mfcc,self.g_test_epo3:test_score})
                     self.writer.add_summary(rs, epoch)
 
                 #saving test result
@@ -550,22 +552,23 @@ class Model:
                     # G-netの学習
                     # self.sess.run([g_optim,self.update_ops],feed_dict={ self.input_modela:res_t,self.input_modelb:tar,lr_g:lr_g_opt3})
                     # Update D network (1time)
-                    for _ in range(3):
+                    for _ in range(2):
                         self.sess.run([d_optim],
-                                      feed_dict={self.input_modelb: tar, self.input_modela: res_t,lr_d:lr_d_opt3})
+                                      feed_dict={self.input_modelb: tar, self.input_modela: res_t,lr_d:lr_d_opt3,self.tts:ttm})
                     # G-netの学習
                     self.sess.run([g_optim, self.update_ops],
-                                  feed_dict={self.input_modela: res_t, self.input_modelb: tar, lr_g: lr_g_opt3})
+                                  feed_dict={self.input_modela: res_t, self.input_modelb: tar, lr_g: lr_g_opt3,self.tts:ttm})
                     # saving tensorboard
                     # tensorboardの保存
                     counter+=1
 
             #saving model
             #モデルの保存
-            self.save(self.args["checkpoint_dir"], epoch,self.saver)
-            if epoch%self.args["save_interval"]==0 and test_mfcc<best:
+            if epoch % self.args["save_interval"] == 0:
+                self.save(self.args["checkpoint_dir"], epoch,self.saver)
+            if epoch%self.args["save_interval"]==0 and test_score<best:
                 self.save(self.args["best_checkpoint_dir"], epoch,self.saver2)
-                best=test_mfcc
+                best=test_score
             #console outputs
             count = counter + ti * epoch
             taken_time = time.time() - start_time
@@ -581,7 +584,7 @@ class Model:
             if T==T_cur:
                 # T=T//2
                 T_cur=0
-                T_pow*=0.5
+                T_pow*=0.9
             # elif epoch%self.args["save_interval"]==0 and test_mfcc<ch :
             #     ch -= 5000
             #     T_cur=0

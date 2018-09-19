@@ -3,6 +3,8 @@
   <component name="ChangeListManager">
     <list default="true" id="bcabb495-93d4-437a-b14b-9cb2802ec5b1" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/VRC/model/model.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/model/model.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/VRC/model/model_train.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/model/model_train.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/VRC/setting.json" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/setting.json" afterDir="false" />
     </list>
     <ignored path="C:\Users\tadop\git\vrc\.idea\shelf/" />
@@ -17,7 +19,7 @@
     <session id="715546864">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
-          <entry key="project.closed" value="25" />
+          <entry key="project.closed" value="29" />
           <entry key="project.open.time.10" value="4" />
           <entry key="project.open.time.11" value="3" />
           <entry key="project.open.time.12" value="4" />
@@ -25,20 +27,23 @@
           <entry key="project.open.time.17" value="1" />
           <entry key="project.open.time.20" value="1" />
           <entry key="project.open.time.21" value="1" />
+          <entry key="project.open.time.235" value="1" />
           <entry key="project.open.time.24" value="1" />
           <entry key="project.open.time.28" value="1" />
           <entry key="project.open.time.3" value="1" />
           <entry key="project.open.time.30" value="3" />
-          <entry key="project.open.time.32" value="2" />
+          <entry key="project.open.time.32" value="3" />
           <entry key="project.open.time.34" value="1" />
           <entry key="project.open.time.38" value="1" />
           <entry key="project.open.time.39" value="1" />
           <entry key="project.open.time.40" value="1" />
+          <entry key="project.open.time.45" value="1" />
           <entry key="project.open.time.47" value="1" />
           <entry key="project.open.time.53" value="1" />
           <entry key="project.open.time.61" value="1" />
+          <entry key="project.open.time.66" value="1" />
           <entry key="project.open.time.9" value="1" />
-          <entry key="project.opened" value="31" />
+          <entry key="project.opened" value="35" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
@@ -47,7 +52,7 @@
           <entry key="gitignore" value="1" />
           <entry key="json" value="4" />
           <entry key="md" value="1" />
-          <entry key="py" value="27" />
+          <entry key="py" value="28" />
           <entry key="xml" value="2" />
         </counts>
       </usages-collector>
@@ -56,7 +61,7 @@
           <entry key="JSON" value="4" />
           <entry key="Markdown" value="1" />
           <entry key="PLAIN_TEXT" value="9" />
-          <entry key="Python" value="27" />
+          <entry key="Python" value="28" />
           <entry key="XML" value="2" />
         </counts>
       </usages-collector>
@@ -64,18 +69,18 @@
         <counts>
           <entry key="dummy" value="4" />
           <entry key="gitignore" value="5" />
-          <entry key="json" value="2013" />
+          <entry key="json" value="2125" />
           <entry key="md" value="643" />
-          <entry key="py" value="4616" />
-          <entry key="txt" value="2193" />
+          <entry key="py" value="5032" />
+          <entry key="txt" value="2194" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="JSON" value="2013" />
+          <entry key="JSON" value="2125" />
           <entry key="Markdown" value="643" />
-          <entry key="PLAIN_TEXT" value="2202" />
-          <entry key="Python" value="4616" />
+          <entry key="PLAIN_TEXT" value="2203" />
+          <entry key="Python" value="5032" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.vcs.git.usages" />
@@ -86,8 +91,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/model/model_train.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="208">
-              <caret line="552" column="36" selection-start-line="552" selection-start-column="36" selection-end-line="552" selection-end-column="36" />
+            <state relative-caret-position="168">
+              <caret line="566" column="54" selection-start-line="566" selection-start-column="54" selection-end-line="566" selection-end-column="54" />
             </state>
           </provider>
         </entry>
@@ -95,8 +100,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/VRC/setting.json">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="80">
-              <caret line="5" column="26" selection-start-line="5" selection-start-column="26" selection-end-line="5" selection-end-column="26" />
+            <state relative-caret-position="176">
+              <caret line="11" column="27" selection-start-line="11" selection-start-column="27" selection-end-line="11" selection-end-column="27" />
             </state>
           </provider>
         </entry>
@@ -104,8 +109,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/model/model.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="848">
-              <caret line="65" column="24" selection-start-line="65" selection-start-column="24" selection-end-line="65" selection-end-column="24" />
+            <state relative-caret-position="64">
+              <caret line="88" column="116" selection-start-line="88" selection-start-column="116" selection-end-line="88" selection-end-column="116" />
             </state>
           </provider>
         </entry>
@@ -165,7 +170,6 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -201,18 +205,13 @@
               <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
               <item name="vrc" type="462c0819:PsiDirectoryNode" />
               <item name="VRC" type="462c0819:PsiDirectoryNode" />
-              <item name="model" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
-              <item name="vrc" type="462c0819:PsiDirectoryNode" />
-              <item name="VRC" type="462c0819:PsiDirectoryNode" />
               <item name="utils" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
         </subPane>
       </pane>
+      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -311,13 +310,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1534034935853</updated>
-    </task>
-    <task id="LOCAL-00067" summary="[4.2.160] B1実験&#10;&#10;[fix] batch_size を1に">
-      <created>1535343136965</created>
-      <option name="number" value="00067" />
-      <option name="presentableId" value="LOCAL-00067" />
-      <option name="project" value="LOCAL" />
-      <updated>1535343136965</updated>
     </task>
     <task id="LOCAL-00068" summary="[4.2.170] Stackingの廃止&#10;&#10;[fix] スタッキングを廃止&#10;[fix] Lr_Decayを100に">
       <created>1535348578183</created>
@@ -655,7 +647,14 @@
       <option name="project" value="LOCAL" />
       <updated>1537020166567</updated>
     </task>
-    <option name="localTasksCounter" value="116" />
+    <task id="LOCAL-00116" summary="[5.6.076] パラメータの変更">
+      <created>1537023254260</created>
+      <option name="number" value="00116" />
+      <option name="presentableId" value="LOCAL-00116" />
+      <option name="project" value="LOCAL" />
+      <updated>1537023254260</updated>
+    </task>
+    <option name="localTasksCounter" value="117" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -704,7 +703,6 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[5.6.013] レイヤー数の変更&#10;&#10;[fix] 8に変更" />
     <MESSAGE value="[5.6.014] レイヤー数の変更&#10;&#10;[fix] 8に変更" />
     <MESSAGE value="[5.6.015] Densenetの実装&#10;&#10;[fix] densenet(k=16)を作成" />
     <MESSAGE value="[5.6.016] Densenetの修正&#10;&#10;[fix] 結合のミスを修正" />
@@ -729,7 +727,8 @@
     <MESSAGE value="[5.6.059] 層の変更&#10;&#10;[fix] 16に変更" />
     <MESSAGE value="[5.6.065] shakedropの変更&#10;&#10;[fix] batch-&gt;pixel" />
     <MESSAGE value="[5.6.075] パラメータの変更" />
-    <option name="LAST_COMMIT_MESSAGE" value="[5.6.075] パラメータの変更" />
+    <MESSAGE value="[5.6.076] パラメータの変更" />
+    <option name="LAST_COMMIT_MESSAGE" value="[5.6.076] パラメータの変更" />
   </component>
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/ui.lnf.xml" />
@@ -812,24 +811,31 @@
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/logs/[glr=0.1,gb=0.5,dlr=0.0002,db=0.5]wave2wave5.6.061/events.out.tfevents.1536991202.DESKTOP-QFC16G3" />
+    <entry file="file://$USER_HOME$/AppData/Local/Programs/Python/Python36/Lib/site-packages/tensorflow/python/keras/engine/base_layer.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="160">
+          <caret line="1411" selection-start-line="1411" selection-end-line="1411" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/VRC/model/model.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="848">
-          <caret line="65" column="24" selection-start-line="65" selection-start-column="24" selection-end-line="65" selection-end-column="24" />
+        <state relative-caret-position="64">
+          <caret line="88" column="116" selection-start-line="88" selection-start-column="116" selection-end-line="88" selection-end-column="116" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/model/model_train.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="208">
-          <caret line="552" column="36" selection-start-line="552" selection-start-column="36" selection-end-line="552" selection-end-column="36" />
+        <state relative-caret-position="168">
+          <caret line="566" column="54" selection-start-line="566" selection-start-column="54" selection-end-line="566" selection-end-column="54" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/setting.json">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="80">
-          <caret line="5" column="26" selection-start-line="5" selection-start-column="26" selection-end-line="5" selection-end-column="26" />
+        <state relative-caret-position="176">
+          <caret line="11" column="27" selection-start-line="11" selection-start-column="27" selection-end-line="11" selection-end-column="27" />
         </state>
       </provider>
     </entry>
