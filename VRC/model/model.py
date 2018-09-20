@@ -38,16 +38,14 @@ def generator(ten,reuse,train):
 
     for i in range(res):
         #inception resblock
-
-        # 1st block(3*9)
-        tenA= tf.layers.conv2d(ten, 32, [3, 5], [1, 1], padding="SAME",
+        tenA =tf.layers.conv2d(ten, 32, [3, 5], [1, 1], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=False,
-                               data_format="channels_last", reuse=reuse, name="res_conv_C_" + str(i))
+                               data_format="channels_last", reuse=reuse, name="res_conv_A_" + str(i))
 
-        # 2nd block(dense)
-        tenB =tf.layers.conv2d(ten, 32, [1, 1], [1, 1], padding="SAME",
-                               kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=False,
-                               data_format="channels_last", reuse=reuse, name="res_conv_D_" + str(i))
+        tenB = tf.layers.conv2d(ten, 32, [1, 1], [1, 1], padding="SAME",
+                                kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=False,
+                                data_format="channels_last", reuse=reuse, name="res_conv_B_" + str(i))
+
         tenB=tf.transpose(tenB,[0,1,3,2])
         r=tenB.get_shape()[-1]
         tenB=tf.layers.dense(tenB, r,use_bias=False,kernel_initializer=tf.random_normal_initializer(stddev=0.02)
@@ -55,7 +53,7 @@ def generator(ten,reuse,train):
         tenB = tf.transpose(tenB, [0, 1, 3, 2])
 
         # concatnate and BatchNormalization
-        tenG=tf.concat([tenA,tenB],axis=3)
+        tenG = tf.concat([tenA,tenB],axis=3)
         tenG = tf.layers.batch_normalization(tenG, axis=3, training=train, trainable=True, reuse=reuse,
                                              name="res_bn_" + str(i))
 
@@ -67,7 +65,7 @@ def generator(ten,reuse,train):
         tenG = tf.nn.relu(tenG)
 
         # adding skip-connection
-        ten=ten+tenG
+        ten=tenG+ten
 
     # decodeing
 

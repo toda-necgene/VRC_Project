@@ -3,7 +3,7 @@
         "checkpoint_dir":"./trained_models/",
         "best_checkpoint_dir":"./best_model/",
         "wave_otp_dir":"./havests/",
-        "version":"1.0.16"
+        "version":"2344dataset"
     },
     "training_config":{
         "train_epoch": 1600,
@@ -13,15 +13,15 @@
         "test_data_dir":"./datasets/test",
         "g_lr_max":2e-4,
         "d_lr_max":2e-4,
-        "g_lr_min":1e-6,
-        "d_lr_min":1e-6,
+        "g_lr_min":1e-5,
+        "d_lr_min":1e-5,
         "g_b1":0.5,
         "d_b1":0.5,
         "lr_decay_term":100,
         "save_interval":10,
         "weight_GAN":1.0,
         "weight_Cycle_Pow":50.0,
-        "weight_Cycle_Pha":100.0
+        "weight_Cycle_Pha":120.0
     },
     "plugin_config":{
         "test":true,

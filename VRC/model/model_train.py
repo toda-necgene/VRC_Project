@@ -289,7 +289,6 @@ class Model:
         T=self.args["lr_decay_term"]
 
         # naming output-directory
-        self.lod="[glr="+str(lr_g_opt_max)+",gb="+str(beta_g_opt)+",dlr="+str(lr_d_opt_max)+",db="+str(beta_d_opt)+"]"
         lr_g = tf.placeholder(tf.float32, None, name="g_lr")
         lr_d = tf.placeholder(tf.float32, None, name="d_lr")
         g_optim = tf.train.AdamOptimizer(lr_g, beta_g_opt, beta_2_g_opt).minimize(self.g_loss,
@@ -301,7 +300,7 @@ class Model:
 
         # logging
         if self.args["tensorboard"]:
-            self.writer = tf.summary.FileWriter("./logs/"+self.lod+self.args["name_save"], self.sess.graph)
+            self.writer = tf.summary.FileWriter("./logs/"+self.args["name_save"], self.sess.graph)
 
         # loading net
         if self.load():
