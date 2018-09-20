@@ -431,7 +431,7 @@ class Model:
         otp_im[:,:, :, 0] = np.clip((otp_im[:, :, :, 0] + 10.0) / 20.0, 0.0, 1.0)
         otp_im[:,:, :, 1] = np.clip((otp_im[:, :, :, 1] + 3.15) / 6.30, 0.0, 1.0)
         r = min(self.label_spectrum.shape[0], im.shape[0])
-        test_score = np.sum(np.abs(self.label_spectrum[:r, :, 0] - im[:r, :, 0]))
+        test_score = np.mean(np.abs(self.label_spectrum[:r, :, 0] - im[:r, :, 0]))
 
         # writing epoch-result into tensorboard
         if self.args["tensorboard"]:

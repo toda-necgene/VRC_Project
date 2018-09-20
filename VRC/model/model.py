@@ -23,8 +23,8 @@ def generator(ten,reuse,train):
     # setting paramater
     times=4
     res=8
-    chs_enc=[16,32,64,128]
-    chs_dec=[64,16,4,1]
+    chs_enc=[4,8,16,32]
+    chs_dec=[16,8,4,1]
 
     for i in range(times):
         # Encoding
@@ -39,25 +39,30 @@ def generator(ten,reuse,train):
         #inception resblock
 
         # 1st block(3*3)
-        tenA = tf.layers.conv2d(ten, 32, [3, 3], [1, 1], padding="SAME",
+        tenA = tf.layers.conv2d(ten, 8, [3, 3], [1, 1], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=False,
                                data_format="channels_last", reuse=reuse, name="res_conv_A_" + str(i))
 
         # 2nd block(3*5)
-        tenB = tf.layers.conv2d(ten, 32 , [3, 5], [1, 1], padding="SAME",
+        tenB = tf.layers.conv2d(ten, 8 , [3, 5], [1, 1], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=False,
                                data_format="channels_last", reuse=reuse, name="res_conv_B_" + str(i) )
 
 
         # 3rd block(1*9)
-        tenC= tf.layers.conv2d(ten, 32, [1, 9], [1, 1], padding="SAME",
+        tenC= tf.layers.conv2d(ten, 8, [1, 9], [1, 1], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=False,
                                data_format="channels_last", reuse=reuse, name="res_conv_C_" + str(i))
 
-        # 4th block(1*7)
-        tenD =tf.layers.conv2d(ten, 32, [1, 7], [1, 1], padding="SAME",
+        # 4th block(dense)
+        tenD =tf.layers.conv2d(ten, 8, [1, 1], [1, 1], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=False,
                                data_format="channels_last", reuse=reuse, name="res_conv_D_" + str(i))
+        tenD=tf.transpose(tenD,[0,1,3,2])
+        r=tenD.get_shape()[-1]
+        tenD=tf.layers.dense(tenD, r,use_bias=False,kernel_initializer=tf.random_normal_initializer(stddev=0.02)
+                             , reuse=reuse, name="res_dens_D_" + str(i))
+        tenD = tf.transpose(tenD, [0, 1, 3, 2])
 
         # concatnate and BatchNormalization
         tenG=tf.concat([tenA,tenB,tenC,tenD],axis=3)

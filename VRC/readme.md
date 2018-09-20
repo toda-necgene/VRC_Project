@@ -26,6 +26,5 @@ python3 VRC \[command\] \[option\]
 - cupy(4.0.0)
 - pyaudio(0.2.11)
 - matplotlib(2.1.2)
-- hyperdash(0.15.2)
 ##ライセンス
 MIT
