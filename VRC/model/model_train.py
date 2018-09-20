@@ -124,9 +124,9 @@ class Model:
                 fake_bA_image = generator(input_model_B_fixed, reuse=None, train=True)
 
             with tf.variable_scope("generator_2",reuse=True):
-                fake_Ba_image = generator(fake_aB_image, reuse=True,train=True)
+                fake_Ba_image = generator(back_drop(fake_aB_image,0.8), reuse=True,train=True)
             with tf.variable_scope("generator_1",reuse=True):
-                fake_Ab_image = generator(fake_bA_image, reuse=True,train=True)
+                fake_Ab_image = generator(back_drop(fake_bA_image,0.8), reuse=True,train=True)
 
         #creating discriminator
         with tf.variable_scope("discrims"):
@@ -358,10 +358,12 @@ class Model:
         # initializing training infomation
         start_time = time.time()
         start_time_all=time.time()
-        lr_d_culced = lr_d_opt_max
-        lr_g_culced = lr_g_opt_max
 
         for epoch in range(self.args["train_epoch"]):
+
+            # calculating learning-rate
+            lr_d_culced = lr_d_opt_min + (lr_d_opt_max - lr_d_opt_min)*np.cos(np.pi*0.5*(T_cur/T)) * T_pow
+            lr_g_culced = lr_g_opt_min + (lr_g_opt_max - lr_g_opt_min)*np.cos(np.pi*0.5*(T_cur/T)) * T_pow
 
             # shuffling train_data_index
             np.random.shuffle(index_list)
@@ -371,8 +373,6 @@ class Model:
 
             if self.args["test"] and epoch%self.args["save_interval"]==0:
                self.test_and_save(epoch)
-
-            print(" [I] Epoch %3d started" % epoch)
 
             for idx in xrange(0, self.batch_idxs):
                 start_preparing = time.time()
@@ -400,27 +400,24 @@ class Model:
             eta=np.mean(tt_list)*(self.args["train_epoch"]-epoch-1)
 
             # console outputs
-            print(" [I] Epoch %04d / %04d finished in %03.2f (preprocess %02.3f) ETA: %02d:%02d:%02.1f" % (epoch,self.args["train_epoch"],taken_time,taken_time,eta//3600,eta//60%60,eta%60))
+            print(" [I] Epoch %04d / %04d finished. ETA: %02d:%02d:%02d takes %3.2f secs(preprocess %2.3f secs)" % (epoch,self.args["train_epoch"],eta//3600,eta//60%60,int(eta%60),taken_time,prepareing_time_total))
 
             T_cur += 1
 
             # update learning_rate
             if T==T_cur:
+                T=T*2
                 T_cur=0
                 T_pow*=0.5
-                # calculating learning-rate
-                lr_d_culced = lr_d_opt_min + (lr_d_opt_max - lr_d_opt_min) * T_pow
-                lr_g_culced = lr_g_opt_min + (lr_g_opt_max - lr_g_opt_min) * T_pow
+
         self.test_and_save(self.args["train_epoch"])
         tnt=time.time()-start_time_all
         hour_f=tnt//3600
         minute_f=tnt//60%60
-        second_f=tnt%60
-        print(" [I] All finished successfully!! in %04d : %02d : %02.5f"%(hour_f,minute_f,second_f))
+        second_f=int(tnt%60)
+        print(" [I] All finished successfully!! in %04d : %02d : %02d"%(hour_f,minute_f,second_f))
 
     def test_and_save(self,epoch):
-
-        print(" [I] Epoch %3d testing" % epoch)
 
         # last testing
         out_puts, im, taken_time_test = self.convert(self.test)
@@ -461,7 +458,7 @@ class Model:
             plt.savefig(path + ".png")
             upload(out_puts, path)
 
-        print(" [I] Epoch %3d tested in %3.3f" % (epoch, taken_time_test))
+        print(" [I] Epoch %04d tested. score: %2.3f " % (epoch, test_score))
 
         self.save(self.args["checkpoint_dir"], epoch, self.saver)
         if test_score < self.best:
@@ -533,6 +530,13 @@ class Model:
         lats[0, :]=redi
         spec = np.reshape(v + lats, (-1))
         return spec,reds
+def back_drop(ten,rate):
+    s = ten.get_shape()
+    prop = tf.random_uniform(s, 0.0, 1.0) + rate
+    prop = tf.floor(prop)
+    tenA = ten * prop
+    tenB = ten * (1 - prop)
+    return tenA+tf.stop_gradient(tenB)
 
 def nowtime():
     return datetime.now().strftime("%Y_%m_%d %H_%M_%S")

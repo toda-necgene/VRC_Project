@@ -104,7 +104,7 @@ class Model:
         with tf.variable_scope("generators"):
 
             with tf.variable_scope("generator_1"):
-                self.fake_aB_image_testa,_ = generator(self.input_model_testa, reuse=None, train=False)
+                self.fake_aB_image_testa = generator(self.input_model_testa, reuse=None, train=False)
                 self.fake_aB_image_test=10*self.fake_aB_image_testa
 
         #saver
