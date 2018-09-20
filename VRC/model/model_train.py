@@ -5,94 +5,93 @@ import time
 from six.moves import xrange
 import numpy as np
 import wave
-import librosa,sklearn
 from tensorflow.python import debug as tf_debug
 from tensorflow.python.debug.lib.debug_data import has_inf_or_nan
 import pyaudio
-from hyperdash import Experiment
 from datetime import datetime
 import json
-import shutil
-import cupy
-import dropbox
 from .model import discriminator,generator
 import matplotlib.pyplot as plt
+
 class Model:
     def __init__(self,path):
+
+
         self.args=dict()
-        self.args["checkpoint_dir"]="./trained_models"
-        self.args["best_checkpoint_dir"]="./trained_models2"
-        self.args["wave_otp_dir"] = "False"
-        self.args["test_data_dir"] ="None"
-        self.args["batch_size"]=1
-        self.args["depth"] =[4]
-        self.args["d_depth"] = 4
-        self.args["train_epoch"]=500
-        self.args["start_epoch"]=0
-        self.args["test"]=True
-        self.args["tensorboard"]=False
-        self.args["hyperdash"]=False
-        self.args["input_size"] = 8192
-        self.args["weight_Cycle_Pow"]=1.0
-        self.args["weight_Cycle_Fre"]=1.0
-        self.args["weight_GAN"] = 1.0
-        self.args["NFFT"]=1024
-        self.args["debug"] = False
-        self.args["cupy"] = False
-        self.args["D_channels"] =[2]
-        self.args["G_channels"] = [32]
+
+        # default setting
         self.args["model_name"] = "wave2wave"
         self.args["version"] = "1.0.0"
+
+        self.args["checkpoint_dir"]="./trained_models"
+        self.args["best_checkpoint_dir"]="./best_model"
+        self.args["wave_otp_dir"] = "./havests"
+        self.args["train_data_dir"]="./datasets/train"
+        self.args["test_data_dir"] ="./datasets/test"
+
+        self.args["test"]=True
+        self.args["tensorboard"]=True
+        self.args["debug"] = False
+
+        self.args["batch_size"] = 8
+        self.args["input_size"] = 4096
+        self.args["NFFT"]=1024
+
         self.args["g_lr_max"]=2e-4
-        self.args["g_lr_min"] = 2e-8
+        self.args["g_lr_min"] = 2e-6
         self.args["d_lr_max"] = 2e-4
-        self.args["d_lr_min"] = 2e-8
+        self.args["d_lr_min"] = 2e-6
         self.args["g_b1"] = 0.5
         self.args["g_b2"] = 0.999
         self.args["d_b1"] = 0.5
         self.args["d_b2"] = 0.999
-        self.args["train_interval"]=10
-        self.args["save_interval"]=1
-        self.args["test_dir"] = "./test"
-        self.args["dropbox"]="False"
-        self.args["dilations"]=[1]
-        self.args["dilation_size"]=7
-        self.args["repeatations"]=1
-        self.args["lr_decay_term"]=100
-        self.args["train_data_dir"]="./train/Model/datasets/train/"
-        if os.path.exists(path):
-            try:
-                with open(path, "r") as f:
-                    dd = json.load(f)
-                    keys = dd.keys()
-                    for j in keys:
-                        data = dd[j]
-                        keys2 = data.keys()
-                        for k in keys2:
-                            if k in self.args:
-                                if type(self.args[k]) == type(data[k]):
-                                    self.args[k] = data[k]
-                                else:
-                                    print(
-                                        " [!] Argumet \"" + k + "\" is incorrect data type. Please change to \"" + str(
-                                            type(self.args[k])) + "\"")
-                            elif k[0] == "#":
-                                pass
-                            else:
-                                print(" [!] Argument \"" + k + "\" is not exsits.")
+        self.args["weight_Cycle_Pow"]=100.0
+        self.args["weight_Cycle_Pha"]=100.0
+        self.args["weight_GAN"] = 1.0
+        self.args["train_epoch"]=1000
+        self.args["start_epoch"]=0
+        self.args["save_interval"]=10
+        self.args["lr_decay_term"]=20
 
-            except json.JSONDecodeError as e:
-                 print(' [x] JSONDecodeError: ', e)
-        else:
-            print( " [!] Setting file is not found")
+        # reading json file
+        try:
+            with open(path, "r") as f:
+                dd = json.load(f)
+                keys = dd.keys()
+                for j in keys:
+                    data = dd[j]
+                    keys2 = data.keys()
+                    for k in keys2:
+                        if k in self.args:
+                            if type(self.args[k]) == type(data[k]):
+                                self.args[k] = data[k]
+                            else:
+                                print(
+                                    " [W] Argumet \"" + k + "\" is incorrect data type. Please change to \"" + str(
+                                        type(self.args[k])) + "\"")
+                        elif k[0] == "#":
+                            pass
+                        else:
+                            print(" [W] Argument \"" + k + "\" is not exsits.")
+
+        except json.JSONDecodeError as e:
+            print(" [W] JSONDecodeError: ", e)
+            print(" [W] Use default setting")
+        except FileNotFoundError:
+            print(" [W] Setting file is not found :", path)
+            print(" [W] Use default setting")
+
+        # initializing paramaters
         self.args["SHIFT"] = self.args["NFFT"]//2
         self.args["name_save"] = self.args["model_name"] + self.args["version"]
-        ss=self.args["input_size"]//self.args["SHIFT"]+self.args["dilation_size"]
-        self.input_size_model=[self.args["batch_size"],ss+self.args["dilation_size"],self.args["NFFT"]//2,2]
-        # self.input_size_test = [None, ss, self.args["NFFT"] // 2, 2]
+
+        # shapes of inputs
+        ss=self.args["input_size"]//self.args["SHIFT"]
+        self.input_size_model=[self.args["batch_size"],ss,self.args["NFFT"]//2,2]
         self.input_size_test = [1, ss, self.args["NFFT"] // 2, 2]
-        print("model input size:"+str(self.input_size_model))
+
         self.sess=tf.InteractiveSession(config=tf.ConfigProto(gpu_options=tf.GPUOptions()))
+
         if bool(self.args["debug"]):
             self.sess=tf_debug.LocalCLIDebugWrapperSession(self.sess)
             self.sess.add_tensor_filter('has_inf_or_nan', has_inf_or_nan)
@@ -100,243 +99,182 @@ class Model:
             self.args["wave_otp_dir"]=self.args["wave_otp_dir"]+ self.args["name_save"]+"/"
             if not os.path.exists(self.args["wave_otp_dir"]):
                 os.makedirs(self.args["wave_otp_dir"])
-            shutil.copy(path,self.args["wave_otp_dir"]+"setting.json")
-            self.args["log_file"]=self.args["wave_otp_dir"]+"log.txt"
-        if self.args["dropbox"]!="False":
-            self.dbx=dropbox.Dropbox(self.args["dropbox"])
-            self.dbx.users_get_current_account()
 
-        else:
-            self.dbx=None
-        self.checkpoint_dir = self.args["checkpoint_dir"]
         self.build_model()
     def build_model(self):
 
         #inputs place holder
-        #入力
-        self.input_modela=tf.placeholder(tf.float32, self.input_size_model, "inputs_G-net_A")
-        self.input_modelb = tf.placeholder(tf.float32, self.input_size_model, "inputs_G-net_B")
-        self.input_model_test = tf.placeholder(tf.float32, self.input_size_test, "inputs_G-net_A")
-        self.tts=tf.placeholder(tf.float32,shape=[1],name="time_of_training")
-        self.input_modela1 = self.input_modela[:, -8:, :, :]*0.1
-        self.input_modelb1 = self.input_modelb[:, -8:, :, :]*0.1
-        self.input_model_tests=self.input_model_test[:,-8:,:,:]*0.1
-        self.training=tf.placeholder(tf.float32,[1],name="Training")
+        self.input_model_A=tf.placeholder(tf.float32, self.input_size_model, "inputs_G-net_A")
+        self.input_model_B = tf.placeholder(tf.float32, self.input_size_model, "inputs_G-net_B")
+        self.input_model_test = tf.placeholder(tf.float32, self.input_size_test, "inputs_G-net_test")
+
+        input_model_A_fixed = self.input_model_A*0.1
+        input_model_B_fixed = self.input_model_B*0.1
+        input_model_test_fixed=self.input_model_test*0.1
+
         #creating generator
-        #G-net（生成側）の作成
         with tf.variable_scope("generators"):
 
             with tf.variable_scope("generator_1"):
-                self.fake_aB_image12,ax1 = generator(self.input_modela1, reuse=None,
-                                              chs=self.args["G_channels"], depth=self.args["depth"], d=self.args["dilations"],train=True,r=self.args["repeatations"],training_time=self.tts)
+                fake_aB_image= generator(input_model_A_fixed, reuse=None, train=True)
 
-                fake_aB_imag_test ,_= generator(self.input_model_tests, reuse=True,
-                                                chs=self.args["G_channels"], depth=self.args["depth"],
-                                                d=self.args["dilations"],
-                                                train=False,r=self.args["repeatations"])
-                self.fake_aB_image_test=fake_aB_imag_test*10
+                fake_aB_image_test_fixed= generator(input_model_test_fixed, reuse=True, train=False)
+                self.fake_aB_image_test=fake_aB_image_test_fixed*10
             with tf.variable_scope("generator_2"):
-                self.fake_bA_image12,bx1 = generator(self.input_modelb1, reuse=None,
-                                              chs=self.args["G_channels"], depth=self.args["depth"],d=self.args["dilations"],train=True,r=self.args["repeatations"],training_time=self.tts)
-            self.fake_aB_image = self.fake_aB_image12
-            self.fake_bA_image = self.fake_bA_image12
+                fake_bA_image = generator(input_model_B_fixed, reuse=None, train=True)
 
             with tf.variable_scope("generator_2",reuse=True):
-                self.fake_Ba_image,_ = generator(self.fake_aB_image, reuse=True,
-                                              chs=self.args["G_channels"], depth=self.args["depth"], d=self.args["dilations"],train=True,r=self.args["repeatations"],training_time=self.tts)
+                fake_Ba_image = generator(fake_aB_image, reuse=True,train=True)
             with tf.variable_scope("generator_1",reuse=True):
-                self.fake_Ab_image,_ = generator(self.fake_bA_image, reuse=True,
-                                               chs=self.args["G_channels"], depth=self.args["depth"],d=self.args["dilations"],train=True,r=self.args["repeatations"],training_time=self.tts)
+                fake_Ab_image = generator(fake_bA_image, reuse=True,train=True)
 
-        ff=self.args["input_size"]//self.args["SHIFT"]
-        a_true_noised=self.input_modela1[:,-ff:,:,:]
-        b_true_noised = self.input_modelb1[:,-ff:,:,:]
-
-        #creating discriminator inputs
-        #D-netの入力の作成
         #creating discriminator
-        #D-net（判別側)の作成
-        self.d_judge_F_logits=[]
         with tf.variable_scope("discrims"):
 
             with tf.variable_scope("discrimB"):
-                self.d_judge_BR= discriminator(b_true_noised, None, self.args["d_depth"],
-                                                                       self.args["D_channels"])
-
-                self.d_judge_BF = discriminator(self.fake_aB_image12, True, self.args["d_depth"],
-                                                                       self.args["D_channels"])
-                self.d_judge_BF2 = list()
-                for bnbn in ax1:
-                    self.d_judge_BF2.append(discriminator(bnbn, True, self.args["d_depth"],
-                                                    self.args["D_channels"]))
+                d_judge_BR= discriminator(input_model_B_fixed, None)
+                d_judge_BF = discriminator(fake_aB_image, True)
 
             with tf.variable_scope("discrimA"):
-                self.d_judge_AR = discriminator(a_true_noised, None,  self.args["d_depth"],
-                                                                        self.args["D_channels"])
-                self.d_judge_AF = discriminator(self.fake_bA_image12, True,  self.args["d_depth"],
-                                                                        self.args["D_channels"])
-                self.d_judge_AF2=list()
-                for bnbn in bx1:
-                    self.d_judge_AF2.append(discriminator(bnbn, True, self.args["d_depth"],
-                                                    self.args["D_channels"]))
-
+                d_judge_AR = discriminator(input_model_A_fixed, None)
+                d_judge_AF = discriminator(fake_bA_image, True)
 
         #getting individual variabloes
-        #それぞれの変数取得
         self.g_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"generators")
-
         self.d_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"discrims")
-        #objective-functions of discriminator
-        #D-netの目的関数
-        self.d_loss_AR = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.ones([self.args["batch_size"],1]),predictions=self.d_judge_AR))
-        self.d_loss_AF = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.zeros([self.args["batch_size"],1]),predictions=self.d_judge_AF))
-        self.d_loss_AF2=list()
-        for n in self.d_judge_AF2:
-            self.d_loss_AF2.append(tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.zeros([self.args["batch_size"], 1]), predictions=n)))
-        # self.d_loss_AF2 =tf.add_n(self.d_loss_AF2)
-        self.d_loss_BR = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.ones([self.args["batch_size"],1]), predictions=self.d_judge_BR))
-        self.d_loss_BF = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.zeros([self.args["batch_size"],1]),predictions=self.d_judge_BF))
-        self.d_loss_BF2=list()
-        for n in self.d_judge_BF2:
-            self.d_loss_BF2.append(tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.zeros([self.args["batch_size"], 1]), predictions=n)))
-        # self.d_loss_BF2 = tf.add_n(self.d_loss_BF2)
-        self.d_lossA=(self.d_loss_AR+self.d_loss_AF)
-        self.d_lossB= (self.d_loss_BR + self.d_loss_BF)
-        # dl2norm=tf.add_n([tf.nn.l2_loss(w) for w in self.d_vars])*1e-4
-        self.d_loss=self.d_lossA+self.d_lossB
-        # objective-functions of generator
-        # G-netの目的関数
+        self.update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 
-        # L1 norm lossA
-        saa=tf.reduce_mean(tf.losses.mean_squared_error(predictions=self.fake_Ba_image[:,:,:,0],labels=self.input_modela1[:,-ff:,:,0]))* self.args["weight_Cycle_Pow"]
-        sbb=tf.reduce_mean(tf.losses.mean_squared_error(predictions=self.fake_Ba_image[:,:,:,1],labels=self.input_modela1[:,-ff:,:,1]))* self.args["weight_Cycle_Fre"]
-        L1B=0.5*(saa+sbb)
+        #objective-functions of discriminator
+        d_loss_AR = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.ones_like( d_judge_AR),predictions=d_judge_AR))
+        d_loss_AF = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.zeros_like(d_judge_AF),predictions=d_judge_AF))
+        d_loss_BR = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.ones_like( d_judge_BR),predictions=d_judge_BR))
+        d_loss_BF = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.zeros_like(d_judge_BF),predictions=d_judge_BF))
+
+        d_loss_A=d_loss_AR + d_loss_AF
+        d_loss_B=d_loss_BR + d_loss_BF
+        self.d_loss=d_loss_A + d_loss_B
+
+
+        # objective-functions of generator
+
+        # Cycle lossA
+        g_loss_cyc_A_pow=tf.reduce_mean(tf.losses.mean_squared_error(predictions=fake_Ba_image[:,:,:,0],labels=input_model_A_fixed[:,:,:,0]))* self.args["weight_Cycle_Pow"]
+        g_loss_cyc_A_pha=tf.reduce_mean(tf.losses.mean_squared_error(predictions=fake_Ba_image[:,:,:,1],labels=input_model_A_fixed[:,:,:,1]))* self.args["weight_Cycle_Pha"]
+        g_loss_cyc_A=0.5*(g_loss_cyc_A_pow+g_loss_cyc_A_pha)
+
+        # Gan lossB
+        g_loss_gan_B = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_BF),predictions=d_judge_BF))* self.args["weight_GAN"]
+
+        # generator lossA
+        self.g_loss_aB = g_loss_cyc_A +g_loss_gan_B
+
+
+        # Cyc lossB
+        g_loss_cyc_B_pow=tf.reduce_mean(tf.losses.mean_squared_error(predictions=fake_Ab_image[:,:,:,0],labels=input_model_B_fixed[:,:,:,0]))* self.args["weight_Cycle_Pow"]
+        g_loss_cyc_B_pha=tf.reduce_mean(tf.losses.mean_squared_error(predictions=fake_Ab_image[:,:,:,1],labels=input_model_B_fixed[:,:,:,1] ))* self.args["weight_Cycle_Pha"]
+        g_loss_cyc_B = 0.5*(g_loss_cyc_B_pow+g_loss_cyc_B_pha)
 
         # Gan lossA
-        DSb = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.ones([self.args["batch_size"],1]),predictions=self.d_judge_BF))
-        DSb2= list()
-        for n in self.d_judge_BF2:
-            DSb2.append(tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.ones([self.args["batch_size"], 1]), predictions=n)))
-        # DSb2=tf.add_n(DSb2)
-        # generator lossA
-        self.g_loss_aB = L1B +DSb* self.args["weight_GAN"]
-        # L1 norm lossB
-        sa=tf.reduce_mean(tf.losses.mean_squared_error(predictions=self.fake_Ab_image[:,:,:,0],labels=self.input_modelb1[:,-ff:,:,0]))* self.args["weight_Cycle_Pow"]
-        sb=tf.reduce_mean(tf.losses.mean_squared_error(predictions=self.fake_Ab_image[:,:,:,1],labels=self.input_modelb1[:,-ff:,:,1] ))* self.args["weight_Cycle_Fre"]
-        L1bAAb = 0.5*(sa+sb)
-        # Gan loss
-        DSA = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.ones([self.args["batch_size"],1]),predictions=self.d_judge_AF))
-        DSA2=list()
-        for n in self.d_judge_AF2:
-            DSA2.append(tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.ones([self.args["batch_size"], 1]), predictions=n)))
-        # DSA2=tf.add_n(DSA2)
-        # L1UBA =16.0/(tf.abs(self.fake_bA_image[:,:,:,0]-self.fake_aB_image[:,:,:,0])+1e-8)
-        # L1UBA =tf.maximum(L1UBA,tf.ones_like(L1UBA))
+        g_loss_gan_A = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_AF),predictions=d_judge_AF))* self.args["weight_GAN"]
+
+        # generator lossB
+        self.g_loss_bA = g_loss_cyc_B + g_loss_gan_A
+
         # generator loss
-        self.g_loss_bA = L1bAAb + DSA * self.args["weight_GAN"]
         self.g_loss=self.g_loss_aB+self.g_loss_bA
-        #BN_UPDATE
-        self.update_ops=tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+
+
         #tensorboard functions
-        #tensorboard 表示用関数
-        self.g_loss_all= tf.summary.scalar("g_loss_cycle_A", tf.reduce_mean(L1bAAb),family="g_loss")
-        self.g_loss_gan = tf.summary.scalar("g_loss_gan_A", tf.reduce_mean(DSA),family="g_loss")
-        self.dscore = tf.summary.scalar("dscore_A", tf.reduce_mean(self.d_judge_AF),family="d_score")
-        self.g_loss_sum_1 = tf.summary.merge([self.g_loss_all, self.g_loss_gan, self.dscore])
+        g_loss_cyc_A_display= tf.summary.scalar("g_loss_cycle_A", tf.reduce_mean(g_loss_cyc_A),family="g_loss")
+        g_loss_gan_A_display = tf.summary.scalar("g_loss_gan_A", tf.reduce_mean(g_loss_gan_A),family="g_loss")
+        g_loss_sum_A_display = tf.summary.merge([g_loss_cyc_A_display, g_loss_gan_A_display])
 
-        self.g_loss_all2 = tf.summary.scalar("g_loss_cycle_B", tf.reduce_mean(L1B),family="g_loss")
-        self.g_loss_gan2 = tf.summary.scalar("g_loss_gan_B", tf.reduce_mean(DSb),family="g_loss")
-        self.dscore2 = tf.summary.scalar("dscore_B", tf.reduce_mean(self.d_judge_BF),family="d_score")
-        # self.g_loss_uba = tf.summary.scalar("g_loss_distAB", tf.reduce_mean(L1UBA), family="g_loss")
-        self.g_loss_sum_2 = tf.summary.merge([self.g_loss_all2, self.g_loss_gan2, self.dscore2])
+        g_loss_cyc_B_display = tf.summary.scalar("g_loss_cycle_B", tf.reduce_mean(g_loss_cyc_B),family="g_loss")
+        g_loss_gan_B_display = tf.summary.scalar("g_loss_gan_B", tf.reduce_mean(g_loss_gan_B),family="g_loss")
+        g_loss_sum_B_display = tf.summary.merge([g_loss_cyc_B_display,g_loss_gan_B_display])
 
-        self.d_loss_sumA = tf.summary.scalar("d_lossA", tf.reduce_mean(self.d_lossA),family="d_loss")
-        self.d_loss_sumB = tf.summary.scalar("d_lossB", tf.reduce_mean(self.d_lossB),family="d_loss")
+        d_loss_sum_A_display = tf.summary.scalar("d_lossA", tf.reduce_mean(d_loss_A),family="d_loss")
+        d_loss_sum_B_display = tf.summary.scalar("d_lossB", tf.reduce_mean(d_loss_B),family="d_loss")
 
-        self.result=tf.placeholder(tf.float32, [1,1,160000], name="FB")
-        self.result1 = tf.placeholder(tf.float32, [1,None,self.args["NFFT"],2], name="FBI0")
-        im1=tf.transpose(self.result1[:,:,:,:1],[0,2,1,3])
-        im2 = tf.transpose(self.result1[:, :, :, 1:], [0, 2, 1, 3])
-        self.fake_B_sum = tf.summary.audio("fake_B", tf.reshape(self.result,[1,160000,1]), 16000, 1)
-        self.fake_B_sum2 = tf.summary.image("fake_B_image01", im1, 1)
-        self.fake_B_sum3 = tf.summary.image("fake_B_image02", im2, 1)
-        self.g_test_epo=tf.placeholder(tf.float32,name="g_test_epoch_end")
-        self.g_test_epo2=tf.placeholder(tf.float32,name="g_test_epoch_end_mfcc")
-        self.g_test_epo3 = tf.placeholder(tf.float32, name="g_test_epoch_end_total")
-        self.g_test_epoch = tf.summary.merge([tf.summary.scalar("g_test_epoch_end", self.g_test_epo,family="test"),tf.summary.scalar("g_test_mfcc_loss", self.g_test_epo2,family="test"),tf.summary.scalar("g_test_score", self.g_test_epo3,family="test")])
-        self.tb_results=tf.summary.merge([self.fake_B_sum,self.fake_B_sum2,self.fake_B_sum3,self.g_test_epoch])
+        self.loss_display=tf.summary.merge([g_loss_sum_A_display,g_loss_sum_B_display,d_loss_sum_A_display,d_loss_sum_B_display])
+        self.result_audio_display= tf.placeholder(tf.float32, [1,1,160000], name="FB")
+        self.result_image_display= tf.placeholder(tf.float32, [1,None,self.args["NFFT"],2], name="FBI0")
+        image_pow_display=tf.transpose(self.result_image_display[:,:,:,:1],[0,2,1,3])
+        image_pha_display = tf.transpose(self.result_image_display[:, :, :, 1:], [0, 2, 1, 3])
+        fake_B_audio_display = tf.summary.audio("fake_B", tf.reshape(self.result_audio_display,[1,160000,1]), 16000, 1)
+        fake_B_image_display = tf.summary.merge([tf.summary.image("fake_B_image_power", image_pow_display, 1),tf.summary.image("fake_B_image_phase", image_pha_display, 1)])
+        self.g_test_pow_dif=tf.placeholder(tf.float32,name="g_test_epoch_end")
+        g_test_value_display = tf.summary.scalar("g_test_power_distance", self.g_test_pow_dif,family="test")
+        self.g_test_display=tf.summary.merge([fake_B_audio_display,fake_B_image_display,g_test_value_display])
 
         #saver
         #保存の準備
         self.saver = tf.train.Saver()
-
-        self.saver2 = tf.train.Saver()
+        self.saver_best = tf.train.Saver(max_to_keep=1)
 
     def convert(self,in_put):
         #function of test
         #To convert wave file
-        #テスト用関数
-        #wave file　変換用
 
-
-        tt=time.time()
-        ipt=self.args["input_size"]+self.args["SHIFT"]*self.args["dilation_size"]+self.args["SHIFT"]
-        times=in_put.shape[1]//(self.args["input_size"])+1
-        if in_put.shape[1]%((self.args["input_size"])*self.args["batch_size"])==0:
-            times-=1
+        conversion_start_time=time.time()
+        input_size_one_term=self.args["input_size"]+self.args["SHIFT"]
+        executing_times=in_put.shape[0]//(self.args["input_size"])+1
+        if in_put.shape[0]%((self.args["input_size"])*self.args["batch_size"])==0:
+            executing_times-=1
         otp=np.array([],dtype=np.int16)
-        res3 = np.zeros([1,self.args["NFFT"],2], dtype=np.float32)
-        rss=np.zeros([self.input_size_model[2]],dtype=np.float64)
-        for t in range(times):
+
+        res_image = np.zeros([1,self.args["NFFT"],2], dtype=np.float32)
+        remain_wave=np.zeros([self.input_size_model[2]],dtype=np.float64)
+        for t in range(executing_times):
             # Preprocess
-            # 前処理
 
             # Padiing
-            # サイズ合わせ
-            start_pos=self.args["input_size"]*t+(in_put.shape[1]%self.args["input_size"])
-            resorce=np.reshape(in_put[0,max(0,start_pos-ipt):start_pos,0],(1,-1))
-            r=max(0,ipt-resorce.shape[1])
+            start_pos=self.args["input_size"]*(1+t)+(in_put.shape[0]%self.args["input_size"])
+            resorce=in_put[max(0,start_pos-input_size_one_term):start_pos]
+            r=max(0,input_size_one_term-resorce.shape[0])
             if r>0:
-                resorce=np.pad(resorce,((0,0),(r,0)),'constant')
+                resorce=np.pad(resorce,(r,0),'constant')
             # FFT
-            # 短時間高速離散フーリエ変換
-            res=self.fft(resorce.reshape(-1)/32767.0)
+            resource=self.fft(resorce/32767.0)
+            resource = resource[:, :self.args["SHIFT"], :].reshape([1, -1, self.args["SHIFT"], 2])
+
+            #main process
+
             # running network
-            # ネットワーク実行
-            res=res[:,:self.args["SHIFT"],:].reshape([1,-1,self.args["SHIFT"],2])
-            res=self.sess.run(self.fake_aB_image_test,feed_dict={ self.input_model_test:res})
-            res2=res.copy()[:,:,::-1,:]
-            res=np.append(res,res2,axis=2)
-            res[:,:,self.args["SHIFT"]:,1]*=-1
-            a=res[0].copy()
-            res3 = np.append(res3, a[-7:,:,:]).reshape(-1,self.args["NFFT"],2)
+            result=self.sess.run(self.fake_aB_image_test,feed_dict={ self.input_model_test:resource})
 
 
             # Postprocess
-            # 後処理
+
+            #fixing spectrogrum
+            result_reverse = result.copy()[:, :, ::-1, :]
+            result = np.append(result, result_reverse, axis=2)
+            result[:, :, self.args["SHIFT"]:, 1] *= -1
+            res_image = np.append(res_image, result[0].copy(),axis=0)
 
             # IFFT
-            # 短時間高速離散逆フーリエ変換
-            res,rss=self.ifft(a,rss)
-            # 変換後処理
-            res=np.clip(res,-1.0,1.0)
-            res=res*32767
-            # chaching results
-            # 結果の保存
-            res=res.reshape(-1).astype(np.int16)
-            otp=np.append(otp,res[-8192:])
-        h=otp.shape[0]-in_put.shape[1]
+            result_wave,remain_wave=self.ifft(result[0].copy(),remain_wave)
+
+            result_wave_fixed=np.clip(result_wave,-1.0,1.0)
+            result_wave_int16=result_wave_fixed*32767
+
+            # converting result
+            result_wave_int16=result_wave_int16.reshape(-1).astype(np.int16)
+
+            #adding result
+            otp=np.append(otp,result_wave_int16)
+
+        h=otp.shape[0]-in_put.shape[0]
         if h>0:
             otp=otp[h:]
 
-        return otp.reshape(1,in_put.shape[1],in_put.shape[2]),time.time()-tt,res3[1:]
+        return otp,res_image[1:],time.time()-conversion_start_time
 
 
 
     def train(self):
 
         # setting paramaters
-        # パラメータ
         lr_g_opt_max=self.args["g_lr_max"]
         lr_g_opt_min=self.args["g_lr_min"]
         beta_g_opt=self.args["g_b1"]
@@ -347,14 +285,10 @@ class Model:
         beta_2_d_opt=self.args["d_b2"]
         T_cur=0
         T_pow=1.0
-        ch=50000
-        test_mfcc=999999
-        best=999999
+        self.best=999999
         T=self.args["lr_decay_term"]
+
         # naming output-directory
-        # 出力ディレクトリ
-
-
         self.lod="[glr="+str(lr_g_opt_max)+",gb="+str(beta_g_opt)+",dlr="+str(lr_d_opt_max)+",db="+str(beta_d_opt)+"]"
         lr_g = tf.placeholder(tf.float32, None, name="g_lr")
         lr_d = tf.placeholder(tf.float32, None, name="d_lr")
@@ -363,277 +297,154 @@ class Model:
         d_optim = tf.train.AdamOptimizer(lr_d, beta_d_opt, beta_2_d_opt).minimize(self.d_loss,
                                                                                   var_list=self.d_vars)
 
-        tt_me=list()
-        time_of_epoch=np.zeros(1)
+        tt_list=list()
 
         # logging
-        # ログ出力
         if self.args["tensorboard"]:
             self.writer = tf.summary.FileWriter("./logs/"+self.lod+self.args["name_save"], self.sess.graph)
 
-        if self.args["wave_otp_dir"] != "False" and  os.path.exists(self.args["wave_otp_dir"]):
-            with open(self.args["log_file"], "w") as f:
-                f.write("epochs,test_varidation")
-                f.flush()
-        # initialize training info
-        ti=0
         # loading net
-        # 過去の学習データの読み込み
         if self.load():
-            print(" [*] Load SUCCESSED.")
+            print(" [I] Load SUCCESSED.")
         else:
-            print(" [!] Load FAILED.")
+            print(" [I] Load FAILED.")
 
         # loading training data directory
-        # トレーニングデータの格納ディレクトリの読み込み
         data = glob(self.args["train_data_dir"]+'/Source_data/*')
         data2 = glob(self.args["train_data_dir"] + '/Answer_data/*')
         # loading test data
-        # テストデータの読み込み
-        test=isread(self.args["test_data_dir"]+'/test.wav')[0:160000].astype(np.float32)
+        self.test=isread(self.args["test_data_dir"]+'/test.wav')[0:160000].astype(np.float32)
         label=isread(self.args["test_data_dir"]+'/label.wav')[0:160000].astype(np.float32)
 
-        ipt = self.args["input_size"] + self.args["SHIFT"] * self.args["dilation_size"] + self.args["SHIFT"]
-        out_s= np.zeros([1, self.args["NFFT"], 2], dtype=np.float32)
-        timesl = label.shape[0] // (self.args["input_size"]) + 1
+        # prepareing test-target-spectrum
+        input_size_one_term = self.args["input_size"] + self.args["SHIFT"]
+        out_spectrum= np.zeros([1, self.args["NFFT"], 2], dtype=np.float32)
+        fft_executing_times = label.shape[0] // (self.args["input_size"]) + 1
         if label.shape[0] % ((self.args["input_size"]) * self.args["batch_size"]) == 0:
-            timesl -= 1
-        for t in range(timesl):
-            # Preprocess
-            # 前処理
+            fft_executing_times -= 1
+
+        # making test-target-spectrum
+
+        for t in range(fft_executing_times):
 
             # Padiing
-            # サイズ合わせ
             start_pos = self.args["input_size"] * t + (label.shape[0] % self.args["input_size"])
-            resorce = np.reshape(label[ max(0, start_pos - ipt):start_pos], (1, -1))
-            r = max(0, ipt - resorce.shape[1])
+            resorce = label[ max(0, start_pos - input_size_one_term):start_pos]
+            r = max(0, input_size_one_term - resorce.shape[0])
             if r > 0:
-                resorce = np.pad(resorce, ((0, 0), (r, 0)), 'constant')
-            # FFT
-            # 短時間高速離散フーリエ変換
-            res = self.fft(resorce.reshape(-1) / 32767.0)
-            out_s=np.append(out_s,res,axis=0)
-        out_s=out_s[1:]
-        # times of one epoch
-        # 回数計算
-        train_data_num = min(len(data),len(data2))
+                resorce = np.pad(resorce, (r, 0), 'constant')
 
-        batch_idxs = train_data_num // self.args["batch_size"]
+            # FFT
+            result_fft = self.fft(resorce / 32767.0)
+            out_spectrum=np.append(out_spectrum,result_fft,axis=0)
+
+        self.label_spectrum=out_spectrum[1:]
+
+        # times of one epoch
+        train_data_num = min(len(data),len(data2))
+        self.batch_idxs = train_data_num // self.args["batch_size"]
         index_list=[h for h in range(train_data_num)]
         index_list2 = [h for h in range(train_data_num)]
 
-        #　学習データをメモリに乗っける
+        #　prepareing training-data
         batch_files = data[:train_data_num]
         batch_files2 = data2[:train_data_num]
-        print(" [*] loading dataset...")
-        batch_sounds_r = np.asarray([(imread(batch_file)) for batch_file in batch_files])
-        batch_sounds_t = np.asarray([(imread(batch_file)) for batch_file in batch_files2])
-        print(" [*] %d data loaded!!",train_data_num)
-        # hyperdash
-        if self.args["hyperdash"]:
-            self.experiment=Experiment(self.args["name_save"]+"_G1")
-            self.experiment.param("lr_g_opt", lr_g_opt_max)
-            self.experiment.param("beta_g_opt", beta_g_opt)
-            self.experiment.param("training_interval", self.args["train_interval"])
 
-        # 学習の情報の初期化
-        radeon_x,radeon_fs=librosa.load(self.args["test_data_dir"]+'/label.wav',sr=16000)
-        radeon = librosa.feature.mfcc(radeon_x, sr=radeon_fs)
-        radeon2 = sklearn.preprocessing.scale(radeon, axis=1)
+        print(" [I] loading dataset...")
+        self.sounds_r = np.asarray([(imread(batch_file)) for batch_file in batch_files])
+        self.sounds_t = np.asarray([(imread(batch_file)) for batch_file in batch_files2])
+        print(" [I] %d data loaded!!",train_data_num)
+
+        # initializing training infomation
         start_time = time.time()
         start_time_all=time.time()
-        test_score=100.0
-        epoch=0
-        for epoch in range(self.args["start_epoch"],self.args["train_epoch"]):
-            # 学習率の計算
-            lr_d_opt3 = lr_d_opt_min+0.5*(lr_d_opt_max-lr_d_opt_min)*(1+np.cos(T_cur/T*np.pi))*T_pow
-            # lr_d_opt3 =lr_d_opt_min+(lr_d_opt_max-lr_d_opt_min)*T_pow
-            lr_g_opt3 = lr_g_opt_min+0.5*(lr_d_opt_max-lr_g_opt_min)*(1+np.cos(T_cur/T*np.pi))*T_pow
-            # lr_g_opt3 = lr_g_opt_min+(lr_g_opt_max-lr_g_opt_min) * T_pow
+        lr_d_culced = lr_d_opt_max
+        lr_g_culced = lr_g_opt_max
 
-            # トレーニングデータのシャッフル
+        for epoch in range(self.args["train_epoch"]):
+
+            # shuffling train_data_index
             np.random.shuffle(index_list)
             np.random.shuffle(index_list2)
-            ts = 0.0
-            ipt = self.input_size_model[1]
-            counter=0
-            ttm=np.asarray([1.0])
+
+            prepareing_time_total = 0.0
+
             if self.args["test"] and epoch%self.args["save_interval"]==0:
-                print(" [*] Epoch %3d testing" % epoch)
-                #testing
-                #テスト
-                out_puts,taken_time_test,im=self.convert(test.reshape(1,-1,1))
-                im = im.reshape([-1, self.args["NFFT"], 2])
-                otp_im=np.append(np.clip((im[:,:,0]+10)/20,0.0,1.0).reshape([1,-1,self.args["NFFT"],1]),np.clip((im[:,:,1]+3.15)/6.30,0.0,1.0).reshape([1,-1,self.args["NFFT"],1]),axis=3)
-                out_put=out_puts.astype(np.float32)/32767.0
-                #テストの誤差
-                r = min(out_s.shape[0], im.shape[0])
-                test1=np.sum(np.abs(out_s[:r,:,0]-im[:r,:,0]))
-                raxis = librosa.feature.mfcc(out_put.reshape(-1)*1.0, sr=radeon_fs)
-                raxis2 = sklearn.preprocessing.scale(raxis, axis=1)
-                rnx=min(raxis.shape[1],radeon.shape[1])
-                test_mfcc=np.sum(np.abs(radeon[:,-rnx:]-raxis[:,-rnx:]))
-                test_mfcc2 = np.sum(np.abs(radeon2[:, -rnx:] - raxis2[:, -rnx:]))
-                test_score =0.3*(test1*0.01+test_mfcc*0.1+test_mfcc2)
-                #hyperdash
-                if self.args["hyperdash"]:
-                    self.experiment.metric("test_LogPow",test1)
-                    self.experiment.metric("testMFCC", test_mfcc)
-                    self.experiment.metric("testMFCC_norm", test_mfcc2)
-                    self.experiment.metric("score",test_score)
-                #writing epoch-result into tensorboard
-                #tensorboardの書き込み
-                if self.args["tensorboard"]:
-                    hg, hd, hg2, hd2 = self.sess.run(
-                        [self.g_loss_sum_1, self.d_loss_sumA, self.g_loss_sum_2, self.d_loss_sumB],
-                        feed_dict={self.input_modela: batch_sounds_r[0:self.args["batch_size"]], self.input_modelb: batch_sounds_t[0:self.args["batch_size"]],self.tts:ttm})
-                    self.writer.add_summary(hg, counter + ti * epoch)
-                    self.writer.add_summary(hd, counter + ti * epoch)
-                    self.writer.add_summary(hg2, counter + ti * epoch)
-                    self.writer.add_summary(hd2, counter + ti * epoch)
-                    rs=self.sess.run(self.tb_results,feed_dict={ self.result:out_put.reshape(1,1,-1),self.result1:otp_im,self.g_test_epo:test1,self.g_test_epo2:test_mfcc,self.g_test_epo3:test_score})
-                    self.writer.add_summary(rs, epoch)
+               self.test_and_save(epoch)
 
-                #saving test result
-                #テストの結果の保存
-                if os.path.exists(self.args["wave_otp_dir"]):
-                    plt.clf()
-                    plt.subplot(211)
-                    ins=np.transpose(im[:,:,0],(1,0))
-                    plt.imshow(ins,aspect="auto")
-                    plt.clim(-10,10)
-                    plt.colorbar()
-                    plt.subplot(212)
-                    ins = np.transpose(im[:, :, 1], (1, 0))
-                    plt.imshow(ins, aspect="auto")
-                    plt.clim(-3.141593, 3.141593)
-                    plt.colorbar()
-                    path=self.args["wave_otp_dir"]+nowtime()+"_e"+str(epoch)
-                    plt.savefig(path+".png")
-                    upload(out_puts,path)
-                    if self.dbx is not None:
-                        print(" [*] Files uploading")
-                        with open(path+".png","rb") as ff:
-                            self.dbx.files_upload(ff.read(),"/apps/tensorflow_watching_app/Latestimage.png",mode=dropbox.files.WriteMode.overwrite)
-                        with open(path + ".wav", "rb") as ff:
-                            self.dbx.files_upload(ff.read(), "/apps/tensorflow_watching_app/Latestwave.wav",mode=dropbox.files.WriteMode.overwrite)
-                        print(" [*] Files uploaded!!")
+            print(" [I] Epoch %3d started" % epoch)
 
-                print(" [*] Epoch %3d tested in %3.3f" % (epoch, taken_time_test))
-
-            print(" [*] Epoch %3d started" % epoch)
-
-            for idx in xrange(0, batch_idxs):
-                # loading trainig data
-                # トレーニングデータの読み込み
+            for idx in xrange(0, self.batch_idxs):
+                start_preparing = time.time()
+                # getting batch
                 st=self.args["batch_size"]*idx
-                batch_sounds1 = np.asarray([batch_sounds_r[ind] for ind in index_list[st:st+self.args["batch_size"]]])
-                batch_sounds2= np.asarray([batch_sounds_t[ind] for ind in index_list2[st:st+self.args["batch_size"]]])
-                # calculating one iteration repetation times
-                # 1イテレーション実行回数計算
-                times=int(batch_sounds1.shape[1])//self.input_size_model[1]+1
-                if int(batch_sounds1.shape[1])%self.input_size_model[1]==0:
-                    times-=1
-                # shuffle start time
-                # 開始タイミングのシャッフル
-                time_set=[j for j in range(times)]
-                np.random.shuffle(time_set)
+                batch_sounds_resource = np.asarray([self.sounds_r[ind] for ind in index_list[st:st+self.args["batch_size"]]])
+                batch_sounds_target= np.asarray([self.sounds_t[ind] for ind in index_list2[st:st+self.args["batch_size"]]])
+                # getting training data
+                prepareing_time_total+=time.time()-start_preparing
 
-                ti=(batch_idxs*times)
-                for t in time_set:
-                    tm = time.time()
-                    # calculating starting position
-                    # 開始位置の計算
-                    start_pos=self.input_size_model[1]*(t+1)
+                # update D network (2time)
+                for _ in range(2):
+                    self.sess.run([d_optim],
+                                  feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target,lr_d:lr_d_culced})
+                # update G network
+                self.sess.run([g_optim, self.update_ops],
+                              feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target, lr_g: lr_g_culced})
 
-                    # getting training data
-                    # トレーニングデータの取得
-                    res_t=batch_sounds1[:,max(0,start_pos-ipt):start_pos]
-                    tar=batch_sounds2[:,max(0,start_pos-ipt):start_pos]
-                    ts+=time.time()-tm
-                    # Update G network
-                    # G-netの学習
-                    # self.sess.run([g_optim,self.update_ops],feed_dict={ self.input_modela:res_t,self.input_modelb:tar,lr_g:lr_g_opt3})
-                    # Update D network (1time)
-                    for _ in range(2):
-                        self.sess.run([d_optim],
-                                      feed_dict={self.input_modelb: tar, self.input_modela: res_t,lr_d:lr_d_opt3,self.tts:ttm})
-                    # G-netの学習
-                    self.sess.run([g_optim, self.update_ops],
-                                  feed_dict={self.input_modela: res_t, self.input_modelb: tar, lr_g: lr_g_opt3,self.tts:ttm})
-                    # saving tensorboard
-                    # tensorboardの保存
-                    counter+=1
-
-            #saving model
-            #モデルの保存
-            if epoch % self.args["save_interval"] == 0:
-                self.save(self.args["checkpoint_dir"], epoch,self.saver)
-            if epoch%self.args["save_interval"]==0 and test_score<best:
-                self.save(self.args["best_checkpoint_dir"], epoch,self.saver2)
-                best=test_score
-            #console outputs
-            count = counter + ti * epoch
+            # calculating ETA
             taken_time = time.time() - start_time
             start_time = time.time()
-            tt_me.append(taken_time)
-            if len(tt_me)>20:
-                tt_me=tt_me[0:20]
-            ft=np.mean(tt_me)*(self.args["train_epoch"]-epoch-1)
-            print(" [*] Epoch %5d (iterations: %10d)finished in %.2f (preprocess %.3f) ETA: %3d:%2d:%2.1f" % (epoch,count,taken_time,ts,ft//3600,ft//60%60,ft%60))
-            time_of_epoch=np.append(time_of_epoch,np.asarray([taken_time,ts]))
+            tt_list.append(taken_time)
+            if len(tt_list)>20:
+                tt_list=tt_list[0:20]
+            eta=np.mean(tt_list)*(self.args["train_epoch"]-epoch-1)
+
+            # console outputs
+            print(" [I] Epoch %04d / %04d finished in %03.2f (preprocess %02.3f) ETA: %02d:%02d:%02.1f" % (epoch,self.args["train_epoch"],taken_time,taken_time,eta//3600,eta//60%60,eta%60))
 
             T_cur += 1
+
+            # update learning_rate
             if T==T_cur:
-                # T=T//2
                 T_cur=0
-                T_pow*=0.9
-            # elif epoch%self.args["save_interval"]==0 and test_mfcc<ch :
-            #     ch -= 5000
-            #     T_cur=0
-            #     T_pow*=0.9
-        print(" [*] Epoch %3d testing" % epoch)
-        # testing
-        # テスト
-        out_puts, taken_time_test, im = self.convert(test.reshape(1, -1, 1))
-        im = im.reshape([-1, self.args["NFFT"], 2])
-        otp_im = np.append(np.clip((im[:, :, 0] + 10) / 20, 0.0, 1.0).reshape([1, -1, self.args["NFFT"], 1]),
-                           np.clip((im[:, :, 1] + 3.15) / 6.30, 0.0, 1.0).reshape([1, -1, self.args["NFFT"], 1]),
-                           axis=3)
-        out_put = out_puts.astype(np.float32) / 32767.0
-        # テストの誤差
-        r = min(out_s.shape[0], im.shape[0])
-        test1 = np.sum(np.abs(out_s[:r, :, 0] - im[:r, :, 0]))
-        raxis = librosa.feature.mfcc(out_put.reshape(-1) * 1.0, sr=radeon_fs)
-        raxis2 = sklearn.preprocessing.scale(raxis, axis=1)
-        rnx = min(raxis.shape[1], radeon.shape[1])
-        test_mfcc = np.sum(np.abs(radeon[:, -rnx:] - raxis[:, -rnx:]))
-        test_mfcc2 = np.sum(np.abs(radeon2[:, -rnx:] - raxis2[:, -rnx:]))
-        test_score = 0.3 * (test1 * 0.01 + test_mfcc * 0.1 + test_mfcc2)
-        # hyperdash
-        if self.args["hyperdash"]:
-            self.experiment.metric("test_LogPow", test1)
-            self.experiment.metric("testMFCC", test_mfcc)
-            self.experiment.metric("testMFCC_norm", test_mfcc2)
-            self.experiment.metric("score", test_score)
+                T_pow*=0.5
+                # calculating learning-rate
+                lr_d_culced = lr_d_opt_min + (lr_d_opt_max - lr_d_opt_min) * T_pow
+                lr_g_culced = lr_g_opt_min + (lr_g_opt_max - lr_g_opt_min) * T_pow
+        self.test_and_save(self.args["train_epoch"])
+        tnt=time.time()-start_time_all
+        hour_f=tnt//3600
+        minute_f=tnt//60%60
+        second_f=tnt%60
+        print(" [I] All finished successfully!! in %04d : %02d : %02.5f"%(hour_f,minute_f,second_f))
+
+    def test_and_save(self,epoch):
+
+        print(" [I] Epoch %3d testing" % epoch)
+
+        # last testing
+        out_puts, im, taken_time_test = self.convert(self.test)
+
+        # fixing havests types
+        out_put = out_puts.copy().astype(np.float32) / 32767.0
+        otp_im = im.copy().reshape(1,-1,self.args["NFFT"],2)
+        otp_im[:,:, :, 0] = np.clip((otp_im[:, :, :, 0] + 10.0) / 20.0, 0.0, 1.0)
+        otp_im[:,:, :, 1] = np.clip((otp_im[:, :, :, 1] + 3.15) / 6.30, 0.0, 1.0)
+        r = min(self.label_spectrum.shape[0], im.shape[0])
+        test_score = np.sum(np.abs(self.label_spectrum[:r, :, 0] - im[:r, :, 0]))
+
         # writing epoch-result into tensorboard
-        # tensorboardの書き込み
         if self.args["tensorboard"]:
-            hg, hd, hg2, hd2 = self.sess.run(
-                [self.g_loss_sum_1, self.d_loss_sumA, self.g_loss_sum_2, self.d_loss_sumB],
-                feed_dict={self.input_modela: batch_sounds_r[0:self.args["batch_size"]],
-                           self.input_modelb: batch_sounds_t[0:self.args["batch_size"]], self.tts: np.zeros(1)})
-            self.writer.add_summary(hg,  ti * epoch)
-            self.writer.add_summary(hd,  ti * epoch)
-            self.writer.add_summary(hg2, ti * epoch)
-            self.writer.add_summary(hd2, ti * epoch)
-            rs = self.sess.run(self.tb_results, feed_dict={self.result: out_put.reshape(1, 1, -1), self.result1: otp_im,
-                                                           self.g_test_epo: test1, self.g_test_epo2: test_mfcc,
-                                                           self.g_test_epo3: test_score})
+            tb_result = self.sess.run(self.loss_display,
+                                      feed_dict={self.input_model_A: self.sounds_r[0:self.args["batch_size"]],
+                                                 self.input_model_B: self.sounds_t[0:self.args["batch_size"]]})
+            self.writer.add_summary(tb_result, self.batch_idxs * epoch)
+            rs = self.sess.run(self.g_test_display, feed_dict={self.result_audio_display: out_put.reshape(1, 1, -1),
+                                                               self.result_image_display: otp_im,
+                                                               self.g_test_pow_dif: test_score})
             self.writer.add_summary(rs, epoch)
 
-        # saving test result
-        # テストの結果の保存
+        # saving test havests
         if os.path.exists(self.args["wave_otp_dir"]):
             plt.clf()
             plt.subplot(211)
@@ -649,27 +460,14 @@ class Model:
             path = self.args["wave_otp_dir"] + nowtime() + "_e" + str(epoch)
             plt.savefig(path + ".png")
             upload(out_puts, path)
-            if self.dbx is not None:
-                print(" [*] Files uploading")
-                with open(path + ".png", "rb") as ff:
-                    self.dbx.files_upload(ff.read(), "/apps/tensorflow_watching_app/Latestimage.png",
-                                          mode=dropbox.files.WriteMode.overwrite)
-                with open(path + ".wav", "rb") as ff:
-                    self.dbx.files_upload(ff.read(), "/apps/tensorflow_watching_app/Latestwave.wav",
-                                          mode=dropbox.files.WriteMode.overwrite)
-                print(" [*] Files uploaded!!")
-        self.save(self.args["checkpoint_dir"], epoch, self.saver)
-        if test_score < best:
-            self.save(self.args["best_checkpoint_dir"], epoch, self.saver2)
-        tnt=time.time()-start_time_all
-        hour_f=tnt//3600
-        minute_f=tnt//60%60
-        second_f=tnt%60
-        print(" [*] Finished!! in %04d : %02d : %02.5f"%(hour_f,minute_f,second_f))
 
-        # hyperdash
-        if self.args["hyperdash"]:
-            self.experiment.end()
+        print(" [I] Epoch %3d tested in %3.3f" % (epoch, taken_time_test))
+
+        self.save(self.args["checkpoint_dir"], epoch, self.saver)
+        if test_score < self.best:
+            self.save(self.args["best_checkpoint_dir"], epoch, self.saver_best)
+
+
     def save(self, checkpoint_dir, step,saver):
         model_name = "wave2wave.model"
         model_dir =  self.args["name_save"]
@@ -686,9 +484,9 @@ class Model:
         # 変数の初期化
         init_op = tf.global_variables_initializer()
         self.sess.run(init_op)
-        print(" [*] Reading checkpoint...")
+        print(" [I] Reading checkpoint...")
         model_dir = self.args["name_save"]
-        checkpoint_dir = os.path.join(self.checkpoint_dir, model_dir)
+        checkpoint_dir = os.path.join(self.args["checkpoint_dir"], model_dir)
 
         ckpt = tf.train.get_checkpoint_state(checkpoint_dir)
         if ckpt and ckpt.model_checkpoint_path:
@@ -709,12 +507,7 @@ class Model:
             frame = data[pos:pos + self.args["NFFT"]]
             wined[fft_index] = frame * window
             pos += self.args["SHIFT"]
-        if self.args["cupy"] :
-            wineds = cupy.asarray(wined, dtype=cupy.float64)
-            fft_rs = cupy.fft.fft(wineds, n=self.args["NFFT"], axis=1)
-            fft_r = cupy.asnumpy(fft_rs)
-        else:
-            fft_r = np.fft.fft(wined, n=self.args["NFFT"], axis=1)
+        fft_r = np.fft.fft(wined, n=self.args["NFFT"], axis=1)
         re = fft_r.real.reshape(time_ruler, -1)
         im = fft_r.imag.reshape(time_ruler, -1)
         c = np.log(np.power(re, 2) + np.power(im, 2) + 1e-24).reshape(time_ruler, -1, 1)
@@ -731,13 +524,7 @@ class Model:
         i = p * (np.sin(a[:, :, 1]))
         dds = np.concatenate((r.reshape(r.shape[0], r.shape[1], 1), i.reshape(i.shape[0], i.shape[1], 1)), 2)
         data=dds[:,:,0]+1j*dds[:,:,1]
-        if self.args["cupy"]:
-            eep = cupy.asarray(data, dtype=cupy.complex128)
-            fft_se = cupy.fft.ifft(eep,n=self.args["NFFT"], axis=1)
-            fft_s = cupy.asnumpy(fft_se)
-        else:
-            fft_s = np.fft.ifft(data,n=self.args["NFFT"], axis=1)
-
+        fft_s = np.fft.ifft(data,n=self.args["NFFT"], axis=1)
         fft_data = fft_s.real
         # fft_data[:]/=window
         v = fft_data[:, :self.args["NFFT"]// 2]
@@ -750,7 +537,7 @@ class Model:
 def nowtime():
     return datetime.now().strftime("%Y_%m_%d %H_%M_%S")
 
-def upload(voice,to,comment=""):
+def upload(voice,to):
     voiced=voice.astype(np.int16)
     p=pyaudio.PyAudio()
     FORMAT = pyaudio.paInt16

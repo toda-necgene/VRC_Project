@@ -3,49 +3,30 @@
         "checkpoint_dir":"Z://models/",
         "best_checkpoint_dir":"Z://bestmodel/",
         "wave_otp_dir":"Z://waves/",
-        "version":"5.7.018"
-    },
-    "network_architecture":{
-        "repeatations":1,
-        "depth":[4,8],
-        "d_depth":4,
-        "D_channels":[64,64,128,128],
-        "G_channels":[8,16,32,32,32,32,32,32,32,32,32,32,32,16,8,1],
-        "dilations":[]
+        "version":"5.7.101"
     },
     "training_config":{
         "train_epoch": 1000,
-        "batch_size":128,
+        "batch_size":32,
         "start_epoch":0,
         "train_data_dir":"./datasets/train",
         "test_data_dir":"./datasets/test",
         "g_lr_max":2e-4,
         "d_lr_max":2e-4,
-        "g_lr_min":2e-4,
-        "d_lr_min":2e-4,
+        "g_lr_min":2e-6,
+        "d_lr_min":2e-6,
         "g_b1":0.5,
         "d_b1":0.5,
-        "lr_decay_term":100,
-        "save_interval":50,
+        "lr_decay_term":20,
+        "save_interval":10,
         "weight_GAN":1.0,
-        "weight_Cycle_Pow":10.0,
-        "weight_Cycle_Fre":10.0
+        "weight_Cycle_Pow":100.0,
+        "weight_Cycle_Pha":100.0
 
-    },
-
-    "process_config":{
-        "NFFT":1024,
-        "input_size":4096,
-        "dilation_size":0
     },
     "plugin_config":{
-        "cupy":true,
         "test":true,
-        "tensorboard":true,
-        "hyperdash":false,
-        "debug":false,
-        "_dropbox":"5dH2TfVI9EAAAAAAAAAANT0cIMk1mIbEvtKrEHFtZSEk__iicyHH6w5htQqdbCu1",
-        "dropbox":"False"
+        "tensorboard":true
     }
 
 }

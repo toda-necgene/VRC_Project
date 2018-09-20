@@ -9,90 +9,89 @@ import shutil
 from .model import discriminator,generator
 class Model:
     def __init__(self,path):
-        self.args=dict()
-        self.args["checkpoint_dir"]="./trained_models"
-        self.args["wave_otp_dir"] = "False"
-        self.args["train_data_num"]=500
-        self.args["batch_size"]=1
-        self.args["depth"] =[4]
-        self.args["d_depth"] = 4
-        self.args["train_epoch"]=500
-        self.args["stop_itr"] = -1
-        self.args["start_epoch"]=0
-        self.args["test"]=True
-        self.args["log"] = True
-        self.args["tensorboard"]=False
-        self.args["hyperdash"]=False
-        self.args["input_size"] = 8192
-        self.args["weight_Cycle"]=1.0
-        self.args["weight_GAN"] = 1.0
-        self.args["NFFT"]=128
-        self.args["debug"] = False
-        self.args["noise"] = False
-        self.args["cupy"] = False
-        self.args["D_channels"] =[2]
-        self.args["G_channels"] = [32]
-        self.args["strides_d"] = [2,2]
-        self.args["filter_d"] = [4,4]
+        self.args = dict()
+
+        # default setting
         self.args["model_name"] = "wave2wave"
         self.args["version"] = "1.0.0"
-        self.args["log_eps"] = 1e-8
-        self.args["g_lr"]=2e-4
+
+        self.args["checkpoint_dir"] = "./trained_models"
+        self.args["best_checkpoint_dir"] = "./best_model"
+        self.args["wave_otp_dir"] = "./havests"
+        self.args["train_data_dir"] = "./datasets/train"
+        self.args["test_data_dir"] = "./datasets/test"
+
+        self.args["test"] = True
+        self.args["tensorboard"] = True
+        self.args["debug"] = False
+
+        self.args["batch_size"] = 32
+        self.args["input_size"] = 4096
+        self.args["NFFT"] = 1024
+
+        self.args["g_lr_max"] = 2e-4
+        self.args["g_lr_min"] = 2e-6
+        self.args["d_lr_max"] = 2e-4
+        self.args["d_lr_min"] = 2e-6
         self.args["g_b1"] = 0.5
         self.args["g_b2"] = 0.999
         self.args["d_b1"] = 0.5
         self.args["d_b2"] = 0.999
-        self.args["train_d_scale"]=1.0
-        self.args["train_interval"]=10
-        self.args["save_interval"]=1
-        self.args["test_dir"] = "./test"
-        self.args["dropbox"]="False"
-        self.args["architect"] = "flatnet"
-        self.args["label_noise"]=0.0
-        self.args["dilations"]=[1]
-        self.args["dilation_size"]=7
-        self.args["repeatations"]=1
-        self.args["train_data_path"]="./train/Model/datasets/train/"
-        if os.path.exists(path):
-            try:
-                with open(path, "r") as f:
-                    dd = json.load(f)
-                    keys = dd.keys()
-                    for j in keys:
-                        data = dd[j]
-                        keys2 = data.keys()
-                        for k in keys2:
-                            if k in self.args:
-                                if type(self.args[k]) == type(data[k]):
-                                    self.args[k] = data[k]
-                                else:
-                                    print(
-                                        " [!] Argumet \"" + k + "\" is incorrect data type. Please change to \"" + str(
-                                            type(self.args[k])) + "\"")
-                            elif k[0] == "#":
-                                pass
-                            else:
-                                print(" [!] Argument \"" + k + "\" is not exsits.")
+        self.args["weight_Cycle_Pow"] = 100.0
+        self.args["weight_Cycle_Pha"] = 100.0
+        self.args["weight_GAN"] = 1.0
+        self.args["train_epoch"] = 1000
+        self.args["start_epoch"] = 0
+        self.args["save_interval"] = 10
+        self.args["lr_decay_term"] = 20
 
-            except json.JSONDecodeError as e:
-                 print(' [x] JSONDecodeError: ', e)
-        else:
-            print( " [!] Setting file is not found")
-        if len(self.args["D_channels"]) != (self.args['d_depth'] + 1):
-            print(" [!] Channels length and depth+1 must be equal ." + str(len(self.args["D_channels"])) + "vs" + str(self.args['d_depth'] + 1))
-            self.args["D_channels"] = [min([2 ** (i + 1) - 2, 254]) for i in range(self.args['d_depth'] + 1)]
-        self.args["SHIFT"] = self.args["NFFT"]//2
+        # reading json file
+        try:
+            with open(path, "r") as f:
+                dd = json.load(f)
+                keys = dd.keys()
+                for j in keys:
+                    data = dd[j]
+                    keys2 = data.keys()
+                    for k in keys2:
+                        if k in self.args:
+                            if type(self.args[k]) == type(data[k]):
+                                self.args[k] = data[k]
+                            else:
+                                print(
+                                    " [W] Argumet \"" + k + "\" is incorrect data type. Please change to \"" + str(
+                                        type(self.args[k])) + "\"")
+                        elif k[0] == "#":
+                            pass
+                        else:
+                            print(" [W] Argument \"" + k + "\" is not exsits.")
+
+        except json.JSONDecodeError as e:
+            print(" [W] JSONDecodeError: ", e)
+            print(" [W] Use default setting")
+        except FileNotFoundError:
+            print(" [W] Setting file is not found :", path)
+            print(" [W] Use default setting")
+
+        # initializing paramaters
+        self.args["SHIFT"] = self.args["NFFT"] // 2
         self.args["name_save"] = self.args["model_name"] + self.args["version"]
-        ss=self.args["input_size"]//self.args["SHIFT"]+self.args["dilation_size"]
-        self.input_size_model=[None,ss+self.args["dilation_size"]+1,self.args["NFFT"]//2,2]
-        self.input_size_test = [4, ss, self.args["NFFT"] // 2, 2]
-        print("model input size:"+str(self.input_size_model))
-        self.sess=tf.InteractiveSession(config=tf.ConfigProto(gpu_options=tf.GPUOptions()))
+
+        # shapes of inputs
+        ss = self.args["input_size"] // self.args["SHIFT"]
+        self.input_size_model = [self.args["batch_size"], ss, self.args["NFFT"] // 2, 2]
+        self.input_size_test = [1, ss, self.args["NFFT"] // 2, 2]
+
+        self.sess = tf.InteractiveSession(config=tf.ConfigProto(gpu_options=tf.GPUOptions()))
+
         if bool(self.args["debug"]):
-            self.sess=tf_debug.LocalCLIDebugWrapperSession(self.sess)
+            self.sess = tf_debug.LocalCLIDebugWrapperSession(self.sess)
             self.sess.add_tensor_filter('has_inf_or_nan', has_inf_or_nan)
-        self.dbx=None
-        self.checkpoint_dir = self.args["checkpoint_dir"]
+        if self.args["wave_otp_dir"] is not "False":
+            self.args["wave_otp_dir"] = self.args["wave_otp_dir"] + self.args["name_save"] + "/"
+            if not os.path.exists(self.args["wave_otp_dir"]):
+                os.makedirs(self.args["wave_otp_dir"])
+
         self.build_model()
     def build_model(self):
 
@@ -105,9 +104,7 @@ class Model:
         with tf.variable_scope("generators"):
 
             with tf.variable_scope("generator_1"):
-                self.fake_aB_image_testa,_ = generator(self.input_model_testa, reuse=None,
-                                                chs=self.args["G_channels"], depth=self.args["depth"],
-                                                d=self.args["dilations"],r=self.args["repeatations"], train=False)
+                self.fake_aB_image_testa,_ = generator(self.input_model_testa, reuse=None, train=False)
                 self.fake_aB_image_test=10*self.fake_aB_image_testa
 
         #saver
@@ -196,7 +193,7 @@ class Model:
         self.sess.run(init_op)
         print(" [*] Reading checkpoint...")
         model_dir = self.args["name_save"]
-        checkpoint_dir = os.path.join(self.checkpoint_dir, model_dir)
+        checkpoint_dir = os.path.join(self.args["checkpoint_dir"], model_dir)
 
         ckpt = tf.train.get_checkpoint_state(checkpoint_dir)
         if ckpt and ckpt.model_checkpoint_path:

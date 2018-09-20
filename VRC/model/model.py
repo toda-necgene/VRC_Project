@@ -2,123 +2,144 @@
 import tensorflow as tf
 
 
-def discriminator(inp,reuse,depth,chs,train=True):
+def discriminator(inp,reuse):
     current=inp
+    # setting paramater
+    depth=4
+    chs=[64,128,256,512]
+
+    # convolution(2*4,stride 1*4)
     for i in range(depth):
         ten = tf.layers.conv2d(current, chs[i], kernel_size=[2,4], strides=[1,4], padding="VALID",kernel_initializer=tf.truncated_normal_initializer(stddev=0.02),use_bias=True, data_format="channels_last",name="disc_"+str(i),reuse=reuse)
-        # ten= tf.layers.batch_normalization(ten, trainable=True,training=train,name="bnS"+str(i),reuse=reuse )
-        # ten=tf.layers.dropout(ten,0.2,training=True)
         current = tf.nn.relu(ten)
-    print(" [*] bottom shape:"+str(current.shape))
+
+    # dense
     h4=tf.reshape(current, [-1,current.shape[1]*current.shape[2]*current.shape[3]])
     ten=tf.layers.dense(h4,1,name="dence",reuse=reuse)
-    return ten
-def generator(current_outputs,reuse,depth,chs,d,train,r,training_time=0.0):
-    ten=current_outputs
-    rs=list()
-    rms=ten
-    for l in range(r):
-        ten = block_res(ten, chs, l, depth, reuse, d, train,training_time)
-        if l!=r-1:
-            rs.append(ten)
-            ten+=rms
-    return ten,rs
 
-def block_res(current,chs,rep_pos,depth,reuses,d,train,training_time):
-    ten = current
-    times=depth[0]
-    res=depth[1]
-    tenM=list()
-    tms=len(d)
+    return ten
+def generator(ten,reuse,train):
+
+    # setting paramater
+    times=4
+    res=8
+    chs_enc=[16,32,64,128]
+    chs_dec=[64,16,4,1]
+
     for i in range(times):
-        tenA = tf.layers.conv2d(ten, chs[i + tms], kernel_size=[1, 2], strides=[1, 2], padding="VALID",
+        # Encoding
+        tenA = tf.layers.conv2d(ten, chs_enc[i], kernel_size=[1, 2], strides=[1, 2], padding="VALID",
                                 kernel_initializer=tf.truncated_normal_initializer(stddev=0.02),use_bias=False,
-                                data_format="channels_last", reuse=reuses, name="convSmaller"+str(i) + str(rep_pos),
+                                data_format="channels_last", reuse=reuse, name="enc_conv"+str(i),
                                 dilation_rate=(1, 1))
-        tenA = tf.layers.batch_normalization(tenA, axis=3, training=train, trainable=True, reuse=reuses,name="bnA_en"+str(i) + str(rep_pos))
+        tenA = tf.layers.batch_normalization(tenA, axis=3, training=train, trainable=True, reuse=reuse,name="enc_bn"+str(i))
         ten = tf.nn.leaky_relu(tenA)
-        tenM.append(ten)
 
-    tms=times+len(d)
     for i in range(res):
+        #inception resblock
 
-        tenA=ten
-        ten = tf.layers.conv2d(ten, chs[tms + i]//2, [1, 3], [1, 1], padding="SAME",
+        # 1st block(3*3)
+        tenA = tf.layers.conv2d(ten, 32, [3, 3], [1, 1], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=False,
-                               data_format="channels_last", reuse=reuses, name="res_conv1" + str(i) + str(rep_pos))
-        ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
-                                            name="bnA1" + str(tms + i) + str(rep_pos))
+                               data_format="channels_last", reuse=reuse, name="res_conv_A_" + str(i))
 
-        ten = tf.nn.leaky_relu(ten)
-        # ten=tf.transpose(ten,[0,1,3,2])
-        # r=ten.get_shape()[-1]
-        # ten=tf.layers.dense(ten, r,kernel_initializer=tf.random_normal_initializer(stddev=0.02),  reuse=reuses, name="res_dense" + str(i) + str(rep_pos))
-        # ten = tf.transpose(ten, [0, 1, 3, 2])
-        ten = tf.layers.conv2d(ten, chs[tms + i] // 2, [3, 5], [1, 1], padding="SAME",
+        # 2nd block(3*5)
+        tenB = tf.layers.conv2d(ten, 32 , [3, 5], [1, 1], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=False,
-                               data_format="channels_last", reuse=reuses, name="res_conv2" + str(i) + str(rep_pos))
+                               data_format="channels_last", reuse=reuse, name="res_conv_B_" + str(i) )
 
-        ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
-                                            name="bnA2" + str(tms + i) + str(rep_pos))
-        ten = tf.nn.leaky_relu(ten)
-        ten = tf.layers.conv2d(ten, chs[tms + i], [1, 3], [1, 1], padding="SAME",
+
+        # 3rd block(1*9)
+        tenC= tf.layers.conv2d(ten, 32, [1, 9], [1, 1], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=False,
-                               data_format="channels_last", reuse=reuses, name="res_conv3" + str(i) + str(rep_pos))
-        ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuses,
-                                            name="bnA3" + str(tms + i) + str(rep_pos))
-        prop=(1-i/(res*2))
-        ten=ShakeShake(ten,prop,train,training_time)
-        # ten=tf.layers.dropout(ten,0.2,training=train)
-        if i!=res-1 :
-            ten=ten+tenA
-        ten = tf.nn.leaky_relu(ten)
-    tms+=res
-    tenA=ten
+                               data_format="channels_last", reuse=reuse, name="res_conv_C_" + str(i))
+
+        # 4th block(1*7)
+        tenD =tf.layers.conv2d(ten, 32, [1, 7], [1, 1], padding="SAME",
+                               kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=False,
+                               data_format="channels_last", reuse=reuse, name="res_conv_D_" + str(i))
+
+        # concatnate and BatchNormalization
+        tenG=tf.concat([tenA,tenB,tenC,tenD],axis=3)
+        tenG = tf.layers.batch_normalization(tenG, axis=3, training=train, trainable=True, reuse=reuse,
+                                             name="res_bn_" + str(i))
+
+        # adding noise(shakedrop)
+        prop = (1 - i / (res * 2))
+        tenG = ShakeDrop(tenG, prop, train)
+
+        # activation
+        tenG = tf.nn.leaky_relu(tenG)
+
+        # adding skip-connection
+        ten=ten+tenG
+
+    # decodeing
+
+    # power spectrum decoder
+    tenPOW=ten
     for i in range(times):
-        # tenA += tenM[times-i-1]
-        tenA = deconve_with_ps(tenA, [1, 2], chs[tms+i], rep_pos, reuses=reuses, name="00"+str(i),t=(i == times - 1))
+        tenPOW = deconve_with_ps(tenPOW, [1, 2], chs_dec[i],  reuses=reuse, name="dec_pish_POW"+str(i),b=(i == times - 1))
         if i!=times-1:
-            # tenA = tf.layers.dropout(tenA, 0.2, train)
+            tenPOW = tf.layers.batch_normalization(tenPOW, axis=3, training=train, trainable=True, reuse=reuse,
+                                                 name="dec_bn_POW"+str(times+res+i) )
+            tenPOW = tf.nn.leaky_relu(tenPOW)
 
-            tenA = tf.layers.batch_normalization(tenA, axis=3, training=train, trainable=True, reuse=reuses,
-                                                 name="bnAD"+str(times+res+i) + str(rep_pos))
-            tenA = tf.nn.leaky_relu(tenA)
-    tenB=ten
+    # phase spectrum decoder
+    tenPHA=ten
     for i in range(times):
-        # tenB += tenM[times-i-1]
-        tenB = deconve_with_ps(tenB, [1, 2], chs[tms+i], rep_pos, reuses=reuses, name="01"+str(i),t=(i == times - 1))
+        tenPHA = deconve_with_ps(tenPHA, [1, 2], chs_dec[i], reuses=reuse, name="dec_pish_PHA"+str(i),b=(i == times - 1))
         if i != times - 1:
-            # tenB = tf.layers.dropout(tenB, 0.2, train)
-            tenB = tf.layers.batch_normalization(tenB, axis=3, training=train, trainable=True, reuse=reuses,
-                                                 name="bnBD"+str(times+res+i) + str(rep_pos))
-            tenB = tf.nn.leaky_relu(tenB)
-    ten=tf.concat([tenA,tenB],axis=3)
+            tenPHA = tf.layers.batch_normalization(tenPHA, axis=3, training=train, trainable=True, reuse=reuse,
+                                                 name="dec_bn_PHA"+str(times+res+i) )
+            tenPHA = tf.nn.leaky_relu(tenPHA)
+
+    # concating and activation
+    ten=tf.concat([tenPOW,tenPHA],axis=3)
     ten=tf.tanh(ten)
+
     return ten
-def deconve_with_ps(inp,r,otp_shape,depth,reuses=None,name="",t=True):
-    chs_r=r[0]*r[1]*otp_shape
-    ten = tf.layers.conv2d(inp, chs_r, kernel_size=[1,1], strides=[1,1], padding="VALID",
-                           kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=t,
-                           data_format="channels_last", reuse=reuses, name="deconv_ps1"+name + str(depth))
-    b_size = -1
-    in_h = ten.shape[1]
-    in_w = ten.shape[2]
+
+def deconve_with_ps(inp,r,otp_shape,reuses=None,name="",b=True):
+    # pixcel shuffler layer
+
+    # calculating output channels
+    ch_r=r[0]*r[1]*otp_shape
+    b_size = inp.get_shape()[0]
+    in_h = inp.get_shape()[1]
+    in_w = inp.get_shape()[2]
+
+    # convolution
+    ten = tf.layers.conv2d(inp, ch_r, kernel_size=[1,1], strides=[1,1], padding="VALID",
+                           kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=b,
+                           data_format="channels_last", reuse=reuses, name=name )
+    # reshaping
     ten = tf.reshape(ten, [b_size, r[0], r[1], in_h, in_w, otp_shape])
     ten = tf.transpose(ten, [0, 2, 3, 4, 1, 5])
     ten = tf.reshape(ten, [b_size, in_h * r[0], in_w * r[1], otp_shape])
-    return ten[:,:,:,:]
-def ShakeShake(ten,rate,train,training_time):
-    s=[int(ten.shape[0]),int(ten.shape[1]),int(ten.shape[2]),int(ten.shape[3])]
-    f_rand=tf.random_uniform(s,-training_time,training_time)
-    # f_rand = 0.0
+
+    return ten
+def ShakeDrop(ten,rate,train):
+    # shakedrop layer
+
+    s=ten.get_shape()
+
+    # random noise
+    f_rand=tf.random_uniform(s,-1.0,1.0)
     b_rand=tf.random_uniform(s,0.0,1.0)
-    # b_rand = 0.5
     if train:
+
+        # droping
         prop=tf.random_uniform(s,0.0,1.0)+rate
         prop=tf.floor(prop)
-        tenA=ten*prop
+        tenA= ten*prop
         tenB = ten*(1-prop)
-        return tenA+tenB*b_rand+tf.stop_gradient(tenB*(f_rand-b_rand))
+
+        # shaking
+        ten=tenA+tenB*b_rand+tf.stop_gradient(tenB*(f_rand-b_rand))
+
+        return ten
     else:
+
         return ten*rate
 
