@@ -96,11 +96,9 @@ class Model:
     def build_model(self):
 
         #inputs place holder
-        #入力
         self.input_model_test = tf.placeholder(tf.float32, self.input_size_test, "inputs_G-net_A")
         self.input_model_testa =self.input_model_test*0.1
         #creating generator
-        #G-net（生成側）の作成
         with tf.variable_scope("generators"):
 
             with tf.variable_scope("generator_1"):
@@ -108,7 +106,6 @@ class Model:
                 self.fake_aB_image_test=10*self.fake_aB_image_testa
 
         #saver
-        #保存の準備
         self.saver = tf.train.Saver()
 
 
@@ -116,12 +113,10 @@ class Model:
     def convert(self,in_put):
         #function of test
         #To convert wave file
-        #テスト用関数
-        #wave file　変換用
 
         use_num = 4
         tt=time.time()
-        ipt=self.args["input_size"]+self.args["SHIFT"]*self.args["dilation_size"]+self.args["SHIFT"]
+        ipt=self.args["input_size"]+self.args["SHIFT"]
         times=in_put.shape[0]//(self.args["input_size"])+1
         if in_put.shape[0]%((self.args["input_size"])*self.args["batch_size"])==0:
             times-=1
@@ -131,17 +126,14 @@ class Model:
 
         for t in range(times):
             # Preprocess
-            # 前処理
 
             # Padiing
-            # サイズ合わせ
-            start_pos=self.args["input_size"]*t+(in_put.shape[0]%self.args["input_size"])
+            start_pos=self.args["input_size"]*(t+1)+(in_put.shape[0]%self.args["input_size"])
             resorce=np.reshape(in_put[max(0,start_pos-ipt):start_pos],(-1))
             r=max(0,ipt-resorce.shape[0])
             if r>0:
                 resorce=np.pad(resorce,(r,0),'constant')
             # FFT
-            # 短時間高速離散フーリエ変換
             ters=self.args["SHIFT"]//use_num
             res=self.fft(resorce.copy()/32767.0)
             res=res[:,:self.args["SHIFT"],:].reshape(1,-1,self.args["SHIFT"],2)
@@ -151,17 +143,14 @@ class Model:
                 resorce2=self.fft(resorce2/32767)[:,:self.args["SHIFT"],:].reshape(1,-1,self.args["SHIFT"],2)
                 res=np.append(res,resorce2,axis=0)
             # running network
-            # ネットワーク実行
             response=self.sess.run(self.fake_aB_image_test,feed_dict={ self.input_model_test:res})
             res2 = response.copy()[:, :, ::-1, :]
             response = np.append(response, res2, axis=2)
             response[:,:,self.args["SHIFT"]:,1]*=-1
             response=np.clip(response,-60.0,12.0)
             # Postprocess
-            # 後処理
 
             # IFFT
-            # 短時間高速離散逆フーリエ変換
             rest=np.zeros(self.args["input_size"])
             last=np.zeros(self.args["input_size"])
             for i in range(response.shape[0]):
@@ -173,11 +162,9 @@ class Model:
                 last=(resa/use_num)[-self.args["input_size"]:]
             res3 = np.append(res3, response[0,:,:,:]).reshape(-1,self.args["NFFT"],2)
 
-            # 変換後処理
             res = np.clip(rest, -1.0, 1.0)*32767
 
             # chaching results
-            # 結果の保存
             res=res.reshape(-1).astype(np.int16)
             otp=np.append(otp,res)
         h=otp.shape[0]-in_put.shape[0]
@@ -188,7 +175,6 @@ class Model:
 
     def load(self):
         # initialize variables
-        # 変数の初期化
         init_op = tf.global_variables_initializer()
         self.sess.run(init_op)
         print(" [*] Reading checkpoint...")
@@ -235,9 +221,6 @@ class Model:
         data=dds[:,:,0]+1j*dds[:,:,1]
         fft_s = np.fft.ifft(data,n=self.args["NFFT"], axis=1)
         fft_data = fft_s.real
-        # window=np.hamming(self.args["NFFT"])
-        # window=np.clip(window,0.5,1.0)
-        # fft_data[:]/=window
         v = fft_data[:, :self.args["NFFT"]// 2].copy()
         reds = fft_data[-1, self.args["NFFT"] // 2:].copy()
         lats = np.roll(fft_data[:, self.args["NFFT"] // 2:].copy(), 1, axis=0 )

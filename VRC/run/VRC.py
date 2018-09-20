@@ -1,23 +1,19 @@
 from model.model_cpu import Model
 import numpy as np
-import scipy
+import scipy,scipy.signal
 import pyaudio as pa
 import atexit
 import time
-path_to_networks = './Network'
-graph_filename = './graph'
+path_to_networks = './best_model'
+
 NFFT=1024
 SHIFT=512
 TERM=4096
-dilation_size=0
-boost=1.0
-otp_boost=1.0
-noise_filter_rate=0.9
-print(np.fft.fftfreq(NFFT,1.0/16000)[13])
-def preem(data):
-    dd=np.roll(data.copy(), -1)
-    dd[-1]=0.0
-    return data - 0.97*dd
+fs = 44100
+channels = 1
+sampling_target=16000
+samplingrate=441*160
+
 def fft(data):
     time_ruler = data.shape[0] // SHIFT
     if data.shape[0] % SHIFT == 0:
@@ -36,7 +32,6 @@ def fft(data):
     d = np.arctan2(im, re).reshape(time_ruler, -1, 1)
     spec = np.concatenate((c, d), 2)
     return spec
-
 
 def ifft(datanum_in, red):
     data = datanum_in
@@ -61,8 +56,6 @@ net=Model("./setting.json")
 net.load()
 p_in = pa.PyAudio()
 py_format = p_in.get_format_from_width(2)
-fs = 16000
-channels = 1
 use_device_index = 0
 data=np.zeros(TERM)
 
@@ -71,17 +64,13 @@ def process(data):
     output=net.sess.run(net.fake_aB_image_test,feed_dict={net.input_model_test:data})
     return output
 inf=p_in.get_default_output_device_info()
-print(inf)
 stream=p_in.open(format = pa.paInt16,
 		channels = 1,
 		rate = fs,
-		frames_per_buffer = TERM,
+		frames_per_buffer = TERM*2,
 		input = True,
 		output = True)
 rdd=np.zeros(SHIFT)
-rdd2=np.zeros(SHIFT)
-rdd3=np.zeros(SHIFT)
-rdd4=np.zeros(SHIFT)
 tt=time.time()
 def terminate():
     stream.stop_stream()
@@ -90,7 +79,7 @@ def terminate():
     print("Stream Stop")
 la=np.zeros([5])
 atexit.register(terminate)
-las=np.zeros([SHIFT*dilation_size+SHIFT])
+las=np.zeros([SHIFT])
 noise_filter=np.zeros(SHIFT)
 print("ノイズ取得中")
 t=0.0
@@ -103,33 +92,28 @@ while t<3:
     else:
         noise_filter = np.mean(s[:, :, 0], axis=0)
     t+=TERM/fs
+up = int(TERM *fs/ sampling_target)
+tt = time.time()
 print("変換　開始")
 while stream.is_active():
-    ins=stream.read(TERM)
-    tt = time.time()
-    inputs = np.frombuffer(ins,dtype=np.int16).reshape(TERM).astype(np.float32)/32767.0*boost
+    ins=stream.read(up)
+    inputs = np.frombuffer(ins,dtype=np.int16).astype(np.float32)/32767.0
+    inputs=scipy.signal.resample(inputs,TERM)
     inputs=np.clip(inputs,-1.0,1.0)
-    # inputs=preem(inputs)
-    inp=np.append(las,inputs).reshape(TERM+SHIFT*(dilation_size+1))
-    las = inputs[-SHIFT*dilation_size-SHIFT:]
+    inp=np.append(las,inputs).reshape(TERM+SHIFT)
+    las = inputs[-SHIFT:]
     roll_stride=SHIFT//2
     n = fft(inp.copy())[:,:SHIFT,:].astype(np.float32)
-    n[:,:,0]-=noise_filter*noise_filter_rate * boost
     res=np.asarray([n])
-    # res=np.asarray([n,n2])
     resp = process(res.copy())
-    # resp[:,:,:,:]-=res[:,:8,:,:]*0.2
-    # resp[:, :, 48:, 0] -= 2.1
-    # resp[:, :, 100:, 0] -= 4.1
-    # resp[:, :, :, 0]-=-noise_filter*0.2
-    # res = res
     res2 = resp.copy()[:, :, ::-1, :]
     ress = np.append(resp, res2, axis=2)
     res,rdd = ifft(ress[0],rdd)
-    # respond = (res + res2) / 2
-    res = (np.clip((res)*otp_boost,-1.0,1.0).reshape(-1)*32767)
-    vs=(res.astype(np.int16)).tobytes()
+    res = (np.clip(res,-1.0,1.0).reshape(-1)*32767)
+    res=scipy.signal.resample(res,up)
+    vs=res.astype(np.int16).tobytes()
     la=np.append(la,time.time() - tt)
     la=la[-5:]
-    # print("CPS:%1.3f" % (np.mean(la)/(TERM/fs)))
+    print("CPS:%1.3f" % (np.mean(la)/(up/fs)))
     output = stream.write(vs)
+    tt = time.time()
