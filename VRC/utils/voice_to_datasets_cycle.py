@@ -99,8 +99,6 @@ for file in files:
     times=data_realA.shape[0]//term+1
     if data_realA.shape[0]%term==0:
         times-=1
-    if times>5000:
-        times=5000
     ttm=time.time()
     resp=np.zeros([NFFT//2])
     for i in range(times):
@@ -161,8 +159,6 @@ for file in files:
     times=data_realA.shape[0]//term+1
     if data_realA.shape[0]%term==0:
         times-=1
-    if times>5000:
-        times=5000
     ttm=time.time()
     resp=np.zeros([NFFT//2])
     for i in range(times):

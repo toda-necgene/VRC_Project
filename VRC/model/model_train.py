@@ -124,9 +124,9 @@ class Model:
                 fake_bA_image = generator(input_model_B_fixed, reuse=None, train=True)
 
             with tf.variable_scope("generator_2",reuse=True):
-                fake_Ba_image = generator(back_drop(fake_aB_image,0.8), reuse=True,train=True)
+                fake_Ba_image = generator(back_drop(fake_aB_image,0.75), reuse=True,train=True)
             with tf.variable_scope("generator_1",reuse=True):
-                fake_Ab_image = generator(back_drop(fake_bA_image,0.8), reuse=True,train=True)
+                fake_Ab_image = generator(back_drop(fake_bA_image,0.75), reuse=True,train=True)
 
         #creating discriminator
         with tf.variable_scope("discrims"):
@@ -457,7 +457,7 @@ class Model:
             plt.savefig(path + ".png")
             upload(out_puts, path)
 
-        print(" [I] Epoch %04d tested. score: %2.3f " % (epoch, test_score))
+        print(" [I] Epoch %04d tested. score: %2.3f " % (epoch, float(test_score)))
 
         self.save(self.args["checkpoint_dir"], epoch, self.saver)
         if test_score < self.best:
@@ -536,7 +536,6 @@ def back_drop(ten,rate):
     tenA = ten * prop
     tenB = ten * (1 - prop)
     return tenA+tf.stop_gradient(tenB)
-
 def nowtime():
     return datetime.now().strftime("%Y_%m_%d %H_%M_%S")
 

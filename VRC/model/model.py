@@ -1,6 +1,6 @@
 
 import tensorflow as tf
-
+import math
 
 def discriminator(inp,reuse):
     current=inp
@@ -10,13 +10,13 @@ def discriminator(inp,reuse):
 
     # convolution(2*4,stride 1*4)
     for i in range(depth):
-        ten = tf.layers.conv2d(current, chs[i], kernel_size=[3,7], strides=[1,4], padding="SAME",kernel_initializer=tf.truncated_normal_initializer(stddev=0.02),use_bias=True, data_format="channels_last",name="disc_"+str(i),reuse=reuse)
-        ten=tf.layers.dropout(ten,0.4)
+        ten = tf.layers.conv2d(current, chs[i], kernel_size=[3,7], strides=[1,4], padding="SAME",kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2/(3*7*chs[i]))),use_bias=True, data_format="channels_last",name="disc_"+str(i),reuse=reuse)
+        # ten=tf.layers.dropout(ten,0.4)
         current = tf.nn.leaky_relu(ten)
 
     # dense
-    current=tf.reshape(current,[ten.shape[0],ten.shape[1],ten.shape[2]*ten.shape[3]])
-    ten=tf.layers.dense(current,1,name="dence",reuse=reuse)
+    current=tf.reshape(current,[current.shape[0],current.shape[1],current.shape[2]*current.shape[3]])
+    ten=tf.layers.dense(current,1,name="dence",reuse=reuse,kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2)))
 
     return ten
 def generator(ten,reuse,train):
@@ -30,7 +30,7 @@ def generator(ten,reuse,train):
     for i in range(times):
         # Encoding
         tenA = tf.layers.conv2d(ten, chs_enc[i], kernel_size=[1, 4], strides=[1, 4], padding="VALID",
-                                kernel_initializer=tf.truncated_normal_initializer(stddev=0.02),use_bias=False,
+                                kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/(4*32))),use_bias=False,
                                 data_format="channels_last", reuse=reuse, name="enc_conv"+str(i),
                                 dilation_rate=(1, 1))
         tenA = tf.layers.batch_normalization(tenA, axis=3, training=train, trainable=True, reuse=reuse,name="enc_bn"+str(i))
@@ -39,16 +39,16 @@ def generator(ten,reuse,train):
     for i in range(res):
         #inception resblock
         tenA =tf.layers.conv2d(ten, 32, [3, 5], [1, 1], padding="SAME",
-                               kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=False,
+                               kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/(3*5*32))), use_bias=False,
                                data_format="channels_last", reuse=reuse, name="res_conv_A_" + str(i))
 
         tenB = tf.layers.conv2d(ten, 32, [1, 1], [1, 1], padding="SAME",
-                                kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=False,
+                                kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/32)), use_bias=False,
                                 data_format="channels_last", reuse=reuse, name="res_conv_B_" + str(i))
 
-        tenB=tf.transpose(tenB,[0,1,3,2])
+        tenB=tf.transpose(tf.nn.relu(tenB),[0,1,3,2])
         r=tenB.get_shape()[-1]
-        tenB=tf.layers.dense(tenB, r,use_bias=False,kernel_initializer=tf.random_normal_initializer(stddev=0.02)
+        tenB=tf.layers.dense(tenB, r,use_bias=False,kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/int(r)))
                              , reuse=reuse, name="res_dens_D_" + str(i))
         tenB = tf.transpose(tenB, [0, 1, 3, 2])
 
@@ -104,7 +104,7 @@ def deconve_with_ps(inp,r,otp_shape,reuses=None,name="",b=True):
 
     # convolution
     ten = tf.layers.conv2d(inp, ch_r, kernel_size=[1,1], strides=[1,1], padding="VALID",
-                           kernel_initializer=tf.truncated_normal_initializer(stddev=0.02), use_bias=b,
+                           kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/ch_r)), use_bias=b,
                            data_format="channels_last", reuse=reuses, name=name )
     # reshaping
     ten = tf.reshape(ten, [b_size, r[0], r[1], in_h, in_w, otp_shape])
@@ -115,7 +115,7 @@ def deconve_with_ps(inp,r,otp_shape,reuses=None,name="",b=True):
 def ShakeDrop(ten,rate,train):
     # shakedrop layer
 
-    s=ten.get_shape()
+    s=[int(ten.get_shape()[0]),1,1,int(ten.get_shape()[3])]
 
     # random noise
     f_rand=tf.random_uniform(s,-1.0,1.0)
