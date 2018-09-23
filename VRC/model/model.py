@@ -114,8 +114,8 @@ def deconve_with_ps(inp,r,otp_shape,reuses=None,name="",b=True):
     return ten
 def ShakeDrop(ten,rate,train):
     # shakedrop layer
-    s=ten.get_shape()
-    # s=[int(ten.get_shape()[0]),1,1,int(ten.get_shape()[3])]
+    # s=ten.get_shape()
+    s=[int(ten.get_shape()[0]),int(ten.get_shape()[1]),int(ten.get_shape()[2]),1]
 
     # random noise
     f_rand=tf.random_uniform(s,-1.0,1.0)
