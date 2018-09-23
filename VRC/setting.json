@@ -3,7 +3,7 @@
         "checkpoint_dir":"./trained_models/",
         "best_checkpoint_dir":"./best_model/",
         "wave_otp_dir":"./harvests/",
-        "version":"1.0.0"
+        "version":"1.0.04"
     },
     "training_config":{
         "train_epoch": 800,
@@ -17,7 +17,7 @@
         "d_lr_min":1e-6,
         "g_b1":0.5,
         "d_b1":0.5,
-        "lr_decay_term":100,
+        "lr_decay_term":800,
         "save_interval":10,
         "weight_GAN":1.0,
         "weight_Cycle_Pow":50.0,
