@@ -361,8 +361,10 @@ class Model:
         for epoch in range(self.args["train_epoch"]):
 
             # calculating learning-rate
-            lr_d_culced = lr_d_opt_min + (lr_d_opt_max - lr_d_opt_min)*np.cos(np.pi*0.5*(T_cur/T)) * T_pow
-            lr_g_culced = lr_g_opt_min + (lr_g_opt_max - lr_g_opt_min)*np.cos(np.pi*0.5*(T_cur/T)) * T_pow
+            lr_d_culced = lr_d_opt_min + 0.5*(lr_d_opt_max - lr_d_opt_min)*np.cos(np.pi*0.5*(T_cur/T)) * T_pow
+            lr_g_culced = lr_g_opt_min + 0.5*(lr_g_opt_max - lr_g_opt_min)*np.cos(np.pi*0.5*(T_cur/T)) * T_pow
+            # lr_d_culced=lr_d_opt_max
+            # lr_g_culced = lr_g_opt_max
 
             # shuffling train_data_index
             np.random.shuffle(index_list)

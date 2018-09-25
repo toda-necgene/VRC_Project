@@ -22,15 +22,15 @@ def discriminator(inp,reuse):
 def generator(ten,reuse,train):
 
     # setting paramater
-    times=1
-    res=8
-    chs_enc=[64]
-    chs_dec=[1]
+    times=2
+    res=4
+    chs_enc=[8,128]
+    chs_dec=[16,1]
 
     for i in range(times):
         # Encoding
-        tenA = tf.layers.conv2d(ten, chs_enc[i], kernel_size=[1, 8], strides=[1, 8], padding="VALID",
-                                kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/(4*32))),use_bias=False,
+        tenA = tf.layers.conv2d(ten, chs_enc[i], kernel_size=[1, 4], strides=[1, 4], padding="VALID",
+                                kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/(4*chs_enc[i]))),use_bias=False,
                                 data_format="channels_last", reuse=reuse, name="enc_conv"+str(i),
                                 dilation_rate=(1, 1))
         tenA = tf.layers.batch_normalization(tenA, axis=3, training=train, trainable=True, reuse=reuse,name="enc_bn"+str(i))
@@ -39,21 +39,22 @@ def generator(ten,reuse,train):
     for i in range(res):
         #inception resblock
         tenA =tf.layers.conv2d(ten, 64, [3, 5], [1, 1], padding="SAME",
-                               kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/(3*5*32))), use_bias=False,
+                               kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/(3*5*64))), use_bias=False,
                                data_format="channels_last", reuse=reuse, name="res_conv_A_" + str(i))
 
-        # tenB = tf.layers.conv2d(ten, 32, [1, 1], [1, 1], padding="SAME",
-        #                         kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/32)), use_bias=False,
-        #                         data_format="channels_last", reuse=reuse, name="res_conv_B_" + str(i))
-        #
-        # tenB=tf.transpose(tf.nn.relu(tenB),[0,1,3,2])
-        # r=tenB.get_shape()[-1]
-        # tenB=tf.layers.dense(tenB, r,use_bias=False,kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/int(r)))
-        #                      , reuse=reuse, name="res_dens_D_" + str(i))
-        # tenB = tf.transpose(tenB, [0, 1, 3, 2])
+        tenB = tf.layers.conv2d(ten, 64, [1, 1], [1, 1], padding="SAME",
+                                kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/64)), use_bias=False,
+                                data_format="channels_last", reuse=reuse, name="res_conv_B_" + str(i))
+
+        tenB=tf.transpose(tf.nn.relu(tenB),[0,1,3,2])
+        r=tenB.get_shape()[-1]
+        tenB=tf.layers.dense(tenB, r,use_bias=False,kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/int(r)))
+                             , reuse=reuse, name="res_dens_D_" + str(i))
+        tenB = tf.transpose(tenB, [0, 1, 3, 2])
 
         # concatnate and BatchNormalization
-        tenG = tenA
+        tenG = tf.concat([tenA,tenB],axis=3)
+        # tenG=tenB
         tenG = tf.layers.batch_normalization(tenG, axis=3, training=train, trainable=True, reuse=reuse,
                                              name="res_bn_" + str(i))
 
@@ -71,21 +72,21 @@ def generator(ten,reuse,train):
 
     # power spectrum decoder
     tenPOW=ten
-    # for i in range(1):
-    tenPOW = deconve_with_ps(tenPOW, [1, 8], chs_dec[0],  reuses=reuse, name="dec_pish_POW"+str(i),b=True)
-        # if i!=1:
-        #     tenPOW = tf.layers.batch_normalization(tenPOW, axis=3, training=train, trainable=True, reuse=reuse,
-        #                                          name="dec_bn_POW"+str(times+res+i) )
-        #     tenPOW = tf.nn.relu(tenPOW)
+    for i in range(times):
+        tenPOW = deconve_with_ps(tenPOW, [1, 4], chs_dec[i],  reuses=reuse, name="dec_pish_POW"+str(i),b=(i == times-1))
+        if i!=times-1:
+            tenPOW = tf.layers.batch_normalization(tenPOW, axis=3, training=train, trainable=True, reuse=reuse,
+                                                 name="dec_bn_POW"+str(times+res+i) )
+            tenPOW = tf.nn.relu(tenPOW)
 
     # phase spectrum decoder
     tenPHA=ten
-    # for i in range(1):
-    tenPHA = deconve_with_ps(tenPHA, [1, 8], chs_dec[0], reuses=reuse, name="dec_pish_PHA"+str(i),b=True)
-        # if i != 1:
-        #     tenPHA = tf.layers.batch_normalization(tenPHA, axis=3, training=train, trainable=True, reuse=reuse,
-        #                                          name="dec_bn_PHA"+str(times+res+i) )
-        #     tenPHA = tf.nn.relu(tenPHA)
+    for i in range(times):
+        tenPHA = deconve_with_ps(tenPHA, [1, 4], chs_dec[i], reuses=reuse, name="dec_pish_PHA"+str(i),b=(i == times-1))
+        if i != times-1:
+            tenPHA = tf.layers.batch_normalization(tenPHA, axis=3, training=train, trainable=True, reuse=reuse,
+                                                 name="dec_bn_PHA"+str(times+res+i) )
+            tenPHA = tf.nn.relu(tenPHA)
 
     # concating and activation
     ten=tf.concat([tenPOW,tenPHA],axis=3)

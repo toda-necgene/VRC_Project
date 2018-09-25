@@ -4,6 +4,7 @@
     <list default="true" id="bcabb495-93d4-437a-b14b-9cb2802ec5b1" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/VRC/model/model.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/model/model.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/VRC/model/model_train.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/model/model_train.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/VRC/setting.json" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/setting.json" afterDir="false" />
     </list>
     <ignored path="C:\Users\tadop\git\vrc\.idea\shelf/" />
@@ -18,14 +19,14 @@
     <session id="715546864">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
-          <entry key="project.closed" value="34" />
+          <entry key="project.closed" value="36" />
           <entry key="project.open.time.10" value="5" />
           <entry key="project.open.time.11" value="3" />
           <entry key="project.open.time.12" value="4" />
           <entry key="project.open.time.13" value="1" />
           <entry key="project.open.time.14" value="1" />
-          <entry key="project.open.time.16" value="1" />
-          <entry key="project.open.time.17" value="1" />
+          <entry key="project.open.time.16" value="2" />
+          <entry key="project.open.time.17" value="2" />
           <entry key="project.open.time.20" value="1" />
           <entry key="project.open.time.21" value="1" />
           <entry key="project.open.time.235" value="1" />
@@ -46,7 +47,7 @@
           <entry key="project.open.time.61" value="1" />
           <entry key="project.open.time.66" value="1" />
           <entry key="project.open.time.9" value="1" />
-          <entry key="project.opened" value="43" />
+          <entry key="project.opened" value="45" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
@@ -74,18 +75,18 @@
         <counts>
           <entry key="dummy" value="4" />
           <entry key="gitignore" value="53" />
-          <entry key="json" value="2482" />
+          <entry key="json" value="2502" />
           <entry key="md" value="718" />
-          <entry key="py" value="9930" />
-          <entry key="txt" value="2366" />
+          <entry key="py" value="10085" />
+          <entry key="txt" value="2383" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="JSON" value="2482" />
+          <entry key="JSON" value="2502" />
           <entry key="Markdown" value="718" />
-          <entry key="PLAIN_TEXT" value="2423" />
-          <entry key="Python" value="9930" />
+          <entry key="PLAIN_TEXT" value="2440" />
+          <entry key="Python" value="10085" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.vcs.git.usages" />
@@ -96,12 +97,12 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/model/model_train.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="16">
-              <caret line="459" column="81" selection-start-line="459" selection-start-column="81" selection-end-line="459" selection-end-column="81" />
+            <state relative-caret-position="176">
+              <caret line="364" column="45" selection-start-line="364" selection-start-column="45" selection-end-line="364" selection-end-column="45" />
               <folding>
                 <element signature="e#0#21#0" expanded="true" />
-                <marker date="1537513102962" expanded="true" signature="20586:20591" ph="..." />
-                <marker date="1537513102962" expanded="true" signature="23269:23274" ph="..." />
+                <marker date="1537727772399" expanded="true" signature="20674:20679" ph="..." />
+                <marker date="1537727772399" expanded="true" signature="23357:23362" ph="..." />
               </folding>
             </state>
           </provider>
@@ -110,8 +111,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/VRC/setting.json">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="80">
-              <caret line="5" column="25" selection-start-line="5" selection-start-column="25" selection-end-line="5" selection-end-column="25" />
+            <state relative-caret-position="320">
+              <caret line="20" column="27" selection-start-line="20" selection-start-column="27" selection-end-line="20" selection-end-column="27" />
             </state>
           </provider>
         </entry>
@@ -119,7 +120,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets_cycle.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1552">
+            <state relative-caret-position="425">
               <caret line="101" column="18" selection-start-line="101" selection-start-column="18" selection-end-line="101" selection-end-column="18" />
             </state>
           </provider>
@@ -128,8 +129,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/model/model.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="328">
-              <caret line="55" column="19" selection-start-line="55" selection-start-column="19" selection-end-line="55" selection-end-column="19" />
+            <state relative-caret-position="-80">
+              <caret line="13" column="39" selection-start-line="13" selection-start-column="39" selection-end-line="13" selection-end-column="39" />
               <folding>
                 <element signature="e#1#24#0" expanded="true" />
               </folding>
@@ -316,13 +317,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1534034935853</updated>
-    </task>
-    <task id="LOCAL-00077" summary="[4.3.023] 学習の確認&#10;&#10;[fix] ハイパーパラメータの調整が成功しているかを確認">
-      <created>1535728678946</created>
-      <option name="number" value="00077" />
-      <option name="presentableId" value="LOCAL-00077" />
-      <option name="project" value="LOCAL" />
-      <updated>1535728678946</updated>
     </task>
     <task id="LOCAL-00078" summary="[4.3.030] 学習の確認&#10;&#10;[fix] ハイパーパラメータの調整が成功しているかを確認">
       <created>1535951243654</created>
@@ -660,12 +654,18 @@
       <option name="project" value="LOCAL" />
       <updated>1537696412969</updated>
     </task>
-    <option name="localTasksCounter" value="126" />
+    <task id="LOCAL-00126" summary="[1.0.000] 計算の高速化">
+      <created>1537702615936</created>
+      <option name="number" value="00126" />
+      <option name="presentableId" value="LOCAL-00126" />
+      <option name="project" value="LOCAL" />
+      <updated>1537702615937</updated>
+    </task>
+    <option name="localTasksCounter" value="127" />
     <servers />
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1456" height="886" extended-state="6" />
-    <editor active="true" />
     <layout>
       <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.19816643" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
@@ -678,9 +678,9 @@
       <window_info active="true" anchor="bottom" id="Run" order="5" sideWeight="0.49506348" visible="true" weight="0.32536522" />
       <window_info anchor="bottom" id="TODO" order="6" />
       <window_info anchor="bottom" id="Version Control" order="7" weight="0.3231383" />
-      <window_info anchor="bottom" id="Terminal" order="8" sideWeight="0.49788433" weight="0.32934928" />
-      <window_info anchor="bottom" id="Event Log" order="9" sideWeight="0.5049365" side_tool="true" weight="0.32536522" />
-      <window_info anchor="bottom" id="Python Console" order="10" weight="0.32934928" />
+      <window_info anchor="bottom" id="Event Log" order="8" sideWeight="0.5049365" side_tool="true" weight="0.32536522" />
+      <window_info anchor="bottom" id="Python Console" order="9" weight="0.32934928" />
+      <window_info anchor="bottom" id="Terminal" order="10" sideWeight="0.49788433" weight="0.32934928" />
       <window_info anchor="right" id="Commander" order="0" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
@@ -690,7 +690,6 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[5.6.027] Gの修正&#10;&#10;[fix] [-1.0,1.0]に正規化&#10;[fix] MFFCを正規化しないように修正&#10;[fix] CycleLossを2.5に変更&#10;[fix] 目標達成時の減衰率を0.1から0.5に変更" />
     <MESSAGE value="[5.6.029] Gの修正&#10;&#10;[fix]" />
     <MESSAGE value="[5.6.030] 評価方法の修正&#10;&#10;[fix]　小数式に変更" />
     <MESSAGE value="[5.6.031] ハイパーパラメータの修正&#10;&#10;[fix]　CycleLossを2.5に変更" />
@@ -715,7 +714,8 @@
     <MESSAGE value="[1.0.000] 学習成功版" />
     <MESSAGE value="[1.0.000] 学習安定版" />
     <MESSAGE value="[1.0.000] 倍計算リアルタイム変換を実装予定" />
-    <option name="LAST_COMMIT_MESSAGE" value="[1.0.000] 倍計算リアルタイム変換を実装予定" />
+    <MESSAGE value="[1.0.000] 計算の高速化" />
+    <option name="LAST_COMMIT_MESSAGE" value="[1.0.000] 計算の高速化" />
   </component>
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/ui.lnf.xml" />
@@ -826,29 +826,29 @@
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/havests/wave2wave1.0.0/2018_09_20 23_25_34_e390.png" />
-    <entry file="file://$PROJECT_DIR$/VRC/model/model_train.py">
+    <entry file="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets_cycle.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="16">
-          <caret line="459" column="81" selection-start-line="459" selection-start-column="81" selection-end-line="459" selection-end-column="81" />
-          <folding>
-            <element signature="e#0#21#0" expanded="true" />
-            <marker date="1537513102962" expanded="true" signature="20586:20591" ph="..." />
-            <marker date="1537513102962" expanded="true" signature="23269:23274" ph="..." />
-          </folding>
+        <state relative-caret-position="425">
+          <caret line="101" column="18" selection-start-line="101" selection-start-column="18" selection-end-line="101" selection-end-column="18" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets_cycle.py">
+    <entry file="file://$PROJECT_DIR$/VRC/model/model_train.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1552">
-          <caret line="101" column="18" selection-start-line="101" selection-start-column="18" selection-end-line="101" selection-end-column="18" />
+        <state relative-caret-position="176">
+          <caret line="364" column="45" selection-start-line="364" selection-start-column="45" selection-end-line="364" selection-end-column="45" />
+          <folding>
+            <element signature="e#0#21#0" expanded="true" />
+            <marker date="1537727772399" expanded="true" signature="20674:20679" ph="..." />
+            <marker date="1537727772399" expanded="true" signature="23357:23362" ph="..." />
+          </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/model/model.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="328">
-          <caret line="55" column="19" selection-start-line="55" selection-start-column="19" selection-end-line="55" selection-end-column="19" />
+        <state relative-caret-position="-80">
+          <caret line="13" column="39" selection-start-line="13" selection-start-column="39" selection-end-line="13" selection-end-column="39" />
           <folding>
             <element signature="e#1#24#0" expanded="true" />
           </folding>
@@ -857,8 +857,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/setting.json">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="80">
-          <caret line="5" column="25" selection-start-line="5" selection-start-column="25" selection-end-line="5" selection-end-column="25" />
+        <state relative-caret-position="320">
+          <caret line="20" column="27" selection-start-line="20" selection-start-column="27" selection-end-line="20" selection-end-column="27" />
         </state>
       </provider>
     </entry>
