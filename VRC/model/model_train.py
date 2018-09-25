@@ -409,7 +409,6 @@ class Model:
             if T==T_cur:
                 T=T*2
                 T_cur=0
-                T_pow*=0.5
 
         self.test_and_save(self.args["train_epoch"])
         tnt=time.time()-start_time_all
