@@ -80,7 +80,7 @@ class Model:
         # shapes of inputs
         ss = self.args["input_size"] // self.args["SHIFT"]
         self.input_size_model = [self.args["batch_size"], ss, self.args["NFFT"] // 2, 2]
-        self.input_size_test = [1, ss, self.args["NFFT"] // 2, 2]
+        self.input_size_test = [2, ss, self.args["NFFT"] // 2, 2]
 
         self.sess = tf.InteractiveSession(config=tf.ConfigProto(gpu_options=tf.GPUOptions()))
 
@@ -114,7 +114,7 @@ class Model:
         #function of test
         #To convert wave file
 
-        use_num = 4
+        use_num = 1
         tt=time.time()
         ipt=self.args["input_size"]+self.args["SHIFT"]
         times=in_put.shape[0]//(self.args["input_size"])+1
