@@ -71,6 +71,7 @@ stream=p_in.open(format = pa.paInt16,
 		input = True,
 		output = True)
 rdd=np.zeros(SHIFT)
+rdd2=np.zeros(SHIFT)
 tt=time.time()
 def terminate():
     stream.stop_stream()
@@ -79,19 +80,10 @@ def terminate():
     print("Stream Stop")
 la=np.zeros([5])
 atexit.register(terminate)
-las=np.zeros([SHIFT])
+las=np.zeros([SHIFT+TERM//2])
 noise_filter=np.zeros(SHIFT)
 print("ノイズ取得中")
 t=0.0
-while t<3:
-    ins = stream.read(TERM)
-    inp = np.frombuffer(ins, dtype=np.int16).reshape(TERM).astype(np.float32) / 32767.0
-    s = fft(inp.copy())[:, :SHIFT, :].astype(np.float32)
-    if np.mean(noise_filter)!=0.0:
-        noise_filter=(np.mean(s[:,:,0],axis=0)+noise_filter)/2
-    else:
-        noise_filter = np.mean(s[:, :, 0], axis=0)
-    t+=TERM/fs
 up = int(TERM *fs/ sampling_target)
 tt = time.time()
 print("変換　開始")
@@ -100,16 +92,22 @@ while stream.is_active():
     inputs = np.frombuffer(ins,dtype=np.int16).astype(np.float32)/32767.0
     inputs=scipy.signal.resample(inputs,TERM)
     inputs=np.clip(inputs,-1.0,1.0)
-    inp=np.append(las,inputs).reshape(TERM+SHIFT)
-    las = inputs[-SHIFT:]
+    inp=np.append(las,inputs).reshape(TERM+SHIFT+TERM//2)
+    las = inputs[-SHIFT-TERM//2:]
     roll_stride=SHIFT//2
     n = fft(inp.copy())[:,:SHIFT,:].astype(np.float32)
-    res=np.asarray([n])
+    # print(n.shape)
+    res=np.asarray([n[:8],n[4:]])
+
     resp = process(res.copy())
     res2 = resp.copy()[:, :, ::-1, :]
     ress = np.append(resp, res2, axis=2)
-    res,rdd = ifft(ress[0],rdd)
-    res = (np.clip(res,-1.0,1.0).reshape(-1)*32767)
+    resb,rdd = ifft(ress[0],rdd)
+    resb = (np.clip(resb,-1.0,1.0).reshape(-1)*32767)
+    res2, rdd2 = ifft(ress[1], rdd2)
+    res2 = (np.clip(res2, -1.0, 1.0).reshape(-1) * 32767)
+    res=res2
+    res[:TERM//2]=(res[:TERM//2]+resb[-TERM//2:])//2
     res=scipy.signal.resample(res,up)
     vs=res.astype(np.int16).tobytes()
     la=np.append(la,time.time() - tt)
