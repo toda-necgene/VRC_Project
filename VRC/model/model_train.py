@@ -77,9 +77,6 @@ class Model:
         except json.JSONDecodeError as e:
             print(" [W] JSONDecodeError: ", e)
             print(" [W] Use default setting")
-        except FileNotFoundError:
-            print(" [W] Setting file is not found :", path)
-            print(" [W] Use default setting")
 
         # initializing paramaters
         self.args["SHIFT"] = self.args["NFFT"]//2
@@ -208,7 +205,6 @@ class Model:
         self.g_test_display=tf.summary.merge([fake_B_audio_display,fake_B_image_display,g_test_value_display])
 
         #saver
-        #保存の準備
         self.saver = tf.train.Saver()
         self.saver_best = tf.train.Saver(max_to_keep=1)
 
@@ -345,14 +341,14 @@ class Model:
         index_list=[h for h in range(train_data_num)]
         index_list2 = [h for h in range(train_data_num)]
 
-        #　prepareing training-data
+        # prepareing training-data
         batch_files = data[:train_data_num]
         batch_files2 = data2[:train_data_num]
 
         print(" [I] loading dataset...")
         self.sounds_r = np.asarray([(imread(batch_file)) for batch_file in batch_files])
         self.sounds_t = np.asarray([(imread(batch_file)) for batch_file in batch_files2])
-        print(" [I] %d data loaded!!",train_data_num)
+        print(" [I] %d data loaded!!" % train_data_num)
 
         # initializing training infomation
         start_time = time.time()
@@ -478,7 +474,6 @@ class Model:
                         global_step=step)
     def load(self):
         # initialize variables
-        # 変数の初期化
         init_op = tf.global_variables_initializer()
         self.sess.run(init_op)
         print(" [I] Reading checkpoint...")

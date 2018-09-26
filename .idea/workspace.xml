@@ -2,10 +2,13 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="bcabb495-93d4-437a-b14b-9cb2802ec5b1" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/vrc.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vrc.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/VRC/model/model.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/model/model.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/VRC/model/model_cpu.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/model/model_cpu.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/VRC/model/model_train.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/model/model_train.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/VRC/setting.json" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/setting.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/VRC/utils/model_test.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/utils/model_test.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/VRC/utils/voice_to_datasets_cycle.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/utils/voice_to_datasets_cycle.py" afterDir="false" />
     </list>
     <ignored path="C:\Users\tadop\git\vrc\.idea\shelf/" />
     <ignored path="$PROJECT_DIR$/VRC/Network/to/" />
@@ -57,7 +60,7 @@
           <entry key="json" value="6" />
           <entry key="md" value="3" />
           <entry key="png" value="1" />
-          <entry key="py" value="33" />
+          <entry key="py" value="35" />
           <entry key="xml" value="6" />
         </counts>
       </usages-collector>
@@ -67,7 +70,7 @@
           <entry key="JSON" value="6" />
           <entry key="Markdown" value="3" />
           <entry key="PLAIN_TEXT" value="10" />
-          <entry key="Python" value="33" />
+          <entry key="Python" value="35" />
           <entry key="XML" value="6" />
         </counts>
       </usages-collector>
@@ -75,18 +78,18 @@
         <counts>
           <entry key="dummy" value="4" />
           <entry key="gitignore" value="53" />
-          <entry key="json" value="2508" />
+          <entry key="json" value="2550" />
           <entry key="md" value="718" />
-          <entry key="py" value="10086" />
-          <entry key="txt" value="2401" />
+          <entry key="py" value="10138" />
+          <entry key="txt" value="2423" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="JSON" value="2508" />
+          <entry key="JSON" value="2550" />
           <entry key="Markdown" value="718" />
-          <entry key="PLAIN_TEXT" value="2458" />
-          <entry key="Python" value="10086" />
+          <entry key="PLAIN_TEXT" value="2480" />
+          <entry key="Python" value="10138" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.vcs.git.usages" />
@@ -94,15 +97,15 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/model/model_train.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="208">
-              <caret line="411" lean-forward="true" selection-start-line="411" selection-end-line="411" />
+            <state relative-caret-position="-5711">
+              <caret line="79" selection-start-line="79" selection-end-line="79" />
               <folding>
                 <element signature="e#0#21#0" expanded="true" />
-                <marker date="1537865192649" expanded="true" signature="20647:20652" ph="..." />
-                <marker date="1537865192649" expanded="true" signature="23330:23335" ph="..." />
+                <marker date="1537915485126" expanded="true" signature="20494:20499" ph="..." />
+                <marker date="1537915485126" expanded="true" signature="23160:23165" ph="..." />
               </folding>
             </state>
           </provider>
@@ -111,8 +114,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/setting.json">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="304">
-              <caret line="19" column="25" selection-start-line="19" selection-start-column="25" selection-end-line="19" selection-end-column="25" />
+            <state relative-caret-position="80">
+              <caret line="5" column="26" selection-start-line="5" selection-start-column="26" selection-end-line="5" selection-end-column="26" />
             </state>
           </provider>
         </entry>
@@ -120,17 +123,17 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets_cycle.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="425">
-              <caret line="101" column="18" selection-start-line="101" selection-start-column="18" selection-end-line="101" selection-end-column="18" />
+            <state relative-caret-position="185">
+              <caret line="174" column="24" selection-start-line="174" selection-start-column="24" selection-end-line="174" selection-end-column="24" />
             </state>
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/VRC/model/model.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="208">
-              <caret line="13" column="39" selection-start-line="13" selection-start-column="39" selection-end-line="13" selection-end-column="39" />
+            <state relative-caret-position="251">
+              <caret line="40" column="38" selection-start-line="40" selection-start-column="38" selection-end-line="40" selection-end-column="38" />
               <folding>
                 <element signature="e#1#24#0" expanded="true" />
               </folding>
@@ -164,16 +167,17 @@
         <option value="$PROJECT_DIR$/VRC/readme.md" />
         <option value="$PROJECT_DIR$/VRC/setting_examples.json" />
         <option value="$PROJECT_DIR$/.gitignore" />
+        <option value="$PROJECT_DIR$/VRC/utils/model_test.py" />
         <option value="$PROJECT_DIR$/VRC/model/model_cpu.py" />
         <option value="$PROJECT_DIR$/VRC/utils/voice_to_datasets_cycle.py" />
+        <option value="$PROJECT_DIR$/VRC/model/model_train.py" />
         <option value="$PROJECT_DIR$/VRC/model/model.py" />
         <option value="$PROJECT_DIR$/VRC/setting.json" />
-        <option value="$PROJECT_DIR$/VRC/model/model_train.py" />
       </list>
     </option>
   </component>
   <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="-8" />
+    <option name="x" value="114" />
     <option name="y" value="-8" />
     <option name="width" value="734" />
     <option name="height" value="877" />
@@ -213,19 +217,6 @@
               <item name="vrc" type="462c0819:PsiDirectoryNode" />
               <item name="VRC" type="462c0819:PsiDirectoryNode" />
               <item name="datasets" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
-              <item name="vrc" type="462c0819:PsiDirectoryNode" />
-              <item name="VRC" type="462c0819:PsiDirectoryNode" />
-              <item name="datasets" type="462c0819:PsiDirectoryNode" />
-              <item name="source" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
-              <item name="vrc" type="462c0819:PsiDirectoryNode" />
-              <item name="VRC" type="462c0819:PsiDirectoryNode" />
-              <item name="logs" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
@@ -294,6 +285,27 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="Run" type="PythonConfigurationType" factoryName="Python">
+      <module name="vrc" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="C:\Users\tadop\AppData\Local\Programs\Python\Python36\python.exe" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/VRC" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/VRC" />
+      <option name="PARAMETERS" value="--test" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="Train" type="PythonConfigurationType" factoryName="Python">
       <module name="vrc" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -318,6 +330,7 @@
     <list>
       <item itemvalue="Python.Train" />
       <item itemvalue="Python.Dataset" />
+      <item itemvalue="Python.Run" />
     </list>
   </component>
   <component name="SvnConfiguration">
@@ -330,13 +343,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1534034935853</updated>
-    </task>
-    <task id="LOCAL-00079" summary="[4.3.040] 学習の確認&#10;&#10;[fix] ハイパーパラメータの調整が成功しているかを確認">
-      <created>1535957091144</created>
-      <option name="number" value="00079" />
-      <option name="presentableId" value="LOCAL-00079" />
-      <option name="project" value="LOCAL" />
-      <updated>1535957091144</updated>
     </task>
     <task id="LOCAL-00080" summary="[4.3.041] 学習の確認&#10;&#10;[fix] ハイパーパラメータの調整が成功しているかを確認">
       <created>1535969102319</created>
@@ -674,7 +680,14 @@
       <option name="project" value="LOCAL" />
       <updated>1537861708066</updated>
     </task>
-    <option name="localTasksCounter" value="128" />
+    <task id="LOCAL-00128" summary="[1.0.000] データセットに違うピッチのものを追加した">
+      <created>1537865241013</created>
+      <option name="number" value="00128" />
+      <option name="presentableId" value="LOCAL-00128" />
+      <option name="project" value="LOCAL" />
+      <updated>1537865241013</updated>
+    </task>
+    <option name="localTasksCounter" value="129" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -694,7 +707,7 @@
       <window_info anchor="bottom" id="Version Control" order="7" weight="0.3231383" />
       <window_info anchor="bottom" id="Event Log" order="8" sideWeight="0.5049365" side_tool="true" weight="0.32536522" />
       <window_info anchor="bottom" id="Python Console" order="9" weight="0.32934928" />
-      <window_info anchor="bottom" id="Terminal" order="10" sideWeight="0.49788433" weight="0.32934928" />
+      <window_info anchor="bottom" id="Terminal" order="10" sideWeight="0.49788433" weight="0.32839224" />
       <window_info anchor="right" id="Commander" order="0" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
@@ -704,7 +717,6 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[5.6.030] 評価方法の修正&#10;&#10;[fix]　小数式に変更" />
     <MESSAGE value="[5.6.031] ハイパーパラメータの修正&#10;&#10;[fix]　CycleLossを2.5に変更" />
     <MESSAGE value="[5.6.032] ハイパーパラメータの修正&#10;&#10;[fix]　減衰を0.9に変更" />
     <MESSAGE value="[5.6.032] ハイパーパラメータの修正&#10;&#10;[del] 減衰&#10;[fix] 構造を変更" />
@@ -729,7 +741,8 @@
     <MESSAGE value="[1.0.000] 倍計算リアルタイム変換を実装予定" />
     <MESSAGE value="[1.0.000] 計算の高速化" />
     <MESSAGE value="[1.0.000] チャンネル数を倍、レイヤー数を半分" />
-    <option name="LAST_COMMIT_MESSAGE" value="[1.0.000] チャンネル数を倍、レイヤー数を半分" />
+    <MESSAGE value="[1.0.000] データセットに違うピッチのものを追加した" />
+    <option name="LAST_COMMIT_MESSAGE" value="[1.0.000] データセットに違うピッチのものを追加した" />
   </component>
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/ui.lnf.xml" />
@@ -761,13 +774,6 @@
     <entry file="file://$PROJECT_DIR$/VRC/logs/[glr=0.0002,gb=0.5,dlr=0.0002,db=0.5]wave2wave4.1.036/events.out.tfevents.1534314089.DESKTOP-QFC16G3" />
     <entry file="file://$PROJECT_DIR$/VRC/logs/[glr=0.0002,gb=0.5,dlr=0.0002,db=0.5]wave2wave4.1.065-1/events.out.tfevents.1534563983.DESKTOP-QFC16G3" />
     <entry file="file://$PROJECT_DIR$/VRC/logs/[glr=0.0002,gb=0.5,dlr=0.0002,db=0.5]wave2wave4.1.0851/events.out.tfevents.1534733178.DESKTOP-QFC16G3" />
-    <entry file="file://$PROJECT_DIR$/VRC/utils/model_test.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="48">
-          <caret line="3" selection-start-line="3" selection-end-line="3" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/VRC/logs/[glr=0.0002,gb=0.5,dlr=0.0002,db=0.5]wave2wave4.2.140/events.out.tfevents.1535163488.DESKTOP-QFC16G3" />
     <entry file="file://$PROJECT_DIR$/VRC/logs/[glr=0.0002,gb=0.5,dlr=0.0002,db=0.5]wave2wave4.3.024/events.out.tfevents.1535717867.DESKTOP-QFC16G3" />
     <entry file="file://$PROJECT_DIR$/VRC/logs/[glr=0.1,gb=0.5,dlr=0.0002,db=0.5]wave2wave5.6.061/events.out.tfevents.1536991202.DESKTOP-QFC16G3" />
@@ -818,13 +824,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/model/model_cpu.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="281">
-          <caret line="106" column="40" selection-start-line="106" selection-start-column="40" selection-end-line="106" selection-end-column="40" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/.gitignore">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="192">
@@ -840,38 +839,55 @@
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/havests/wave2wave1.0.0/2018_09_20 23_25_34_e390.png" />
-    <entry file="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets_cycle.py">
+    <entry file="file://$PROJECT_DIR$/VRC/model/model_cpu.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="425">
-          <caret line="101" column="18" selection-start-line="101" selection-start-column="18" selection-end-line="101" selection-end-column="18" />
+        <state relative-caret-position="320">
+          <caret line="82" column="33" selection-start-line="82" selection-start-column="33" selection-end-line="82" selection-end-column="33" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/model/model.py">
+    <entry file="file://$PROJECT_DIR$/VRC/utils/model_test.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="208">
-          <caret line="13" column="39" selection-start-line="13" selection-start-column="39" selection-end-line="13" selection-end-column="39" />
+        <state relative-caret-position="2265">
+          <caret line="237" column="9" selection-start-line="237" selection-start-column="9" selection-end-line="237" selection-end-column="9" />
           <folding>
-            <element signature="e#1#24#0" expanded="true" />
+            <element signature="e#0#14#0" expanded="true" />
           </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/setting.json">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="304">
-          <caret line="19" column="25" selection-start-line="19" selection-start-column="25" selection-end-line="19" selection-end-column="25" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/model/model_train.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="208">
-          <caret line="411" lean-forward="true" selection-start-line="411" selection-end-line="411" />
+        <state relative-caret-position="-5711">
+          <caret line="79" selection-start-line="79" selection-end-line="79" />
           <folding>
             <element signature="e#0#21#0" expanded="true" />
-            <marker date="1537865192649" expanded="true" signature="20647:20652" ph="..." />
-            <marker date="1537865192649" expanded="true" signature="23330:23335" ph="..." />
+            <marker date="1537915485126" expanded="true" signature="20494:20499" ph="..." />
+            <marker date="1537915485126" expanded="true" signature="23160:23165" ph="..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets_cycle.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="185">
+          <caret line="174" column="24" selection-start-line="174" selection-start-column="24" selection-end-line="174" selection-end-column="24" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/VRC/setting.json">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="80">
+          <caret line="5" column="26" selection-start-line="5" selection-start-column="26" selection-end-line="5" selection-end-column="26" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/VRC/model/model.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="251">
+          <caret line="40" column="38" selection-start-line="40" selection-start-column="38" selection-end-line="40" selection-end-column="38" />
+          <folding>
+            <element signature="e#1#24#0" expanded="true" />
           </folding>
         </state>
       </provider>

@@ -114,7 +114,7 @@ class Model:
         #function of test
         #To convert wave file
 
-        use_num = 1
+        use_num = 2
         tt=time.time()
         ipt=self.args["input_size"]+self.args["SHIFT"]
         times=in_put.shape[0]//(self.args["input_size"])+1

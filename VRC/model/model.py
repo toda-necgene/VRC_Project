@@ -23,8 +23,8 @@ def generator(ten,reuse,train):
 
     # setting paramater
     times=2
-    res=4
-    chs_enc=[8,128]
+    res=3
+    chs_enc=[16,128]
     chs_dec=[16,1]
 
     for i in range(times):
@@ -38,7 +38,7 @@ def generator(ten,reuse,train):
 
     for i in range(res):
         #inception resblock
-        tenA =tf.layers.conv2d(ten, 64, [3, 5], [1, 1], padding="SAME",
+        tenA =tf.layers.conv2d(ten, 64, [3, 3], [1, 1], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/(3*5*64))), use_bias=False,
                                data_format="channels_last", reuse=reuse, name="res_conv_A_" + str(i))
 
@@ -99,7 +99,6 @@ def deconve_with_ps(inp,r,otp_shape,reuses=None,name="",b=True):
 
     # calculating output channels
     ch_r=r[0]*r[1]*otp_shape
-    b_size = inp.get_shape()[0]
     in_h = inp.get_shape()[1]
     in_w = inp.get_shape()[2]
 
@@ -108,21 +107,19 @@ def deconve_with_ps(inp,r,otp_shape,reuses=None,name="",b=True):
                            kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/ch_r)), use_bias=b,
                            data_format="channels_last", reuse=reuses, name=name )
     # reshaping
-    ten = tf.reshape(ten, [b_size, r[0], r[1], in_h, in_w, otp_shape])
+    ten = tf.reshape(ten, [-1, r[0], r[1], in_h, in_w, otp_shape])
     ten = tf.transpose(ten, [0, 2, 3, 4, 1, 5])
-    ten = tf.reshape(ten, [b_size, in_h * r[0], in_w * r[1], otp_shape])
+    ten = tf.reshape(ten, [-1, in_h * r[0], in_w * r[1], otp_shape])
 
     return ten
 def ShakeDrop(ten,rate,train):
     # shakedrop layer
     # s=ten.get_shape()
-    s=[int(ten.get_shape()[0]),int(ten.get_shape()[1]),int(ten.get_shape()[2]),1]
-
-    # random noise
-    f_rand=tf.random_uniform(s,-1.0,1.0)
-    b_rand=tf.random_uniform(s,0.0,1.0)
     if train:
-
+        s = [int(ten.get_shape()[0]), int(ten.get_shape()[1]), int(ten.get_shape()[2]), int(ten.get_shape()[3])]
+        # random noise
+        f_rand = tf.random_uniform(s, -1.0, 1.0)
+        b_rand = tf.random_uniform(s, 0.0, 1.0)
         # droping
         prop=tf.random_uniform(s,0.0,1.0)+rate
         prop=tf.floor(prop)
