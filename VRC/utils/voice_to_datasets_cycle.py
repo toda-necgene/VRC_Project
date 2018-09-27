@@ -3,7 +3,7 @@ import numpy as np
 import wave
 import time
 import glob
-NFFT=1024
+NFFT=512
 SHIFT=NFFT//2
 dilations=0
 term = 4096
@@ -105,6 +105,11 @@ for file in files:
         ind=term+SHIFT*dilations+SHIFT
         startpos=term*i+data_realA.shape[0]%term
         data_realAb = data_realA[max(startpos-ind,0):startpos].copy()
+        p = np.random.randint(30, 60) / 40
+        if np.random.randint(1,5)>=3:
+            p=1.0
+        if p !=1.0:
+            data_realAb = shift(data_realAb.copy(), p)
         r=ind-data_realAb.shape[0]
         if r>0:
             data_realAb=np.pad(data_realAb,(r,0),"constant")
@@ -114,8 +119,8 @@ for file in files:
         a = np.clip(a, -10, 10)
         np.save("./datasets/train/"+str(name)+"/"+str(cnt) +".npy", a)
         cnt+=1
-        for s in range(3):
-            p=np.random.randint(30,70)/40+0.05
+        for s in range(0):
+            p=np.random.randint(30,50)/40+0.05
             ind = term + SHIFT * dilations + SHIFT
             startpos = term * i + data_realA.shape[0] % term
             data_realAb = data_realA[max(startpos - ind, 0):startpos]

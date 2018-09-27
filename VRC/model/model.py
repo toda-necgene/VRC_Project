@@ -23,7 +23,7 @@ def generator(ten,reuse,train):
 
     # setting paramater
     times=2
-    res=3
+    res=6
     chs_enc=[16,128]
     chs_dec=[16,1]
 

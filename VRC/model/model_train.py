@@ -35,7 +35,7 @@ class Model:
 
         self.args["batch_size"] = 8
         self.args["input_size"] = 4096
-        self.args["NFFT"]=1024
+        self.args["NFFT"]=512
 
         self.args["g_lr_max"]=2e-4
         self.args["g_lr_min"] = 2e-6
