@@ -18,12 +18,11 @@ def fft(data):
     time_ruler = data.shape[0] // SHIFT
     if data.shape[0] % SHIFT == 0:
         time_ruler -= 1
-    window = np.hamming(NFFT)
     pos = 0
     wined = np.zeros([time_ruler, NFFT])
     for fft_index in range(time_ruler):
         frame = data[pos:pos + NFFT]
-        wined[fft_index] = frame * window
+        wined[fft_index] = frame
         pos += SHIFT
     fft_r = scipy.fft(wined, n=NFFT, axis=1)
     re = fft_r.real.reshape(time_ruler, -1)

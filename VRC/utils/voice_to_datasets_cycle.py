@@ -17,12 +17,11 @@ WAVE_INPUT_FILENAME2 = "./datasets/source/02"
 
 def fft(data):
     time_ruler=data.shape[0]//SHIFT-1
-    window=np.hamming(NFFT)
     pos=0
     wined=np.zeros([time_ruler,NFFT])
     for fft_index in range(time_ruler):
         frame=data[pos:pos+NFFT]
-        wined[fft_index]=frame*window
+        wined[fft_index]=frame
         pos += NFFT // 2
     fft_rs=np.fft.fft(wined,n=NFFT,axis=-1)
     return fft_rs.reshape(time_ruler, -1)

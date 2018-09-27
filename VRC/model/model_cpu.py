@@ -195,12 +195,11 @@ class Model:
         time_ruler = data.shape[0] // self.args["SHIFT"]
         if data.shape[0] % self.args["SHIFT"] == 0:
             time_ruler -= 1
-        window = np.hamming(self.args["NFFT"])
         pos = 0
         wined = np.zeros([time_ruler, self.args["NFFT"]])
         for fft_index in range(time_ruler):
             frame = data[pos:pos + self.args["NFFT"]]
-            wined[fft_index] = frame * window
+            wined[fft_index] = frame
             pos += self.args["SHIFT"]
         fft_r = np.fft.fft(wined, n=self.args["NFFT"], axis=1)
         re = fft_r.real.reshape(time_ruler, -1)
@@ -225,7 +224,7 @@ class Model:
         reds = fft_data[-1, self.args["NFFT"] // 2:].copy()
         lats = np.roll(fft_data[:, self.args["NFFT"] // 2:].copy(), 1, axis=0 )
         lats[0, :]=redi
-        spec = np.reshape(v + lats, (-1))
+        spec = np.reshape(v + lats, (-1))/2
         return spec,reds
 
 
