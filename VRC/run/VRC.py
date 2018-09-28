@@ -6,8 +6,8 @@ import atexit
 import time
 path_to_networks = './best_model'
 
-NFFT=1024
-SHIFT=512
+NFFT=512
+SHIFT=256
 TERM=4096
 fs = 44100
 channels = 1
@@ -63,10 +63,11 @@ def process(data):
     output=net.sess.run(net.fake_aB_image_test,feed_dict={net.input_model_test:data})
     return output
 inf=p_in.get_default_output_device_info()
+up = int(TERM *fs/ sampling_target)+1
 stream=p_in.open(format = pa.paInt16,
 		channels = 1,
 		rate = fs,
-		frames_per_buffer = TERM*2,
+		frames_per_buffer = up*2,
 		input = True,
 		output = True)
 rdd=np.zeros(SHIFT)
@@ -79,11 +80,10 @@ def terminate():
     print("Stream Stop")
 la=np.zeros([5])
 atexit.register(terminate)
-las=np.zeros([SHIFT+TERM//2])
+las=np.zeros([SHIFT])
 noise_filter=np.zeros(SHIFT)
 print("ノイズ取得中")
 t=0.0
-up = int(TERM *fs/ sampling_target)
 tt = time.time()
 print("変換　開始")
 while stream.is_active():
@@ -91,22 +91,17 @@ while stream.is_active():
     inputs = np.frombuffer(ins,dtype=np.int16).astype(np.float32)/32767.0
     inputs=scipy.signal.resample(inputs,TERM)
     inputs=np.clip(inputs,-1.0,1.0)
-    inp=np.append(las,inputs).reshape(TERM+SHIFT+TERM//2)
-    las = inputs[-SHIFT-TERM//2:]
+    inp=np.append(las,inputs).reshape(TERM+SHIFT)
+    las = inputs[-SHIFT:]
     roll_stride=SHIFT//2
     n = fft(inp.copy())[:,:SHIFT,:].astype(np.float32)
-    # print(n.shape)
     res=np.asarray([n[:8],n[4:]])
 
     resp = process(res.copy())
     res2 = resp.copy()[:, :, ::-1, :]
     ress = np.append(resp, res2, axis=2)
     resb,rdd = ifft(ress[0],rdd)
-    resb = (np.clip(resb,-1.0,1.0).reshape(-1)*32767)
-    res2, rdd2 = ifft(ress[1], rdd2)
-    res2 = (np.clip(res2, -1.0, 1.0).reshape(-1) * 32767)
-    res=res2
-    res[:TERM//2]=(res[:TERM//2]+resb[-TERM//2:])//2
+    res = (np.clip(resb,-1.0,1.0).reshape(-1)*32767)
     res=scipy.signal.resample(res,up)
     vs=res.astype(np.int16).tobytes()
     la=np.append(la,time.time() - tt)

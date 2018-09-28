@@ -5,7 +5,7 @@ import atexit
 import time
 path_to_networks = './Network'
 graph_filename = './graph'
-NFFT=128
+NFFT=512
 SHIFT=64
 ac=1
 ab=0

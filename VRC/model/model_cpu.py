@@ -27,7 +27,7 @@ class Model:
 
         self.args["batch_size"] = 32
         self.args["input_size"] = 4096
-        self.args["NFFT"] = 1024
+        self.args["NFFT"] = 512
 
         self.args["g_lr_max"] = 2e-4
         self.args["g_lr_min"] = 2e-6
@@ -80,7 +80,7 @@ class Model:
         # shapes of inputs
         ss = self.args["input_size"] // self.args["SHIFT"]
         self.input_size_model = [self.args["batch_size"], ss, self.args["NFFT"] // 2, 2]
-        self.input_size_test = [2, ss, self.args["NFFT"] // 2, 2]
+        self.input_size_test = [None, ss, self.args["NFFT"] // 2, 2]
 
         self.sess = tf.InteractiveSession(config=tf.ConfigProto(gpu_options=tf.GPUOptions()))
 

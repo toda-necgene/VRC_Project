@@ -49,6 +49,7 @@ class Model:
         self.args["weight_Cycle_Pha"]=100.0
         self.args["weight_GAN"] = 1.0
         self.args["train_epoch"]=1000
+        self.args["pre_train_epoch"] = 50
         self.args["start_epoch"]=0
         self.args["save_interval"]=10
         self.args["lr_decay_term"]=20
@@ -179,7 +180,7 @@ class Model:
 
         # generator loss
         self.g_loss=self.g_loss_aB+self.g_loss_bA
-
+        self.g_loss_pre = g_loss_cyc_B + g_loss_cyc_A
 
         #tensorboard functions
         g_loss_cyc_A_display= tf.summary.scalar("g_loss_cycle_A", tf.reduce_mean(g_loss_cyc_A),family="g_loss")
@@ -287,6 +288,8 @@ class Model:
         # naming output-directory
         lr_g = tf.placeholder(tf.float32, None, name="g_lr")
         lr_d = tf.placeholder(tf.float32, None, name="d_lr")
+        g_optim_pre = tf.train.AdamOptimizer(1e-3, 0.9).minimize(self.g_loss_pre,var_list=self.g_vars)
+
         g_optim = tf.train.AdamOptimizer(lr_g, beta_g_opt, beta_2_g_opt).minimize(self.g_loss,
                                                                                   var_list=self.g_vars)
         d_optim = tf.train.AdamOptimizer(lr_d, beta_d_opt, beta_2_d_opt).minimize(self.d_loss,
@@ -353,7 +356,18 @@ class Model:
         # initializing training infomation
         start_time = time.time()
         start_time_all=time.time()
-
+        for epoch in range(self.args["pre_train_epoch"]):
+            np.random.shuffle(index_list)
+            np.random.shuffle(index_list2)
+            for idx in xrange(0, self.batch_idxs):
+                st = self.args["batch_size"] * idx
+                batch_sounds_resource = np.asarray(
+                    [self.sounds_r[ind] for ind in index_list[st:st + self.args["batch_size"]]])
+                batch_sounds_target = np.asarray(
+                    [self.sounds_t[ind] for ind in index_list2[st:st + self.args["batch_size"]]])
+                # update G network
+                self.sess.run([g_optim_pre, self.update_ops],feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target})
+            print(" [I] Epoch %04d / %04d finished." % (epoch, self.args["pre_train_epoch"]))
         for epoch in range(self.args["train_epoch"]):
 
             # calculating learning-rate
