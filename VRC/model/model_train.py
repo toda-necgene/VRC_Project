@@ -288,7 +288,7 @@ class Model:
         # naming output-directory
         lr_g = tf.placeholder(tf.float32, None, name="g_lr")
         lr_d = tf.placeholder(tf.float32, None, name="d_lr")
-        g_optim_pre = tf.train.AdamOptimizer(1e-3, 0.9).minimize(self.g_loss_pre,var_list=self.g_vars)
+        g_optim_pre = tf.train.AdamOptimizer(1e-4, 0.9).minimize(self.g_loss_pre,var_list=self.g_vars)
 
         g_optim = tf.train.AdamOptimizer(lr_g, beta_g_opt, beta_2_g_opt).minimize(self.g_loss,
                                                                                   var_list=self.g_vars)

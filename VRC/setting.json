@@ -3,7 +3,7 @@
         "checkpoint_dir":"./trained_models/",
         "best_checkpoint_dir":"Z://bestmodel/",
         "wave_otp_dir":"Z://waves/",
-        "version":"0.1.001"
+        "version":"0.1.003"
     },
     "training_config":{
         "pre_train_epoch": 20,
@@ -18,10 +18,10 @@
         "d_lr_min":1e-6,
         "g_b1":0.5,
         "d_b1":0.5,
-        "lr_decay_term":200,
+        "lr_decay_term":800,
         "save_interval":10,
         "weight_GAN":1.0,
-        "weight_Cycle_Pow":100.0,
+        "weight_Cycle_Pow":50.0,
         "weight_Cycle_Pha":100.0
     },
     "plugin_config":{

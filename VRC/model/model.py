@@ -92,7 +92,7 @@ def deconve_with_ps(inp,r,otp_shape,reuses=None,name="",b=True):
     in_w = inp.get_shape()[2]
 
     # convolution
-    ten = tf.layers.conv2d(inp, ch_r, kernel_size=[1,7], strides=[1,1], padding="SAME",
+    ten = tf.layers.conv2d(inp, ch_r, kernel_size=[1,1], strides=[1,1], padding="SAME",
                            kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/ch_r)), use_bias=b,
                            data_format="channels_last", reuse=reuses, name=name )
     # reshaping
