@@ -23,9 +23,9 @@ def generator(ten,reuse,train):
 
     # setting paramater
     times=2
-    res=6
-    chs_enc=[16,64]
-    chs_dec=[16,1]
+    res=4
+    chs_enc=[16,128]
+    chs_dec=[8,1]
 
     for i in range(times):
         # Encoding
@@ -38,11 +38,11 @@ def generator(ten,reuse,train):
 
     for i in range(res):
         #inception resblock
-        tenA =tf.layers.conv2d(ten, 32, [3, 7], [1, 1], padding="SAME",
+        tenA =tf.layers.conv2d(ten, 64, [3, 7], [1, 1], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/3/7/32)), use_bias=False,
                                data_format="channels_last", reuse=reuse, name="res_conv_A_" + str(i))
 
-        tenB = tf.layers.conv2d(ten, 32, [3, 5], [1, 1], padding="SAME",
+        tenB = tf.layers.conv2d(ten, 64, [3, 5], [1, 1], padding="SAME",
                                 kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/3/5/32)), use_bias=False,
                                 data_format="channels_last", reuse=reuse, name="res_conv_B_" + str(i))
 

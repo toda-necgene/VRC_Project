@@ -3,10 +3,10 @@
         "checkpoint_dir":"./trained_models/",
         "best_checkpoint_dir":"Z://bestmodel/",
         "wave_otp_dir":"Z://waves/",
-        "version":"0.1.003"
+        "version":"0.1.004"
     },
     "training_config":{
-        "pre_train_epoch": 20,
+        "pre_train_epoch": 0,
         "train_epoch": 800,
         "batch_size":128,
         "start_epoch":0,
