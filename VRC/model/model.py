@@ -23,13 +23,13 @@ def generator(ten,reuse,train):
 
     # setting paramater
     times=2
-    res=4
+    res=6
     chs_enc=[16,128]
-    chs_dec=[8,1]
+    chs_dec=[16,1]
 
     for i in range(times):
         # Encoding
-        tenA = tf.layers.conv2d(ten, chs_enc[i], kernel_size=[1, 7], strides=[1, 4], padding="SAME",
+        tenA = tf.layers.conv2d(ten, chs_enc[i], kernel_size=[1, 4], strides=[1, 4], padding="SAME",
                                 kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/(4*chs_enc[i]))),use_bias=False,
                                 data_format="channels_last", reuse=reuse, name="enc_conv"+str(i),
                                 dilation_rate=(1, 1))
@@ -42,10 +42,11 @@ def generator(ten,reuse,train):
                                kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/3/7/32)), use_bias=False,
                                data_format="channels_last", reuse=reuse, name="res_conv_A_" + str(i))
 
-        tenB = tf.layers.conv2d(ten, 64, [3, 5], [1, 1], padding="SAME",
-                                kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/3/5/32)), use_bias=False,
-                                data_format="channels_last", reuse=reuse, name="res_conv_B_" + str(i))
-
+        tenB = ten[:,:,:,:64]
+        rs=tenB.shape[2]
+        tenB=tf.transpose(tenB,[0,1,3,2])
+        tenB=tf.layers.dense(tenB,rs,use_bias=False,reuse=reuse,name="res_dense" + str(i))
+        tenB = tf.transpose(tenB, [0, 1, 3, 2])
         tenG = tf.concat([tenA,tenB],axis=3)
         tenG = tf.layers.batch_normalization(tenG, axis=3, training=train, trainable=True, reuse=reuse,
                                              name="res_bn_" + str(i))
