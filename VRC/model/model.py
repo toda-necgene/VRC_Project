@@ -38,7 +38,7 @@ def generator(ten,reuse,train):
 
     for i in range(res):
         #inception resblock
-        tenA =tf.layers.conv2d(ten, 64, [3, 7], [1, 1], padding="SAME",
+        tenA =tf.layers.conv2d(ten, 64, [3, 3], [1, 1], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/3/7/32)), use_bias=False,
                                data_format="channels_last", reuse=reuse, name="res_conv_A_" + str(i))
 
@@ -48,13 +48,15 @@ def generator(ten,reuse,train):
         tenB=tf.layers.dense(tenB,rs,use_bias=False,reuse=reuse,name="res_dense" + str(i))
         tenB = tf.transpose(tenB, [0, 1, 3, 2])
         tenG = tf.concat([tenA,tenB],axis=3)
-        tenG = tf.layers.batch_normalization(tenG, axis=3, training=train, trainable=True, reuse=reuse,
-                                             name="res_bn_" + str(i))
-        tenG = tf.nn.relu(tenG)
 
         # adding noise(shakedrop)
         prop = (1 - i / (res * 2))
         tenG = ShakeDrop(tenG, prop, train)
+
+        tenG = tf.layers.batch_normalization(tenG, axis=3, training=train, trainable=True, reuse=reuse,
+                                             name="res_bn_" + str(i))
+        tenG = tf.nn.relu(tenG)
+
 
         ten=tenG+ten
 

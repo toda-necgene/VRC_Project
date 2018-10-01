@@ -3,7 +3,7 @@
         "checkpoint_dir":"./trained_models/",
         "best_checkpoint_dir":"Z://bestmodel/",
         "wave_otp_dir":"Z://waves/",
-        "version":"0.1.006"
+        "version":"0.3.001"
     },
     "training_config":{
         "pre_train_epoch": 0,

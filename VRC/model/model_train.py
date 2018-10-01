@@ -35,7 +35,7 @@ class Model:
 
         self.args["batch_size"] = 8
         self.args["input_size"] = 4096
-        self.args["NFFT"]=512
+        self.args["NFFT"]=1024
 
         self.args["g_lr_max"]=2e-4
         self.args["g_lr_min"] = 2e-6
@@ -508,9 +508,10 @@ class Model:
         time_ruler = data.shape[0] // self.args["SHIFT"]-1
         pos = 0
         wined = np.zeros([time_ruler, self.args["NFFT"]])
+        win=np.hamming(self.args["NFFT"])
         for fft_index in range(time_ruler):
             frame = data[pos:pos + self.args["NFFT"]]
-            wined[fft_index] = frame
+            wined[fft_index] = frame*win
             pos += self.args["SHIFT"]
         fft_r = np.fft.fft(wined, n=self.args["NFFT"], axis=1)
         re = fft_r.real.reshape(time_ruler, -1)

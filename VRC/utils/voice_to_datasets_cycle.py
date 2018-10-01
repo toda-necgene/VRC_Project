@@ -3,7 +3,7 @@ import numpy as np
 import wave
 import time
 import glob
-NFFT=512
+NFFT=1024
 SHIFT=NFFT//2
 dilations=0
 term = 4096
@@ -19,9 +19,10 @@ def fft(data):
     time_ruler=data.shape[0]//SHIFT-1
     pos=0
     wined=np.zeros([time_ruler,NFFT])
+    win = np.hamming(NFFT)
     for fft_index in range(time_ruler):
         frame=data[pos:pos+NFFT]
-        wined[fft_index]=frame
+        wined[fft_index]=frame*win
         pos += NFFT // 2
     fft_rs=np.fft.fft(wined,n=NFFT,axis=-1)
     return fft_rs.reshape(time_ruler, -1)

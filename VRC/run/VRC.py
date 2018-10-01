@@ -6,8 +6,8 @@ import atexit
 import time
 path_to_networks = './best_model'
 
-NFFT=512
-SHIFT=256
+NFFT=1024
+SHIFT=512
 TERM=4096
 fs = 44100
 channels = 1
