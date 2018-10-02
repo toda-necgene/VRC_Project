@@ -196,7 +196,7 @@ class Model:
 
         self.loss_display=tf.summary.merge([g_loss_sum_A_display,g_loss_sum_B_display,d_loss_sum_A_display,d_loss_sum_B_display])
         self.result_audio_display= tf.placeholder(tf.float32, [1,1,160000], name="FB")
-        self.result_image_display= tf.placeholder(tf.float32, [1,None,self.args["NFFT"],2], name="FBI0")
+        self.result_image_display= tf.placeholder(tf.float32, [1,None,self.args["SHIFT"],2], name="FBI0")
         image_pow_display=tf.transpose(self.result_image_display[:,:,:,:1],[0,2,1,3])
         image_pha_display = tf.transpose(self.result_image_display[:, :, :, 1:], [0, 2, 1, 3])
         fake_B_audio_display = tf.summary.audio("fake_B", tf.reshape(self.result_audio_display,[1,160000,1]), 16000, 1)
@@ -220,7 +220,7 @@ class Model:
             executing_times-=1
         otp=np.array([],dtype=np.int16)
 
-        res_image = np.zeros([1,self.args["NFFT"],2], dtype=np.float32)
+        res_image = np.zeros([1,self.args["SHIFT"],2], dtype=np.float32)
         remain_wave=np.zeros([self.input_size_model[2]],dtype=np.float64)
         for t in range(executing_times):
             # Preprocess
@@ -240,14 +240,13 @@ class Model:
             # running network
             result=self.sess.run(self.fake_aB_image_test,feed_dict={ self.input_model_test:resource})
 
-
+            res_image = np.append(res_image, result[0].copy(), axis=0)
             # Postprocess
 
             #fixing spectrogrum
             result_reverse = result.copy()[:, :, ::-1, :]
             result = np.append(result, result_reverse, axis=2)
             result[:, :, self.args["SHIFT"]:, 1] *= -1
-            res_image = np.append(res_image, result[0].copy(),axis=0)
 
             # IFFT
             result_wave,remain_wave=self.ifft(result[0].copy(),remain_wave)
@@ -336,7 +335,7 @@ class Model:
             result_fft = self.fft(resorce / 32767.0)
             out_spectrum=np.append(out_spectrum,result_fft,axis=0)
 
-        self.label_spectrum=out_spectrum[1:]
+        self.label_spectrum=out_spectrum[1:,:self.args["SHIFT"]]
 
         # times of one epoch
         train_data_num = min(len(data),len(data2))
@@ -434,7 +433,7 @@ class Model:
 
         # fixing havests types
         out_put = out_puts.copy().astype(np.float32) / 32767.0
-        otp_im = im.copy().reshape(1,-1,self.args["NFFT"],2)
+        otp_im = im.copy().reshape(1,-1,self.args["SHIFT"],2)
         otp_im[:,:, :, 0] = np.clip((otp_im[:, :, :, 0] + 10.0) / 20.0, 0.0, 1.0)
         otp_im[:,:, :, 1] = np.clip((otp_im[:, :, :, 1] + 3.15) / 6.30, 0.0, 1.0)
         r = min(self.label_spectrum.shape[0], im.shape[0])
