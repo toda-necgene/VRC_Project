@@ -53,8 +53,7 @@ def generator(ten,reuse,train):
         tenB = ten[:,:,:,:64]
         rs=tenB.shape[2]
         tenB=tf.transpose(tenB,[0,1,3,2])
-        tenB=tf.layers.dense(tenB,1,use_bias=False,reuse=reuse,name="res_dense1" + str(i))
-        tenB = tf.layers.dense(tenB, rs, use_bias=False, reuse=reuse, name="res_densers" + str(i))
+        tenB = tf.layers.dense(tenB, rs, use_bias=False, reuse=reuse, name="res_dense" + str(i))
         tenB = tf.transpose(tenB, [0, 1, 3, 2])
         tenG = tf.concat([tenA,tenB],axis=3)
 
