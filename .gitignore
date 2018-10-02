@@ -4,10 +4,10 @@
 *.wav
 *.npy
 *.pyc
+*.cpython-36.pyc
 *.xml
 VRC/havests/*
 VRC/trained_models/*
 VRC/best_model/*
 VRC/logs/*
 VRC/datasets/*
-VRC/,idea/*

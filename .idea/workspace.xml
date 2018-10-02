@@ -3,12 +3,12 @@
   <component name="ChangeListManager">
     <list default="true" id="bcabb495-93d4-437a-b14b-9cb2802ec5b1" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+<<<<<<< Updated upstream
+=======
       <change beforePath="$PROJECT_DIR$/VRC/model/model.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/model/model.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/model/model_cpu.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/model/model_cpu.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/VRC/model/model_train.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/model/model_train.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/run/VRC.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/run/VRC.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/VRC/setting.json" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/setting.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/utils/voice_to_datasets_cycle.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/utils/voice_to_datasets_cycle.py" afterDir="false" />
+>>>>>>> Stashed changes
     </list>
     <ignored path="C:\Users\tadop\git\vrc\.idea\shelf/" />
     <ignored path="$PROJECT_DIR$/VRC/Network/to/" />
@@ -22,7 +22,7 @@
     <session id="715546864">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
-          <entry key="project.closed" value="42" />
+          <entry key="project.closed" value="44" />
           <entry key="project.open.time.10" value="5" />
           <entry key="project.open.time.11" value="3" />
           <entry key="project.open.time.12" value="4" />
@@ -53,7 +53,7 @@
           <entry key="project.open.time.66" value="1" />
           <entry key="project.open.time.84" value="1" />
           <entry key="project.open.time.9" value="1" />
-          <entry key="project.opened" value="52" />
+          <entry key="project.opened" value="53" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
@@ -80,19 +80,34 @@
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
           <entry key="dummy" value="4" />
+<<<<<<< Updated upstream
           <entry key="gitignore" value="53" />
           <entry key="json" value="2653" />
           <entry key="md" value="718" />
           <entry key="py" value="12222" />
-          <entry key="txt" value="2565" />
+          <entry key="txt" value="2567" />
+=======
+          <entry key="gitignore" value="5" />
+          <entry key="json" value="2131" />
+          <entry key="md" value="643" />
+          <entry key="py" value="7139" />
+          <entry key="txt" value="1793" />
+>>>>>>> Stashed changes
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
+<<<<<<< Updated upstream
           <entry key="JSON" value="2653" />
           <entry key="Markdown" value="718" />
-          <entry key="PLAIN_TEXT" value="2622" />
+          <entry key="PLAIN_TEXT" value="2624" />
           <entry key="Python" value="12222" />
+=======
+          <entry key="JSON" value="2131" />
+          <entry key="Markdown" value="643" />
+          <entry key="PLAIN_TEXT" value="1802" />
+          <entry key="Python" value="7139" />
+>>>>>>> Stashed changes
         </counts>
       </usages-collector>
       <usages-collector id="statistics.vcs.git.usages" />
@@ -103,8 +118,13 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/model/model_train.py">
           <provider selected="true" editor-type-id="text-editor">
+<<<<<<< Updated upstream
             <state relative-caret-position="384">
               <caret line="37" column="30" selection-start-line="37" selection-start-column="30" selection-end-line="37" selection-end-column="30" />
+=======
+            <state relative-caret-position="312">
+              <caret line="217" column="80" selection-start-line="217" selection-start-column="80" selection-end-line="217" selection-end-column="80" />
+>>>>>>> Stashed changes
               <folding>
                 <marker date="1538368594588" expanded="true" signature="24210:24215" ph="..." />
               </folding>
@@ -115,6 +135,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/setting.json">
           <provider selected="true" editor-type-id="text-editor">
+<<<<<<< Updated upstream
             <state relative-caret-position="80">
               <caret line="5" column="26" selection-start-line="5" selection-start-column="26" selection-end-line="5" selection-end-column="26" />
             </state>
@@ -126,6 +147,10 @@
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="16">
               <caret line="5" column="5" selection-start-line="5" selection-start-column="5" selection-end-line="5" selection-end-column="9" />
+=======
+            <state relative-caret-position="57">
+              <caret line="4" column="26" selection-start-line="4" selection-start-column="26" selection-end-line="4" selection-end-column="26" />
+>>>>>>> Stashed changes
             </state>
           </provider>
         </entry>
@@ -142,8 +167,17 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/VRC/model/model.py">
           <provider selected="true" editor-type-id="text-editor">
+<<<<<<< Updated upstream
             <state relative-caret-position="352">
               <caret line="54" selection-start-line="54" selection-end-line="54" />
+=======
+            <state relative-caret-position="256">
+              <caret line="16" column="14" lean-forward="true" selection-start-line="16" selection-start-column="14" selection-end-line="16" selection-end-column="14" />
+              <folding>
+                <marker date="1536580907548" expanded="true" signature="5645:5663" ph="..." />
+                <marker date="1536580907548" expanded="true" signature="6157:6162" ph="..." />
+              </folding>
+>>>>>>> Stashed changes
             </state>
           </provider>
         </entry>
@@ -190,7 +224,7 @@
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds" extendedState="6">
+  <component name="ProjectFrameBounds" extendedState="7">
     <option name="x" value="-7" />
     <option name="width" value="734" />
     <option name="height" value="877" />
@@ -212,6 +246,7 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
+      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -246,7 +281,6 @@
           <select />
         </subPane>
       </pane>
-      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -370,13 +404,7 @@
       <option name="presentableId" value="Default" />
       <updated>1534034935853</updated>
     </task>
-    <task id="LOCAL-00088" summary="[5.6.010] レイヤー数の変更&#10;&#10;[fix] 8に変更">
-      <created>1536727301573</created>
-      <option name="number" value="00088" />
-      <option name="presentableId" value="LOCAL-00088" />
-      <option name="project" value="LOCAL" />
-      <updated>1536727301573</updated>
-    </task>
+<<<<<<< Updated upstream
     <task id="LOCAL-00089" summary="[5.6.011] レイヤー数の変更&#10;&#10;[fix] 8に変更">
       <created>1536741900509</created>
       <option name="number" value="00089" />
@@ -395,6 +423,12 @@
       <created>1536752579111</created>
       <option name="number" value="00091" />
       <option name="presentableId" value="LOCAL-00091" />
+=======
+    <task id="LOCAL-00050" summary="[4.2.100]　バッチサイズ変更&#10;&#10;[fix] Batch_size 64-&gt;128&#10;[fix] relu -&gt; leaky_relu">
+      <created>1534918257632</created>
+      <option name="number" value="00050" />
+      <option name="presentableId" value="LOCAL-00050" />
+>>>>>>> Stashed changes
       <option name="project" value="LOCAL" />
       <updated>1536752579111</updated>
     </task>
@@ -713,28 +747,61 @@
       <option name="project" value="LOCAL" />
       <updated>1538283682304</updated>
     </task>
-    <option name="localTasksCounter" value="137" />
+    <task id="LOCAL-00137" summary="[0.3.001] 構造変更">
+      <created>1538391354728</created>
+      <option name="number" value="00137" />
+      <option name="presentableId" value="LOCAL-00137" />
+      <option name="project" value="LOCAL" />
+      <updated>1538391354729</updated>
+    </task>
+<<<<<<< Updated upstream
+    <option name="localTasksCounter" value="138" />
+=======
+    <task id="LOCAL-00097" summary="[5.5.0] ねじれ畳み込みの実装&#10;&#10;[fix] ねじれ畳み込みに変更">
+      <created>1536478442798</created>
+      <option name="number" value="00097" />
+      <option name="presentableId" value="LOCAL-00097" />
+      <option name="project" value="LOCAL" />
+      <updated>1536478442798</updated>
+    </task>
+    <task id="LOCAL-00098" summary="[5.5.0] ねじれ畳み込みの実装&#10;&#10;[fix] ねじれ畳み込みに変更">
+      <created>1536478469096</created>
+      <option name="number" value="00098" />
+      <option name="presentableId" value="LOCAL-00098" />
+      <option name="project" value="LOCAL" />
+      <updated>1536478469097</updated>
+    </task>
+    <option name="localTasksCounter" value="99" />
+>>>>>>> Stashed changes
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="-8" y="-8" width="1456" height="886" extended-state="6" />
-    <editor active="true" />
+    <frame x="-8" y="-8" width="1456" height="886" extended-state="7" />
     <layout>
       <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.19816643" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
-      <window_info anchor="bottom" id="Messages" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
       <window_info anchor="bottom" id="Debug" order="2" weight="0.3997344" />
       <window_info anchor="bottom" id="Cvs" order="3" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="4" weight="0.4" />
-      <window_info active="true" anchor="bottom" id="Run" order="5" sideWeight="0.49506348" visible="true" weight="0.32536522" />
+<<<<<<< Updated upstream
+      <window_info anchor="bottom" id="Run" order="5" sideWeight="0.49506348" weight="0.32536522" />
       <window_info anchor="bottom" id="TODO" order="6" />
       <window_info anchor="bottom" id="Version Control" order="7" weight="0.3231383" />
       <window_info anchor="bottom" id="Event Log" order="8" sideWeight="0.5049365" side_tool="true" weight="0.32536522" />
       <window_info anchor="bottom" id="Python Console" order="9" weight="0.32934928" />
       <window_info anchor="bottom" id="Terminal" order="10" sideWeight="0.49788433" weight="0.32802126" />
+      <window_info anchor="bottom" id="Messages" order="11" />
+=======
+      <window_info anchor="bottom" id="Run" order="5" sideWeight="0.49717912" weight="0.32536522" />
+      <window_info anchor="bottom" id="TODO" order="6" />
+      <window_info anchor="bottom" id="Version Control" order="7" weight="0.3231383" />
+      <window_info active="true" anchor="bottom" id="Terminal" order="8" visible="true" weight="0.32934928" />
+      <window_info anchor="bottom" id="Event Log" order="9" sideWeight="0.50282085" side_tool="true" weight="0.32536522" />
+      <window_info anchor="bottom" id="Python Console" order="10" />
+>>>>>>> Stashed changes
       <window_info anchor="right" id="Commander" order="0" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
@@ -744,7 +811,7 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[5.6.055] 学習率の変更&#10;&#10;[fix] 調整" />
+<<<<<<< Updated upstream
     <MESSAGE value="[5.6.057] 学習率の変更&#10;&#10;[fix] 調整" />
     <MESSAGE value="[5.6.059] 層の変更&#10;&#10;[fix] 16に変更" />
     <MESSAGE value="[5.6.065] shakedropの変更&#10;&#10;[fix] batch-&gt;pixel" />
@@ -769,7 +836,36 @@
     <MESSAGE value="[0.1.004] ハイパーパラメータの調整" />
     <MESSAGE value="[0.1.005] 構造変更" />
     <MESSAGE value="[0.1.006] 構造変更" />
-    <option name="LAST_COMMIT_MESSAGE" value="[0.1.006] 構造変更" />
+    <MESSAGE value="[0.3.001] 構造変更" />
+    <option name="LAST_COMMIT_MESSAGE" value="[0.3.001] 構造変更" />
+=======
+    <MESSAGE value="[4.3.011] 学習の低速化&#10;&#10;[fix] 学習率減衰&#10;[add] Shakedrop" />
+    <MESSAGE value="[4.3.013] 学習の低速化&#10;&#10;[fix] ハイパーパラメータの調整" />
+    <MESSAGE value="[4.3.015] 学習の低速化&#10;&#10;[fix] ハイパーパラメータの調整" />
+    <MESSAGE value="[4.3.017] 学習の低速化&#10;&#10;[fix] ハイパーパラメータの調整" />
+    <MESSAGE value="[4.3.021] 学習の確認&#10;&#10;[fix] ハイパーパラメータの調整が成功しているかを確認" />
+    <MESSAGE value="[4.3.023] 学習の確認&#10;&#10;[fix] ハイパーパラメータの調整が成功しているかを確認" />
+    <MESSAGE value="[4.3.030] 学習の確認&#10;&#10;[fix] ハイパーパラメータの調整が成功しているかを確認" />
+    <MESSAGE value="[4.3.040] 学習の確認&#10;&#10;[fix] ハイパーパラメータの調整が成功しているかを確認" />
+    <MESSAGE value="[4.3.041] 学習の確認&#10;&#10;[fix] ハイパーパラメータの調整が成功しているかを確認" />
+    <MESSAGE value="[4.3.042] 学習の確認&#10;&#10;[fix] ハイパーパラメータの調整が成功しているかを確認" />
+    <MESSAGE value="[4.3.046] 学習の確認&#10;&#10;[fix] ハイパーパラメータの調整が成功しているかを確認" />
+    <MESSAGE value="[4.3.047] 学習の確認&#10;&#10;[fix] ハイパーパラメータの調整が成功しているかを確認" />
+    <MESSAGE value="[5.0.0] naluの導入&#10;&#10;[add] naluレイヤーを追加&#10;[fix] 8層に変更" />
+    <MESSAGE value="[5.0.1] naluの導入&#10;&#10;[fix] エラー回避" />
+    <MESSAGE value="[5.0.2] naluの導入&#10;&#10;[fix] 学習率を上げた" />
+    <MESSAGE value="[5.0.3] naluの廃止&#10;&#10;[fix] 学習率を上げた" />
+    <MESSAGE value="[5.1.0] 諸々の修正&#10;&#10;[fix] 学習率を上げた" />
+    <MESSAGE value="[5.2.0] 正式版naluの実装&#10;&#10;[fix] naluのフィルターサイズ変更" />
+    <MESSAGE value="[5.2.1] 正式版naluの実装&#10;&#10;[fix] naluのフィルターサイズ変更" />
+    <MESSAGE value="[5.2.5] 正式版naluの実装&#10;&#10;[fix] naluのフィルターサイズ変更" />
+    <MESSAGE value="[5.2.8] 正式版naluの実装&#10;&#10;[fix] naluを各層に配置" />
+    <MESSAGE value="[5.2.21] 正式版naluの実装&#10;&#10;[fix] naluを各層に配置" />
+    <MESSAGE value="[5.3.0] preTrainの実装&#10;&#10;[fix] naluを廃止&#10;[add] preTraining" />
+    <MESSAGE value="[5.4.0] preTrainの実装&#10;&#10;[fix] naluを廃止&#10;[add] preTraining" />
+    <MESSAGE value="[5.5.0] ねじれ畳み込みの実装&#10;&#10;[fix] ねじれ畳み込みに変更" />
+    <option name="LAST_COMMIT_MESSAGE" value="[5.5.0] ねじれ畳み込みの実装&#10;&#10;[fix] ねじれ畳み込みに変更" />
+>>>>>>> Stashed changes
   </component>
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/ui.lnf.xml" />
@@ -894,8 +990,9 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/model/model_train.py">
+    <entry file="file://$USER_HOME$/AppData/Local/Programs/Python/Python36/Lib/site-packages/tensorflow/python/layers/convolutional.py">
       <provider selected="true" editor-type-id="text-editor">
+<<<<<<< Updated upstream
         <state relative-caret-position="384">
           <caret line="37" column="30" selection-start-line="37" selection-start-column="30" selection-end-line="37" selection-end-column="30" />
           <folding>
@@ -908,18 +1005,42 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="80">
           <caret line="5" column="26" selection-start-line="5" selection-start-column="26" selection-end-line="5" selection-end-column="26" />
+=======
+        <state relative-caret-position="160">
+          <caret line="620" selection-start-line="620" selection-end-line="620" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/VRC/model/model_train.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="312">
+          <caret line="217" column="80" selection-start-line="217" selection-start-column="80" selection-end-line="217" selection-end-column="80" />
+          <folding>
+            <element signature="e#0#21#0" expanded="true" />
+          </folding>
+>>>>>>> Stashed changes
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets_cycle.py">
       <provider selected="true" editor-type-id="text-editor">
+<<<<<<< Updated upstream
         <state relative-caret-position="16">
           <caret line="5" column="5" selection-start-line="5" selection-start-column="5" selection-end-line="5" selection-end-column="9" />
+=======
+        <state relative-caret-position="256">
+          <caret line="16" column="14" lean-forward="true" selection-start-line="16" selection-start-column="14" selection-end-line="16" selection-end-column="14" />
+          <folding>
+            <marker date="1536580907548" expanded="true" signature="5645:5663" ph="..." />
+            <marker date="1536580907548" expanded="true" signature="6157:6162" ph="..." />
+          </folding>
+>>>>>>> Stashed changes
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/run/VRC.py">
       <provider selected="true" editor-type-id="text-editor">
+<<<<<<< Updated upstream
         <state relative-caret-position="64">
           <caret line="9" column="9" selection-start-line="9" selection-start-column="9" selection-end-line="9" selection-end-column="9" />
         </state>
@@ -929,6 +1050,10 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="352">
           <caret line="54" selection-start-line="54" selection-end-line="54" />
+=======
+        <state relative-caret-position="57">
+          <caret line="4" column="26" selection-start-line="4" selection-start-column="26" selection-end-line="4" selection-end-column="26" />
+>>>>>>> Stashed changes
         </state>
       </provider>
     </entry>
