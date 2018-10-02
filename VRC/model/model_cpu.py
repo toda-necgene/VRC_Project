@@ -113,10 +113,11 @@ class Model:
     def convert(self,in_put):
         #function of test
         #To convert wave file
-
-        use_num = 2
+        back_load=self.args["SHIFT"]
+        use_num = 4
         tt=time.time()
-        ipt=self.args["input_size"]+self.args["SHIFT"]
+        ipt_size=self.args["input_size"]+self.args["SHIFT"]
+        ipt=ipt_size+back_load
         times=in_put.shape[0]//(self.args["input_size"])+1
         if in_put.shape[0]%((self.args["input_size"])*self.args["batch_size"])==0:
             times-=1
@@ -128,18 +129,18 @@ class Model:
             # Preprocess
 
             # Padiing
-            start_pos=self.args["input_size"]*(t+1)+(in_put.shape[0]%self.args["input_size"])
+            start_pos=ipt_size*t+(in_put.shape[0]%ipt_size)
             resorce=np.reshape(in_put[max(0,start_pos-ipt):start_pos],(-1))
             r=max(0,ipt-resorce.shape[0])
             if r>0:
                 resorce=np.pad(resorce,(r,0),'constant')
             # FFT
-            ters=self.args["SHIFT"]//use_num
-            res=self.fft(resorce.copy()/32767.0)
+            ters=back_load//use_num
+            res=self.fft(resorce[-ipt_size:].copy()/32767.0)
             res=res[:,:self.args["SHIFT"],:].reshape(1,-1,self.args["SHIFT"],2)
             for r in range(1,use_num):
-                resorce2=np.roll(resorce.copy(),ters*r,axis=0)
-                resorce2[:ters*r]=0.0
+                pp=ters*r
+                resorce2=resorce[pp:pp+ipt_size].copy()
                 resorce2=self.fft(resorce2/32767)[:,:self.args["SHIFT"],:].reshape(1,-1,self.args["SHIFT"],2)
                 res=np.append(res,resorce2,axis=0)
             # running network
@@ -152,14 +153,12 @@ class Model:
 
             # IFFT
             rest=np.zeros(self.args["input_size"])
-            last=np.zeros(self.args["input_size"])
             for i in range(response.shape[0]):
                 resa, rss[i] = self.ifft(response[i], rss[i])
                 if i != 0:
                     resa = np.roll(resa, -ters*i, axis=0)
-                    resa[-ters*i:] = last[-ters*i:]
-                rest+=(resa/use_num)[-self.args["input_size"]:]
-                last=(resa/use_num)[-self.args["input_size"]:]
+                    resa[-ters*i:] = 0
+                rest+=(resa)[-self.args["input_size"]:]
             res3 = np.append(res3, response[0,:,:,:]).reshape(-1,self.args["NFFT"],2)
 
             res = np.clip(rest, -1.0, 1.0)*32767

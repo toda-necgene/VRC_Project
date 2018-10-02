@@ -226,7 +226,7 @@ class Model:
             # Preprocess
 
             # Padiing
-            start_pos=self.args["input_size"]*(1+t)+(in_put.shape[0]%self.args["input_size"])
+            start_pos=self.args["input_size"]*t+(in_put.shape[0]%self.args["input_size"])
             resorce=in_put[max(0,start_pos-input_size_one_term):start_pos]
             r=max(0,input_size_one_term-resorce.shape[0])
             if r>0:

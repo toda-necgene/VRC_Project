@@ -10,4 +10,4 @@ VRC/trained_models/*
 VRC/best_model/*
 VRC/logs/*
 VRC/datasets/*
-VRC/,idea/*
+VRC/.idea/*

@@ -1,7 +1,7 @@
 {
     "saving_config":{
-        "checkpoint_dir":"./trained_models/",
-        "best_checkpoint_dir":"Z://bestmodel/",
+        "checkpoint_dir":"Z://bestmodel/",
+        "best_checkpoint_dir":"Z://model/",
         "wave_otp_dir":"Z://waves/",
         "version":"0.3.002"
     },
