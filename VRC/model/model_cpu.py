@@ -28,7 +28,7 @@ class Model:
         self.args["batch_size"] = 32
         self.args["input_size"] = 4096
         self.args["NFFT"] = 1024
-
+        self.args["dilated_size"]=15
         self.args["g_lr_max"] = 2e-4
         self.args["g_lr_min"] = 2e-6
         self.args["d_lr_max"] = 2e-4
@@ -116,7 +116,7 @@ class Model:
         back_load=self.args["SHIFT"]
         use_num = 4
         tt=time.time()
-        ipt_size=self.args["input_size"]+self.args["SHIFT"]
+        ipt_size=self.args["input_size"]+self.args["SHIFT"]+self.args["SHIFT"]*self.args["dilated_size"]
         ipt=ipt_size+back_load
         times=in_put.shape[0]//(self.args["input_size"])+1
         if in_put.shape[0]%((self.args["input_size"])*self.args["batch_size"])==0:

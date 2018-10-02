@@ -5,7 +5,7 @@ import time
 import glob
 NFFT=1024
 SHIFT=NFFT//2
-dilations=0
+dilations=15
 term = 4096
 FORMAT = pyaudio.paInt16
 CHANNELS = 1        #モノラル
@@ -135,7 +135,7 @@ for file in files:
             a = np.clip(a, -10, 10)
             np.save("./datasets/train/" + str(name) + "/" + str(cnt) + ".npy", a)
             cnt += 1
-
+print(a.shape)
 print(" [*] ソースデータ変換完了")
 print(cnt)
 
