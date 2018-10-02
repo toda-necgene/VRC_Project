@@ -8,7 +8,7 @@ path_to_networks = './best_model'
 
 NFFT=1024
 SHIFT=512
-TERM=16384
+TERM=4096
 fs = 44100
 channels = 1
 sampling_target=16000

@@ -6,7 +6,7 @@ import glob
 NFFT=1024
 SHIFT=NFFT//2
 dilations=0
-term = 16384
+term = 4096
 FORMAT = pyaudio.paInt16
 CHANNELS = 1        #モノラル
 RATE = 16000       #サンプルレート
