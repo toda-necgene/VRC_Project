@@ -2,9 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="bcabb495-93d4-437a-b14b-9cb2802ec5b1" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/vrc.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vrc.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/VRC/model/model.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/model/model.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/VRC/setting.json" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/setting.json" afterDir="false" />
     </list>
     <ignored path="C:\Users\tadop\git\vrc\.idea\shelf/" />
     <ignored path="$PROJECT_DIR$/VRC/Network/to/" />
@@ -77,18 +77,18 @@
         <counts>
           <entry key="dummy" value="4" />
           <entry key="gitignore" value="53" />
-          <entry key="json" value="2653" />
+          <entry key="json" value="2656" />
           <entry key="md" value="718" />
-          <entry key="py" value="12234" />
-          <entry key="txt" value="2565" />
+          <entry key="py" value="12244" />
+          <entry key="txt" value="2567" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="JSON" value="2653" />
+          <entry key="JSON" value="2656" />
           <entry key="Markdown" value="718" />
-          <entry key="PLAIN_TEXT" value="2622" />
-          <entry key="Python" value="12234" />
+          <entry key="PLAIN_TEXT" value="2624" />
+          <entry key="Python" value="12244" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.vcs.git.usages" />
@@ -96,11 +96,11 @@
   </component>
   <component name="FileEditorManager">
     <leaf>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/model/model.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="208">
-              <caret line="25" column="9" selection-start-line="25" selection-start-column="9" selection-end-line="25" selection-end-column="9" />
+            <state relative-caret-position="217">
+              <caret line="42" column="101" selection-start-line="42" selection-start-column="101" selection-end-line="42" selection-end-column="101" />
             </state>
           </provider>
         </entry>
@@ -108,13 +108,13 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets_cycle.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="64">
-              <caret line="8" column="12" selection-start-line="8" selection-start-column="12" selection-end-line="8" selection-end-column="12" />
+            <state relative-caret-position="-272">
+              <caret line="8" column="11" selection-start-line="8" selection-start-column="11" selection-end-line="8" selection-end-column="11" />
             </state>
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/VRC/setting.json">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="80">
@@ -160,15 +160,16 @@
         <option value="$PROJECT_DIR$/VRC/run/VRC.py" />
         <option value="$PROJECT_DIR$/VRC/model/model_cpu.py" />
         <option value="$PROJECT_DIR$/VRC/model/model_train.py" />
-        <option value="$PROJECT_DIR$/VRC/setting.json" />
         <option value="$PROJECT_DIR$/VRC/model/model.py" />
+        <option value="$PROJECT_DIR$/VRC/setting.json" />
       </list>
     </option>
   </component>
   <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="-7" />
+    <option name="x" value="1617" />
+    <option name="y" value="-8" />
     <option name="width" value="734" />
-    <option name="height" value="877" />
+    <option name="height" value="768" />
   </component>
   <component name="ProjectInspectionProfilesVisibleTreeState">
     <entry key="Project Default">
@@ -338,27 +339,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1534034935853</updated>
-    </task>
-    <task id="LOCAL-00088" summary="[5.6.010] レイヤー数の変更&#10;&#10;[fix] 8に変更">
-      <created>1536727301573</created>
-      <option name="number" value="00088" />
-      <option name="presentableId" value="LOCAL-00088" />
-      <option name="project" value="LOCAL" />
-      <updated>1536727301573</updated>
-    </task>
-    <task id="LOCAL-00089" summary="[5.6.011] レイヤー数の変更&#10;&#10;[fix] 8に変更">
-      <created>1536741900509</created>
-      <option name="number" value="00089" />
-      <option name="presentableId" value="LOCAL-00089" />
-      <option name="project" value="LOCAL" />
-      <updated>1536741900510</updated>
-    </task>
-    <task id="LOCAL-00090" summary="[5.6.012] レイヤー数の変更&#10;&#10;[fix] 8に変更">
-      <created>1536748673542</created>
-      <option name="number" value="00090" />
-      <option name="presentableId" value="LOCAL-00090" />
-      <option name="project" value="LOCAL" />
-      <updated>1536748673542</updated>
     </task>
     <task id="LOCAL-00091" summary="[5.6.013] レイヤー数の変更&#10;&#10;[fix] 8に変更">
       <created>1536752579111</created>
@@ -682,12 +662,32 @@
       <option name="project" value="LOCAL" />
       <updated>1538283682304</updated>
     </task>
-    <option name="localTasksCounter" value="137" />
+    <task id="LOCAL-00137" summary="[0.3.007] 構造変更">
+      <created>1538470521467</created>
+      <option name="number" value="00137" />
+      <option name="presentableId" value="LOCAL-00137" />
+      <option name="project" value="LOCAL" />
+      <updated>1538470521467</updated>
+    </task>
+    <task id="LOCAL-00138" summary="[0.3.007] 構造変更">
+      <created>1538470566391</created>
+      <option name="number" value="00138" />
+      <option name="presentableId" value="LOCAL-00138" />
+      <option name="project" value="LOCAL" />
+      <updated>1538470566391</updated>
+    </task>
+    <task id="LOCAL-00139" summary="[0.3.007] 構造変更">
+      <created>1538470593180</created>
+      <option name="number" value="00139" />
+      <option name="presentableId" value="LOCAL-00139" />
+      <option name="project" value="LOCAL" />
+      <updated>1538470593180</updated>
+    </task>
+    <option name="localTasksCounter" value="140" />
     <servers />
   </component>
   <component name="ToolWindowManager">
     <frame x="1432" y="-8" width="1296" height="1010" extended-state="6" />
-    <editor active="true" />
     <layout>
       <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.27027026" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
@@ -713,7 +713,6 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[5.6.055] 学習率の変更&#10;&#10;[fix] 調整" />
     <MESSAGE value="[5.6.057] 学習率の変更&#10;&#10;[fix] 調整" />
     <MESSAGE value="[5.6.059] 層の変更&#10;&#10;[fix] 16に変更" />
     <MESSAGE value="[5.6.065] shakedropの変更&#10;&#10;[fix] batch-&gt;pixel" />
@@ -738,7 +737,8 @@
     <MESSAGE value="[0.1.004] ハイパーパラメータの調整" />
     <MESSAGE value="[0.1.005] 構造変更" />
     <MESSAGE value="[0.1.006] 構造変更" />
-    <option name="LAST_COMMIT_MESSAGE" value="[0.1.006] 構造変更" />
+    <MESSAGE value="[0.3.007] 構造変更" />
+    <option name="LAST_COMMIT_MESSAGE" value="[0.3.007] 構造変更" />
   </component>
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/ui.lnf.xml" />
@@ -868,20 +868,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/setting.json">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="80">
-          <caret line="5" column="26" selection-start-line="5" selection-start-column="26" selection-end-line="5" selection-end-column="26" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets_cycle.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="64">
-          <caret line="8" column="12" selection-start-line="8" selection-start-column="12" selection-end-line="8" selection-end-column="12" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/VRC/run/VRC.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="64">
@@ -889,10 +875,24 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets_cycle.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-272">
+          <caret line="8" column="11" selection-start-line="8" selection-start-column="11" selection-end-line="8" selection-end-column="11" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/VRC/model/model.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="208">
-          <caret line="25" column="9" selection-start-line="25" selection-start-column="9" selection-end-line="25" selection-end-column="9" />
+        <state relative-caret-position="217">
+          <caret line="42" column="101" selection-start-line="42" selection-start-column="101" selection-end-line="42" selection-end-column="101" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/VRC/setting.json">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="80">
+          <caret line="5" column="26" selection-start-line="5" selection-start-column="26" selection-end-line="5" selection-end-column="26" />
         </state>
       </provider>
     </entry>
