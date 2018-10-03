@@ -125,9 +125,9 @@ class Model:
             fake_aB_image=tf.concat([fake_aB_image12,fake_aB_image23],axis=1)
             fake_bA_image = tf.concat([fake_bA_image12, fake_bA_image23], axis=1)
             with tf.variable_scope("generator_2",reuse=True):
-                fake_Ba_image = generator(back_drop(fake_aB_image[:,-self.input_size_test[1]:,:,:],0.65), reuse=True,train=True)
+                fake_Ba_image = generator(back_drop(fake_aB_image[:,-self.input_size_test[1]:,:,:],0.75), reuse=True,train=True)
             with tf.variable_scope("generator_1",reuse=True):
-                fake_Ab_image = generator(back_drop(fake_bA_image[:,-self.input_size_test[1]:,:,:],0.65), reuse=True,train=True)
+                fake_Ab_image = generator(back_drop(fake_bA_image[:,-self.input_size_test[1]:,:,:],0.75), reuse=True,train=True)
 
         #creating discriminator
         with tf.variable_scope("discrims"):
