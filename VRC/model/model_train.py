@@ -10,7 +10,7 @@ from tensorflow.python.debug.lib.debug_data import has_inf_or_nan
 import pyaudio
 from datetime import datetime
 import json
-from .model import discriminator,generator
+from .model import discriminator,generator,pha_decoder
 import matplotlib.pyplot as plt
 
 class Model:
@@ -37,6 +37,7 @@ class Model:
         self.args["input_size"] = 4096
         self.args["dilated_size"] = 7
         self.args["NFFT"]=1024
+        self.args["KEPFILTERE"]=64
 
         self.args["g_lr_max"]=2e-4
         self.args["g_lr_min"] = 2e-6
@@ -86,9 +87,10 @@ class Model:
 
         # shapes of inputs
         ss=self.args["input_size"]//self.args["SHIFT"]
-        self.input_size_model=[self.args["batch_size"],ss+self.args["dilated_size"]+self.args["dilated_size"]+1,self.args["NFFT"]//2,2]
-        self.input_size_test = [1, ss+self.args["dilated_size"], self.args["NFFT"] // 2, 2]
-        self.output_size_model = [self.args["batch_size"], ss, self.args["NFFT"] // 2, 2]
+        self.input_size_model=[self.args["batch_size"],ss+self.args["dilated_size"]+self.args["dilated_size"]+1,self.args["SHIFT"],1]
+        self.input_size_test = [1, ss+self.args["dilated_size"], self.args["SHIFT"], 1]
+
+        self.output_size_model = [self.args["batch_size"], ss, self.args["SHIFT"], 1]
 
         self.sess=tf.InteractiveSession(config=tf.ConfigProto(gpu_options=tf.GPUOptions()))
 
@@ -106,6 +108,7 @@ class Model:
         #inputs place holder
         self.input_model_A=tf.placeholder(tf.float32, self.input_size_model, "inputs_G-net_A")
         self.input_model_B = tf.placeholder(tf.float32, self.input_size_model, "inputs_G-net_B")
+
         self.input_model_test = tf.placeholder(tf.float32, self.input_size_test, "inputs_G-net_test")
 
         input_model_A_fixed = self.input_model_A*0.1
@@ -118,7 +121,7 @@ class Model:
                 fake_aB_image12 = generator(input_model_A_fixed[:,:self.input_size_test[1],:,:], reuse=None, train=True)
                 fake_aB_image23 = generator(input_model_A_fixed[:,-self.input_size_test[1]:,:,:], reuse=True, train=True)
                 fake_aB_image_test_fixed= generator(input_model_test_fixed, reuse=True, train=False)
-                self.fake_aB_image_test=fake_aB_image_test_fixed*10
+                fake_aB_image_test=fake_aB_image_test_fixed*10
             with tf.variable_scope("generator_2"):
                 fake_bA_image12 = generator(input_model_B_fixed[:,:self.input_size_test[1],:,:], reuse=None, train=True)
                 fake_bA_image23 = generator(input_model_B_fixed[:,-self.input_size_test[1]:,:,:], reuse=True, train=True)
@@ -139,10 +142,15 @@ class Model:
             with tf.variable_scope("discrimA"):
                 d_judge_AR = discriminator(input_model_A_fixed[:,-self.input_size_test[1]:,:,:], None)
                 d_judge_AF = discriminator(fake_bA_image23, True)
+        input_model_C = tf.concat([input_model_A_fixed[:,-self.output_size_model[1]:,:,:], input_model_B_fixed[:,-self.output_size_model[1]:,:,:]], axis=0)
+        with tf.variable_scope("phase_decoder"):
+            maked=pha_decoder(input_model_C,reuse=None,train=True)
+            self.test_output=pha_decoder(fake_aB_image_test,reuse=True,train=False)
 
         #getting individual variabloes
         self.g_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"generators")
         self.d_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"discrims")
+        self.p_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, "phase_decoder")
         self.update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 
         #objective-functions of discriminator
@@ -160,8 +168,7 @@ class Model:
 
         # Cycle lossA
         g_loss_cyc_A_pow=tf.reduce_mean(tf.losses.mean_squared_error(predictions=fake_Ba_image[:,:,:,0],labels=input_model_A_fixed[:,-self.output_size_model[1]:,:,0]))* self.args["weight_Cycle_Pow"]
-        g_loss_cyc_A_pha=tf.reduce_mean(tf.losses.mean_squared_error(predictions=fake_Ba_image[:,:,:,1],labels=input_model_A_fixed[:,-self.output_size_model[1]:,:,1]))* self.args["weight_Cycle_Pha"]
-        g_loss_cyc_A=0.5*(g_loss_cyc_A_pow+g_loss_cyc_A_pha)
+        g_loss_cyc_A=g_loss_cyc_A_pow
 
         # Gan lossB
         g_loss_gan_B = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_BF),predictions=d_judge_BF))* self.args["weight_GAN"]
@@ -172,8 +179,7 @@ class Model:
 
         # Cyc lossB
         g_loss_cyc_B_pow=tf.reduce_mean(tf.losses.mean_squared_error(predictions=fake_Ab_image[:,:,:,0],labels=input_model_B_fixed[:,-self.output_size_model[1]:,:,0]))* self.args["weight_Cycle_Pow"]
-        g_loss_cyc_B_pha=tf.reduce_mean(tf.losses.mean_squared_error(predictions=fake_Ab_image[:,:,:,1],labels=input_model_B_fixed[:,-self.output_size_model[1]:,:,1] ))* self.args["weight_Cycle_Pha"]
-        g_loss_cyc_B = 0.5*(g_loss_cyc_B_pow+g_loss_cyc_B_pha)
+        g_loss_cyc_B =g_loss_cyc_B_pow
 
         # Gan lossA
         g_loss_gan_A = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_AF),predictions=d_judge_AF))* self.args["weight_GAN"]
@@ -184,7 +190,18 @@ class Model:
         # generator loss
         self.g_loss=self.g_loss_aB+self.g_loss_bA
         self.g_loss_pre = g_loss_cyc_B + g_loss_cyc_A
+        ten2 = tf.concat([maked[:, :, ::-1, :1], maked[:, :, ::-1, 1:] * -1], axis=3)
+        maked = tf.concat([maked, ten2], axis=2)
+        p=tf.exp(maked[:,:,:,0])
+        re=p*tf.cos(maked[:,:,:,1])
+        im=p*tf.sin(maked[:,:,:,1])
+        fa=tf.complex(re,im)
+        m=tf.real(tf.spectral.ifft(fa))
+        m=tf.complex(m,tf.zeros_like(m))
+        m=tf.spectral.fft(m)
 
+        target= tf.reshape(tf.log(tf.pow(tf.real(m), 2) + tf.pow(tf.imag(m), 2) + 1e-24),[self.args["batch_size"]*2,self.output_size_model[1],self.args["NFFT"]])
+        self.p_loss=tf.losses.mean_squared_error(labels=target,predictions=maked[:,:,:,0])
         #tensorboard functions
         g_loss_cyc_A_display= tf.summary.scalar("g_loss_cycle_A", tf.reduce_mean(g_loss_cyc_A),family="g_loss")
         g_loss_gan_A_display = tf.summary.scalar("g_loss_gan_A", tf.reduce_mean(g_loss_gan_A),family="g_loss")
@@ -197,7 +214,10 @@ class Model:
         d_loss_sum_A_display = tf.summary.scalar("d_lossA", tf.reduce_mean(d_loss_A),family="d_loss")
         d_loss_sum_B_display = tf.summary.scalar("d_lossB", tf.reduce_mean(d_loss_B),family="d_loss")
 
-        self.loss_display=tf.summary.merge([g_loss_sum_A_display,g_loss_sum_B_display,d_loss_sum_A_display,d_loss_sum_B_display])
+        p_loss_display = tf.summary.scalar("p_loss", tf.reduce_mean(self.p_loss),family="p_loss")
+
+        self.loss_display=tf.summary.merge([g_loss_sum_A_display,g_loss_sum_B_display,d_loss_sum_A_display,d_loss_sum_B_display,p_loss_display])
+
         self.result_audio_display= tf.placeholder(tf.float32, [1,1,160000], name="FB")
         self.result_image_display= tf.placeholder(tf.float32, [1,None,self.args["SHIFT"],2], name="FBI0")
         image_pow_display=tf.transpose(self.result_image_display[:,:,:,:1],[0,2,1,3])
@@ -224,7 +244,7 @@ class Model:
         otp=np.array([],dtype=np.int16)
 
         res_image = np.zeros([1,self.args["SHIFT"],2], dtype=np.float32)
-        remain_wave=np.zeros([self.input_size_model[2]],dtype=np.float64)
+        remain_wave=np.zeros([self.output_size_model[2]],dtype=np.float64)
         for t in range(executing_times):
             # Preprocess
 
@@ -235,13 +255,12 @@ class Model:
             if r>0:
                 resorce=np.pad(resorce,(r,0),'constant')
             # FFT
-            resource=self.fft(resorce/32767.0)
-            resource = resource[:, :self.args["SHIFT"], :].reshape([1, -1, self.args["SHIFT"], 2])
+            resource=self.fft(resorce/32767.0)[:,:self.args["SHIFT"]].reshape([1,self.input_size_test[1],self.input_size_test[2],1])
 
             #main process
 
             # running network
-            result=self.sess.run(self.fake_aB_image_test,feed_dict={ self.input_model_test:resource})
+            result=self.sess.run(self.test_output,feed_dict={ self.input_model_test:resource})
 
             res_image = np.append(res_image, result[0].copy(), axis=0)
             # Postprocess
@@ -296,6 +315,8 @@ class Model:
                                                                                   var_list=self.g_vars)
         d_optim = tf.train.AdamOptimizer(lr_d, beta_d_opt, beta_2_d_opt).minimize(self.d_loss,
                                                                                   var_list=self.d_vars)
+        p_optim = tf.train.AdamOptimizer(lr_g, beta_d_opt, beta_2_d_opt).minimize(self.p_loss,
+                                                                                  var_list=self.p_vars)
 
         tt_list=list()
 
@@ -318,7 +339,7 @@ class Model:
 
         # prepareing test-target-spectrum
         input_size_one_term = self.args["input_size"] + self.args["SHIFT"]
-        out_spectrum= np.zeros([1, self.args["NFFT"], 2], dtype=np.float32)
+        out_spectrum= np.zeros([1, self.args["SHIFT"]], dtype=np.float32)
         fft_executing_times = label.shape[0] // (self.args["input_size"]) + 1
         if label.shape[0] % ((self.args["input_size"]) * self.args["batch_size"]) == 0:
             fft_executing_times -= 1
@@ -336,9 +357,9 @@ class Model:
 
             # FFT
             result_fft = self.fft(resorce / 32767.0)
-            out_spectrum=np.append(out_spectrum,result_fft,axis=0)
+            out_spectrum=np.append(out_spectrum,result_fft[:,:self.args["SHIFT"],0],axis=0)
 
-        self.label_spectrum=out_spectrum[1:,:self.args["SHIFT"]]
+        self.label_spectrum=out_spectrum[1:]
 
         # times of one epoch
         train_data_num = min(len(data),len(data2))
@@ -351,8 +372,8 @@ class Model:
         batch_files2 = data2[:train_data_num]
 
         print(" [I] loading dataset...")
-        self.sounds_r = np.asarray([(imread(batch_file)) for batch_file in batch_files])
-        self.sounds_t = np.asarray([(imread(batch_file)) for batch_file in batch_files2])
+        self.sounds_r = np.asarray([(imread(batch_file,self.input_size_model[1:])) for batch_file in batch_files])
+        self.sounds_t = np.asarray([(imread(batch_file,self.input_size_model[1:])) for batch_file in batch_files2])
         print(" [I] %d data loaded!!" % train_data_num)
 
         # initializing training infomation
@@ -401,7 +422,7 @@ class Model:
                     self.sess.run([d_optim],
                                   feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target,lr_d:lr_d_culced})
                 # update G network
-                self.sess.run([g_optim, self.update_ops],
+                self.sess.run([g_optim, p_optim, self.update_ops],
                               feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target, lr_g: lr_g_culced})
 
             # calculating ETA
@@ -440,7 +461,7 @@ class Model:
         otp_im[:,:, :, 0] = np.clip((otp_im[:, :, :, 0] + 10.0) / 20.0, 0.0, 1.0)
         otp_im[:,:, :, 1] = np.clip((otp_im[:, :, :, 1] + 3.15) / 6.30, 0.0, 1.0)
         r = min(self.label_spectrum.shape[0], im.shape[0])
-        test_score = np.mean(np.abs(self.label_spectrum[:r, :, 0] - im[:r, :, 0]))
+        test_score = np.mean(np.abs(self.label_spectrum[:r, :] - im[:r, :, 0]))
 
         # writing epoch-result into tensorboard
         if self.args["tensorboard"]:
@@ -520,8 +541,9 @@ class Model:
         im = fft_r.imag.reshape(time_ruler, -1)
         c = np.log(np.power(re, 2) + np.power(im, 2) + 1e-24).reshape(time_ruler, -1, 1)
         c = np.clip(c, -10, 10)
-        d = np.arctan2(im, re).reshape(time_ruler, -1, 1)
-        spec = np.concatenate((c, d), 2)
+        s = np.fft.fft(c).reshape([-1,self.args["NFFT"],1])
+        s[:,self.args["KEPFILTERE"]:-self.args["KEPFILTERE"]]=0
+        spec=np.fft.ifft(s).real
         return spec
     def ifft(self,data,redi):
         a=data
@@ -578,5 +600,5 @@ def isread(path):
     else:
         ans=ans[:160000]
     return ans
-def imread(path):
-    return np.load(path)
+def imread(path,size):
+    return np.load(path).reshape(size)

@@ -5,8 +5,7 @@ import numpy as np
 from tensorflow.python import debug as tf_debug
 from tensorflow.python.debug.lib.debug_data import has_inf_or_nan
 import json
-import shutil
-from .model import discriminator,generator
+from .model import generator,pha_decoder
 class Model:
     def __init__(self,path):
         self.args = dict()
@@ -102,7 +101,7 @@ class Model:
         with tf.variable_scope("generators"):
 
             with tf.variable_scope("generator_1"):
-                self.fake_aB_image_testa = generator(self.input_model_testa, reuse=None, train=False)
+                self.fake_aB_image_testa = pha_decoder(generator(self.input_model_testa, reuse=None, train=False), reuse=None, train=False)
                 self.fake_aB_image_test=10*self.fake_aB_image_testa
 
         #saver
@@ -190,24 +189,21 @@ class Model:
             return False
 
     def fft(self,data):
-
-        time_ruler = data.shape[0] // self.args["SHIFT"]
-        if data.shape[0] % self.args["SHIFT"] == 0:
-            time_ruler -= 1
+        time_ruler = data.shape[0] // self.args["SHIFT"] - 1
         pos = 0
-        win = np.hamming(self.args["NFFT"])
         wined = np.zeros([time_ruler, self.args["NFFT"]])
+        win = np.hamming(self.args["NFFT"])
         for fft_index in range(time_ruler):
             frame = data[pos:pos + self.args["NFFT"]]
-            wined[fft_index] = frame*win
+            wined[fft_index] = frame * win
             pos += self.args["SHIFT"]
         fft_r = np.fft.fft(wined, n=self.args["NFFT"], axis=1)
         re = fft_r.real.reshape(time_ruler, -1)
         im = fft_r.imag.reshape(time_ruler, -1)
         c = np.log(np.power(re, 2) + np.power(im, 2) + 1e-24).reshape(time_ruler, -1, 1)
-        c=np.clip(c,-10,10)
-        d = np.arctan2(im, re).reshape(time_ruler, -1, 1)
-        spec = np.concatenate((c, d), 2)
+        c = np.clip(c, -10, 10)
+        s = np.fft.fft(c)[:, :self.args["KEPFILTERE"]]
+        spec = np.asarray([s.real, s.imag])
         return spec
     def ifft(self,data,redi):
         a=data

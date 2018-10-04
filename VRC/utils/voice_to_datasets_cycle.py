@@ -115,27 +115,15 @@ for file in files:
             data_realAb=np.pad(data_realAb,(r,0),"constant")
         dmn=data_realAb
         a=fft(dmn)
-        a=complex_to_pp(a[:,:SHIFT])
+        a=complex_to_pp(a)
         a = np.clip(a, -10, 10)
-        np.save("./datasets/train/"+str(name)+"/"+str(cnt) +".npy", a)
+        ps=np.fft.fft(a[:,:,0],NFFT)
+        ps[:,64:-64]=0
+        ps=np.fft.ifft(ps).real[:,:SHIFT]
+        a=np.asarray(ps,dtype=np.float32)
+        np.save("./datasets/train/"+str(name)+"/k"+str(cnt) +".npy", a)
+        # np.save("./datasets/train/" + str(name) + "/w" + str(cnt) + ".npy", dmn[-term+SHIFT:])
         cnt+=1
-        for s in range(0):
-            p=np.random.randint(30,50)/40+0.05
-            ind = term + SHIFT * dilations + SHIFT
-            startpos = term * i + data_realA.shape[0] % term
-            data_realAb = data_realA[max(startpos - ind, 0):startpos]
-            data_realAb=shift(data_realAb.copy(),p)
-            data_realAb=np.clip(data_realAb,-1.0,1.0)
-            r = ind - data_realAb.shape[0]
-            if r > 0:
-                data_realAb = np.pad(data_realAb, (r, 0), "constant")
-            dmn = data_realAb
-            a = fft(dmn)
-            a = complex_to_pp(a[:, :SHIFT])
-            a = np.clip(a, -10, 10)
-            np.save("./datasets/train/" + str(name) + "/" + str(cnt) + ".npy", a)
-            cnt += 1
-print(a.shape)
 print(" [*] ソースデータ変換完了")
 print(cnt)
 
@@ -172,27 +160,16 @@ for file in files:
         if r>0:
             data_realAb=np.pad(data_realAb,(r,0),"constant")
         dmn=data_realAb
-        a=fft(dmn)
-        a=complex_to_pp(a[:,:SHIFT])
-        a=np.clip(a,-10,10)
-        np.save("./datasets/train/"+str(name)+"/"+str(cnt) +".npy", a)
+        a = fft(dmn)
+        a = complex_to_pp(a)
+        a = np.clip(a, -10, 10)
+        ps = np.fft.fft(a[:, :, 0], NFFT)
+        ps[:, 64:-64] = 0
+        ps = np.fft.ifft(ps).real[:,:SHIFT]
+        a=np.asarray(ps,dtype=np.float32)
+        np.save("./datasets/train/" + str(name) + "/k" + str(cnt) + ".npy", a)
+        # np.save("./datasets/train/" + str(name) + "/w" + str(cnt) + ".npy", dmn)
         cnt+=1
-        for s in range(0):
-            p=np.random.randint(30,70)/40+0.05
-            ind = term + SHIFT * dilations + SHIFT
-            startpos = term * i + data_realA.shape[0] % term
-            data_realAb = data_realA[max(startpos - ind, 0):startpos]
-            data_realAb=shift(data_realAb.copy(),p)
-            data_realAb=np.clip(data_realAb,-1.0,1.0)
-            r = ind - data_realAb.shape[0]
-            if r > 0:
-                data_realAb = np.pad(data_realAb, (r, 0), "constant")
-            dmn = data_realAb
-            a = fft(dmn)
-            a = complex_to_pp(a[:, :SHIFT])
-            a = np.clip(a, -10, 10)
-            np.save("./datasets/train/" + str(name) + "/" + str(cnt) + ".npy", a)
-            cnt += 1
 
 print(" [*] アンサーデータ変換完了")
 print(cnt)
