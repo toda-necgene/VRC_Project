@@ -19,28 +19,23 @@ def discriminator(inp,reuse):
 
     return ten
 def pha_decoder(inp,reuse,train):
-    res=4
+    res=2
     ten=inp
     tenP=inp
     for i in range(res):
         #inception resblock
-        tenA =tf.layers.conv2d(ten, 32, [3, 7], [1, 1], padding="SAME",
-                               kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/7/3/32)), use_bias=False,
+        tenA =tf.layers.conv2d(ten, 16, [3, 7], [1, 1], padding="SAME",
+                               kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/7/3/16)), use_bias=False,
                                data_format="channels_last", reuse=reuse, name="res_conv_A_" + str(i))
 
 
-        # adding noise(shakedrop)
-        prop = (1 - i / (res * 2))
-        tenG = ShakeDrop(tenA, prop, train)
-
-        tenG = tf.layers.batch_normalization(tenG, axis=3, training=train, trainable=True, reuse=reuse,
+        tenG = tf.layers.batch_normalization(tenA, axis=3, training=train, trainable=True, reuse=reuse,
                                              name="res_bn_" + str(i))
         tenG = tf.nn.relu(tenG)
 
+        ten=tenG
 
-        ten=tenG+ten
-
-    ten = tf.layers.conv2d(ten, 1, kernel_size=[1, 3], strides=[1, 1], padding="SAME",
+    ten = tf.layers.conv2d(ten, 1, kernel_size=[5, 7], strides=[1, 1], padding="SAME",
                            kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/3.0)), use_bias=True,
                            data_format="channels_last", reuse=reuse, name="last_conv")
     ten=tf.tanh(ten)*3.15
@@ -50,20 +45,22 @@ def pha_decoder(inp,reuse,train):
 def generator(ten,reuse,train):
 
     # setting paramater
-    res=4
-    chs_enc=[8,16,32]
-    chs_dec=[16,8,4]
+    res=3
+    times=2
+    chs_dil=[4,8,16]
+    chs_enc=[32,128]
+    chs_dec=[16,1]
 
     for i in range(3):
         # Encoding
         hs=2**(i+1)
-        tenA = tf.layers.conv2d(ten, chs_enc[i], kernel_size=[2, 1], strides=[1, 1], padding="VALID",
-                                kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/(2*chs_enc[i]))),use_bias=False,
-                                data_format="channels_last", reuse=reuse, name="enc_conv"+str(i),
+        tenA = tf.layers.conv2d(ten, chs_dil[i], kernel_size=[2, 1], strides=[1, 1], padding="VALID",
+                                kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/(2*chs_dil[i]))),use_bias=False,
+                                data_format="channels_last", reuse=reuse, name="dil_conv"+str(i),
                                 dilation_rate=(hs//2, 1))
         tenA = tf.layers.batch_normalization(tenA, axis=3, training=train, trainable=True, reuse=reuse,name="enc_bn"+str(i))
         ten = tf.nn.relu(tenA)
-
+    for i in range(times):
         tenA=tf.layers.conv2d(ten, chs_enc[i], [1, 4], [1, 4], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/4/chs_enc[i])), use_bias=False,
                                data_format="channels_last", reuse=reuse, name="res_conv_A_" + str(i))
@@ -73,34 +70,35 @@ def generator(ten,reuse,train):
         ten = tf.nn.relu(tenA)
     for i in range(res):
         #inception resblock
-        tenA =tf.layers.conv2d(ten, 32, [1, 7], [1, 1], padding="SAME",
-                               kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/7/32)), use_bias=False,
+        tenA =tf.layers.conv2d(ten, 64, [1, 5], [1, 1], padding="SAME",
+                               kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/5/64)), use_bias=False,
                                data_format="channels_last", reuse=reuse, name="res_conv_B_" + str(i))
 
-        tenA = tf.layers.batch_normalization(tenA, axis=3, training=train, trainable=True, reuse=reuse,
-                                             name="res_bn2_" + str(i))
-        tenA = tf.nn.relu(tenA)
+        tenB=tf.transpose(ten[:,:,:,:64],[0,1,3,2])
+        rs=int(tenB.shape[3])
+        tenB=tf.layers.dense(tenB,rs,kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/rs)),use_bias=False,reuse=reuse,name="dense"+str(i))
+        tenB = tf.transpose(tenB, [0, 1, 3, 2])
+        tenA=tf.concat([tenA,tenB],axis=3)
 
         # adding noise(shakedrop)
         prop = (1 - i / (res * 2))
         tenA = ShakeDrop(tenA, prop, train)
 
         tenA = tf.layers.batch_normalization(tenA, axis=3, training=train, trainable=True, reuse=reuse,
-                                             name="res_bn3_" + str(i))
+                                             name="res_bn_" + str(i))
         tenA = tf.nn.relu(tenA)
-
 
         ten=tenA+ten
 
     # decodeing
-    for i in range(3):
+    for i in range(times):
         ten=deconve_with_ps(ten,[1,4],chs_dec[i],reuse,"dec_"+str(i),False)
         ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuse,
                                              name="dec_bn1_" + str(i))
         ten = tf.nn.relu(ten)
 
-    ten = tf.layers.conv2d(ten, 1, kernel_size=[1, 3], strides=[1, 1], padding="SAME",
-                                kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/6.0)),use_bias=True,
+    ten = tf.layers.conv2d(ten, 1, kernel_size=[1, 1], strides=[1, 1], padding="SAME",
+                                kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0)),use_bias=True,
                                 data_format="channels_last", reuse=reuse, name="last_conv1")
 
     return ten

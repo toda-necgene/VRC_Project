@@ -5,6 +5,10 @@ import matplotlib.pyplot as pl
 import time
 NFFT=1024
 SHIFT=NFFT//2
+fs = 16000
+chs = 100
+
+
 def fft(data):
     time_ruler=data.shape[0]//SHIFT
     if data.shape[0]%SHIFT==0:
@@ -45,6 +49,50 @@ def ifft(data,inp):
     lats[0,:]=inp
     spec=np.reshape(v+lats,(-1))
     return spec,res
+def hz_to_mel(fss):
+    return 1127.01048*np.log(fss/700+1.0)
+def mel_to_hz(fss):
+    return (np.exp(fss/1127.01048)-1.0)*700.0
+def mel_freq_encode(datanum):
+    fmax=fs/2
+    mel_f=np.zeros([datanum.shape[0],chs])
+    melmax=hz_to_mel(fmax)
+    nmax=NFFT/2
+    df=fs/NFFT
+    dmel=melmax/(chs+1)
+    melcenters=np.arange(1,chs+1)*dmel
+    fcenters=mel_to_hz(melcenters)
+    indexc=np.round(fcenters/df)
+    indexl=np.hstack(([0],indexc[0:chs-1]))
+    indexr=np.hstack((indexc[1:chs],[nmax]))
+    indexrange=indexr-indexl
+    for g in range(chs):
+        b=np.bartlett(indexrange[g])
+        b=np.pad(b,(int(indexl[g]),int(nmax-indexr[g])),"constant")
+        mel_f[:,g]=np.sum(datanum*b,axis=-1)
+    return mel_f
+def mel_freq_decode(datanum):
+    fmax=fs/2
+    mel_f=np.zeros([datanum.shape[0],SHIFT])
+    melmax=hz_to_mel(fmax)
+    nmax=NFFT/2
+    df=fs/NFFT
+    dmel=melmax/(chs+1)
+    melcenters=np.arange(1,chs+1)*dmel
+    fcenters=mel_to_hz(melcenters)
+    indexc=np.round(fcenters/df)
+    indexl=np.hstack(([0],indexc[0:chs-1]))
+    indexr=np.hstack((indexc[1:chs],[nmax]))
+    indexrange=indexr-indexl
+    for g in range(chs):
+        p = datanum[:, g]
+        b=np.tile(np.bartlett(indexrange[g]),[p.shape[0],1])
+        for h in range(b.shape[0]):
+            b[h]*=p[h]
+        b=np.pad(b,((0,0),(int(indexl[g]),int(nmax-indexr[g]))),"constant")
+        mel_f[:]+=b
+    return mel_f
+
 FORMAT = pyaudio.paInt16
 CHANNELS = 1        #モノラル
 RATE = 16000       #サンプルレート
@@ -96,16 +144,23 @@ for i in range(times):
     dmn=data_realAb/32767.0
     a=fft(dmn)
     a=complex_to_pp(a)
-    m=a[:,:,0]
+    m=a[:,:SHIFT,0]
+    m=mel_freq_encode(m)
+    m = np.concatenate([m, m[:, ::-1]], axis=-1)
+
     m=np.fft.fft(m)
-    f=64
+    f=50
     m[:,f:-f]=0
-    m=np.fft.ifft(m)
-    a[:,:,0]=m.real
-    # a=pp_to_complex(a)
+
+    m=np.fft.ifft(m).real
+    m = m[:, :SHIFT]
+    m = mel_freq_decode(m)
+    a[:,:,0]=np.concatenate([m,m[:,::-1]],axis=-1)
+
     ab = np.append(ab, a, axis=0)
-    # s,resp=ifft(a,resp)
-    # b=np.append(b,s)
+    a=pp_to_complex(a)
+    s,resp=ifft(a,resp)
+    b=np.append(b,s)
 r=b.shape[0]-data_realA.shape[0]
 bbb=b
 bbb=(bbb[1:]/2*32767).astype(np.int16)

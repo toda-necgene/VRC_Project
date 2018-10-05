@@ -117,13 +117,14 @@ for file in files:
         a=fft(dmn)
         a=complex_to_pp(a)
         a = np.clip(a, -10, 10)
-        ps=np.fft.fft(a[:,:,0],NFFT)
-        ps[:,64:-64]=0
-        ps=np.fft.ifft(ps).real[:,:SHIFT]
-        a=np.asarray(ps,dtype=np.float32)
+        # ps=np.fft.fft(a[:,:,0],NFFT)
+        # ps[:,64:-64]=0
+        # ps=np.fft.ifft(ps).real[:,:SHIFT]
+        a=np.asarray(a[:,:SHIFT,0],dtype=np.float32)
         np.save("./datasets/train/"+str(name)+"/k"+str(cnt) +".npy", a)
         # np.save("./datasets/train/" + str(name) + "/w" + str(cnt) + ".npy", dmn[-term+SHIFT:])
         cnt+=1
+print(a.shape)
 print(" [*] ソースデータ変換完了")
 print(cnt)
 
@@ -163,10 +164,10 @@ for file in files:
         a = fft(dmn)
         a = complex_to_pp(a)
         a = np.clip(a, -10, 10)
-        ps = np.fft.fft(a[:, :, 0], NFFT)
-        ps[:, 64:-64] = 0
-        ps = np.fft.ifft(ps).real[:,:SHIFT]
-        a=np.asarray(ps,dtype=np.float32)
+        # ps = np.fft.fft(a[:, :, 0], NFFT)
+        # ps[:, 64:-64] = 0
+        # ps = np.fft.ifft(ps).real[:,:SHIFT]
+        a=np.asarray(a[:,:SHIFT,0],dtype=np.float32)
         np.save("./datasets/train/" + str(name) + "/k" + str(cnt) + ".npy", a)
         # np.save("./datasets/train/" + str(name) + "/w" + str(cnt) + ".npy", dmn)
         cnt+=1

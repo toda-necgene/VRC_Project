@@ -541,9 +541,10 @@ class Model:
         im = fft_r.imag.reshape(time_ruler, -1)
         c = np.log(np.power(re, 2) + np.power(im, 2) + 1e-24).reshape(time_ruler, -1, 1)
         c = np.clip(c, -10, 10)
-        s = np.fft.fft(c).reshape([-1,self.args["NFFT"],1])
-        s[:,self.args["KEPFILTERE"]:-self.args["KEPFILTERE"]]=0
-        spec=np.fft.ifft(s).real
+        # s = np.fft.fft(c).reshape([-1,self.args["NFFT"],1])
+        # s[:,self.args["KEPFILTERE"]:-self.args["KEPFILTERE"]]=0
+        # spec=np.fft.ifft(s).real[:,:self.args["SHIFT"]]
+        spec=np.asarray(c,dtype=np.float32)
         return spec
     def ifft(self,data,redi):
         a=data
