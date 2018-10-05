@@ -35,7 +35,7 @@ class Model:
 
         self.args["batch_size"] = 8
         self.args["input_size"] = 4096
-        self.args["dilated_size"] = 7
+        self.args["dilated_size"] = 0
         self.args["NFFT"]=1024
         self.args["KEPFILTERE"]=64
 
@@ -87,7 +87,7 @@ class Model:
 
         # shapes of inputs
         ss=self.args["input_size"]//self.args["SHIFT"]
-        self.input_size_model=[self.args["batch_size"],ss+self.args["dilated_size"]+self.args["dilated_size"]+1,self.args["SHIFT"],1]
+        self.input_size_model=[self.args["batch_size"],ss+self.args["dilated_size"]+self.args["dilated_size"],self.args["SHIFT"],1]
         self.input_size_test = [1, ss+self.args["dilated_size"], self.args["SHIFT"], 1]
 
         self.output_size_model = [self.args["batch_size"], ss, self.args["SHIFT"], 1]
@@ -119,33 +119,34 @@ class Model:
 
             with tf.variable_scope("generator_1"):
                 fake_aB_image12 = generator(input_model_A_fixed[:,:self.input_size_test[1],:,:], reuse=None, train=True)
-                fake_aB_image23 = generator(input_model_A_fixed[:,-self.input_size_test[1]:,:,:], reuse=True, train=True)
+                # fake_aB_image23 = generator(input_model_A_fixed[:,-self.input_size_test[1]:,:,:], reuse=True, train=True)
                 fake_aB_image_test_fixed= generator(input_model_test_fixed, reuse=True, train=False)
-                fake_aB_image_test=fake_aB_image_test_fixed*10
+                fake_aB_image_test=fake_aB_image_test_fixed
             with tf.variable_scope("generator_2"):
                 fake_bA_image12 = generator(input_model_B_fixed[:,:self.input_size_test[1],:,:], reuse=None, train=True)
-                fake_bA_image23 = generator(input_model_B_fixed[:,-self.input_size_test[1]:,:,:], reuse=True, train=True)
-            fake_aB_image=tf.concat([fake_aB_image12,fake_aB_image23],axis=1)
-            fake_bA_image = tf.concat([fake_bA_image12, fake_bA_image23], axis=1)
+                # fake_bA_image23 = generator(input_model_B_fixed[:,-self.input_size_test[1]:,:,:], reuse=True, train=True)
+            # fake_aB_image=tf.concat([fake_aB_image12,fake_aB_image23],axis=1)
+            # fake_bA_image = tf.concat([fake_bA_image12, fake_bA_image23], axis=1)
             with tf.variable_scope("generator_2",reuse=True):
-                fake_Ba_image = generator(back_drop(fake_aB_image[:,-self.input_size_test[1]:,:,:],0.75), reuse=True,train=True)
+                fake_Ba_image = generator(back_drop(fake_aB_image12[:,-self.input_size_test[1]:,:,:],0.75), reuse=True,train=True)
             with tf.variable_scope("generator_1",reuse=True):
-                fake_Ab_image = generator(back_drop(fake_bA_image[:,-self.input_size_test[1]:,:,:],0.75), reuse=True,train=True)
+                fake_Ab_image = generator(back_drop(fake_bA_image12[:,-self.input_size_test[1]:,:,:],0.75), reuse=True,train=True)
 
         #creating discriminator
         with tf.variable_scope("discrims"):
 
             with tf.variable_scope("discrimB"):
                 d_judge_BR= discriminator(input_model_B_fixed[:,-self.input_size_test[1]:,:,:], None)
-                d_judge_BF = discriminator(fake_aB_image23, True)
+                d_judge_BF = discriminator(fake_aB_image12, True)
 
             with tf.variable_scope("discrimA"):
                 d_judge_AR = discriminator(input_model_A_fixed[:,-self.input_size_test[1]:,:,:], None)
-                d_judge_AF = discriminator(fake_bA_image23, True)
-        input_model_C = tf.concat([input_model_A_fixed[:,-self.output_size_model[1]:,:,:], input_model_B_fixed[:,-self.output_size_model[1]:,:,:]], axis=0)
+                d_judge_AF = discriminator(fake_bA_image12, True)
+        input_model_C = input_model_B_fixed[:,-self.output_size_model[1]:,:,:]
         with tf.variable_scope("phase_decoder"):
             maked=pha_decoder(input_model_C,reuse=None,train=True)
-            self.test_output=pha_decoder(fake_aB_image_test,reuse=True,train=False)
+            test_outputaB=pha_decoder(fake_aB_image_test,reuse=True,train=False)
+            self.test_output = tf.concat([test_outputaB[:,:,:,:1]*10,test_outputaB[:,:,:,1:]],axis=3)
 
         #getting individual variabloes
         self.g_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"generators")
@@ -200,8 +201,8 @@ class Model:
         m=tf.complex(m,tf.zeros_like(m))
         m=tf.spectral.fft(m)
 
-        target= tf.reshape(tf.log(tf.pow(tf.real(m), 2) + tf.pow(tf.imag(m), 2) + 1e-24),[self.args["batch_size"]*2,self.output_size_model[1],self.args["NFFT"]])
-        self.p_loss=tf.losses.mean_squared_error(labels=target,predictions=maked[:,:,:,0])
+        target= tf.reshape(tf.log(tf.pow(tf.real(m), 2) + tf.pow(tf.imag(m), 2) + 1e-24),[self.args["batch_size"],self.output_size_model[1],self.args["NFFT"]])
+        self.p_loss=tf.losses.mean_squared_error(predictions=target,labels=maked[:,:,:,0])
         #tensorboard functions
         g_loss_cyc_A_display= tf.summary.scalar("g_loss_cycle_A", tf.reduce_mean(g_loss_cyc_A),family="g_loss")
         g_loss_gan_A_display = tf.summary.scalar("g_loss_gan_A", tf.reduce_mean(g_loss_gan_A),family="g_loss")

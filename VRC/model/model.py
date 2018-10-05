@@ -6,11 +6,11 @@ def discriminator(inp,reuse):
     current=inp
     # setting paramater
     depth=4
-    chs=[32,64,64,64]
+    chs=[32,64,128,256]
 
     # convolution(2*4,stride 1*4)
     for i in range(depth):
-        ten = tf.layers.conv2d(current, chs[i], kernel_size=[3,7], strides=[1,2], padding="SAME",kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2/(3*7*chs[i]))),use_bias=True, data_format="channels_last",name="disc_"+str(i),reuse=reuse)
+        ten = tf.layers.conv2d(current, chs[i], kernel_size=[3,7], strides=[1,4], padding="SAME",kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2/(3*7*chs[i]))),use_bias=True, data_format="channels_last",name="disc_"+str(i),reuse=reuse)
         current = tf.nn.leaky_relu(ten)
 
     # dense
@@ -19,12 +19,12 @@ def discriminator(inp,reuse):
 
     return ten
 def pha_decoder(inp,reuse,train):
-    res=2
+    res=3
     ten=inp
     tenP=inp
     for i in range(res):
         #inception resblock
-        tenA =tf.layers.conv2d(ten, 16, [3, 7], [1, 1], padding="SAME",
+        tenA =tf.layers.conv2d(ten, 64, [3, 7], [1, 1], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/7/3/16)), use_bias=False,
                                data_format="channels_last", reuse=reuse, name="res_conv_A_" + str(i))
 
@@ -38,28 +38,16 @@ def pha_decoder(inp,reuse,train):
     ten = tf.layers.conv2d(ten, 1, kernel_size=[5, 7], strides=[1, 1], padding="SAME",
                            kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/3.0)), use_bias=True,
                            data_format="channels_last", reuse=reuse, name="last_conv")
-    ten=tf.tanh(ten)*3.15
     ten=tf.concat([tenP,ten],axis=3)
     return ten
 
 def generator(ten,reuse,train):
 
     # setting paramater
-    res=3
+    res=6
     times=2
-    chs_dil=[4,8,16]
-    chs_enc=[32,128]
+    chs_enc=[32,64]
     chs_dec=[16,1]
-
-    for i in range(3):
-        # Encoding
-        hs=2**(i+1)
-        tenA = tf.layers.conv2d(ten, chs_dil[i], kernel_size=[2, 1], strides=[1, 1], padding="VALID",
-                                kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/(2*chs_dil[i]))),use_bias=False,
-                                data_format="channels_last", reuse=reuse, name="dil_conv"+str(i),
-                                dilation_rate=(hs//2, 1))
-        tenA = tf.layers.batch_normalization(tenA, axis=3, training=train, trainable=True, reuse=reuse,name="enc_bn"+str(i))
-        ten = tf.nn.relu(tenA)
     for i in range(times):
         tenA=tf.layers.conv2d(ten, chs_enc[i], [1, 4], [1, 4], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/4/chs_enc[i])), use_bias=False,
@@ -70,11 +58,11 @@ def generator(ten,reuse,train):
         ten = tf.nn.relu(tenA)
     for i in range(res):
         #inception resblock
-        tenA =tf.layers.conv2d(ten, 64, [1, 5], [1, 1], padding="SAME",
+        tenA =tf.layers.conv2d(ten, 32, [3, 5], [1, 1], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/5/64)), use_bias=False,
                                data_format="channels_last", reuse=reuse, name="res_conv_B_" + str(i))
 
-        tenB=tf.transpose(ten[:,:,:,:64],[0,1,3,2])
+        tenB=tf.transpose(ten[:,:,:,:32],[0,1,3,2])
         rs=int(tenB.shape[3])
         tenB=tf.layers.dense(tenB,rs,kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/rs)),use_bias=False,reuse=reuse,name="dense"+str(i))
         tenB = tf.transpose(tenB, [0, 1, 3, 2])

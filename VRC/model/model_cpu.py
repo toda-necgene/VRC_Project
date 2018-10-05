@@ -27,7 +27,7 @@ class Model:
         self.args["batch_size"] = 32
         self.args["input_size"] = 4096
         self.args["NFFT"] = 1024
-        self.args["dilated_size"]=15
+        self.args["dilated_size"]=0
         self.args["g_lr_max"] = 2e-4
         self.args["g_lr_min"] = 2e-6
         self.args["d_lr_max"] = 2e-4
@@ -78,8 +78,8 @@ class Model:
 
         # shapes of inputs
         ss = self.args["input_size"] // self.args["SHIFT"]
-        self.input_size_model = [self.args["batch_size"], ss, self.args["NFFT"] // 2, 2]
-        self.input_size_test = [None, ss, self.args["NFFT"] // 2, 2]
+        self.input_size_model = [self.args["batch_size"], ss, self.args["NFFT"] // 2, 1]
+        self.input_size_test = [None, ss, self.args["NFFT"] // 2, 1]
 
         self.sess = tf.InteractiveSession(config=tf.ConfigProto(gpu_options=tf.GPUOptions()))
 
@@ -101,8 +101,11 @@ class Model:
         with tf.variable_scope("generators"):
 
             with tf.variable_scope("generator_1"):
-                self.fake_aB_image_testa = pha_decoder(generator(self.input_model_testa, reuse=None, train=False), reuse=None, train=False)
-                self.fake_aB_image_test=10*self.fake_aB_image_testa
+                test_outputaB = generator(self.input_model_testa, reuse=None, train=False)
+
+        with tf.variable_scope("phase_decoder"):
+            test_outputaB=pha_decoder(test_outputaB,reuse=None,train=False)
+            self.fake_aB_image_test= tf.concat([test_outputaB[:, :, :, :1] * 10, test_outputaB[:, :, :, 1:]], axis=3)
 
         #saver
         self.saver = tf.train.Saver()
@@ -136,11 +139,11 @@ class Model:
             # FFT
             ters=back_load//use_num
             res=self.fft(resorce[-ipt_size:].copy()/32767.0)
-            res=res[:,:self.args["SHIFT"],:].reshape(1,-1,self.args["SHIFT"],2)
+            res=res[:,:self.args["SHIFT"],:].reshape(1,-1,self.args["SHIFT"],1)
             for r in range(1,use_num):
                 pp=ters*r
                 resorce2=resorce[pp:pp+ipt_size].copy()
-                resorce2=self.fft(resorce2/32767)[:,:self.args["SHIFT"],:].reshape(1,-1,self.args["SHIFT"],2)
+                resorce2=self.fft(resorce2/32767)[:,:self.args["SHIFT"],:].reshape(1,-1,self.args["SHIFT"],1)
                 res=np.append(res,resorce2,axis=0)
             # running network
             response=self.sess.run(self.fake_aB_image_test,feed_dict={ self.input_model_test:res})
@@ -157,7 +160,7 @@ class Model:
                 if i != 0:
                     resa = np.roll(resa, -ters*i, axis=0)
                     resa[-ters*i:] = 0
-                rest+=(resa)[-self.args["input_size"]:]
+                rest+=resa[-self.args["input_size"]:]
             res3 = np.append(res3, response[0,:,:,:]).reshape(-1,self.args["NFFT"],2)
 
             res = np.clip(rest, -1.0, 1.0)*32767
@@ -202,8 +205,7 @@ class Model:
         im = fft_r.imag.reshape(time_ruler, -1)
         c = np.log(np.power(re, 2) + np.power(im, 2) + 1e-24).reshape(time_ruler, -1, 1)
         c = np.clip(c, -10, 10)
-        s = np.fft.fft(c)[:, :self.args["KEPFILTERE"]]
-        spec = np.asarray([s.real, s.imag])
+        spec = np.asarray(c,dtype=np.float32)
         return spec
     def ifft(self,data,redi):
         a=data
