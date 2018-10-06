@@ -19,13 +19,13 @@ def discriminator(inp,reuse):
 
     return ten
 def pha_decoder(inp,reuse,train):
-    res=3
+    res=6
     ten=inp
     tenP=inp
     for i in range(res):
         #inception resblock
-        tenA =tf.layers.conv2d(ten, 64, [3, 7], [1, 1], padding="SAME",
-                               kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/7/3/16)), use_bias=False,
+        tenA =tf.layers.conv2d(ten, 32, [3, 7], [1, 1], padding="SAME",
+                               kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/7/3/32)), use_bias=False,
                                data_format="channels_last", reuse=reuse, name="res_conv_A_" + str(i))
 
 
@@ -44,9 +44,9 @@ def pha_decoder(inp,reuse,train):
 def generator(ten,reuse,train):
 
     # setting paramater
-    res=6
+    res=3
     times=2
-    chs_enc=[32,64]
+    chs_enc=[32,128]
     chs_dec=[16,1]
     for i in range(times):
         tenA=tf.layers.conv2d(ten, chs_enc[i], [1, 4], [1, 4], padding="SAME",
@@ -58,11 +58,11 @@ def generator(ten,reuse,train):
         ten = tf.nn.relu(tenA)
     for i in range(res):
         #inception resblock
-        tenA =tf.layers.conv2d(ten, 32, [3, 5], [1, 1], padding="SAME",
+        tenA =tf.layers.conv2d(ten, 64, [3, 5], [1, 1], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/5/64)), use_bias=False,
                                data_format="channels_last", reuse=reuse, name="res_conv_B_" + str(i))
 
-        tenB=tf.transpose(ten[:,:,:,:32],[0,1,3,2])
+        tenB=tf.transpose(ten[:,:,:,:64],[0,1,3,2])
         rs=int(tenB.shape[3])
         tenB=tf.layers.dense(tenB,rs,kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/rs)),use_bias=False,reuse=reuse,name="dense"+str(i))
         tenB = tf.transpose(tenB, [0, 1, 3, 2])
