@@ -142,7 +142,7 @@ class Model:
             with tf.variable_scope("discrimA"):
                 d_judge_AR = discriminator(input_model_A_fixed[:,-self.input_size_test[1]:,:,:], None)
                 d_judge_AF = discriminator(fake_bA_image12, True)
-        input_model_C = input_model_B_fixed[:,-self.output_size_model[1]:,:,:]
+        input_model_C = tf.stop_gradient(fake_aB_image12)
         with tf.variable_scope("phase_decoder"):
             maked=pha_decoder(input_model_C,reuse=None,train=True)
             test_outputaB=pha_decoder(fake_aB_image_test,reuse=True,train=False)
@@ -200,9 +200,8 @@ class Model:
         m=tf.real(tf.spectral.ifft(fa))
         m=tf.complex(m,tf.zeros_like(m))
         m=tf.spectral.fft(m)
-
         target= tf.reshape(tf.log(tf.pow(tf.real(m), 2) + tf.pow(tf.imag(m), 2) + 1e-24),[self.args["batch_size"],self.output_size_model[1],self.args["NFFT"]])
-        self.p_loss=tf.losses.mean_squared_error(predictions=target,labels=maked[:,:,:,0])
+        self.p_loss=tf.losses.mean_squared_error(predictions=target[:,:,:self.args["SHIFT"]],labels=maked[:,:,:self.args["SHIFT"],0])
         #tensorboard functions
         g_loss_cyc_A_display= tf.summary.scalar("g_loss_cycle_A", tf.reduce_mean(g_loss_cyc_A),family="g_loss")
         g_loss_gan_A_display = tf.summary.scalar("g_loss_gan_A", tf.reduce_mean(g_loss_gan_A),family="g_loss")

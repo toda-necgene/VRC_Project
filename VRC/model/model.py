@@ -24,7 +24,7 @@ def pha_decoder(inp,reuse,train):
     tenP=inp
     for i in range(res):
         #inception resblock
-        tenA =tf.layers.conv2d(ten, 32, [2, 5], [1, 1], padding="SAME",
+        tenA =tf.layers.conv2d(ten, 16, [2, 5], [1, 1], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/5/2/32)), use_bias=False,
                                data_format="channels_last", reuse=reuse, name="res_conv_A_" + str(i))
 
