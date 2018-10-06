@@ -3,24 +3,25 @@
         "checkpoint_dir":"Z://bestmodel/",
         "best_checkpoint_dir":"Z://model/",
         "wave_otp_dir":"Z://waves/",
-        "version":"0.4.031"
+        "version":"0.4.040"
     },
     "training_config":{
         "input_size":4096,
         "pre_train_epoch": 0,
         "train_epoch": 400,
+        "P_train_epoch":100,
         "batch_size":64,
         "start_epoch":0,
         "train_data_dir":"./datasets/train",
         "test_data_dir":"./datasets/test",
         "g_lr_max":2e-4,
         "d_lr_max":2e-4,
-        "g_lr_min":1e-5,
-        "d_lr_min":1e-5,
+        "g_lr_min":2e-4,
+        "d_lr_min":2e-4,
         "g_b1":0.5,
         "d_b1":0.5,
         "lr_decay_term":400,
-        "save_interval":1,
+        "save_interval":10,
         "weight_GAN":1.0,
         "weight_Cycle_Pow":10.0
 

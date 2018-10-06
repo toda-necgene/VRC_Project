@@ -15,16 +15,16 @@ def discriminator(inp,reuse):
 
     # dense
     current=tf.reshape(current,[current.shape[0],current.shape[1],current.shape[2]*current.shape[3]])
-    ten=tf.layers.dense(current,1,name="dence",reuse=reuse,kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2)))
+    ten=tf.layers.dense(current,3,name="dence",reuse=reuse,kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2)))
 
     return ten
 def pha_decoder(inp,reuse,train):
-    res=2
+    res=4
     ten=inp
     tenP=inp
     for i in range(res):
         #inception resblock
-        tenA =tf.layers.conv2d(ten, 16, [2, 5], [1, 1], padding="SAME",
+        tenA =tf.layers.conv2d(ten, 32, [2, 5], [1, 1], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/5/2/32)), use_bias=False,
                                data_format="channels_last", reuse=reuse, name="res_conv_A_" + str(i))
 
@@ -38,7 +38,7 @@ def pha_decoder(inp,reuse,train):
     ten = tf.layers.conv2d(ten, 1, kernel_size=[2, 7], strides=[1, 1], padding="SAME",
                            kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/2.0/7.0)), use_bias=False,
                            data_format="channels_last", reuse=reuse, name="last_conv")
-    ten=tf.tanh(ten)*3.141593
+    ten=tf.atan(ten)
     ten=tf.concat([tenP,ten],axis=3)
     return ten
 

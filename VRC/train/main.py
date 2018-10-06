@@ -11,3 +11,4 @@ if len(sys.argv)!=0 and sys.argv.__contains__("--path"):
     path=sys.argv[i+1]
 net = model(path)
 net.train()
+net.train_pha()

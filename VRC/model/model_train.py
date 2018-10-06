@@ -52,6 +52,7 @@ class Model:
         self.args["weight_GAN"] = 1.0
         self.args["train_epoch"]=1000
         self.args["pre_train_epoch"] = 50
+        self.args["P_train_epoch"]=100
         self.args["start_epoch"]=0
         self.args["save_interval"]=10
         self.args["lr_decay_term"]=20
@@ -119,14 +120,10 @@ class Model:
 
             with tf.variable_scope("generator_1"):
                 fake_aB_image12 = generator(input_model_A_fixed[:,:self.input_size_test[1],:,:], reuse=None, train=True)
-                # fake_aB_image23 = generator(input_model_A_fixed[:,-self.input_size_test[1]:,:,:], reuse=True, train=True)
+                fake_aB_image12_notrain = generator(input_model_A_fixed[:, :self.input_size_test[1], :, :], reuse=True,train=False)
                 fake_aB_image_test_fixed= generator(input_model_test_fixed, reuse=True, train=False)
-                fake_aB_image_test=fake_aB_image_test_fixed
             with tf.variable_scope("generator_2"):
                 fake_bA_image12 = generator(input_model_B_fixed[:,:self.input_size_test[1],:,:], reuse=None, train=True)
-                # fake_bA_image23 = generator(input_model_B_fixed[:,-self.input_size_test[1]:,:,:], reuse=True, train=True)
-            # fake_aB_image=tf.concat([fake_aB_image12,fake_aB_image23],axis=1)
-            # fake_bA_image = tf.concat([fake_bA_image12, fake_bA_image23], axis=1)
             with tf.variable_scope("generator_2",reuse=True):
                 fake_Ba_image = generator(back_drop(fake_aB_image12[:,-self.input_size_test[1]:,:,:],0.75), reuse=True,train=True)
             with tf.variable_scope("generator_1",reuse=True):
@@ -138,15 +135,13 @@ class Model:
             with tf.variable_scope("discrimB"):
                 d_judge_BR= discriminator(input_model_B_fixed[:,-self.input_size_test[1]:,:,:], None)
                 d_judge_BF = discriminator(fake_aB_image12, True)
-
-            with tf.variable_scope("discrimA"):
-                d_judge_AR = discriminator(input_model_A_fixed[:,-self.input_size_test[1]:,:,:], None)
+                d_judge_AR = discriminator(input_model_A_fixed[:,-self.input_size_test[1]:,:,:], True)
                 d_judge_AF = discriminator(fake_bA_image12, True)
-        input_model_C = tf.stop_gradient(fake_aB_image12)
+        input_model_C = tf.stop_gradient(fake_aB_image12_notrain*10)
         with tf.variable_scope("phase_decoder"):
             maked=pha_decoder(input_model_C,reuse=None,train=True)
-            test_outputaB=pha_decoder(fake_aB_image_test,reuse=True,train=False)
-            self.test_output = tf.concat([test_outputaB[:,:,:,:1]*10,test_outputaB[:,:,:,1:]],axis=3)
+            test_outputaB=pha_decoder(fake_aB_image_test_fixed*10,reuse=True,train=False)
+            self.test_output = tf.concat([test_outputaB[:,:,:,:1],test_outputaB[:,:,:,1:]],axis=3)
 
         #getting individual variabloes
         self.g_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"generators")
@@ -155,10 +150,14 @@ class Model:
         self.update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 
         #objective-functions of discriminator
-        d_loss_AR = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.ones_like( d_judge_AR),predictions=d_judge_AR))
-        d_loss_AF = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.zeros_like(d_judge_AF),predictions=d_judge_AF))
-        d_loss_BR = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.ones_like( d_judge_BR),predictions=d_judge_BR))
-        d_loss_BF = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.zeros_like(d_judge_BF),predictions=d_judge_BF))
+        time_length=int(d_judge_AR.shape[1])
+        label_one=tf.tile(tf.reshape(tf.one_hot(0,3),[1,1,3]),[self.args["batch_size"],time_length,1])
+        label_two=tf.tile(tf.reshape(tf.one_hot(1,3),[1,1,3]),[self.args["batch_size"],time_length,1])
+        label_three=tf.tile(tf.reshape(tf.one_hot(2,3),[1,1,3]),[self.args["batch_size"],time_length,1])
+        d_loss_AR = tf.reduce_mean(tf.losses.mean_squared_error(labels=label_one,predictions=d_judge_AR))
+        d_loss_AF = tf.reduce_mean(tf.losses.mean_squared_error(labels=label_three,predictions=d_judge_AF))
+        d_loss_BR = tf.reduce_mean(tf.losses.mean_squared_error(labels=label_two,predictions=d_judge_BR))
+        d_loss_BF = tf.reduce_mean(tf.losses.mean_squared_error(labels=label_three,predictions=d_judge_BF))
 
         d_loss_A=d_loss_AR + d_loss_AF
         d_loss_B=d_loss_BR + d_loss_BF
@@ -168,22 +167,20 @@ class Model:
         # objective-functions of generator
 
         # Cycle lossA
-        g_loss_cyc_A_pow=tf.reduce_mean(tf.losses.mean_squared_error(predictions=fake_Ba_image[:,:,:,0],labels=input_model_A_fixed[:,-self.output_size_model[1]:,:,0]))* self.args["weight_Cycle_Pow"]
-        g_loss_cyc_A=g_loss_cyc_A_pow
+        g_loss_cyc_A=tf.reduce_mean(tf.losses.mean_squared_error(predictions=fake_Ba_image[:,:,:,0],labels=input_model_A_fixed[:,-self.output_size_model[1]:,:,0]))* self.args["weight_Cycle_Pow"]
 
         # Gan lossB
-        g_loss_gan_B = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_BF),predictions=d_judge_BF))* self.args["weight_GAN"]
+        g_loss_gan_B = tf.losses.mean_squared_error(labels=label_two,predictions=d_judge_BF)* self.args["weight_GAN"]
 
         # generator lossA
         self.g_loss_aB = g_loss_cyc_A +g_loss_gan_B
 
 
         # Cyc lossB
-        g_loss_cyc_B_pow=tf.reduce_mean(tf.losses.mean_squared_error(predictions=fake_Ab_image[:,:,:,0],labels=input_model_B_fixed[:,-self.output_size_model[1]:,:,0]))* self.args["weight_Cycle_Pow"]
-        g_loss_cyc_B =g_loss_cyc_B_pow
+        g_loss_cyc_B=tf.reduce_mean(tf.losses.mean_squared_error(predictions=fake_Ab_image[:,:,:,0],labels=input_model_B_fixed[:,-self.output_size_model[1]:,:,0]))* self.args["weight_Cycle_Pow"]
 
         # Gan lossA
-        g_loss_gan_A = tf.reduce_mean(tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_AF),predictions=d_judge_AF))* self.args["weight_GAN"]
+        g_loss_gan_A = tf.losses.mean_squared_error(labels=label_one,predictions=d_judge_AF)* self.args["weight_GAN"]
 
         # generator lossB
         self.g_loss_bA = g_loss_cyc_B + g_loss_gan_A
@@ -294,15 +291,12 @@ class Model:
 
         # setting paramaters
         lr_g_opt_max=self.args["g_lr_max"]
-        lr_g_opt_min=self.args["g_lr_min"]
         beta_g_opt=self.args["g_b1"]
         beta_2_g_opt=self.args["g_b2"]
         lr_d_opt_max=self.args["d_lr_max"]
-        lr_d_opt_min = self.args["d_lr_min"]
         beta_d_opt=self.args["d_b1"]
         beta_2_d_opt=self.args["d_b2"]
         T_cur=0
-        T_pow=1.0
         self.best=999999
         T=self.args["lr_decay_term"]
 
@@ -394,10 +388,8 @@ class Model:
         for epoch in range(self.args["train_epoch"]):
 
             # calculating learning-rate
-            lr_d_culced = lr_d_opt_min + 0.5*(lr_d_opt_max - lr_d_opt_min)*np.cos(np.pi*0.5*(T_cur/T)) * T_pow
-            lr_g_culced = lr_g_opt_min + 0.5*(lr_g_opt_max - lr_g_opt_min)*np.cos(np.pi*0.5*(T_cur/T)) * T_pow
-            # lr_d_culced=lr_d_opt_max
-            # lr_g_culced = lr_g_opt_max
+            lr_d_culced=lr_d_opt_max
+            lr_g_culced = lr_g_opt_max
 
             # shuffling train_data_index
             np.random.shuffle(index_list)
@@ -422,7 +414,7 @@ class Model:
                     self.sess.run([d_optim],
                                   feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target,lr_d:lr_d_culced})
                 # update G network
-                self.sess.run([g_optim, p_optim, self.update_ops],
+                self.sess.run([g_optim,  self.update_ops],
                               feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target, lr_g: lr_g_culced})
 
             # calculating ETA
@@ -444,6 +436,142 @@ class Model:
                 T_cur=0
 
         self.test_and_save(self.args["train_epoch"])
+        tnt=time.time()-start_time_all
+        hour_f=tnt//3600
+        minute_f=tnt//60%60
+        second_f=int(tnt%60)
+        print(" [I] Main train process finished successfully!! in %04d : %02d : %02d"%(hour_f,minute_f,second_f))
+
+    def train_pha(self):
+
+
+
+
+
+        # setting paramaters
+        lr_g_opt_max=self.args["g_lr_max"]
+        beta_d_opt=self.args["d_b1"]
+        beta_2_d_opt=self.args["d_b2"]
+        T_cur=0
+        self.best=999999
+        T=self.args["lr_decay_term"]
+
+        # naming output-directory
+        lr_g = tf.placeholder(tf.float32, None, name="g_lr")
+
+        p_optim = tf.train.AdamOptimizer(lr_g, beta_d_opt, beta_2_d_opt).minimize(self.p_loss,
+                                                                                  var_list=self.p_vars)
+
+        tt_list=list()
+
+        # logging
+        if self.args["tensorboard"]:
+            self.writer = tf.summary.FileWriter("./logs/P_"+self.args["name_save"], self.sess.graph)
+
+        # loading net
+        if self.load():
+            print(" [I] Load SUCCESSED.")
+        else:
+            print(" [I] Load FAILED.")
+
+        init_op = tf.initializers.variables(self.p_vars, "p_init")
+        self.sess.run(init_op)
+
+        # loading training data directory
+        data = glob(self.args["train_data_dir"]+'/Source_data/*')
+        data2 = glob(self.args["train_data_dir"] + '/Answer_data/*')
+        # loading test data
+        self.test=isread(self.args["test_data_dir"]+'/test.wav')[0:160000].astype(np.float32)
+        label=isread(self.args["test_data_dir"]+'/label.wav')[0:160000].astype(np.float32)
+
+        # prepareing test-target-spectrum
+        input_size_one_term = self.args["input_size"] + self.args["SHIFT"]
+        out_spectrum= np.zeros([1, self.args["SHIFT"]], dtype=np.float32)
+        fft_executing_times = label.shape[0] // (self.args["input_size"]) + 1
+        if label.shape[0] % ((self.args["input_size"]) * self.args["batch_size"]) == 0:
+            fft_executing_times -= 1
+
+        # making test-target-spectrum
+
+        for t in range(fft_executing_times):
+
+            # Padiing
+            start_pos = self.args["input_size"] * t + (label.shape[0] % self.args["input_size"])
+            resorce = label[ max(0, start_pos - input_size_one_term):start_pos]
+            r = max(0, input_size_one_term - resorce.shape[0])
+            if r > 0:
+                resorce = np.pad(resorce, (r, 0), 'constant')
+
+            # FFT
+            result_fft = self.fft(resorce / 32767.0)
+            out_spectrum=np.append(out_spectrum,result_fft[:,:self.args["SHIFT"],0],axis=0)
+
+        self.label_spectrum=out_spectrum[1:]
+
+        # times of one epoch
+        train_data_num = min(len(data),len(data2))
+        self.batch_idxs = train_data_num // self.args["batch_size"]
+        index_list=[h for h in range(train_data_num)]
+        index_list2 = [h for h in range(train_data_num)]
+
+        # prepareing training-data
+        batch_files = data[:train_data_num]
+        batch_files2 = data2[:train_data_num]
+
+        print(" [I] loading dataset...")
+        self.sounds_r = np.asarray([(imread(batch_file,self.input_size_model[1:])) for batch_file in batch_files])
+        self.sounds_t = np.asarray([(imread(batch_file,self.input_size_model[1:])) for batch_file in batch_files2])
+        print(" [I] %d data loaded!!" % train_data_num)
+
+        # initializing training infomation
+        start_time = time.time()
+        start_time_all=time.time()
+        for epoch in range(self.args["P_train_epoch"]):
+
+            # calculating learning-rate
+            lr_g_culced = lr_g_opt_max
+
+            # shuffling train_data_index
+            np.random.shuffle(index_list)
+            np.random.shuffle(index_list2)
+
+            prepareing_time_total = 0.0
+
+            if self.args["test"] and epoch%self.args["save_interval"]==0:
+               self.test_and_save(epoch)
+
+            for idx in xrange(0, self.batch_idxs):
+                start_preparing = time.time()
+                # getting batch
+                st=self.args["batch_size"]*idx
+                batch_sounds_resource = np.asarray([self.sounds_r[ind] for ind in index_list[st:st+self.args["batch_size"]]])
+                batch_sounds_target= np.asarray([self.sounds_t[ind] for ind in index_list2[st:st+self.args["batch_size"]]])
+                # getting training data
+                prepareing_time_total+=time.time()-start_preparing
+
+                # update P network
+                self.sess.run([p_optim,  self.update_ops],
+                              feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target, lr_g: lr_g_culced})
+
+            # calculating ETA
+            taken_time = time.time() - start_time
+            start_time = time.time()
+            tt_list.append(taken_time)
+            if len(tt_list)>20:
+                tt_list=tt_list[0:20]
+            eta=np.mean(tt_list)*(self.args["P_train_epoch"]-epoch-1)
+
+            # console outputs
+            print(" [I] PEpoch %04d / %04d finished. ETA: %02d:%02d:%02d takes %3.2f secs(preprocess %2.3f secs)" % (epoch,self.args["P_train_epoch"],eta//3600,eta//60%60,int(eta%60),taken_time,prepareing_time_total))
+
+            T_cur += 1
+
+            # update learning_rate
+            if T==T_cur:
+                T=T*2
+                T_cur=0
+
+        self.test_and_save(self.args["P_train_epoch"])
         tnt=time.time()-start_time_all
         hour_f=tnt//3600
         minute_f=tnt//60%60
