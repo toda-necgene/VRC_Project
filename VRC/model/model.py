@@ -19,7 +19,7 @@ def discriminator(inp,reuse):
 
     return ten
 def pha_decoder(inp,reuse,train):
-    res=6
+    res=2
     ten=inp
     tenP=inp
     for i in range(res):
@@ -38,6 +38,7 @@ def pha_decoder(inp,reuse,train):
     ten = tf.layers.conv2d(ten, 1, kernel_size=[5, 7], strides=[1, 1], padding="SAME",
                            kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/3.0)), use_bias=True,
                            data_format="channels_last", reuse=reuse, name="last_conv")
+    ten=tf.tanh(ten)*3.141593
     ten=tf.concat([tenP,ten],axis=3)
     return ten
 
