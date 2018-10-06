@@ -3,8 +3,6 @@
   <component name="ChangeListManager">
     <list default="true" id="bcabb495-93d4-437a-b14b-9cb2802ec5b1" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/model/model.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/model/model.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/model/model_train.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/model/model_train.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/VRC/setting.json" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/setting.json" afterDir="false" />
     </list>
     <ignored path="C:\Users\tadop\git\vrc\.idea\shelf/" />
@@ -80,17 +78,17 @@
         <counts>
           <entry key="dummy" value="4" />
           <entry key="gitignore" value="53" />
-          <entry key="json" value="2757" />
+          <entry key="json" value="2771" />
           <entry key="md" value="718" />
           <entry key="py" value="17333" />
-          <entry key="txt" value="2686" />
+          <entry key="txt" value="2690" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="JSON" value="2757" />
+          <entry key="JSON" value="2771" />
           <entry key="Markdown" value="718" />
-          <entry key="PLAIN_TEXT" value="2743" />
+          <entry key="PLAIN_TEXT" value="2747" />
           <entry key="Python" value="17333" />
         </counts>
       </usages-collector>
@@ -99,7 +97,7 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/model/model.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="112">
@@ -117,11 +115,11 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/VRC/setting.json">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="80">
-              <caret line="5" column="26" selection-start-line="5" selection-start-column="26" selection-end-line="5" selection-end-column="26" />
+            <state relative-caret-position="352">
+              <caret line="22" column="25" lean-forward="true" selection-start-line="22" selection-start-column="25" selection-end-line="22" selection-end-column="25" />
             </state>
           </provider>
         </entry>
@@ -175,9 +173,9 @@
         <option value="$PROJECT_DIR$/VRC/utils/cepstram.py" />
         <option value="$PROJECT_DIR$/VRC/utils/voice_to_datasets_cycle.py" />
         <option value="$PROJECT_DIR$/VRC/model/model_cpu.py" />
-        <option value="$PROJECT_DIR$/VRC/setting.json" />
         <option value="$PROJECT_DIR$/VRC/model/model_train.py" />
         <option value="$PROJECT_DIR$/VRC/model/model.py" />
+        <option value="$PROJECT_DIR$/VRC/setting.json" />
       </list>
     </option>
   </component>
@@ -394,20 +392,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1534034935853</updated>
-    </task>
-    <task id="LOCAL-00103" summary="[5.6.031] ハイパーパラメータの修正&#10;&#10;[fix]　CycleLossを2.5に変更">
-      <created>1536886368258</created>
-      <option name="number" value="00103" />
-      <option name="presentableId" value="LOCAL-00103" />
-      <option name="project" value="LOCAL" />
-      <updated>1536886368258</updated>
-    </task>
-    <task id="LOCAL-00104" summary="[5.6.032] ハイパーパラメータの修正&#10;&#10;[fix]　減衰を0.9に変更">
-      <created>1536890960736</created>
-      <option name="number" value="00104" />
-      <option name="presentableId" value="LOCAL-00104" />
-      <option name="project" value="LOCAL" />
-      <updated>1536890960736</updated>
     </task>
     <task id="LOCAL-00105" summary="[5.6.032] ハイパーパラメータの修正&#10;&#10;[del] 減衰&#10;[fix] 構造を変更">
       <created>1536898630906</created>
@@ -738,7 +722,21 @@
       <option name="project" value="LOCAL" />
       <updated>1538811161543</updated>
     </task>
-    <option name="localTasksCounter" value="152" />
+    <task id="LOCAL-00152" summary="[0.4.026] CPUで動くように高速化">
+      <created>1538815206783</created>
+      <option name="number" value="00152" />
+      <option name="presentableId" value="LOCAL-00152" />
+      <option name="project" value="LOCAL" />
+      <updated>1538815206783</updated>
+    </task>
+    <task id="LOCAL-00153" summary="[0.4.027] 学習高速化">
+      <created>1538815446156</created>
+      <option name="number" value="00153" />
+      <option name="presentableId" value="LOCAL-00153" />
+      <option name="project" value="LOCAL" />
+      <updated>1538815446156</updated>
+    </task>
+    <option name="localTasksCounter" value="154" />
     <servers />
   </component>
   <component name="TodoView">
@@ -778,8 +776,6 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[1.0.000] 倍計算リアルタイム変換を実装予定" />
-    <MESSAGE value="[1.0.000] 計算の高速化" />
     <MESSAGE value="[1.0.000] チャンネル数を倍、レイヤー数を半分" />
     <MESSAGE value="[1.0.000] データセットに違うピッチのものを追加した" />
     <MESSAGE value="[1.0.000] 高速化" />
@@ -803,7 +799,9 @@
     <MESSAGE value="[0.4.022] 高速化" />
     <MESSAGE value="[0.4.023] CPUで動くように高速化" />
     <MESSAGE value="[0.4.025] CPUで動くように高速化" />
-    <option name="LAST_COMMIT_MESSAGE" value="[0.4.025] CPUで動くように高速化" />
+    <MESSAGE value="[0.4.026] CPUで動くように高速化" />
+    <MESSAGE value="[0.4.027] 学習高速化" />
+    <option name="LAST_COMMIT_MESSAGE" value="[0.4.027] 学習高速化" />
   </component>
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/ui.lnf.xml" />
@@ -976,13 +974,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/setting.json">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="80">
-          <caret line="5" column="26" selection-start-line="5" selection-start-column="26" selection-end-line="5" selection-end-column="26" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/VRC/model/model_train.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="680">
@@ -997,6 +988,13 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="112">
           <caret line="26" column="38" selection-start-line="26" selection-start-column="38" selection-end-line="26" selection-end-column="38" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/VRC/setting.json">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="352">
+          <caret line="22" column="25" lean-forward="true" selection-start-line="22" selection-start-column="25" selection-end-line="22" selection-end-column="25" />
         </state>
       </provider>
     </entry>
