@@ -24,8 +24,8 @@ def pha_decoder(inp,reuse,train):
     tenP=inp
     for i in range(res):
         #inception resblock
-        tenA =tf.layers.conv2d(ten, 32, [3, 7], [1, 1], padding="SAME",
-                               kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/7/3/32)), use_bias=False,
+        tenA =tf.layers.conv2d(ten, 32, [2, 5], [1, 1], padding="SAME",
+                               kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/5/2/32)), use_bias=False,
                                data_format="channels_last", reuse=reuse, name="res_conv_A_" + str(i))
 
 
@@ -35,8 +35,8 @@ def pha_decoder(inp,reuse,train):
 
         ten=tenG
 
-    ten = tf.layers.conv2d(ten, 1, kernel_size=[5, 7], strides=[1, 1], padding="SAME",
-                           kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/3.0)), use_bias=True,
+    ten = tf.layers.conv2d(ten, 1, kernel_size=[2, 7], strides=[1, 1], padding="SAME",
+                           kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/2.0/7.0)), use_bias=False,
                            data_format="channels_last", reuse=reuse, name="last_conv")
     ten=tf.tanh(ten)*3.141593
     ten=tf.concat([tenP,ten],axis=3)
@@ -45,9 +45,9 @@ def pha_decoder(inp,reuse,train):
 def generator(ten,reuse,train):
 
     # setting paramater
-    res=3
+    res=4
     times=2
-    chs_enc=[32,128]
+    chs_enc=[32,32]
     chs_dec=[16,1]
     for i in range(times):
         tenA=tf.layers.conv2d(ten, chs_enc[i], [1, 4], [1, 4], padding="SAME",
@@ -59,11 +59,11 @@ def generator(ten,reuse,train):
         ten = tf.nn.relu(tenA)
     for i in range(res):
         #inception resblock
-        tenA =tf.layers.conv2d(ten, 64, [3, 5], [1, 1], padding="SAME",
-                               kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/5/64)), use_bias=False,
+        tenA =tf.layers.conv2d(ten, 16, [3, 3], [1, 1], padding="SAME",
+                               kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/3/3/16)), use_bias=False,
                                data_format="channels_last", reuse=reuse, name="res_conv_B_" + str(i))
 
-        tenB=tf.transpose(ten[:,:,:,:64],[0,1,3,2])
+        tenB=tf.transpose(ten[:,:,:,:16],[0,1,3,2])
         rs=int(tenB.shape[3])
         tenB=tf.layers.dense(tenB,rs,kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/rs)),use_bias=False,reuse=reuse,name="dense"+str(i))
         tenB = tf.transpose(tenB, [0, 1, 3, 2])
