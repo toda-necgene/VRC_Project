@@ -19,14 +19,40 @@ def discriminator(inp,reuse):
 
     return ten
 def pha_decoder(inp,reuse,train):
+    res=4
     ten=inp
     tenP=inp
     tenB = tf.transpose(ten[:, :, :, :], [0, 1, 3, 2])
     rs = int(tenB.shape[3])
     tenB = tf.layers.dense(tenB, rs, kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0 / rs)),
-                           use_bias=True, reuse=reuse, name="dense")
+                           use_bias=False, reuse=reuse, name="dense")
     ten = tf.transpose(tenB, [0, 1, 3, 2])
 
+    for i in range(res):
+        #inception resbloc
+        if i !=res-1:
+            ch=16
+        else:
+            ch=1
+
+        tenA=ten
+
+        ten =tf.layers.conv2d(ten, ch, [3, 5], [1, 1], padding="SAME",
+                               kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/3/3/16)), use_bias=False,
+                               data_format="channels_last", reuse=reuse, name="res_conv_B_" + str(i))
+
+        # adding noise(shakedrop)
+        if i != res-1:
+
+            ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuse,
+                                                 name="res_bn_" + str(i))
+            ten = tf.nn.leaky_relu(ten)
+
+            ten=tenA+ten
+
+
+
+    ten=tf.atan(ten)
     ten=tf.concat([tenP,ten],axis=3)
     return ten
 
