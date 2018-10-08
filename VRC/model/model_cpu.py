@@ -5,7 +5,8 @@ import numpy as np
 from tensorflow.python import debug as tf_debug
 from tensorflow.python.debug.lib.debug_data import has_inf_or_nan
 import json
-from .model import generator,pha_decoder
+from .model import generator
+import pyworld as pw
 class Model:
     def __init__(self,path):
         self.args = dict()
@@ -78,8 +79,8 @@ class Model:
 
         # shapes of inputs
         ss = self.args["input_size"] // self.args["SHIFT"]
-        self.input_size_model = [self.args["batch_size"], ss, self.args["NFFT"] // 2, 1]
-        self.input_size_test = [None, ss, self.args["NFFT"] // 2, 1]
+        self.input_size_model = [self.args["batch_size"], 58,514,1]
+        self.input_size_test = [None, 58,514,1]
 
         self.sess = tf.InteractiveSession(config=tf.ConfigProto(gpu_options=tf.GPUOptions()))
 
@@ -96,16 +97,12 @@ class Model:
 
         #inputs place holder
         self.input_model_test = tf.placeholder(tf.float32, self.input_size_test, "inputs_G-net_A")
-        self.input_model_testa =self.input_model_test*0.1
+        self.input_model_testa =self.input_model_test
         #creating generator
         with tf.variable_scope("generators"):
 
             with tf.variable_scope("generator_1"):
-                test_outputaB = generator(self.input_model_testa, reuse=None, train=False)
-
-        with tf.variable_scope("phase_decoder"):
-            test_outputaB=pha_decoder(test_outputaB,reuse=None,train=False)
-            self.fake_aB_image_test= tf.concat([test_outputaB[:, :, :, :1] * 10, test_outputaB[:, :, :, 1:]], axis=3)
+                self.test_outputaB = generator(self.input_model_testa[:,:,:,:1]*0.1, reuse=None, train=False)
 
         #saver
         self.saver = tf.train.Saver()
@@ -116,7 +113,7 @@ class Model:
         #function of test
         #To convert wave file
         back_load=self.args["SHIFT"]
-        use_num = 4
+        use_num = 2
         tt=time.time()
         ipt_size=self.args["input_size"]+self.args["SHIFT"]+self.args["SHIFT"]*self.args["dilated_size"]
         ipt=ipt_size+back_load
@@ -125,7 +122,6 @@ class Model:
             times-=1
         otp=np.array([],dtype=np.int16)
         res3 = np.zeros([1,self.args["NFFT"],2], dtype=np.float32)
-        rss=np.zeros([use_num,self.input_size_model[2]],dtype=np.float64)
 
         for t in range(times):
             # Preprocess
@@ -138,15 +134,15 @@ class Model:
                 resorce=np.pad(resorce,(r,0),'constant')
             # FFT
             ters=back_load//use_num
-            res=self.fft(resorce[-ipt_size:].copy()/32767.0)
-            res=res[:,:self.args["SHIFT"],:].reshape(1,-1,self.args["SHIFT"],1)
+            res,ap=encode((resorce[-ipt_size:].copy()/32767.0).astype(np.double))
+            res=res.reshape(1,-1,self.args["SHIFT"],1)
             for r in range(1,use_num):
                 pp=ters*r
                 resorce2=resorce[pp:pp+ipt_size].copy()
-                resorce2=self.fft(resorce2/32767)[:,:self.args["SHIFT"],:].reshape(1,-1,self.args["SHIFT"],1)
+                resorce2,ap2=encode((resorce2/32767).astype(np.double))
                 res=np.append(res,resorce2,axis=0)
             # running network
-            response=self.sess.run(self.fake_aB_image_test,feed_dict={ self.input_model_test:res})
+            response=self.sess.run(self.test_outputaB,feed_dict={ self.input_model_test:res})
             res2 = response.copy()[:, :, ::-1, :]
             response = np.append(response, res2, axis=2)
             response[:,:,self.args["SHIFT"]:,1]*=-1
@@ -156,7 +152,7 @@ class Model:
             # IFFT
             rest=np.zeros(self.args["input_size"])
             for i in range(response.shape[0]):
-                resa, rss[i] = self.ifft(response[i], rss[i])
+                resa= decode(response[i],ap)
                 if i != 0:
                     resa = np.roll(resa, -ters*i, axis=0)
                     resa[-ters*i:] = 0
@@ -191,39 +187,18 @@ class Model:
         else:
             return False
 
-    def fft(self,data):
-        time_ruler = data.shape[0] // self.args["SHIFT"] - 1
-        pos = 0
-        wined = np.zeros([time_ruler, self.args["NFFT"]])
-        win = np.hamming(self.args["NFFT"])
-        for fft_index in range(time_ruler):
-            frame = data[pos:pos + self.args["NFFT"]]
-            wined[fft_index] = frame * win
-            pos += self.args["SHIFT"]
-        fft_r = np.fft.fft(wined, n=self.args["NFFT"], axis=1)
-        re = fft_r.real.reshape(time_ruler, -1)
-        im = fft_r.imag.reshape(time_ruler, -1)
-        c = np.log(np.power(re, 2) + np.power(im, 2) + 1e-24).reshape(time_ruler, -1, 1)
-        c = np.clip(c, -10, 10)
-        spec = np.asarray(c,dtype=np.float32)
-        return spec
-    def ifft(self,data,redi):
-        a=data
-        a[:, :, 0]=np.clip(a[:, :, 0],a_min=-20,a_max=20)
-        sss=np.exp(a[:,:,0])
-        p = np.sqrt(sss)
-        r = p * (np.cos(a[:, :, 1]))
-        i = p * (np.sin(a[:, :, 1]))
-        dds = np.concatenate((r.reshape(r.shape[0], r.shape[1], 1), i.reshape(i.shape[0], i.shape[1], 1)), 2)
-        data=dds[:,:,0]+1j*dds[:,:,1]
-        fft_s = np.fft.ifft(data,n=self.args["NFFT"], axis=1)
-        fft_data = fft_s.real
-        v = fft_data[:, :self.args["NFFT"]// 2].copy()
-        reds = fft_data[-1, self.args["NFFT"] // 2:].copy()
-        lats = np.roll(fft_data[:, self.args["NFFT"] // 2:].copy(), 1, axis=0 )
-        lats[0, :]=redi
-        spec = np.reshape(v + lats, (-1))/2
-        return spec,reds
+def encode(data):
+    fs=16000
+    _f0,t=pw.dio(data,fs)
+    f0=pw.stonemask(data,_f0,t,fs)
+    sp=pw.cheaptrick(data,f0,t,fs)
+    ap=pw.d4c(data,f0,t,fs)
+    sp=np.append(sp,f0)
+    return sp,ap
+def decode(data,ap):
+    f0=data[:,-1].astype(np.double).reshape(-1)
+    sp=data[:,:-1].astype(np.double).reshape(58,-1)
+    return pw.synthesize(f0,sp,ap,16000)
 
 
 

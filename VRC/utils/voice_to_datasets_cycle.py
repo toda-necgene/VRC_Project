@@ -3,6 +3,8 @@ import numpy as np
 import wave
 import time
 import glob
+import pyworld as pw
+
 NFFT=1024
 SHIFT=NFFT//2
 dilations=0
@@ -13,66 +15,6 @@ RATE = 16000       #サンプルレート
 CHUNK = 1024     #データ点数
 WAVE_INPUT_FILENAME = "./datasets/source/01"
 WAVE_INPUT_FILENAME2 = "./datasets/source/02"
-
-
-def fft(data):
-    time_ruler=data.shape[0]//SHIFT-1
-    pos=0
-    wined=np.zeros([time_ruler,NFFT])
-    win = np.hamming(NFFT)
-    for fft_index in range(time_ruler):
-        frame=data[pos:pos+NFFT]
-        wined[fft_index]=frame*win
-        pos += NFFT // 2
-    fft_rs=np.fft.fft(wined,n=NFFT,axis=-1)
-    return fft_rs.reshape(time_ruler, -1)
-
-def shift(data_inps,pitch):
-    data_inp=data_inps.reshape(-1)
-    return scale(time_strech(data_inp,1/pitch),data_inp.shape[0])
-
-def scale(inputs,len_wave):
-    x=np.linspace(0.0,inputs.shape[0]-1,len_wave)
-    ref_x_n=(x+0.5).astype(int)
-    spec=inputs[ref_x_n[...]]
-    return spec.reshape(-1)
-def time_strech(datanum,speed):
-    term_s = int(rate * 0.05)
-    fade=term_s//2
-    pulus=int(term_s*speed)
-    data_s=datanum.reshape(-1)
-    spec=np.zeros(1)
-    ifs=np.zeros(fade)
-    for i_s in np.arange(0.0,data_s.shape[0],pulus):
-        st=int(i_s)
-        fn=min(int(i_s+term_s+fade),data_s.shape[0])
-        dd=data_s[st:fn]
-        if i_s + pulus >= data_s.shape[0]:
-            spec = np.append(spec, dd)
-        else:
-            ds_in = np.linspace(0, 0.999, fade)
-            ds_out = np.linspace(0.999, 0, fade)
-            stock = dd[:fade]
-            dd[:fade] = dd[:fade] * ds_in
-            if st != 0:
-                dd[:fade] += ifs[:fade]
-            else:
-                dd[:fade] += stock * np.linspace(0.999, 0, fade)
-            if fn!=data_s.shape[0]:
-                ifs = dd[-fade:] * ds_out
-            spec=np.append(spec,dd[:-fade])
-    return spec
-
-
-
-def complex_to_pp(fft_r):
-    time_ruler=fft_r.shape[0]
-    re = fft_r.real
-    im = fft_r.imag
-    c = np.log(np.power(re, 2) + np.power(im, 2) + 1e-24).reshape(time_ruler, -1, 1)
-    d = np.arctan2(im, re).reshape(time_ruler, -1, 1)
-    spec = np.concatenate((c, d), 2)
-    return spec
 
 
 
@@ -102,29 +44,26 @@ for file in files:
     ttm=time.time()
     resp=np.zeros([NFFT//2])
     for i in range(times):
+
         ind=term+SHIFT*dilations+SHIFT
         startpos=term*i+data_realA.shape[0]%term
-        data_realAb = data_realA[max(startpos-ind,0):startpos].copy()
-        p = np.random.randint(30, 60) / 40
-        if np.random.randint(1,5)>=3:
-            p=1.0
-        if p !=1.0:
-            data_realAb = shift(data_realAb.copy(), p)
+        data_realAb = data_realA[max(startpos-ind,0):startpos].copy()/32767.
         r=ind-data_realAb.shape[0]
         if r>0:
             data_realAb=np.pad(data_realAb,(r,0),"constant")
-        dmn=data_realAb
-        a=fft(dmn)
-        a=complex_to_pp(a)
-        a = np.clip(a, -10, 10)
-        # ps=np.fft.fft(a[:,:,0],NFFT)
-        # ps[:,64:-64]=0
-        # ps=np.fft.ifft(ps).real[:,:SHIFT]
-        a=np.asarray(a[:,:SHIFT,0],dtype=np.float32)
-        np.save("./datasets/train/"+str(name)+"/k"+str(cnt) +".npy", a)
-        # np.save("./datasets/train/" + str(name) + "/w" + str(cnt) + ".npy", dmn[-term+SHIFT:])
+        p = np.random.randint(30, 60) / 40
+        _f0, t = pw.dio(data_realAb,16000)
+        f0=pw.stonemask(data_realAb,_f0,t,16000)
+        sp=pw.cheaptrick(data_realAb,f0,t,16000)
+        if np.random.randint(1,5)>=3:
+            p=1.0
+        if p !=1.0:
+            f0*=p
+        a=np.asarray(sp,dtype=np.float32)
+        a=np.append(a,f0)
+        np.save("./datasets/train/"+str(name)+"/"+str(cnt) +".npy", a)
         cnt+=1
-print(a.shape)
+print(a.shape,f0.shape,sp.shape)
 print(" [*] ソースデータ変換完了")
 print(cnt)
 
@@ -161,15 +100,12 @@ for file in files:
         if r>0:
             data_realAb=np.pad(data_realAb,(r,0),"constant")
         dmn=data_realAb
-        a = fft(dmn)
-        a = complex_to_pp(a)
-        a = np.clip(a, -10, 10)
-        # ps = np.fft.fft(a[:, :, 0], NFFT)
-        # ps[:, 64:-64] = 0
-        # ps = np.fft.ifft(ps).real[:,:SHIFT]
-        a=np.asarray(a[:,:SHIFT,0],dtype=np.float32)
-        np.save("./datasets/train/" + str(name) + "/k" + str(cnt) + ".npy", a)
-        # np.save("./datasets/train/" + str(name) + "/w" + str(cnt) + ".npy", dmn)
+        _f0, t = pw.dio(data_realAb,16000)
+        f0=pw.stonemask(data_realAb,_f0,t,16000)
+        sp=pw.cheaptrick(data_realAb,f0,t,16000)
+        a=np.asarray(sp,dtype=np.float32)
+        a=np.append(a,f0)
+        np.save("./datasets/train/"+str(name)+"/"+str(cnt) +".npy", a)
         cnt+=1
 
 print(" [*] アンサーデータ変換完了")
