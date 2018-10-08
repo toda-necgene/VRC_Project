@@ -126,7 +126,7 @@ for i in range(times):
 r=b.shape[0]-data_realA.shape[0]
 bbb=b
 bbb=(bbb[1:]/2*32767).astype(np.int16)
-aba=np.transpose(ab[1:,:513],(1,0))
+aba=np.transpose(np.log(ab[1:,:513]),(1,0))
 pl.imshow(aba,aspect="auto")
 pl.colorbar()
 p=pyaudio.PyAudio()
