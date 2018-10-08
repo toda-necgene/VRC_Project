@@ -60,7 +60,7 @@ for file in files:
         if p !=1.0:
             f0*=p
         a=np.asarray(sp,dtype=np.float32)
-        a=np.append(a,f0)
+        a=np.append(a,f0.reshape(-1,1),axis=1)
         np.save("./datasets/train/"+str(name)+"/"+str(cnt) +".npy", a)
         cnt+=1
 print(a.shape,f0.shape,sp.shape)
@@ -104,7 +104,7 @@ for file in files:
         f0=pw.stonemask(data_realAb,_f0,t,16000)
         sp=pw.cheaptrick(data_realAb,f0,t,16000)
         a=np.asarray(sp,dtype=np.float32)
-        a=np.append(a,f0)
+        a=np.append(a,f0.reshape(-1,1),axis=1)
         np.save("./datasets/train/"+str(name)+"/"+str(cnt) +".npy", a)
         cnt+=1
 

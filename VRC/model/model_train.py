@@ -458,7 +458,7 @@ def encode(data):
     f0=pw.stonemask(data,_f0,t,fs)
     sp=pw.cheaptrick(data,f0,t,fs)
     ap=pw.d4c(data,f0,t,fs)
-    sp=np.append(sp,f0)
+    sp=np.append(sp,f0.reshape(-1,1),axis=1)
     return sp,ap
 def decode(data,ap):
     f0=data[:,-1].astype(np.double).reshape(-1)
