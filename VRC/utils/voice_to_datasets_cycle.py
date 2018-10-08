@@ -63,7 +63,6 @@ for file in files:
         a=np.append(a,f0.reshape(-1,1),axis=1)
         np.save("./datasets/train/"+str(name)+"/"+str(cnt) +".npy", a)
         cnt+=1
-print(a.shape,f0.shape,sp.shape)
 print(" [*] ソースデータ変換完了")
 print(cnt)
 

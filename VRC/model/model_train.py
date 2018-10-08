@@ -414,7 +414,7 @@ class Model:
         # saving test havests
         if os.path.exists(self.args["wave_otp_dir"]):
             plt.clf()
-            ins = np.transpose(im[0], (1, 0))
+            ins = np.transpose(im[:,:,0], (1, 0))
             plt.imshow(ins, aspect="auto")
             plt.colorbar()
             path = self.args["wave_otp_dir"] + nowtime() + "_e" + str(epoch)
