@@ -133,31 +133,31 @@ class Model:
             if r>0:
                 resorce=np.pad(resorce,(r,0),'constant')
             # FFT
+            ap2=list()
             ters=back_load//use_num
             res,ap=encode((resorce[-ipt_size:].copy()/32767.0).astype(np.double))
-            res=res.reshape(1,-1,self.args["SHIFT"],1)
+            ap2.append(ap)
+            res=res.reshape(1,-1,514,1)
             for r in range(1,use_num):
                 pp=ters*r
                 resorce2=resorce[pp:pp+ipt_size].copy()
-                resorce2,ap2=encode((resorce2/32767).astype(np.double))
+                resorce2,ap2_o=encode((resorce2/32767).astype(np.double))
+                resorce2=resorce2.reshape(1,-1,514,1)
+                ap2.append(ap2_o)
                 res=np.append(res,resorce2,axis=0)
             # running network
             response=self.sess.run(self.test_outputaB,feed_dict={ self.input_model_test:res})
-            res2 = response.copy()[:, :, ::-1, :]
-            response = np.append(response, res2, axis=2)
-            response[:,:,self.args["SHIFT"]:,1]*=-1
-            response=np.clip(response,-60.0,12.0)
             # Postprocess
 
             # IFFT
             rest=np.zeros(self.args["input_size"])
             for i in range(response.shape[0]):
-                resa= decode(response[i],ap)
+                resa= decode(response[i],ap2[i])
                 if i != 0:
                     resa = np.roll(resa, -ters*i, axis=0)
                     resa[-ters*i:] = 0
                 rest+=resa[-self.args["input_size"]:]
-            res3 = np.append(res3, response[0,:,:,:]).reshape(-1,self.args["NFFT"],2)
+            res3 = np.append(res3, response[0,:,:,:])
 
             res = np.clip(rest, -1.0, 1.0)*32767
 

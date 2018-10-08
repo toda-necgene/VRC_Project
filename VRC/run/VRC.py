@@ -27,9 +27,7 @@ def fft(data):
     fft_r = scipy.fft(wined, n=NFFT, axis=1)
     re = fft_r.real.reshape(time_ruler, -1)
     im = fft_r.imag.reshape(time_ruler, -1)
-    c = np.log(np.power(re, 2) + np.power(im, 2) + 1e-24).reshape(time_ruler, -1, 1)
-    d = np.arctan2(im, re).reshape(time_ruler, -1, 1)
-    spec = np.concatenate((c, d), 2)
+    spec = np.log(np.power(re, 2) + np.power(im, 2) + 1e-24).reshape(time_ruler, -1, 1)
     return spec
 
 def ifft(datanum_in, red):

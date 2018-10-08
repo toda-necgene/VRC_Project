@@ -97,11 +97,12 @@ def process(data):
     output=net.sess.run(net.fake_aB_image_test,feed_dict={net.input_model_test:data})
     return output
 inf=p_in.get_default_output_device_info()
-up = int(TERM *fs/ sampling_target)+1
+up = int(TERM / sampling_target*fs)+1
+up=fs
 stream=p_in.open(format = pa.paInt16,
 		channels = 1,
 		rate = fs,
-		frames_per_buffer = up*2,
+		frames_per_buffer = up,
 		input = True,
 		output = True)
 rdd=np.zeros(SHIFT)
@@ -118,14 +119,13 @@ las=np.zeros([SHIFT])
 noise_filter=np.zeros(SHIFT)
 print("ノイズ取得中")
 t=0.0
-tt = time.time()
 print("変換　開始")
 while stream.is_active():
     ins=stream.read(up)
+    tt = time.time()
     inputs = np.frombuffer(ins,dtype=np.int16).astype(np.float32)/32767.0
     inputs=scipy.signal.resample(inputs,TERM)
     pitch_source = get_pitch(inputs)
-
     inputs=np.clip(inputs,-1.0,1.0)
     inp=np.append(las,inputs).reshape(TERM+SHIFT)
     las = inputs[-SHIFT:]
@@ -145,4 +145,3 @@ while stream.is_active():
     print("CPS:%1.3f" % (np.mean(la)/(up/fs)))
     print(pitch_source,pitch_target)
     output = stream.write(vs)
-    tt = time.time()
