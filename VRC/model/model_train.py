@@ -309,8 +309,6 @@ class Model:
                                                                                   var_list=self.g_vars)
         d_optim = tf.train.AdamOptimizer(lr_d, beta_d_opt, beta_2_d_opt).minimize(self.d_loss,
                                                                                   var_list=self.d_vars)
-        p_optim = tf.train.AdamOptimizer(lr_g, beta_d_opt, beta_2_d_opt).minimize(self.p_loss,
-                                                                                  var_list=self.p_vars)
 
         tt_list=list()
 
@@ -449,18 +447,13 @@ class Model:
 
 
         # setting paramaters
-        lr_g_opt_max=self.args["g_lr_max"]
-        beta_d_opt=self.args["d_b1"]
-        beta_2_d_opt=self.args["d_b2"]
         T_cur=0
         self.best=999999
         T=self.args["lr_decay_term"]
 
         # naming output-directory
-        lr_g = tf.placeholder(tf.float32, None, name="g_lr")
 
-        p_optim = tf.train.AdamOptimizer(lr_g, beta_d_opt, beta_2_d_opt).minimize(self.p_loss,
-                                                                                  var_list=self.p_vars)
+        p_optim = tf.train.AdamOptimizer(1e-3, 0.9, 0.999).minimize(self.p_loss,var_list=self.p_vars)
 
         tt_list=list()
 
@@ -528,9 +521,6 @@ class Model:
         start_time_all=time.time()
         for epoch in range(self.args["P_train_epoch"]):
 
-            # calculating learning-rate
-            lr_g_culced = lr_g_opt_max
-
             # shuffling train_data_index
             np.random.shuffle(index_list)
             np.random.shuffle(index_list2)
@@ -551,7 +541,7 @@ class Model:
 
                 # update P network
                 self.sess.run([p_optim,  self.update_ops],
-                              feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target, lr_g: lr_g_culced})
+                              feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target})
 
             # calculating ETA
             taken_time = time.time() - start_time

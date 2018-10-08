@@ -19,26 +19,14 @@ def discriminator(inp,reuse):
 
     return ten
 def pha_decoder(inp,reuse,train):
-    res=4
     ten=inp
     tenP=inp
-    for i in range(res):
-        #inception resblock
-        tenA =tf.layers.conv2d(ten, 32, [2, 5], [1, 1], padding="SAME",
-                               kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/5/2/32)), use_bias=False,
-                               data_format="channels_last", reuse=reuse, name="res_conv_A_" + str(i))
+    tenB = tf.transpose(ten[:, :, :, :], [0, 1, 3, 2])
+    rs = int(tenB.shape[3])
+    tenB = tf.layers.dense(tenB, rs, kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0 / rs)),
+                           use_bias=True, reuse=reuse, name="dense")
+    ten = tf.transpose(tenB, [0, 1, 3, 2])
 
-
-        tenG = tf.layers.batch_normalization(tenA, axis=3, training=train, trainable=True, reuse=reuse,
-                                             name="res_bn_" + str(i))
-        tenG = tf.nn.relu(tenG)
-
-        ten=tenG
-
-    ten = tf.layers.conv2d(ten, 1, kernel_size=[2, 7], strides=[1, 1], padding="SAME",
-                           kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/2.0/7.0)), use_bias=False,
-                           data_format="channels_last", reuse=reuse, name="last_conv")
-    ten=tf.atan(ten)
     ten=tf.concat([tenP,ten],axis=3)
     return ten
 
