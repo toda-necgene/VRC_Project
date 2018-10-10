@@ -20,11 +20,11 @@ def discriminator(inp,reuse):
 
 def generator(ten,reuse,train):
     # setting paramater
-    res=6
+    res=3
     times=2
     chs_enc=[32,64]
     chs_dec=[32,16]
-    ten = tf.layers.conv2d(ten, 16, [9, 3], [7, 1], padding="VALID",
+    ten = tf.layers.conv2d(ten, 16, [4, 3], [1, 1], padding="VALID",
                             kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0 / 3/9/16)),
                             use_bias=False,
                             data_format="channels_last", reuse=reuse, name="res_conv_A_pre_")
@@ -51,10 +51,6 @@ def generator(ten,reuse,train):
         tenB = tf.transpose(tenB, [0, 1, 3, 2])
         tenA=tf.concat([tenA,tenB],axis=3)
 
-        # adding noise(shakedrop)
-        # prop = (1 - i / (res * 2))
-        # tenA = ShakeDrop(tenA, prop, train)
-
         tenA = tf.layers.batch_normalization(tenA, axis=3, training=train, trainable=True, reuse=reuse,
                                              name="res_bn_" + str(i))
         tenA = tf.nn.relu(tenA)
@@ -68,10 +64,10 @@ def generator(ten,reuse,train):
         tenA = tf.layers.batch_normalization(tenA, axis=3, training=train, trainable=True, reuse=reuse,
                                              name="dec_bn1_" + str(i))
         tenA = tf.nn.relu(tenA)
-    tenA = tf.layers.conv2d_transpose(tenA ,1, kernel_size=[9, 2], strides=[7, 1], padding="VALID",
+    ten= tf.layers.conv2d_transpose(tenA ,1, kernel_size=[4, 2], strides=[1, 1], padding="VALID",
                                 kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/9/2/32)),use_bias=True,
                                 data_format="channels_last", reuse=reuse, name="last_conv1")
-    return tenA
+    return ten
 
 def deconve_with_ps(inp,r,otp_shape,reuses=None,name="",b=True):
     # pixcel shuffler layer
