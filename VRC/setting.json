@@ -3,7 +3,7 @@
         "checkpoint_dir":"Z://bestmodel/",
         "best_checkpoint_dir":"Z://model/",
         "wave_otp_dir":"Z://waves/",
-        "version":"0.4.076"
+        "version":"0.4.078"
     },
     "training_config":{
         "input_size":4096,
@@ -24,7 +24,6 @@
         "save_interval":10,
         "weight_GAN":1.0,
         "weight_Cycle_Pow":100.0,
-        "weight_Cycle_f0":0.01,
         "pitch_rate":1.69084
 
     },

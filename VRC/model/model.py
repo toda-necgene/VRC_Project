@@ -10,19 +10,19 @@ def discriminator(inp,reuse):
 
     # convolution(2*4,stride 1*4)
     for i in range(depth):
-        ten = tf.layers.conv2d(current, chs[i], kernel_size=[3,5], strides=[2,4], padding="VALID",kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2/(3*7*chs[i]))),use_bias=True, data_format="channels_last",name="disc_"+str(i),reuse=reuse)
+        ten = tf.layers.conv2d(current, chs[i], kernel_size=[3,5], strides=[1,4], padding="SAME",kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2/(3*7*chs[i]))),use_bias=True, data_format="channels_last",name="disc_"+str(i),reuse=reuse)
         current = tf.nn.leaky_relu(ten)
     # dense
     current=tf.reshape(current,[current.shape[0],current.shape[1],current.shape[2]*current.shape[3]])
-    ten=tf.layers.dense(current,3,name="dence",reuse=reuse,kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2)))
+    ten=tf.layers.dense(current,1,name="dence",reuse=reuse,kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2)))
 
     return ten
 
 def generator(ten,reuse,train):
     # setting paramater
-    res=3
+    res=6
     times=2
-    chs_enc=[32,128]
+    chs_enc=[32,64]
     chs_dec=[32,16]
     ten = tf.layers.conv2d(ten, 16, [9, 3], [7, 1], padding="VALID",
                             kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0 / 3/9/16)),
@@ -41,11 +41,11 @@ def generator(ten,reuse,train):
         ten = tf.nn.relu(tenA)
     for i in range(res):
         #inception resblock
-        tenA =tf.layers.conv2d(ten, 64, [3, 3], [1, 1], padding="SAME",
+        tenA =tf.layers.conv2d(ten, 32, [3, 3], [1, 1], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/3/3/64)), use_bias=False,
                                data_format="channels_last", reuse=reuse, name="res_conv_B_" + str(i))
 
-        tenB=tf.transpose(ten[:,:,:,:64],[0,1,3,2])
+        tenB=tf.transpose(ten[:,:,:,:32],[0,1,3,2])
         rs=int(tenB.shape[3])
         tenB=tf.layers.dense(tenB,rs,kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/rs)),use_bias=False,reuse=reuse,name="dense"+str(i))
         tenB = tf.transpose(tenB, [0, 1, 3, 2])
@@ -71,7 +71,6 @@ def generator(ten,reuse,train):
     tenA = tf.layers.conv2d_transpose(tenA ,1, kernel_size=[9, 2], strides=[7, 1], padding="VALID",
                                 kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/9/2/32)),use_bias=True,
                                 data_format="channels_last", reuse=reuse, name="last_conv1")
-
     return tenA
 
 def deconve_with_ps(inp,r,otp_shape,reuses=None,name="",b=True):

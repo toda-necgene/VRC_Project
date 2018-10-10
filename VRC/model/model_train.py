@@ -134,7 +134,8 @@ class Model:
             with tf.variable_scope("discrimB"):
                 d_judge_BR= discriminator(input_model_B_fixed[:,-self.input_size_test[1]:,:,:1], None)
                 d_judge_BF = discriminator(fake_aB_image12, True)
-                d_judge_AR = discriminator(input_model_A_fixed[:,-self.input_size_test[1]:,:,:1], True)
+            with tf.variable_scope("discrimA"):
+                d_judge_AR = discriminator(input_model_A_fixed[:,-self.input_size_test[1]:,:,:1], None)
                 d_judge_AF = discriminator(fake_bA_image12, True)
 
         #getting individual variabloes
@@ -144,14 +145,10 @@ class Model:
         self.update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 
         #objective-functions of discriminator
-        time_length=int(d_judge_AR.shape[1])
-        label_one=tf.tile(tf.reshape(tf.one_hot(0,3),[1,1,3]),[self.args["batch_size"],time_length,1])
-        label_two=tf.tile(tf.reshape(tf.one_hot(1,3),[1,1,3]),[self.args["batch_size"],time_length,1])
-        label_three=tf.tile(tf.reshape(tf.one_hot(2,3),[1,1,3]),[self.args["batch_size"],time_length,1])
-        d_loss_AR = tf.reduce_mean(tf.losses.mean_squared_error(labels=label_one,predictions=d_judge_AR))
-        d_loss_AF = tf.reduce_mean(tf.losses.mean_squared_error(labels=label_three,predictions=d_judge_AF))
-        d_loss_BR = tf.reduce_mean(tf.losses.mean_squared_error(labels=label_two,predictions=d_judge_BR))
-        d_loss_BF = tf.reduce_mean(tf.losses.mean_squared_error(labels=label_three,predictions=d_judge_BF))
+        d_loss_AR = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_AR),predictions=d_judge_AR)
+        d_loss_AF = tf.losses.mean_squared_error(labels=tf.zeros_like(d_judge_AF),predictions=d_judge_AF)
+        d_loss_BR = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_BR),predictions=d_judge_BR)
+        d_loss_BF = tf.losses.mean_squared_error(labels=tf.zeros_like(d_judge_BF),predictions=d_judge_BF)
 
         d_loss_A=d_loss_AR + d_loss_AF
         d_loss_B=d_loss_BR + d_loss_BF
@@ -161,22 +158,20 @@ class Model:
         # objective-functions of generator
 
         # Cycle lossA
-        g_loss_cyc_A=tf.reduce_mean(tf.losses.mean_squared_error(predictions=fake_Ba_image[:,:,:-1,0],labels=input_model_A_fixed[:,-self.output_size_model[1]:,:-1,0]))* self.args["weight_Cycle_Pow"]
-        g_loss_cyc_A += tf.reduce_mean(tf.losses.mean_squared_error(predictions=fake_Ba_image[:, :, -1:, 0],labels=input_model_A_fixed[:,-self.output_size_model[1]:, -1:, 0]))*self.args["weight_Cycle_f0"]
+        g_loss_cyc_A=tf.reduce_mean(tf.losses.mean_squared_error(predictions=fake_Ba_image[:,:,:,0],labels=input_model_A_fixed[:,-self.output_size_model[1]:,:,0]))* self.args["weight_Cycle_Pow"]
 
         # Gan lossB
-        g_loss_gan_B = tf.losses.mean_squared_error(labels=label_two,predictions=d_judge_BF)* self.args["weight_GAN"]
+        g_loss_gan_B = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_BF),predictions=d_judge_BF)* self.args["weight_GAN"]
 
         # generator lossA
         self.g_loss_aB = g_loss_cyc_A +g_loss_gan_B
 
 
         # Cyc lossB
-        g_loss_cyc_B=tf.losses.mean_squared_error(predictions=fake_Ab_image[:,:,:-1,0],labels=input_model_B_fixed[:,-self.output_size_model[1]:,:-1,0])* self.args["weight_Cycle_Pow"]
-        g_loss_cyc_B += tf.losses.mean_squared_error(predictions=fake_Ab_image[:, :, -1:, 0],labels=input_model_B_fixed[:, -self.output_size_model[1]:, -1:, 0]) *self.args["weight_Cycle_f0"]
+        g_loss_cyc_B=tf.losses.mean_squared_error(predictions=fake_Ab_image[:,:,:,0],labels=input_model_B_fixed[:,-self.output_size_model[1]:,:,0])* self.args["weight_Cycle_Pow"]
 
         # Gan lossA
-        g_loss_gan_A = tf.losses.mean_squared_error(labels=label_one,predictions=d_judge_AF)* self.args["weight_GAN"]
+        g_loss_gan_A = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_AF),predictions=d_judge_AF)* self.args["weight_GAN"]
 
         # generator lossB
         self.g_loss_bA = g_loss_cyc_B + g_loss_gan_A
@@ -200,8 +195,8 @@ class Model:
         self.loss_display=tf.summary.merge([g_loss_sum_A_display,g_loss_sum_B_display,d_loss_sum_A_display,d_loss_sum_B_display])
 
         self.result_audio_display= tf.placeholder(tf.float32, [1,1,160000], name="FB")
-        self.result_image_display= tf.placeholder(tf.float32, [1,None,513], name="FBI0")
-        image_pow_display=tf.reshape(tf.transpose(self.result_image_display[:,:,:],[0,2,1]),[1,513,-1,1])
+        self.result_image_display= tf.placeholder(tf.float32, [1,None,512], name="FBI0")
+        image_pow_display=tf.reshape(tf.transpose(self.result_image_display[:,:,:],[0,2,1]),[1,512,-1,1])
         fake_B_audio_display = tf.summary.audio("fake_B", tf.reshape(self.result_audio_display,[1,160000,1]), 16000, 1)
         fake_B_image_display = tf.summary.image("fake_B_image_power", image_pow_display, 1)
         self.g_test_display=tf.summary.merge([fake_B_audio_display,fake_B_image_display])
@@ -221,7 +216,6 @@ class Model:
             executing_times-=1
         otp=np.array([],dtype=np.int16)
 
-        res_image = np.zeros([1,self.input_size_model[2]-1,1], dtype=np.float32)
         for t in range(executing_times):
             # Preprocess
 
@@ -239,11 +233,10 @@ class Model:
             # running network
             result=self.sess.run(self.fake_aB_image_test_fixed,feed_dict={ self.input_model_test:resource})
 
-            res_image = np.append(res_image, result[0,:,:-1,:].copy(), axis=0)
             # Postprocess
 
             # IFFT
-            result_wave=decode(f0*self.args["pitch_rate"],result[0].copy(),ap)
+            result_wave=decode(f0*self.args["pitch_rate"],result[0].copy().reshape(58,513).astype(np.double),ap)
 
             result_wave_fixed=np.clip(result_wave,-1.0,1.0)[-self.args["input_size"]:]
             result_wave_int16=result_wave_fixed*32767
@@ -258,7 +251,7 @@ class Model:
         if h>0:
             otp=otp[h:]
 
-        return otp,res_image[1:],time.time()-conversion_start_time
+        return otp,time.time()-conversion_start_time
 
 
 
@@ -396,12 +389,14 @@ class Model:
     def test_and_save(self,epoch):
 
         # last testing
-        out_puts, im, taken_time_test = self.convert(self.test)
+        out_puts, taken_time_test = self.convert(self.test)
+
 
         # fixing havests types
         out_put = out_puts.copy().astype(np.float32) / 32767.0
-        otp_im = im.copy().reshape(1,-1,513)
-        im = fft(out_puts)
+
+        im = fft(out_put)[:,:self.args["SHIFT"],:]
+        otp_im = im.copy().reshape(1,-1,512)
 
         # writing epoch-result into tensorboard
         if self.args["tensorboard"]:

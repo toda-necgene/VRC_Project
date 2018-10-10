@@ -155,7 +155,7 @@ class Model:
             rest=np.zeros(self.args["input_size"])
             for i in range(response.shape[0]):
                 f0=ff[i]*self.args["pitch_rate"]
-                resa= decode(f0,response[i],ap2[i])
+                resa= decode(f0,response[i].reshape(58,513).astype(np.double),ap2[i])
                 if i != 0:
                     resa = np.roll(resa, -ters*i, axis=0)
                     resa[-ters*i:] = 0
