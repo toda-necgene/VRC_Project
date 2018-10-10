@@ -294,7 +294,7 @@ class Model:
         data = glob(self.args["train_data_dir"]+'/Source_data/*')
         data2 = glob(self.args["train_data_dir"] + '/Answer_data/*')
         # loading test data
-        self.test=isread(self.args["test_data_dir"]+'/test.wav')[0:160000].astype(np.float32)
+        self.test=isread(self.args["test_data_dir"]+'/test.wav')[0:160000]
 
         # times of one epoch
         train_data_num = min(len(data),len(data2))

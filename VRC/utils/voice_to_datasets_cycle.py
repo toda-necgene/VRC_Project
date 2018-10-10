@@ -48,7 +48,7 @@ for file in files:
 
         ind=term+SHIFT*dilations+SHIFT
         startpos=term*i+data_realA.shape[0]%term
-        data_realAb = data_realA[max(startpos-ind,0):startpos].copy()/32767.
+        data_realAb = data_realA[max(startpos-ind,0):startpos].copy()
         r=ind-data_realAb.shape[0]
         if r>0:
             data_realAb=np.pad(data_realAb,(r,0),"constant")
@@ -56,10 +56,6 @@ for file in files:
         _f0, t = pw.dio(data_realAb,16000)
         f0=pw.stonemask(data_realAb,_f0,t,16000)
         sp=pw.cheaptrick(data_realAb,f0,t,16000)
-        if np.random.randint(1,5)>=3:
-            p=1.0
-        if p !=1.0:
-            f0*=p
         a = sp
         f0=f0[f0>0.0]
         if len(f0)!=0:
