@@ -32,7 +32,7 @@ def generator(ten,reuse,train):
                                          name="enc_bn0_")
     ten = tf.nn.relu(ten)
     for i in range(times):
-        tenA=tf.layers.conv2d(ten, chs_enc[i], [1, 4], [1, 4], padding="SAME",
+        tenA=tf.layers.conv2d(ten, chs_enc[i], [2, 4], [2, 4], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/4/chs_enc[i])), use_bias=False,
                                data_format="channels_last", reuse=reuse, name="res_conv_A_" + str(i))
 
@@ -60,11 +60,11 @@ def generator(ten,reuse,train):
     tenA=ten
     # decodeing
     for i in range(times):
-        tenA=deconve_with_ps(tenA,[1,4],chs_dec[i],reuse,"dec_"+str(i),False)
+        tenA=deconve_with_ps(tenA,[2,4],chs_dec[i],reuse,"dec_"+str(i),False)
         tenA = tf.layers.batch_normalization(tenA, axis=3, training=train, trainable=True, reuse=reuse,
                                              name="dec_bn1_" + str(i))
         tenA = tf.nn.relu(tenA)
-    ten= tf.layers.conv2d_transpose(tenA ,1, kernel_size=[4, 2], strides=[1, 1], padding="VALID",
+    ten= tf.layers.conv2d_transpose(tenA ,1, kernel_size=[3, 2], strides=[1, 1], padding="VALID",
                                 kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/9/2/32)),use_bias=True,
                                 data_format="channels_last", reuse=reuse, name="last_conv1")
     return ten

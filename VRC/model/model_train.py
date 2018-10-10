@@ -475,10 +475,9 @@ def encode(data):
     f0=pw.stonemask(data,_f0,t,fs)
     sp=pw.cheaptrick(data,f0,t,fs)
     ap=pw.d4c(data,f0,t,fs)
-    sp=np.log(sp)
     return f0,sp,ap
 def decode(f0,sp,ap):
-    return pw.synthesize(f0,np.exp(sp),ap,16000)
+    return pw.synthesize(f0,sp,ap,16000)
 
 def back_drop(ten,rate):
     s = ten.get_shape()

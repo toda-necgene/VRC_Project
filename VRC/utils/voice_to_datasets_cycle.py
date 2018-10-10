@@ -60,7 +60,7 @@ for file in files:
             p=1.0
         if p !=1.0:
             f0*=p
-        a = np.log(sp)
+        a = sp
         f0=f0[f0>0.0]
         if len(f0)!=0:
             ff.extend(f0)
@@ -106,7 +106,7 @@ for file in files:
         _f0, t = pw.dio(data_realAb,16000)
         f0=pw.stonemask(data_realAb,_f0,t,16000)
         sp=pw.cheaptrick(data_realAb,f0,t,16000)
-        a=np.log(sp)
+        a=sp
         f0=f0[f0>0.0]
         if len(f0)!=0:
             ff.extend(f0)
