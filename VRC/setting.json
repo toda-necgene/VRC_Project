@@ -3,12 +3,12 @@
         "checkpoint_dir":"Z://bestmodel/",
         "best_checkpoint_dir":"Z://model/",
         "wave_otp_dir":"Z://waves/",
-        "version":"0.4.093"
+        "version":"0.4.094"
     },
     "training_config":{
         "input_size":4096,
         "pre_train_epoch": 0,
-        "train_epoch": 100,
+        "train_epoch": 50,
         "P_train_epoch":400,
         "batch_size":1,
         "start_epoch":0,
