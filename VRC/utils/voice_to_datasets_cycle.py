@@ -21,6 +21,7 @@ WAVE_INPUT_FILENAME2 = "./datasets/source/02"
 files=glob.glob(WAVE_INPUT_FILENAME+"/*.wav")
 name="/Source_data"
 cnt=0
+ff=list()
 for file in files:
     print(" [*] パッチデータに変換を開始します。 :",file)
     index=0
@@ -60,15 +61,18 @@ for file in files:
         if p !=1.0:
             f0*=p
         a = np.log(sp)
-        a=np.append(a,f0.reshape(-1,1),axis=1)
+        f0=f0[f0>0.0]
+        if len(f0)!=0:
+            ff.extend(f0)
         np.save("./datasets/train/"+str(name)+"/"+str(cnt) +".npy", a)
         cnt+=1
 print(" [*] ソースデータ変換完了")
-print(cnt)
+print(cnt,np.mean(ff))
 
 files=glob.glob(WAVE_INPUT_FILENAME2+"/*.wav")
 name="/Answer_data"
 cnt=0
+ff=list()
 for file in files:
     print(" [*] パッチデータに変換を開始します。 :",file)
     index=0
@@ -103,10 +107,12 @@ for file in files:
         f0=pw.stonemask(data_realAb,_f0,t,16000)
         sp=pw.cheaptrick(data_realAb,f0,t,16000)
         a=np.log(sp)
-        a=np.append(a,f0.reshape(-1,1),axis=1)
+        f0=f0[f0>0.0]
+        if len(f0)!=0:
+            ff.extend(f0)
         np.save("./datasets/train/"+str(name)+"/"+str(cnt) +".npy", a)
         cnt+=1
 
 print(" [*] アンサーデータ変換完了")
-print(cnt)
+print(cnt,np.mean(ff))
 print(" [*] プロセス完了!!　プログラムを終了します。")

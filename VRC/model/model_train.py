@@ -49,7 +49,7 @@ class Model:
         self.args["d_b1"] = 0.5
         self.args["d_b2"] = 0.999
         self.args["weight_Cycle_Pow"]=100.0
-        self.args["weight_Cycle_Pha"]=100.0
+        self.args["weight_Cycle_f0"]=0.1
         self.args["weight_GAN"] = 1.0
         self.args["train_epoch"]=1000
         self.args["pre_train_epoch"] = 50
@@ -57,7 +57,7 @@ class Model:
         self.args["start_epoch"]=0
         self.args["save_interval"]=10
         self.args["lr_decay_term"]=20
-
+        self.args["pitch_rate"]=1.0
         # reading json file
         try:
             with open(path, "r") as f:
@@ -88,10 +88,10 @@ class Model:
         self.args["name_save"] = self.args["model_name"] + self.args["version"]
 
         # shapes of inputs
-        self.input_size_model=[self.args["batch_size"],58,514,1]#書き直し
-        self.input_size_test = [1, 58,514,1]#書き直し
+        self.input_size_model=[self.args["batch_size"],58,513,1]
+        self.input_size_test = [1, 58,513,1]
 
-        self.output_size_model = [self.args["batch_size"], 58,514,1]#書き直し
+        self.output_size_model = [self.args["batch_size"], 58,513,1]
 
         self.sess=tf.InteractiveSession(config=tf.ConfigProto(gpu_options=tf.GPUOptions()))
 
@@ -161,7 +161,8 @@ class Model:
         # objective-functions of generator
 
         # Cycle lossA
-        g_loss_cyc_A=tf.reduce_mean(tf.losses.mean_squared_error(predictions=fake_Ba_image[:,:,:,0],labels=input_model_A_fixed[:,-self.output_size_model[1]:,:,0]))* self.args["weight_Cycle_Pow"]
+        g_loss_cyc_A=tf.reduce_mean(tf.losses.mean_squared_error(predictions=fake_Ba_image[:,:,:-1,0],labels=input_model_A_fixed[:,-self.output_size_model[1]:,:-1,0]))* self.args["weight_Cycle_Pow"]
+        g_loss_cyc_A += tf.reduce_mean(tf.losses.mean_squared_error(predictions=fake_Ba_image[:, :, -1:, 0],labels=input_model_A_fixed[:,-self.output_size_model[1]:, -1:, 0]))*self.args["weight_Cycle_f0"]
 
         # Gan lossB
         g_loss_gan_B = tf.losses.mean_squared_error(labels=label_two,predictions=d_judge_BF)* self.args["weight_GAN"]
@@ -171,7 +172,8 @@ class Model:
 
 
         # Cyc lossB
-        g_loss_cyc_B=tf.reduce_mean(tf.losses.mean_squared_error(predictions=fake_Ab_image[:,:,:,0],labels=input_model_B_fixed[:,-self.output_size_model[1]:,:,0]))* self.args["weight_Cycle_Pow"]
+        g_loss_cyc_B=tf.losses.mean_squared_error(predictions=fake_Ab_image[:,:,:-1,0],labels=input_model_B_fixed[:,-self.output_size_model[1]:,:-1,0])* self.args["weight_Cycle_Pow"]
+        g_loss_cyc_B += tf.losses.mean_squared_error(predictions=fake_Ab_image[:, :, -1:, 0],labels=input_model_B_fixed[:, -self.output_size_model[1]:, -1:, 0]) *self.args["weight_Cycle_f0"]
 
         # Gan lossA
         g_loss_gan_A = tf.losses.mean_squared_error(labels=label_one,predictions=d_judge_AF)* self.args["weight_GAN"]
@@ -230,7 +232,7 @@ class Model:
             if r>0:
                 resorce=np.pad(resorce,(r,0),'constant')
             # FFT
-            resource,ap=encode((resorce/32767.0).astype(np.double))
+            f0,resource,ap=encode((resorce/32767.0).astype(np.double))
             resource=resource.reshape(self.input_size_test)
             #main process
 
@@ -241,7 +243,7 @@ class Model:
             # Postprocess
 
             # IFFT
-            result_wave=decode(result[0].copy(),ap)
+            result_wave=decode(f0*self.args["pitch_rate"],result[0].copy(),ap)
 
             result_wave_fixed=np.clip(result_wave,-1.0,1.0)[-self.args["input_size"]:]
             result_wave_int16=result_wave_fixed*32767
@@ -300,7 +302,6 @@ class Model:
         data2 = glob(self.args["train_data_dir"] + '/Answer_data/*')
         # loading test data
         self.test=isread(self.args["test_data_dir"]+'/test.wav')[0:160000].astype(np.float32)
-        label=isread(self.args["test_data_dir"]+'/label.wav')[0:160000].astype(np.float32)
 
         # times of one epoch
         train_data_num = min(len(data),len(data2))
@@ -400,6 +401,7 @@ class Model:
         # fixing havests types
         out_put = out_puts.copy().astype(np.float32) / 32767.0
         otp_im = im.copy().reshape(1,-1,513)
+        im = fft(out_puts)
 
         # writing epoch-result into tensorboard
         if self.args["tensorboard"]:
@@ -420,7 +422,7 @@ class Model:
             path = self.args["wave_otp_dir"] + nowtime() + "_e" + str(epoch)
             plt.savefig(path + ".png")
             upload(out_puts, path)
-
+        self.save(self.args["checkpoint_dir"],epoch,self.saver)
         print(" [I] Epoch %04d tested. time: %2.3f " % (epoch,taken_time_test))
 
 
@@ -451,19 +453,37 @@ class Model:
             return True
         else:
             return False
-
+def fft(data):
+    NFFT=1024
+    SHIFT=512
+    time_ruler = data.shape[0] // SHIFT
+    if data.shape[0] % SHIFT == 0:
+        time_ruler -= 1
+    pos = 0
+    wined = np.zeros([time_ruler, NFFT])
+    window=np.hamming(NFFT)
+    for fft_index in range(time_ruler):
+        frame = data[pos:pos + NFFT]
+        r=NFFT-frame.shape[0]
+        if r>0:
+            frame=np.pad(frame,(0,r),"constant")
+        wined[fft_index] = frame*window
+        pos += SHIFT
+    fft_r = np.fft.fft(wined, n=NFFT, axis=1)
+    re = fft_r.real.reshape(time_ruler, -1)
+    im = fft_r.imag.reshape(time_ruler, -1)
+    spec = np.log(np.power(re, 2) + np.power(im, 2) + 1e-24).reshape(time_ruler, -1, 1)
+    return spec
 def encode(data):
     fs=16000
     _f0,t=pw.dio(data,fs)
     f0=pw.stonemask(data,_f0,t,fs)
     sp=pw.cheaptrick(data,f0,t,fs)
     ap=pw.d4c(data,f0,t,fs)
-    sp=np.append(np.log(sp),f0.reshape(-1,1),axis=1)
-    return sp,ap
-def decode(data,ap):
-    f0=data[:,-1].astype(np.double).reshape(-1)
-    sp=np.exp(data[:,:-1]).astype(np.double).reshape(58,-1)
-    return pw.synthesize(f0,sp,ap,16000)
+    sp=np.log(sp)
+    return f0,sp,ap
+def decode(f0,sp,ap):
+    return pw.synthesize(f0,np.exp(sp),ap,16000)
 
 def back_drop(ten,rate):
     s = ten.get_shape()

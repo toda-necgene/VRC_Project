@@ -44,6 +44,7 @@ class Model:
         self.args["start_epoch"] = 0
         self.args["save_interval"] = 10
         self.args["lr_decay_term"] = 20
+        self.args["pitch_rate"]=1.0
 
         # reading json file
         try:
@@ -78,9 +79,8 @@ class Model:
         self.args["name_save"] = self.args["model_name"] + self.args["version"]
 
         # shapes of inputs
-        ss = self.args["input_size"] // self.args["SHIFT"]
-        self.input_size_model = [self.args["batch_size"], 58,514,1]
-        self.input_size_test = [None, 58,514,1]
+        self.input_size_model = [self.args["batch_size"], 58,513,1]
+        self.input_size_test = [None, 58,513,1]
 
         self.sess = tf.InteractiveSession(config=tf.ConfigProto(gpu_options=tf.GPUOptions()))
 
@@ -134,25 +134,28 @@ class Model:
                 resorce=np.pad(resorce,(r,0),'constant')
             # FFT
             ap2=list()
+            ff = list()
             ters=back_load//use_num
-            res,ap=encode((resorce[-ipt_size:].copy()/32767.0).astype(np.double))
+            f0,res,ap=encode((resorce[-ipt_size:].copy()/32767.0).astype(np.double))
+            ff.append(f0)
             ap2.append(ap)
             res=res.reshape(1,-1,514,1)
             for r in range(1,use_num):
                 pp=ters*r
                 resorce2=resorce[pp:pp+ipt_size].copy()
-                resorce2,ap2_o=encode((resorce2/32767).astype(np.double))
+                f0,resorce2,ap2_o=encode((resorce2/32767).astype(np.double))
                 resorce2=resorce2.reshape(1,-1,514,1)
+                ff.append(f0)
                 ap2.append(ap2_o)
                 res=np.append(res,resorce2,axis=0)
             # running network
             response=self.sess.run(self.test_outputaB,feed_dict={ self.input_model_test:res})
             # Postprocess
 
-            # IFFT
             rest=np.zeros(self.args["input_size"])
             for i in range(response.shape[0]):
-                resa= decode(response[i],ap2[i])
+                f0=ff[i]*self.args["pitch_rate"]
+                resa= decode(f0,response[i],ap2[i])
                 if i != 0:
                     resa = np.roll(resa, -ters*i, axis=0)
                     resa[-ters*i:] = 0
@@ -193,12 +196,10 @@ def encode(data):
     f0=pw.stonemask(data,_f0,t,fs)
     sp=pw.cheaptrick(data,f0,t,fs)
     ap=pw.d4c(data,f0,t,fs)
-    sp=np.append(np.log(sp),f0.reshape(-1,1),axis=1)
-    return sp,ap
-def decode(data,ap):
-    f0=data[:,-1].astype(np.double).reshape(-1)
-    sp=np.exp(data[:,:-1]).astype(np.double).reshape(58,-1)
-    return pw.synthesize(f0,sp,ap,16000)
+    sp=np.log(sp)
+    return f0,sp,ap
+def decode(f0,sp,ap):
+    return pw.synthesize(f0,np.exp(sp),ap,16000)
 
 
 
