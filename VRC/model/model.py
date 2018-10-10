@@ -20,11 +20,11 @@ def discriminator(inp,reuse):
 
 def generator(ten,reuse,train):
     # setting paramater
-    res=3
+    res=6
     times=2
-    chs_enc=[32,64]
+    chs_enc=[16,32]
     chs_dec=[32,16]
-    ten = tf.layers.conv2d(ten, 16, [4, 3], [1, 1], padding="VALID",
+    ten = tf.layers.conv2d(ten, 16, [4, 3], [2, 1], padding="VALID",
                             kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0 / 3/9/16)),
                             use_bias=False,
                             data_format="channels_last", reuse=reuse, name="res_conv_A_pre_")
@@ -41,11 +41,11 @@ def generator(ten,reuse,train):
         ten = tf.nn.relu(tenA)
     for i in range(res):
         #inception resblock
-        tenA =tf.layers.conv2d(ten, 32, [3, 3], [1, 1], padding="SAME",
+        tenA =tf.layers.conv2d(ten, 16, [3, 3], [1, 1], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/3/3/64)), use_bias=False,
                                data_format="channels_last", reuse=reuse, name="res_conv_B_" + str(i))
 
-        tenB=tf.transpose(ten[:,:,:,:32],[0,1,3,2])
+        tenB=tf.transpose(ten[:,:,:,:16],[0,1,3,2])
         rs=int(tenB.shape[3])
         tenB=tf.layers.dense(tenB,rs,kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/rs)),use_bias=False,reuse=reuse,name="dense"+str(i))
         tenB = tf.transpose(tenB, [0, 1, 3, 2])
@@ -64,7 +64,7 @@ def generator(ten,reuse,train):
         tenA = tf.layers.batch_normalization(tenA, axis=3, training=train, trainable=True, reuse=reuse,
                                              name="dec_bn1_" + str(i))
         tenA = tf.nn.relu(tenA)
-    ten= tf.layers.conv2d_transpose(tenA ,1, kernel_size=[3, 2], strides=[1, 1], padding="VALID",
+    ten= tf.layers.conv2d_transpose(tenA ,1, kernel_size=[4, 2], strides=[2, 1], padding="VALID",
                                 kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/9/2/32)),use_bias=True,
                                 data_format="channels_last", reuse=reuse, name="last_conv1")
     return ten
