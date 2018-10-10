@@ -102,7 +102,7 @@ class Model:
         with tf.variable_scope("generators"):
 
             with tf.variable_scope("generator_1"):
-                self.test_outputaB = generator(self.input_model_testa[:,:,:,:1]*0.1, reuse=None, train=False)
+                self.test_outputaB = generator(self.input_model_testa, reuse=None, train=False)
 
         #saver
         self.saver = tf.train.Saver()
@@ -112,13 +112,10 @@ class Model:
     def convert(self,in_put):
         #function of test
         #To convert wave file
-        back_load=self.args["SHIFT"]
-        use_num = 2
         tt=time.time()
-        ipt_size=self.args["input_size"]+self.args["SHIFT"]+self.args["SHIFT"]*self.args["dilated_size"]
-        ipt=ipt_size+back_load
-        times=in_put.shape[0]//(self.args["input_size"])+1
-        if in_put.shape[0]%((self.args["input_size"])*self.args["batch_size"])==0:
+        ipt_size=self.args["input_size"]+self.args["SHIFT"]
+        times=in_put.shape[0]//(ipt_size)+1
+        if in_put.shape[0]%(ipt_size*self.args["batch_size"])==0:
             times-=1
         otp=np.array([],dtype=np.int16)
         res3 = np.zeros([1,self.args["NFFT"],2], dtype=np.float32)
@@ -128,40 +125,18 @@ class Model:
 
             # Padiing
             start_pos=ipt_size*t+(in_put.shape[0]%ipt_size)
-            resorce=np.reshape(in_put[max(0,start_pos-ipt):start_pos],(-1))
-            r=max(0,ipt-resorce.shape[0])
+            resorce=np.reshape(in_put[max(0,start_pos-ipt_size):start_pos],(-1))
+            r=max(0,ipt_size-resorce.shape[0])
             if r>0:
                 resorce=np.pad(resorce,(r,0),'constant')
             # FFT
-            ap2=list()
-            ff = list()
-            ters=back_load//use_num
-            f0,res,ap=encode((resorce[-ipt_size:].copy()/32767.0).astype(np.double))
-            ff.append(f0)
-            ap2.append(ap)
-            res=res.reshape(1,-1,514,1)
-            for r in range(1,use_num):
-                pp=ters*r
-                resorce2=resorce[pp:pp+ipt_size].copy()
-                f0,resorce2,ap2_o=encode((resorce2/32767).astype(np.double))
-                resorce2=resorce2.reshape(1,-1,514,1)
-                ff.append(f0)
-                ap2.append(ap2_o)
-                res=np.append(res,resorce2,axis=0)
+            f0,res,ap2=encode((resorce/32767.0).astype(np.double))
+            res=res.reshape(1,-1,513,1)
             # running network
             response=self.sess.run(self.test_outputaB,feed_dict={ self.input_model_test:res})
             # Postprocess
-
-            rest=np.zeros(self.args["input_size"])
-            for i in range(response.shape[0]):
-                f0=ff[i]*self.args["pitch_rate"]
-                resa= decode(f0,response[i].reshape(58,513).astype(np.double),ap2[i])
-                if i != 0:
-                    resa = np.roll(resa, -ters*i, axis=0)
-                    resa[-ters*i:] = 0
-                rest+=resa[-self.args["input_size"]:]
-            res3 = np.append(res3, response[0,:,:,:])
-
+            _f0=f0*self.args["pitch_rate"]
+            rest = decode(_f0,response[0].reshape(58,513).astype(np.double),ap2)
             res = np.clip(rest, -1.0, 1.0)*32767
 
             # chaching results
@@ -196,10 +171,9 @@ def encode(data):
     f0=pw.stonemask(data,_f0,t,fs)
     sp=pw.cheaptrick(data,f0,t,fs)
     ap=pw.d4c(data,f0,t,fs)
-    sp=np.log(sp)
     return f0,sp,ap
 def decode(f0,sp,ap):
-    return pw.synthesize(f0,np.exp(sp),ap,16000)
+    return pw.synthesize(f0,sp,ap,16000)
 
 
 

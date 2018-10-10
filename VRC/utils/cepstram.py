@@ -18,11 +18,9 @@ def encode(data):
     f0=pw.stonemask(data,_f0,t,fs)
     sp=pw.cheaptrick(data,f0,t,fs)
     ap=pw.d4c(data,f0,t,fs)
-    sp=np.append(sp,f0.reshape(-1,1),axis=1)
-    return sp,ap
-def decode(data,ap):
-    f0=data[:,-1].astype(np.double).reshape(-1)
-    sp=data[:,:-1].astype(np.double).reshape(-1,513)
+    sp=sp
+    return f0,sp,ap
+def decode(f0,sp,ap):
     return pw.synthesize(f0,sp,ap,16000)
 
 def hz_to_mel(fss):
@@ -101,7 +99,7 @@ data_realB=data.reshape(-1)
 print(data_realB.shape)
 rate=16000
 b=np.zeros([1])
-ab=np.zeros([1,514])
+ab=np.zeros([1,513])
 abc=np.zeros([1])
 
 term=8192
@@ -118,10 +116,10 @@ for i in range(times):
     if r>0:
         data_realAb=np.pad(data_realAb,(0,r),"reflect")
     dmn=(data_realAb/32767.0).astype(np.double)
-    a,ap=encode(dmn)
-    a=a.reshape(109,514)
+    f0,a,ap=encode(dmn)
+    a=a.reshape(109,513)
     ab = np.append(ab, a, axis=0)
-    s=decode(a,ap)
+    s=decode(f0,a,ap)
     b=np.append(b,s)
 r=b.shape[0]-data_realA.shape[0]
 bbb=b
