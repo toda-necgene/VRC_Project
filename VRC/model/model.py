@@ -24,8 +24,8 @@ def discriminator(inp,reuse):
 def generator(ten,reuse,train):
     # setting paramater
     times=4
-    chs_enc=[32,32,64,64]
-    chs_dec=[64,32,32,16]
+    chs_enc=[16,32,32,64]
+    chs_dec=[32,32,16,16]
     ten = tf.layers.conv2d(ten, 16, [4, 2], [2, 1], padding="VALID",
                             kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0 / 3/9/16)),
                             use_bias=False,
