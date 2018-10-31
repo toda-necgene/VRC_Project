@@ -4,6 +4,7 @@ import wave
 import time
 import glob
 import pyworld as pw
+import matplotlib.pyplot as plt
 
 NFFT=1024
 SHIFT=NFFT//2
@@ -22,6 +23,7 @@ files=glob.glob(WAVE_INPUT_FILENAME+"/*.wav")
 name="/Source_data"
 cnt=0
 ff=list()
+m=list()
 for file in files:
     print(" [*] パッチデータに変換を開始します。 :",file)
     index=0
@@ -33,7 +35,7 @@ for file in files:
         dds = wf.readframes(CHUNK)
     dms = b''.join(dms)
     data = np.frombuffer(dms, 'int16')
-    data_real=data.reshape(-1)/32767.0
+    data_real=(data/32767).reshape(-1).astype(np.float)
     data_realA=dmn=data_real.copy()
     timee=data_realA.shape[0]
     rate=16000
@@ -52,23 +54,30 @@ for file in files:
         r=ind-data_realAb.shape[0]
         if r>0:
             data_realAb=np.pad(data_realAb,(r,0),"constant")
-        p = np.random.randint(30, 60) / 40
         _f0, t = pw.dio(data_realAb,16000)
         f0=pw.stonemask(data_realAb,_f0,t,16000)
         sp=pw.cheaptrick(data_realAb,f0,t,16000)
-        a = sp
+        a = sp[::4]
         f0=f0[f0>0.0]
         if len(f0)!=0:
             ff.extend(f0)
-        np.save("./datasets/train/"+str(name)+"/"+str(cnt) +".npy", a)
+        m.append(a)
         cnt+=1
+m=np.asarray(m,dtype=np.float32)
+np.save("./datasets/train/" + str(name) + "/" + str(cnt) + ".npy", m)
 print(" [*] ソースデータ変換完了")
-print(cnt,np.mean(ff))
+print(cnt,np.mean(ff),np.var(ff))
+print(a.shape,m.shape)
+
+plt.subplot(2,1,1)
+plt.imshow(m.reshape(-1,513)[:100],aspect="auto")
+plt.colorbar()
 
 files=glob.glob(WAVE_INPUT_FILENAME2+"/*.wav")
 name="/Answer_data"
 cnt=0
 ff=list()
+m=list()
 for file in files:
     print(" [*] パッチデータに変換を開始します。 :",file)
     index=0
@@ -80,7 +89,7 @@ for file in files:
         dds = wf.readframes(CHUNK)
     dms = b''.join(dms)
     data = np.frombuffer(dms, 'int16')
-    data_real=data.reshape(-1)/32767.0
+    data_real=(data/32767).reshape(-1).astype(np.float)
     data_realA=dmn=data_real.copy()
     timee=data_realA.shape[0]
     rate=16000
@@ -102,13 +111,20 @@ for file in files:
         _f0, t = pw.dio(data_realAb,16000)
         f0=pw.stonemask(data_realAb,_f0,t,16000)
         sp=pw.cheaptrick(data_realAb,f0,t,16000)
-        a=sp
+        a=sp[::4]
         f0=f0[f0>0.0]
         if len(f0)!=0:
             ff.extend(f0)
-        np.save("./datasets/train/"+str(name)+"/"+str(cnt) +".npy", a)
+        m.append(a)
         cnt+=1
-
+m=np.asarray(m,dtype=np.float32)
+np.save("./datasets/train/" + str(name) + "/" + str(cnt) + ".npy", m)
 print(" [*] アンサーデータ変換完了")
-print(cnt,np.mean(ff))
+print(cnt,np.mean(ff),np.var(ff))
+print(a.shape,len(m))
+
+plt.subplot(2,1,2)
+plt.imshow(m.reshape(-1,513)[:100],aspect="auto")
+plt.colorbar()
+plt.show()
 print(" [*] プロセス完了!!　プログラムを終了します。")

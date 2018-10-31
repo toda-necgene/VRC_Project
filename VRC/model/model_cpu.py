@@ -79,8 +79,8 @@ class Model:
         self.args["name_save"] = self.args["model_name"] + self.args["version"]
 
         # shapes of inputs
-        self.input_size_model = [self.args["batch_size"], 58,513,1]
-        self.input_size_test = [None, 58,513,1]
+        self.input_size_model = [self.args["batch_size"], 15,513,1]
+        self.input_size_test = [None, 15,513,1]
 
         self.sess = tf.InteractiveSession(config=tf.ConfigProto(gpu_options=tf.GPUOptions()))
 
@@ -136,7 +136,7 @@ class Model:
             response=self.sess.run(self.test_outputaB,feed_dict={ self.input_model_test:res})
             # Postprocess
             _f0=f0*self.args["pitch_rate"]
-            rest = decode(_f0,response[0].reshape(58,513).astype(np.double),ap2)
+            rest = decode(_f0,response[0].reshape(15,513).astype(np.double),ap2)
             res = np.clip(rest, -1.0, 1.0)*32767
 
             # chaching results
@@ -171,9 +171,16 @@ def encode(data):
     f0=pw.stonemask(data,_f0,t,fs)
     sp=pw.cheaptrick(data,f0,t,fs)
     ap=pw.d4c(data,f0,t,fs)
-    return f0,sp,ap
+    return f0[::4],sp[::4],ap[::4]
 def decode(f0,sp,ap):
+    ap = np.tile(ap.reshape(-1, 1, 513), (1, 4, 1))
+    ap = ap.reshape(-1, 513)
+    f0 = np.tile(f0.reshape(-1, 1), (1, 4))
+    f0 = f0.reshape(-1)
+    sp=np.tile(sp.reshape(-1,1,513),(1,4,1))
+    sp=sp.reshape(-1,513)
     return pw.synthesize(f0,sp,ap,16000)
+
 
 
 

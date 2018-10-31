@@ -52,12 +52,14 @@ class Model:
         self.args["weight_Cycle_f0"]=0.1
         self.args["weight_GAN"] = 1.0
         self.args["train_epoch"]=1000
-        self.args["pre_train_epoch"] = 50
+        self.args["pre_train_epoch"] = 0
         self.args["P_train_epoch"]=100
         self.args["start_epoch"]=0
         self.args["save_interval"]=10
         self.args["lr_decay_term"]=20
-        self.args["pitch_rate"]=1.0
+        self.args["pitch_rate_var"]=1.0
+        self.args["pitch_rate_mean_s"]=1.0
+        self.args["pitch_rate_mean_t"]=1.0
         # reading json file
         try:
             with open(path, "r") as f:
@@ -88,10 +90,10 @@ class Model:
         self.args["name_save"] = self.args["model_name"] + self.args["version"]
 
         # shapes of inputs
-        self.input_size_model=[self.args["batch_size"],58,513,1]
-        self.input_size_test = [1, 58,513,1]
+        self.input_size_model=[self.args["batch_size"],15,513,1]
+        self.input_size_test = [1, 15,513,1]
 
-        self.output_size_model = [self.args["batch_size"], 58,513,1]
+        self.output_size_model = [self.args["batch_size"], 15,513,1]
 
         self.sess=tf.InteractiveSession(config=tf.ConfigProto(gpu_options=tf.GPUOptions()))
 
@@ -119,32 +121,31 @@ class Model:
         with tf.variable_scope("generators"):
 
             with tf.variable_scope("generator_1"):
-                fake_aB_image12 = generator(input_model_A_fixed[:,:self.input_size_test[1],:,:], reuse=None, train=True)
+                fake_aB_image12 = generator(input_model_A_fixed, reuse=None, train=True)
                 self.fake_aB_image_test_fixed= generator(input_model_test_fixed, reuse=True, train=False)
             with tf.variable_scope("generator_2"):
-                fake_bA_image12 = generator(input_model_B_fixed[:,:self.input_size_test[1],:,:], reuse=None, train=True)
+                fake_bA_image12 = generator(input_model_B_fixed, reuse=None, train=True)
             with tf.variable_scope("generator_2",reuse=True):
-                fake_Ba_image = generator(back_drop(fake_aB_image12[:,-self.input_size_test[1]:,:,:],0.75), reuse=True,train=True)
+                fake_Ba_image = generator(fake_aB_image12, reuse=True,train=True)
             with tf.variable_scope("generator_1",reuse=True):
-                fake_Ab_image = generator(back_drop(fake_bA_image12[:,-self.input_size_test[1]:,:,:],0.75), reuse=True,train=True)
+                fake_Ab_image = generator(fake_bA_image12, reuse=True,train=True)
 
         #creating discriminator
         with tf.variable_scope("discrims"):
-
-            with tf.variable_scope("discrimB"):
-                d_judge_BR= discriminator(input_model_B_fixed[:,-self.input_size_test[1]:,:,:1], None)
+            with tf.variable_scope("discrims_A"):
+                d_judge_BR= discriminator(input_model_B_fixed, None)
                 d_judge_BF = discriminator(fake_aB_image12, True)
-            with tf.variable_scope("discrimA"):
-                d_judge_AR = discriminator(input_model_A_fixed[:,-self.input_size_test[1]:,:,:1], None)
+            with tf.variable_scope("discrims_B"):
+                d_judge_AR = discriminator(input_model_A_fixed, None)
                 d_judge_AF = discriminator(fake_bA_image12, True)
 
         #getting individual variabloes
         self.g_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"generators")
         self.d_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"discrims")
-        self.p_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, "phase_decoder")
         self.update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 
         #objective-functions of discriminator
+
         d_loss_AR = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_AR),predictions=d_judge_AR)
         d_loss_AF = tf.losses.mean_squared_error(labels=tf.zeros_like(d_judge_AF),predictions=d_judge_AF)
         d_loss_BR = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_BR),predictions=d_judge_BR)
@@ -158,7 +159,7 @@ class Model:
         # objective-functions of generator
 
         # Cycle lossA
-        g_loss_cyc_A=tf.reduce_mean(tf.losses.mean_squared_error(predictions=fake_Ba_image[:,:,:,0],labels=input_model_A_fixed[:,-self.output_size_model[1]:,:,0]))* self.args["weight_Cycle_Pow"]
+        g_loss_cyc_A=tf.losses.mean_squared_error(predictions=fake_Ba_image,labels=input_model_A_fixed)* self.args["weight_Cycle_Pow"]
 
         # Gan lossB
         g_loss_gan_B = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_BF),predictions=d_judge_BF)* self.args["weight_GAN"]
@@ -168,7 +169,7 @@ class Model:
 
 
         # Cyc lossB
-        g_loss_cyc_B=tf.losses.mean_squared_error(predictions=fake_Ab_image[:,:,:,0],labels=input_model_B_fixed[:,-self.output_size_model[1]:,:,0])* self.args["weight_Cycle_Pow"]
+        g_loss_cyc_B=tf.losses.mean_squared_error(predictions=fake_Ab_image,labels=input_model_B_fixed)* self.args["weight_Cycle_Pow"]
 
         # Gan lossA
         g_loss_gan_A = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_AF),predictions=d_judge_AF)* self.args["weight_GAN"]
@@ -226,7 +227,7 @@ class Model:
             if r>0:
                 resorce=np.pad(resorce,(r,0),'constant')
             # FFT
-            f0,resource,ap=encode((resorce/32767.0).astype(np.double))
+            f0,resource,ap=encode((resorce/32767).astype(np.float))
             resource=resource.reshape(self.input_size_test)
             #main process
 
@@ -236,13 +237,11 @@ class Model:
             # Postprocess
 
             # IFFT
-            result_wave=decode(f0*self.args["pitch_rate"],result[0].copy().reshape(58,513).astype(np.double),ap)
+            f0=(f0-self.args["pitch_rate_mean_s"])*self.args["pitch_rate_var"]+self.args["pitch_rate_mean_t"]
+            result_wave=decode(f0,result[0].copy().reshape(15,513).astype(np.float),ap)*32767
 
-            result_wave_fixed=np.clip(result_wave,-1.0,1.0)[-self.args["input_size"]:]
-            result_wave_int16=result_wave_fixed*32767
-
-            # converting result
-            result_wave_int16=result_wave_int16.reshape(-1).astype(np.int16)
+            result_wave_fixed=np.clip(result_wave,-32767.0,32767.0)[-self.args["input_size"]:]
+            result_wave_int16=result_wave_fixed.reshape(-1).astype(np.int16)
 
             #adding result
             otp=np.append(otp,result_wave_int16)
@@ -296,20 +295,22 @@ class Model:
         # loading test data
         self.test=isread(self.args["test_data_dir"]+'/test.wav')[0:160000]
 
+
+        # prepareing training-data
+        batch_files = data[0]
+        batch_files2 = data2[0]
+
+        print(" [I] loading dataset...")
+        self.sounds_r = imread(batch_files)
+        self.sounds_t = imread(batch_files2)
         # times of one epoch
-        train_data_num = min(len(data),len(data2))
+        train_data_num = min(self.sounds_r.shape[0],self.sounds_t.shape[0])
         self.batch_idxs = train_data_num // self.args["batch_size"]
         index_list=[h for h in range(train_data_num)]
         index_list2 = [h for h in range(train_data_num)]
-
-        # prepareing training-data
-        batch_files = data[:train_data_num]
-        batch_files2 = data2[:train_data_num]
-
-        print(" [I] loading dataset...")
-        self.sounds_r = np.asarray([(imread(batch_file,self.input_size_model[1:])) for batch_file in batch_files])
-        self.sounds_t = np.asarray([(imread(batch_file,self.input_size_model[1:])) for batch_file in batch_files2])
         print(" [I] %d data loaded!!" % train_data_num)
+        self.sounds_r=self.sounds_r.reshape([self.sounds_r.shape[0],self.sounds_r.shape[1],self.sounds_r.shape[2],1])
+        self.sounds_t=self.sounds_t.reshape([self.sounds_t.shape[0],self.sounds_t.shape[1],self.sounds_t.shape[2],1])
 
         # initializing training infomation
         start_time = time.time()
@@ -381,9 +382,6 @@ class Model:
         hour_f=tnt//3600
         minute_f=tnt//60%60
         second_f=int(tnt%60)
-        if self.args["tensorboard"]:
-            self.writer = tf.summary.FileWriter("./logs/B"+self.args["name_save"], self.sess.graph)
-
         print(" [I] ALL train process finished successfully!! in %04d : %02d : %02d" % (hour_f, minute_f, second_f))
 
     def test_and_save(self,epoch):
@@ -475,8 +473,14 @@ def encode(data):
     f0=pw.stonemask(data,_f0,t,fs)
     sp=pw.cheaptrick(data,f0,t,fs)
     ap=pw.d4c(data,f0,t,fs)
-    return f0,sp,ap
+    return f0[::4].astype(np.float32),sp[::4].astype(np.float32),ap[::4].astype(np.float32)
 def decode(f0,sp,ap):
+    ap = np.tile(ap.reshape(-1, 1, 513), (1, 4, 1)).astype(np.float)
+    ap = ap.reshape(-1, 513)
+    f0 = np.tile(f0.reshape(-1, 1), (1, 4)).astype(np.float)
+    f0 = f0.reshape(-1)
+    sp=np.tile(sp.reshape(-1,1,513),(1,4,1)).astype(np.float)
+    sp=sp.reshape(-1,513)
     return pw.synthesize(f0,sp,ap,16000)
 
 def back_drop(ten,rate):
@@ -516,6 +520,6 @@ def isread(path):
     else:
         ans=ans[:160000]
     return ans
-def imread(path,size):
+def imread(path):
     ns=np.load(path)
-    return ns.reshape(size)
+    return ns

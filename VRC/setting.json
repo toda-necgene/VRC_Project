@@ -3,28 +3,30 @@
         "checkpoint_dir":"Z://bestmodel/",
         "best_checkpoint_dir":"Z://model/",
         "wave_otp_dir":"Z://waves/",
-        "version":"0.4.097"
+        "version":"0.5.027"
     },
     "training_config":{
         "input_size":4096,
         "pre_train_epoch": 0,
-        "train_epoch": 50,
-        "P_train_epoch":400,
-        "batch_size":1,
+        "train_epoch": 1000,
+        "P_train_epoch":0,
+        "batch_size":128,
         "start_epoch":0,
         "train_data_dir":"./datasets/train",
         "test_data_dir":"./datasets/test",
         "g_lr_max":2e-4,
         "d_lr_max":2e-4,
-        "g_lr_min":2e-4,
-        "d_lr_min":2e-4,
+        "g_lr_min":2e-6,
+        "d_lr_min":2e-6,
         "g_b1":0.5,
         "d_b1":0.5,
-        "lr_decay_term":400,
-        "save_interval":1,
+        "lr_decay_term":300,
+        "save_interval":5,
         "weight_GAN":1.0,
-        "weight_Cycle_Pow":100.0,
-        "pitch_rate":1.79172714
+        "weight_Cycle_Pow":10.0,
+        "pitch_rate_var":1.913292746684,
+        "pitch_rate_mean_s":136.8042,
+        "pitch_rate_mean_t":245.1158
 
     },
     "plugin_config":{
