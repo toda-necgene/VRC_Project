@@ -50,7 +50,7 @@ def generator(ten,reuse,train):
     tenA = tf.layers.batch_normalization(tenA, axis=3, training=train, trainable=True, reuse=reuse,
                                          name="res_bn_" + str(i))
     ten = tf.nn.leaky_relu(tenA+ten)
-    for i in range(5):
+    for i in range(9):
         tenA=tf.layers.conv2d(ten, 32, [3, 3], [1, 1], padding="SAME",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/9/32)), use_bias=False,
                                data_format="channels_last", reuse=reuse, name="res_conv_C_" + str(i))
@@ -69,7 +69,7 @@ def generator(ten,reuse,train):
     ten= tf.layers.conv2d_transpose(ten ,1, kernel_size=[3, 2], strides=[2, 1], padding="VALID",
                                 kernel_initializer=tf.truncated_normal_initializer(stddev=0.02),use_bias=True,
                                 data_format="channels_last", reuse=reuse, name="last_conv1")
-    return ten
+    return tf.tanh(ten)
 
 def deconve_with_ps(inp,r,otp_shape,reuses=None,name="",b=True):
     # pixcel shuffler layer
