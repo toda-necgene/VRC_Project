@@ -40,14 +40,10 @@ class Model:
         self.args["NFFT"]=1024
         self.args["KEPFILTERE"]=64
 
-        self.args["g_lr_max"]=2e-4
-        self.args["g_lr_min"] = 2e-6
-        self.args["d_lr_max"] = 2e-4
-        self.args["d_lr_min"] = 2e-6
-        self.args["g_b1"] = 0.5
-        self.args["g_b2"] = 0.999
-        self.args["d_b1"] = 0.5
-        self.args["d_b2"] = 0.999
+        self.args["lr_max"]=2e-4
+        self.args["lr_min"] = 2e-6
+        self.args["beta1"] = 0.5
+        self.args["beta2"] = 0.999
         self.args["weight_Cycle_Pow"]=100.0
         self.args["weight_Cycle_f0"]=0.1
         self.args["weight_GAN"] = 1.0
@@ -159,7 +155,7 @@ class Model:
         # objective-functions of generator
 
         # Cycle lossA
-        g_loss_cyc_A=tf.losses.mean_squared_error(predictions=fake_Ba_image,labels=input_model_A_fixed)* self.args["weight_Cycle_Pow"]
+        g_loss_cyc_A=tf.reduce_mean(tf.abs(fake_Ba_image-input_model_A_fixed))* self.args["weight_Cycle_Pow"]
 
         # Gan lossB
         g_loss_gan_B = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_BF),predictions=d_judge_BF)* self.args["weight_GAN"]
@@ -169,7 +165,7 @@ class Model:
 
 
         # Cyc lossB
-        g_loss_cyc_B=tf.losses.mean_squared_error(predictions=fake_Ab_image,labels=input_model_B_fixed)* self.args["weight_Cycle_Pow"]
+        g_loss_cyc_B=tf.reduce_mean(tf.abs(fake_Ab_image-input_model_B_fixed))* self.args["weight_Cycle_Pow"]
 
         # Gan lossA
         g_loss_gan_A = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_AF),predictions=d_judge_AF)* self.args["weight_GAN"]
@@ -257,12 +253,10 @@ class Model:
     def train(self):
 
         # setting paramaters
-        lr_g_opt_max=self.args["g_lr_max"]
-        beta_g_opt=self.args["g_b1"]
-        beta_2_g_opt=self.args["g_b2"]
-        lr_d_opt_max=self.args["d_lr_max"]
-        beta_d_opt=self.args["d_b1"]
-        beta_2_d_opt=self.args["d_b2"]
+        lr_opt_max=self.args["lr_max"]
+        lr_opt_min=self.args["lr_min"]
+        beta_opt=self.args["beta1"]
+        beta_2_opt=self.args["beta2"]
         T_cur=0
         self.best=999999
         T=self.args["lr_decay_term"]
@@ -272,9 +266,9 @@ class Model:
         lr_d = tf.placeholder(tf.float32, None, name="d_lr")
         g_optim_pre = tf.train.AdamOptimizer(1e-4, 0.9).minimize(self.g_loss_pre,var_list=self.g_vars)
 
-        g_optim = tf.train.AdamOptimizer(lr_g, beta_g_opt, beta_2_g_opt).minimize(self.g_loss,
+        g_optim = tf.train.AdamOptimizer(lr_g, beta_opt, beta_2_opt).minimize(self.g_loss,
                                                                                   var_list=self.g_vars)
-        d_optim = tf.train.AdamOptimizer(lr_d, beta_d_opt, beta_2_d_opt).minimize(self.d_loss,
+        d_optim = tf.train.AdamOptimizer(lr_d, beta_opt, beta_2_opt).minimize(self.d_loss,
                                                                                   var_list=self.d_vars)
 
         tt_list=list()
@@ -330,8 +324,7 @@ class Model:
         for epoch in range(self.args["train_epoch"]):
 
             # calculating learning-rate
-            lr_d_culced=lr_d_opt_max
-            lr_g_culced = lr_g_opt_max
+            lr_culced = np.cos(np.pi*T_cur/T/2)*(lr_opt_max-lr_opt_min)+lr_opt_min
 
             # shuffling train_data_index
             np.random.shuffle(index_list)
@@ -354,10 +347,10 @@ class Model:
                 # update D network (2time)
                 for _ in range(2):
                     self.sess.run([d_optim],
-                                  feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target,lr_d:lr_d_culced})
+                                  feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target,lr_d:lr_culced})
                 # update G network
                 self.sess.run([g_optim,  self.update_ops],
-                              feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target, lr_g: lr_g_culced})
+                              feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target, lr_g: lr_culced})
 
             # calculating ETA
             taken_time = time.time() - start_time
