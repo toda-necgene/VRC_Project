@@ -78,11 +78,9 @@ while stream.is_active():
     roll_stride=SHIFT//2
     f0,sp,ap = encode(inp.copy())
     sp=sp.astype(np.float32)
-    res=np.asarray(sp)
+    res=np.asarray(sp.reshape(1,15,513,1))
     resp = process(res.copy())
-    res2 = resp.copy()[:, :, ::-1, :]
-    ress = np.append(resp, res2, axis=2)
-    resb = decode(f0*1.8,ress[0],ap)
+    resb = decode(f0*1.8,resp[0],ap)
     res = (np.clip(resb,-1.0,1.0).reshape(-1)*32767)
     res=scipy.signal.resample(res,up)
     vs=res.astype(np.int16).tobytes()
