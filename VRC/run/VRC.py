@@ -42,7 +42,7 @@ data=np.zeros(TERM)
 
 #Process Of guess
 def process(data):
-    output=net.sess.run(net.fake_aB_image_test,feed_dict={net.input_model_test:data})
+    output=net.sess.run(net.test_outputaB,feed_dict={net.input_model_test:data})
     return output
 inf=p_in.get_default_output_device_info()
 up = int(TERM *fs/ sampling_target)+1
