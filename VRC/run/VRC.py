@@ -77,7 +77,7 @@ while stream.is_active():
     las = inputs[-SHIFT:]
     roll_stride=SHIFT//2
     f0,sp,ap = encode(inp.copy())
-    sp=sp[:,:SHIFT,:].astype(np.float32)
+    sp=sp.astype(np.float32)
     res=np.asarray(sp)
     resp = process(res.copy())
     res2 = resp.copy()[:, :, ::-1, :]

@@ -275,7 +275,7 @@ class Model:
 
         # logging
         if self.args["tensorboard"]:
-            self.writer = tf.summary.FileWriter("./logs/A"+self.args["name_save"], self.sess.graph)
+            self.writer = tf.summary.FileWriter("./logs/"+self.args["name_save"], self.sess.graph)
 
         # loading net
         if self.load():
