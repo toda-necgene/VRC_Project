@@ -2,6 +2,7 @@ from model.model_cpu import Model
 import numpy as np
 import scipy,scipy.signal
 import pyaudio as pa
+import pyworld as pw
 import atexit
 import time
 path_to_networks = './best_model'
@@ -14,39 +15,22 @@ channels = 1
 sampling_target=16000
 samplingrate=441*160
 
-def fft(data):
-    time_ruler = data.shape[0] // SHIFT
-    if data.shape[0] % SHIFT == 0:
-        time_ruler -= 1
-    pos = 0
-    wined = np.zeros([time_ruler, NFFT])
-    for fft_index in range(time_ruler):
-        frame = data[pos:pos + NFFT]
-        wined[fft_index] = frame
-        pos += SHIFT
-    fft_r = scipy.fft(wined, n=NFFT, axis=1)
-    re = fft_r.real.reshape(time_ruler, -1)
-    im = fft_r.imag.reshape(time_ruler, -1)
-    spec = np.log(np.power(re, 2) + np.power(im, 2) + 1e-24).reshape(time_ruler, -1, 1)
-    return spec
+def encode(data):
+    fs=16000
+    _f0,t=pw.dio(data,fs)
+    f0=pw.stonemask(data,_f0,t,fs)
+    sp=pw.cheaptrick(data,f0,t,fs)
+    ap=pw.d4c(data,f0,t,fs)
+    return f0[::4].astype(np.float32),(sp/30.0)[::4].astype(np.float32),ap[::4].astype(np.float32)
 
-def ifft(datanum_in, red):
-    data = datanum_in
-    a = np.clip(data[:, :, 0], a_min=-60, a_max=10)
-    sss = np.exp(a)
-    p = np.sqrt(sss)
-    r = p * (np.cos(data[:, :, 1]))
-    i = p * (np.sin(data[:, :, 1]))
-    dds = np.concatenate((r.reshape(r.shape[0], r.shape[1], 1), i.reshape(i.shape[0], i.shape[1], 1)), 2)
-    datanum = dds[:, :, 0] + 1j * dds[:, :, 1]
-    fft_s = scipy.ifft(datanum, n=NFFT, axis=1)
-    fft_data = fft_s.real
-    v = fft_data[:, :SHIFT]
-    reds = fft_data[-1, SHIFT:].copy()
-    lats = np.roll(fft_data[:, SHIFT:].copy(), 1, axis=0)
-    lats[0, :] = red
-    spec = np.reshape(v + lats, (-1))
-    return spec, reds
+def decode(f0,sp,ap):
+    ap = np.tile(ap.reshape(-1, 1, 513), (1, 4, 1)).astype(np.float)
+    ap = ap.reshape(-1, 513)
+    f0 = np.tile(f0.reshape(-1, 1), (1, 4)).astype(np.float)
+    f0 = f0.reshape(-1)
+    sp=np.tile(sp.reshape(-1,1,513),(1,4,1)).astype(np.float)*30.0
+    sp=sp.reshape(-1,513)
+    return pw.synthesize(f0,sp,ap,16000)
 
 
 net=Model("./setting.json")
@@ -92,13 +76,13 @@ while stream.is_active():
     inp=np.append(las,inputs).reshape(TERM+SHIFT)
     las = inputs[-SHIFT:]
     roll_stride=SHIFT//2
-    n = fft(inp.copy())[:,:SHIFT,:].astype(np.float32)
-    res=np.asarray([n[:8],n[4:]])
-
+    f0,sp,ap = encode(inp.copy())
+    sp=sp[:,:SHIFT,:].astype(np.float32)
+    res=np.asarray(sp)
     resp = process(res.copy())
     res2 = resp.copy()[:, :, ::-1, :]
     ress = np.append(resp, res2, axis=2)
-    resb,rdd = ifft(ress[0],rdd)
+    resb = decode(f0*1.8,ress[0],ap)
     res = (np.clip(resb,-1.0,1.0).reshape(-1)*32767)
     res=scipy.signal.resample(res,up)
     vs=res.astype(np.int16).tobytes()

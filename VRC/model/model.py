@@ -5,14 +5,14 @@ import math
 def discriminator(inp,reuse):
     current=inp
     # setting paramater
-    depth=2
-    chs=[128,256]
+    depth=3
+    chs=[128,128,256]
 
     # convolution(2*4,stride 1*4)
     for i in range(depth):
-        ten = tf.layers.conv2d(current, chs[i], kernel_size=[4,9], strides=[3,6], padding="VALID",kernel_initializer=tf.truncated_normal_initializer(stddev=0.002),use_bias=True, data_format="channels_last",name="disc_"+str(i),reuse=reuse)
-        # ten = tf.layers.batch_normalization(ten, axis=3, training=True, trainable=True, reuse=reuse,
-        #                                      name="disc_bn_" + str(i))
+        ten = tf.layers.conv2d(current, chs[i], kernel_size=[3,5], strides=[1,4], padding="VALID",kernel_initializer=tf.truncated_normal_initializer(stddev=0.002),use_bias=True, data_format="channels_last",name="disc_"+str(i),reuse=reuse)
+        ten = tf.layers.batch_normalization(ten, axis=3, training=True, trainable=True, reuse=reuse,
+                                             name="disc_bn_" + str(i))
         current = tf.nn.leaky_relu(ten)
     # dense
     current=tf.reshape(current,[current.shape[0],current.shape[1],current.shape[2]*current.shape[3]])
@@ -45,11 +45,10 @@ def generator(ten,reuse,train):
     tenB=tf.transpose(ten,[0,1,3,2])
     rs=int(tenB.shape[3])
     tenB=tf.layers.dense(tenB,rs,kernel_initializer=tf.truncated_normal_initializer(stddev=0.02),use_bias=False,reuse=reuse,name="dense"+str(i))
-    tenA = tf.transpose(tenB, [0, 1, 3, 2])
+    ten = tf.transpose(tenB, [0, 1, 3, 2])
 
-    tenA = tf.layers.batch_normalization(tenA, axis=3, training=train, trainable=True, reuse=reuse,
+    tenA = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuse,
                                          name="res_bn_" + str(i))
-    tenA=ShakeDrop(tenA,0.9,train)
     ten = tf.nn.leaky_relu(tenA+ten)
     for i in range(9):
         tenA=tf.layers.conv2d(ten, 64, [3, 3], [1, 1], padding="SAME",
@@ -60,7 +59,7 @@ def generator(ten,reuse,train):
                                              name="res_bn1_" + str(i))
         rate=1-(i/18.0)
         tenA = ShakeDrop(tenA, rate, train)
-        ten = tf.nn.relu(tenA+ten)
+        ten = tf.nn.leaky_relu(tenA+ten)
 
     # decodeing
     for i in range(times):
