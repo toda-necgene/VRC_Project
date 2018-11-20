@@ -21,16 +21,15 @@ def encode(data):
     f0=pw.stonemask(data,_f0,t,fs)
     sp=pw.cheaptrick(data,f0,t,fs)
     ap=pw.d4c(data,f0,t,fs)
-    return f0[::4].astype(np.float32),(np.log(sp))[::4].astype(np.float32),ap[::4].astype(np.float32)
+    return f0[::4].astype(np.float32),(sp/20.0)[::4].astype(np.float32),ap[::4].astype(np.float32)
 def decode(f0,sp,ap):
     ap = np.tile(ap.reshape(-1, 1, 513), (1, 4, 1)).astype(np.float)
     ap = ap.reshape(-1, 513)
     f0 = np.tile(f0.reshape(-1, 1), (1, 4)).astype(np.float)
     f0 = f0.reshape(-1)
-    sp=np.exp(np.tile(sp.reshape(-1,1,513),(1,4,1)).astype(np.float))
+    sp=np.tile(sp.reshape(-1,1,513),(1,4,1)).astype(np.float)*20.0
     sp=sp.reshape(-1,513)
     return pw.synthesize(f0,sp,ap,16000)
-
 
 net=Model("./setting.json")
 net.load()

@@ -38,7 +38,7 @@ def generator(ten,reuse,train):
     ten = tf.nn.relu(ten)
     # resnet 6blocks
     for i in range(6):
-        tenA=tf.layers.conv2d(ten, 32, [3, 3], [1, 2], padding="VALID",
+        tenA=tf.layers.conv2d(ten, 32, [3, 5], [1, 2], padding="VALID",
                                kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/12/32)), use_bias=False,
                                data_format="channels_last", reuse=reuse, name="res_conv_C_3x4_" + str(i))
         tenA = tf.layers.batch_normalization(tenA, axis=3, training=train, trainable=True, reuse=reuse,
@@ -51,15 +51,15 @@ def generator(ten,reuse,train):
         tenA = tf.layers.batch_normalization(tenA, axis=3, training=train, trainable=True, reuse=reuse,
                                              name="res_bn_1_" + str(i))
         tenA = tf.nn.leaky_relu(tenA)
-        tenA = tf.layers.conv2d_transpose(tenA, 64, [3, 3], [1, 2], padding="VALID",
+        tenA = tf.layers.conv2d_transpose(tenA, 64, [3, 5], [1, 2], padding="VALID",
                                 kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0 / 12 / 64)),
                                 use_bias=False,
                                 data_format="channels_last", reuse=reuse, name="res_deconv_C_3x4_" + str(i))
         tenA = tf.layers.batch_normalization(tenA, axis=3, training=train, trainable=True, reuse=reuse,
                                              name="res_bn_2_" + str(i))
 
-        rate=1-(i/6.0)
-        tenA = ShakeDrop(tenA, rate, train)
+        # rate=1-(i/6.0)
+        # tenA = ShakeDrop(tenA, rate, train)
         ten = tf.nn.leaky_relu(tenA + ten)
 
     # decodeing
