@@ -70,7 +70,7 @@ def generator(ten,reuse,train):
     ten = tf.nn.relu(ten)
 
     ten = deconve_with_ps(ten, [1, 9], 1, reuse, "dec_9", True)
-    return ten
+    return tf.sigmoid(ten)
 
 def deconve_with_ps(inp,r,otp_shape,reuses=None,name="",b=True):
     # pixcel shuffler layer
