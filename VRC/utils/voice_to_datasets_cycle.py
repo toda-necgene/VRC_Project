@@ -16,8 +16,7 @@ RATE = 16000       #サンプルレート
 CHUNK = 1024     #データ点数
 WAVE_INPUT_FILENAME = "./datasets/source/01"
 WAVE_INPUT_FILENAME2 = "./datasets/source/02"
-rns=30.0
-
+cons=20.0
 
 files=glob.glob(WAVE_INPUT_FILENAME+"/*.wav")
 name="/Source_data"
@@ -61,12 +60,13 @@ for file in files:
         f0=f0[f0>0.0]
         if len(f0)!=0:
             ff.extend(f0)
-        m.append(a/rns)
+        m.append(a/cons)
         cnt+=1
 m=np.asarray(m,dtype=np.float32)
 np.save("./datasets/train/" + str(name) + "/" + str(cnt) + ".npy", m)
 print(" [*] ソースデータ変換完了")
 print(cnt,np.mean(ff),np.var(ff))
+print(np.max(m),np.min(m))
 
 plt.subplot(2,1,1)
 plt.imshow(m.reshape(-1,513)[:100],aspect="auto")
@@ -114,12 +114,13 @@ for file in files:
         f0=f0[f0>0.0]
         if len(f0)!=0:
             ff.extend(f0)
-        m.append(a/rns)
+        m.append(a/cons)
         cnt+=1
 m=np.asarray(m,dtype=np.float32)
 np.save("./datasets/train/" + str(name) + "/" + str(cnt) + ".npy", m)
 print(" [*] アンサーデータ変換完了")
 print(cnt,np.mean(ff),np.var(ff))
+print(np.max(m),np.min(m))
 
 plt.subplot(2,1,2)
 plt.imshow(m.reshape(-1,513)[:100],aspect="auto")

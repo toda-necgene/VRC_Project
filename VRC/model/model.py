@@ -3,79 +3,74 @@ import tensorflow as tf
 import math
 
 def discriminator(inp,reuse):
-    current=inp
     # setting paramater
-    depth=2
-    chs=[128,256]
-
+    depth=3
+    chs=[64,128,256]
+    current = LineDrop(inp,0.75)
     # convolution(2*4,stride 1*4)
     for i in range(depth):
-        ten = tf.layers.conv2d(current, chs[i], kernel_size=[5,5], strides=[1,4], padding="VALID",kernel_initializer=tf.truncated_normal_initializer(stddev=0.002),use_bias=False, data_format="channels_last",name="disc_"+str(i),reuse=reuse)
+        ten = tf.layers.conv2d(current, chs[i], kernel_size=[3,7], strides=[1,6], padding="VALID",kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/3/5/chs[i])),use_bias=False, data_format="channels_last",name="disc_"+str(i),reuse=reuse)
         ten = tf.layers.batch_normalization(ten, axis=3, training=True, trainable=True, reuse=reuse,
                                              name="disc_bn_" + str(i))
         current = tf.nn.leaky_relu(ten)
     # dense
     current=tf.reshape(current,[current.shape[0],current.shape[1],current.shape[2]*current.shape[3]])
-    ten=tf.layers.dense(current,1,name="dence",reuse=reuse,kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(0.002)))
+    ten=tf.layers.dense(current,1,name="dence",reuse=reuse,kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(0.0002)))
 
     return ten
 
 def generator(ten,reuse,train):
-    # setting paramater
-    times=2
-    chs_enc=[32,64]
-    chs_dec=[64,32]
-    ten = tf.layers.conv2d(ten, 16, [3, 5], [2, 2], padding="VALID",
-                            kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0 / 3/2/8)),
+    # encoding
+    ten = tf.layers.conv2d(ten, 32, [1, 9], [1, 9], padding="SAME",
+                            kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0 / 9 / 32)),
                             use_bias=False,
-                            data_format="channels_last", reuse=reuse, name="res_conv_A_pre_")
+                            data_format="channels_last", reuse=reuse, name="res_conv_A_9")
+
     ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuse,
-                                         name="enc_bn0_")
+                                         name="enc_bn_1_1")
     ten = tf.nn.relu(ten)
+    ten=tf.layers.conv2d(ten, 64, [1, 3], [1, 3], padding="SAME",
+                           kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/3/64)), use_bias=False,
+                           data_format="channels_last", reuse=reuse, name="res_conv_A_3")
 
-    for i in range(times):
-        tenA=tf.layers.conv2d(ten, chs_enc[i], [1, 4], [1, 4], padding="SAME",
-                               kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/4/chs_enc[i])), use_bias=False,
-                               data_format="channels_last", reuse=reuse, name="res_conv_A_" + str(i))
-
+    ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuse,
+                                         name="enc_bn_1_2")
+    ten = tf.nn.relu(ten)
+    # resnet 6blocks
+    for i in range(6):
+        tenA=tf.layers.conv2d(ten, 32, [3, 3], [1, 2], padding="VALID",
+                               kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/12/32)), use_bias=False,
+                               data_format="channels_last", reuse=reuse, name="res_conv_C_3x4_" + str(i))
         tenA = tf.layers.batch_normalization(tenA, axis=3, training=train, trainable=True, reuse=reuse,
-                                             name="enc_bn1_" + str(i))
-        ten = tf.nn.relu(tenA)
+                                             name="res_bn_0_" + str(i))
+        tenA = tf.nn.leaky_relu(tenA)
+        tenA=tf.transpose(tenA,[0,1,3,2])
+        out_size=int(tenA.shape[3])
+        tenA=tf.layers.dense(tenA,out_size,name="dence"+str(i),reuse=reuse,kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(0.0002)))
+        tenA = tf.transpose(tenA, [0, 1, 3, 2])
+        tenA = tf.layers.batch_normalization(tenA, axis=3, training=train, trainable=True, reuse=reuse,
+                                             name="res_bn_1_" + str(i))
+        tenA = tf.nn.leaky_relu(tenA)
+        tenA = tf.layers.conv2d_transpose(tenA, 64, [3, 3], [1, 2], padding="VALID",
+                                kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0 / 12 / 64)),
+                                use_bias=False,
+                                data_format="channels_last", reuse=reuse, name="res_deconv_C_3x4_" + str(i))
+        tenA = tf.layers.batch_normalization(tenA, axis=3, training=train, trainable=True, reuse=reuse,
+                                             name="res_bn_2_" + str(i))
 
-    for i in range(3):
-        tenA=tf.layers.conv2d(ten, 64, [3, 3], [1, 1], padding="SAME",
-                               kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/9/32)), use_bias=False,
-                               data_format="channels_last", reuse=reuse, name="res_conv_C_3x3_" + str(i))
-
-        tenB = tf.transpose(ten, [0, 1, 3, 2])
-        rs = int(tenB.shape[3])
-        tenB = tf.layers.dense(tenB, rs, kernel_initializer=tf.truncated_normal_initializer(stddev=0.02),
-                               use_bias=False, reuse=reuse, name="dense" + str(i))
-        tenB = tf.transpose(tenB, [0, 1, 3, 2])
-
-        tenC=tf.layers.conv2d(ten, 64, [7, 7], [1, 1], padding="SAME",
-                               kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/9/32)), use_bias=False,
-                               data_format="channels_last", reuse=reuse, name="res_conv_C_7x7_" + str(i))
-
-
-        tenG=tenA+tenB+tenC
-        tenG = tf.layers.batch_normalization(tenG, axis=3, training=train, trainable=True, reuse=reuse,
-                                             name="res_bn1_" + str(i))
-        rate=1-(i/18.0)
-        tenG = ShakeDrop(tenG, rate, train)
-        ten = tf.nn.leaky_relu(tenG+ten)
+        rate=1-(i/6.0)
+        tenA = ShakeDrop(tenA, rate, train)
+        ten = tf.nn.leaky_relu(tenA + ten)
 
     # decodeing
-    for i in range(times):
 
-        tenA=deconve_with_ps(ten,[1,4],chs_dec[i],reuse,"dec_"+str(i),False)
-        tenA = tf.layers.batch_normalization(tenA, axis=3, training=train, trainable=True, reuse=reuse,
-                                             name="dec_bn1_" + str(i))
-        ten = tf.nn.relu(tenA)
-    ten= tf.layers.conv2d_transpose(ten ,1, kernel_size=[3, 3], strides=[2, 2], padding="VALID",
-                                kernel_initializer=tf.truncated_normal_initializer(stddev=0.002),use_bias=True,
-                                data_format="channels_last", reuse=reuse, name="last_conv1")
-    return tf.sigmoid(ten)
+    ten = deconve_with_ps(ten, [1, 3], 32, reuse, "dec_3", False)
+    ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuse,
+                                         name="dec_bn_1_1")
+    ten = tf.nn.relu(ten)
+
+    ten = deconve_with_ps(ten, [1, 9], 1, reuse, "dec_9", True)
+    return ten
 
 def deconve_with_ps(inp,r,otp_shape,reuses=None,name="",b=True):
     # pixcel shuffler layer
@@ -86,7 +81,7 @@ def deconve_with_ps(inp,r,otp_shape,reuses=None,name="",b=True):
     in_w = inp.get_shape()[2]
 
     # convolution
-    ten = tf.layers.conv2d(inp, ch_r, kernel_size=[1,1], strides=[1,1], padding="SAME",
+    ten = tf.layers.conv2d(inp, ch_r, kernel_size=[1,1], strides=[1,1], padding="VALID",
                            kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/ch_r)), use_bias=b,
                            data_format="channels_last", reuse=reuses, name=name )
     # reshaping
@@ -95,6 +90,14 @@ def deconve_with_ps(inp,r,otp_shape,reuses=None,name="",b=True):
     ten = tf.reshape(ten, [-1, in_h * r[0], in_w * r[1], otp_shape])
 
     return ten
+def LineDrop(ten,rate):
+    # linedrop layer
+    s = [int(ten.get_shape()[0]), int(ten.get_shape()[1]),1,1]
+    # droping
+    prop=tf.random_uniform(s,0.0,1.0)+rate
+    prop=tf.floor(prop)
+    tenA= ten*prop
+    return tenA
 def ShakeDrop(ten,rate,train):
     # shakedrop layer
     # s=ten.get_shape()
