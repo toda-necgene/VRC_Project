@@ -62,7 +62,9 @@ for file in files:
             ff.extend(f0)
         m.append(a/cons)
         cnt+=1
-m=np.asarray(m,dtype=np.float32)
+        if cnt>15000:
+            break
+m=np.asarray(m[:15000],dtype=np.float32)
 np.save("./datasets/train/" + str(name) + "/" + str(cnt) + ".npy", m)
 print(" [*] ソースデータ変換完了")
 print(cnt,np.mean(ff),np.var(ff))
@@ -116,7 +118,9 @@ for file in files:
             ff.extend(f0)
         m.append(a/cons)
         cnt+=1
-m=np.asarray(m,dtype=np.float32)
+        if cnt>15000:
+            break
+m=np.asarray(m[:15000],dtype=np.float32)
 np.save("./datasets/train/" + str(name) + "/" + str(cnt) + ".npy", m)
 print(" [*] アンサーデータ変換完了")
 print(cnt,np.mean(ff),np.var(ff))

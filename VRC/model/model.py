@@ -4,8 +4,8 @@ import math
 
 def discriminator(inp,reuse):
     # setting paramater
-    depth=2
-    chs=[64,128]
+    depth=3
+    chs=[64,128,256]
     current = inp
     # convolution(3*5,stride 1*4)
     for i in range(depth):
