@@ -2,7 +2,7 @@
     "saving_config":{
         "checkpoint_dir":"Z://bestmodel/",
         "wave_otp_dir":"Z://waves/",
-        "version":"0.8.050"
+        "version":"0.8.060"
     },
     "training_config":{
         "input_size":4096,
@@ -17,7 +17,7 @@
         "lr_min":2e-4,
         "beta1":0.5,
         "beta2":0.999,
-        "lr_decay_term":25,
+        "lr_decay_term":10,
         "save_interval":1,
         "weight_GAN":1.0,
         "weight_Cycle_Pow":200.0,
