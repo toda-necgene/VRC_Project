@@ -2,7 +2,7 @@
     "saving_config":{
         "checkpoint_dir":"Z://bestmodel/",
         "wave_otp_dir":"Z://waves/",
-        "version":"0.8.049"
+        "version":"0.8.050"
     },
     "training_config":{
         "input_size":4096,

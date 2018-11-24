@@ -21,14 +21,14 @@ def discriminator(inp,reuse):
 
 def generator(ten,reuse,train):
     ten = tf.transpose(ten, [0, 1, 3, 2])
-    ten = tf.layers.conv2d(ten, 513, kernel_size=[1, 1], strides=[1, 1], padding="VALID",
+    ten = tf.layers.conv2d(ten, 513, kernel_size=[3, 1], strides=[1, 1], padding="SAME",
                            kernel_initializer=tf.truncated_normal_initializer(stddev=0.002), use_bias=True,
                            data_format="channels_last", reuse=reuse, name="conv2d-last")
     # ten = deconve_with_ps(ten, [1, 1], 1, reuse, "dec_9", True)
     ten = tf.transpose(ten, [0, 1, 3, 2])
 
     ten = tf.layers.conv2d(ten, 32, [1, 3], [1, 3], padding="SAME",
-                            kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0 / 9 / 16)),
+                            kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0 / 9 / 32)),
                             use_bias=False,
                             data_format="channels_last", reuse=reuse, name="res_conv_A_9")
 
@@ -36,16 +36,16 @@ def generator(ten,reuse,train):
                                          name="enc_bn_1_1")
     ten = tf.nn.leaky_relu(ten)
     ten=tf.layers.conv2d(ten, 128, [1, 3], [1, 3], padding="SAME",
-                           kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/3/32)), use_bias=False,
+                           kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/3/128)), use_bias=False,
                            data_format="channels_last", reuse=reuse, name="res_conv_A_3")
 
     ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuse,
                                          name="enc_bn_1_2")
     ten = tf.nn.leaky_relu(ten)
     # resnet 6blocks
-    for i in range(4):
+    for i in range(6):
         tenA = tf.layers.conv2d(ten, 128, [3, 3], [1, 1], padding="SAME",
-                                kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0 / 9 / 32)),
+                                kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0 / 9 / 128)),
                                 use_bias=False,
                                 data_format="channels_last", reuse=reuse, name="res_conv_C_3x4_" + str(i))
         tenA = tf.layers.batch_normalization(tenA, axis=3, training=train, trainable=True, reuse=reuse,
