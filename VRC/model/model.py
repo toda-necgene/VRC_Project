@@ -35,7 +35,7 @@ def generator(ten,reuse,train):
     ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuse,
                                          name="enc_bn_1_1")
     ten = tf.nn.leaky_relu(ten)
-    ten=tf.layers.conv2d(ten, 32, [1, 3], [1, 3], padding="SAME",
+    ten=tf.layers.conv2d(ten, 64, [1, 3], [1, 3], padding="SAME",
                            kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0/3/32)), use_bias=False,
                            data_format="channels_last", reuse=reuse, name="res_conv_A_3")
 
@@ -44,7 +44,7 @@ def generator(ten,reuse,train):
     ten = tf.nn.leaky_relu(ten)
     # resnet 6blocks
     for i in range(6):
-        tenA = tf.layers.conv2d(ten, 32, [3, 3], [1, 1], padding="SAME",
+        tenA = tf.layers.conv2d(ten, 64, [3, 3], [1, 1], padding="SAME",
                                 kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0 / 9 / 32)),
                                 use_bias=False,
                                 data_format="channels_last", reuse=reuse, name="res_conv_C_3x4_" + str(i))
@@ -54,7 +54,7 @@ def generator(ten,reuse,train):
 
     # decodeing
 
-    ten = deconve_with_ps(ten, [1, 3], 16, reuse, "dec_31", False)
+    ten = deconve_with_ps(ten, [1, 3], 32, reuse, "dec_31", False)
     ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuse,
                                          name="dec_bn_1_11")
     ten = tf.nn.leaky_relu(ten)
