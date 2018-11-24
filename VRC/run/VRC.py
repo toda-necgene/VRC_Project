@@ -10,11 +10,12 @@ path_to_networks = './best_model'
 NFFT=1024
 SHIFT=512
 TERM=4096
-fs = 44100
+fs = 16000
 channels = 1
 sampling_target=16000
-samplingrate=441*160
-
+# samplingrate=441*160
+gain=0.9
+pitch=1.32
 def encode(data):
     fs=16000
     _f0,t=pw.dio(data,fs)
@@ -43,7 +44,8 @@ def process(data):
     output=net.sess.run(net.test_outputaB,feed_dict={net.input_model_test:data})
     return output
 inf=p_in.get_default_output_device_info()
-up = int(TERM *fs/ sampling_target)+1
+# up = int(TERM *fs/ sampling_target)+1
+up = TERM+SHIFT
 stream=p_in.open(format = pa.paInt16,
 		channels = 1,
 		rate = fs,
@@ -53,6 +55,14 @@ stream=p_in.open(format = pa.paInt16,
 rdd=np.zeros(SHIFT)
 rdd2=np.zeros(SHIFT)
 tt=time.time()
+def normlize(f0,sp):
+    me=np.mean(sp,axis=1)
+    ra=np.tile((0.0007/(me+1e-8)).reshape(-1,1),(1,513))
+    ra[me<5e-7]=1e-8
+    sp=sp*(ra)*0.8+sp*0.2
+    sp[f0 == 0] =1e-8
+
+    return sp
 def terminate():
     stream.stop_stream()
     stream.close()
@@ -62,25 +72,26 @@ la=np.zeros([5])
 atexit.register(terminate)
 las=np.zeros([SHIFT])
 noise_filter=np.zeros(SHIFT)
-print("ノイズ取得中")
 t=0.0
 tt = time.time()
 print("変換　開始")
 while stream.is_active():
     ins=stream.read(up)
-    inputs = np.frombuffer(ins,dtype=np.int16).astype(np.float32)/32767.0
-    inputs=scipy.signal.resample(inputs,TERM)
+    inputs = np.frombuffer(ins,dtype=np.int16).astype(np.float64)/32767.0*gain
+    # inputs=scipy.signal.resample(inputs,TERM)
     inputs=np.clip(inputs,-1.0,1.0)
-    inp=np.append(las,inputs).reshape(TERM+SHIFT)
-    las = inputs[-SHIFT:]
-    roll_stride=SHIFT//2
-    f0,sp,ap = encode(inp.copy())
+    # inp=np.append(las,inputs).reshape(TERM+SHIFT)
+    # las = inputs[-SHIFT:]
+    # roll_stride=SHIFT//2
+
+    f0,sp,ap = encode(inputs.copy())
     sp=sp.astype(np.float32)
+    sp=normlize(f0,sp)
     res=np.asarray(sp.reshape(1,15,513,1))
     resp = process(res.copy())
-    resb = decode(f0*1.8,resp[0],ap)
-    res = (np.clip(resb,-1.0,1.0).reshape(-1)*32767)
-    res=scipy.signal.resample(res,up)
+    resb = decode(f0*pitch,resp[0],ap)
+    res = (np.clip(resb,-1.0,1.0).reshape(-1)*32767)[:inputs.shape[0]]
+    # res=scipy.signal.resample(res,up)
     vs=res.astype(np.int16).tobytes()
     la=np.append(la,time.time() - tt)
     la=la[-5:]
