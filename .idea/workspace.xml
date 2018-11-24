@@ -91,18 +91,18 @@
         <counts>
           <entry key="dummy" value="4" />
           <entry key="gitignore" value="53" />
-          <entry key="json" value="3613" />
+          <entry key="json" value="3615" />
           <entry key="md" value="1791" />
-          <entry key="py" value="27215" />
-          <entry key="txt" value="3048" />
+          <entry key="py" value="27224" />
+          <entry key="txt" value="3051" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="JSON" value="3613" />
+          <entry key="JSON" value="3615" />
           <entry key="Markdown" value="1791" />
-          <entry key="PLAIN_TEXT" value="3105" />
-          <entry key="Python" value="27215" />
+          <entry key="PLAIN_TEXT" value="3108" />
+          <entry key="Python" value="27224" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.vcs.git.usages" />
@@ -113,11 +113,11 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/VRC/model/model.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="375">
-              <caret line="56" column="41" selection-start-line="56" selection-start-column="41" selection-end-line="56" selection-end-column="41" />
+            <state relative-caret-position="320">
+              <caret line="45" column="20" selection-start-line="45" selection-start-column="20" selection-end-line="45" selection-end-column="20" />
             </state>
           </provider>
         </entry>
@@ -140,11 +140,11 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/setting.json">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="295">
-              <caret line="31" column="5" selection-start-line="31" selection-start-column="5" selection-end-line="31" selection-end-column="5" />
+            <state relative-caret-position="64">
+              <caret line="4" column="26" selection-start-line="4" selection-start-column="26" selection-end-line="4" selection-end-column="26" />
             </state>
           </provider>
         </entry>
@@ -200,8 +200,8 @@
         <option value="$PROJECT_DIR$/VRC/model/model_cpu.py" />
         <option value="$PROJECT_DIR$/VRC/run/VRC.py" />
         <option value="$PROJECT_DIR$/VRC/utils/voice_to_datasets_cycle.py" />
-        <option value="$PROJECT_DIR$/VRC/model/model.py" />
         <option value="$PROJECT_DIR$/VRC/setting.json" />
+        <option value="$PROJECT_DIR$/VRC/model/model.py" />
       </list>
     </option>
   </component>
@@ -431,20 +431,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1534034935853</updated>
-    </task>
-    <task id="LOCAL-00147" summary="[0.4.015] 位相推定を別のネットワークに変更">
-      <created>1538718815893</created>
-      <option name="number" value="00147" />
-      <option name="presentableId" value="LOCAL-00147" />
-      <option name="project" value="LOCAL" />
-      <updated>1538718815893</updated>
-    </task>
-    <task id="LOCAL-00148" summary="[0.4.021] バグの修正&#10;&#10;[fix] 高速化">
-      <created>1538783271761</created>
-      <option name="number" value="00148" />
-      <option name="presentableId" value="LOCAL-00148" />
-      <option name="project" value="LOCAL" />
-      <updated>1538783271761</updated>
     </task>
     <task id="LOCAL-00149" summary="[0.4.022] 高速化">
       <created>1538798577893</created>
@@ -775,7 +761,21 @@
       <option name="project" value="LOCAL" />
       <updated>1542961477042</updated>
     </task>
-    <option name="localTasksCounter" value="196" />
+    <task id="LOCAL-00196" summary="[0.8.047]　音声をより似せる">
+      <created>1543031579901</created>
+      <option name="number" value="00196" />
+      <option name="presentableId" value="LOCAL-00196" />
+      <option name="project" value="LOCAL" />
+      <updated>1543031579902</updated>
+    </task>
+    <task id="LOCAL-00197" summary="[0.8.048]　音声をより似せる">
+      <created>1543033074525</created>
+      <option name="number" value="00197" />
+      <option name="presentableId" value="LOCAL-00197" />
+      <option name="project" value="LOCAL" />
+      <updated>1543033074525</updated>
+    </task>
+    <option name="localTasksCounter" value="198" />
     <servers />
   </component>
   <component name="TodoView">
@@ -815,8 +815,6 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[0.4.094] 学習の安定性を確認" />
-    <MESSAGE value="[0.4.096] U-net+FC構造に変更" />
     <MESSAGE value="[0.4.097] チャンネル数の削減とバッチサイズの変更" />
     <MESSAGE value="[0.5.027] 学習手法の変更" />
     <MESSAGE value="[0.5.030] 出力を正規化" />
@@ -840,7 +838,9 @@
     <MESSAGE value="[0.8.036] 35で暫定完成版" />
     <MESSAGE value="[0.8.035] 35で暫定完成版" />
     <MESSAGE value="[0.8.036]　音声をより似せる" />
-    <option name="LAST_COMMIT_MESSAGE" value="[0.8.036]　音声をより似せる" />
+    <MESSAGE value="[0.8.047]　音声をより似せる" />
+    <MESSAGE value="[0.8.048]　音声をより似せる" />
+    <option name="LAST_COMMIT_MESSAGE" value="[0.8.048]　音声をより似せる" />
   </component>
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/VRC/model/model_proto_cpu.py" />
@@ -1062,17 +1062,17 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/model/model.py">
+    <entry file="file://$PROJECT_DIR$/VRC/setting.json">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="375">
-          <caret line="56" column="41" selection-start-line="56" selection-start-column="41" selection-end-line="56" selection-end-column="41" />
+        <state relative-caret-position="64">
+          <caret line="4" column="26" selection-start-line="4" selection-start-column="26" selection-end-line="4" selection-end-column="26" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/setting.json">
+    <entry file="file://$PROJECT_DIR$/VRC/model/model.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="295">
-          <caret line="31" column="5" selection-start-line="31" selection-start-column="5" selection-end-line="31" selection-end-column="5" />
+        <state relative-caret-position="320">
+          <caret line="45" column="20" selection-start-line="45" selection-start-column="20" selection-end-line="45" selection-end-column="20" />
         </state>
       </provider>
     </entry>

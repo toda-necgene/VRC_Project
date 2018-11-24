@@ -43,7 +43,7 @@ def generator(ten,reuse,train):
                                          name="enc_bn_1_2")
     ten = tf.nn.leaky_relu(ten)
     # resnet 6blocks
-    for i in range(6):
+    for i in range(4):
         tenA = tf.layers.conv2d(ten, 128, [3, 3], [1, 1], padding="SAME",
                                 kernel_initializer=tf.truncated_normal_initializer(stddev=math.sqrt(2.0 / 9 / 32)),
                                 use_bias=False,
