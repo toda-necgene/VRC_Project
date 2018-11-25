@@ -16,7 +16,6 @@ RATE = 16000       #サンプルレート
 CHUNK = 1024     #データ点数
 WAVE_INPUT_FILENAME = "./datasets/source/01"
 WAVE_INPUT_FILENAME2 = "./datasets/source/02"
-cons=20.0
 
 files=glob.glob(WAVE_INPUT_FILENAME+"/*.wav")
 name="/Source_data"
@@ -60,20 +59,21 @@ for file in files:
         f0=f0[f0>0.0]
         if len(f0)!=0:
             ff.extend(f0)
-        m.append(a/cons)
+        m.append(np.clip((np.log(a)+15.0)/20,-1.0,1.0))
         cnt+=1
         if cnt>15000:
             break
 m=np.asarray(m[:15000],dtype=np.float32)
 np.save("./datasets/train/" + str(name) + "/" + str(cnt) + ".npy", m)
 print(" [*] ソースデータ変換完了")
-print(cnt,np.mean(ff),np.var(ff))
+print(cnt,np.mean(ff))
 print(np.max(m),np.min(m))
 
-plt.subplot(2,1,1)
+plt.subplot(2,2,1)
 plt.imshow(m.reshape(-1,513)[:100],aspect="auto")
 plt.colorbar()
-
+plt.subplot(2,2,2)
+plt.hist(m.reshape(-1),bins=100)
 files=glob.glob(WAVE_INPUT_FILENAME2+"/*.wav")
 name="/Answer_data"
 cnt=0
@@ -116,18 +116,20 @@ for file in files:
         f0=f0[f0>0.0]
         if len(f0)!=0:
             ff.extend(f0)
-        m.append(a/cons)
+        m.append(np.clip((np.log(a)+15.0)/20,-1.0,1.0))
         cnt+=1
         if cnt>15000:
             break
 m=np.asarray(m[:15000],dtype=np.float32)
 np.save("./datasets/train/" + str(name) + "/" + str(cnt) + ".npy", m)
 print(" [*] アンサーデータ変換完了")
-print(cnt,np.mean(ff),np.var(ff))
+print(cnt,np.mean(ff))
 print(np.max(m),np.min(m))
 
-plt.subplot(2,1,2)
+plt.subplot(2,2,3)
 plt.imshow(m.reshape(-1,513)[:100],aspect="auto")
 plt.colorbar()
+plt.subplot(2,2,4)
+plt.hist(m.reshape(-1),bins=100)
 plt.show()
 print(" [*] プロセス完了!!　プログラムを終了します。")

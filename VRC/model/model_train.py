@@ -155,8 +155,8 @@ class Model:
         # objective-functions of generator
 
         # Cycle lossA
-        g_loss_cyc_A=tf.reduce_mean(tf.abs(fake_Ba_image-input_model_A_fixed))* self.args["weight_Cycle_Pow"]
-
+        # g_loss_cyc_A=tf.reduce_mean(tf.abs(fake_Ba_image-input_model_A_fixed))* self.args["weight_Cycle_Pow"]
+        g_loss_cyc_A = tf.losses.mean_squared_error(predictions=fake_Ba_image,labels=input_model_A_fixed)* self.args["weight_Cycle_Pow"]
         # Gan lossB
         g_loss_gan_B = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_BF),predictions=d_judge_BF)* self.args["weight_GAN"]
 
@@ -165,7 +165,8 @@ class Model:
 
 
         # Cyc lossB
-        g_loss_cyc_B=tf.reduce_mean(tf.abs(fake_Ab_image-input_model_B_fixed))* self.args["weight_Cycle_Pow"]
+        # g_loss_cyc_B=tf.reduce_mean(tf.abs(fake_Ab_image-input_model_B_fixed))* self.args["weight_Cycle_Pow"]
+        g_loss_cyc_B = tf.losses.mean_squared_error(predictions=fake_Ab_image, labels=input_model_B_fixed) * self.args["weight_Cycle_Pow"]
 
         # Gan lossA
         g_loss_gan_A = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_AF),predictions=d_judge_AF)* self.args["weight_GAN"]
@@ -403,7 +404,7 @@ class Model:
         if os.path.exists(self.args["wave_otp_dir"]):
             plt.clf()
             ins = np.transpose(im[:,:,0], (1, 0))
-            plt.imshow(ins, aspect="auto")
+            plt.imshow(ins, vmin=-35, vmax=5,aspect="auto")
             plt.colorbar()
             path = self.args["wave_otp_dir"] + nowtime() + "_e" + str(epoch)
             plt.savefig(path + ".png")
@@ -466,13 +467,13 @@ def encode(data):
     f0=pw.stonemask(data,_f0,t,fs)
     sp=pw.cheaptrick(data,f0,t,fs)
     ap=pw.d4c(data,f0,t,fs)
-    return f0[::4].astype(np.float32),(sp/20.0)[::4].astype(np.float32),ap[::4].astype(np.float32)
+    return f0[::4].astype(np.float64),np.clip((np.log(sp)+15)/20,-1.0,1.0)[::4].astype(np.float64),ap[::4].astype(np.float64)
 def decode(f0,sp,ap):
     ap = np.tile(ap.reshape(-1, 1, 513), (1, 4, 1)).astype(np.float)
     ap = ap.reshape(-1, 513)
     f0 = np.tile(f0.reshape(-1, 1), (1, 4)).astype(np.float)
     f0 = f0.reshape(-1)
-    sp=np.tile(sp.reshape(-1,1,513),(1,4,1)).astype(np.float)*20.0
+    sp=np.exp(np.tile(sp.reshape(-1,1,513),(1,4,1)).astype(np.float)*20-15)
     sp=sp.reshape(-1,513)
     return pw.synthesize(f0,sp,ap,16000)
 
