@@ -12,8 +12,6 @@ SHIFT=512
 TERM=4096
 fs = 16000
 channels = 1
-sampling_target=16000
-# samplingrate=441*160
 gain=0.9
 pitch=1.32
 
@@ -44,11 +42,11 @@ def process(data):
     return output
 inf=p_in.get_default_output_device_info()
 # up = int(TERM *fs/ sampling_target)+1
-up = TERM+SHIFT
+up = TERM
 stream=p_in.open(format = pa.paInt16,
 		channels = 1,
 		rate = fs,
-		frames_per_buffer = up*2,
+		frames_per_buffer = TERM*2,
 		input = True,
 		output = True)
 rdd=np.zeros(SHIFT)
@@ -70,8 +68,6 @@ def terminate():
 la=np.zeros([5])
 atexit.register(terminate)
 las=np.zeros([NFFT])
-t=0.0
-tt = time.time()
 print("変換　開始")
 while stream.is_active():
     ins=stream.read(up)
@@ -80,13 +76,13 @@ while stream.is_active():
     inputs=np.clip(inputs,-1.0,1.0)
     inp=np.append(las,inputs).reshape(TERM+NFFT)
     las = inputs[-NFFT:]
-    f0,sp,ap = encode(inputs.copy())
+    f0,sp,ap = encode(inp.copy())
     sp=sp.astype(np.float32)
     sp=normlize(f0,sp)
-    res=np.asarray(sp.reshape(1,15,513,1))
+    res=sp.reshape(1,65,513,1)
     resp = process(res.copy())
     resb = decode(f0*pitch,resp[0],ap)
-    res = (np.clip(resb,-1.0,1.0).reshape(-1)*32767)[:inputs.shape[0]]
+    res = (np.clip(resb,-1.0,1.0).reshape(-1)*32767)
     vs=res.astype(np.int16)[SHIFT:-SHIFT].tobytes()
     la=np.append(la,time.time() - tt)
     la=la[-5:]

@@ -5,7 +5,7 @@ import numpy as np
 from tensorflow.python import debug as tf_debug
 from tensorflow.python.debug.lib.debug_data import has_inf_or_nan
 import json
-from .model import generator
+from .model_v2 import generator
 import pyworld as pw
 class Model:
     def __init__(self,path):
@@ -79,8 +79,8 @@ class Model:
         self.args["name_save"] = self.args["model_name"] + self.args["version"]
 
         # shapes of inputs
-        self.input_size_model = [self.args["batch_size"], 15,513,1]
-        self.input_size_test = [None, 15,513,1]
+        self.input_size_model = [self.args["batch_size"], 65,513,1]
+        self.input_size_test = [None, 65,513,1]
 
         self.sess = tf.InteractiveSession(config=tf.ConfigProto(gpu_options=tf.GPUOptions()))
 
@@ -132,7 +132,6 @@ class Model:
             # FFT
             f0,res,ap2=encode((resorce/32767.0).astype(np.double))
             res=res.reshape(1,-1,513,1)
-            # running network
             response=self.sess.run(self.test_outputaB,feed_dict={ self.input_model_test:res})
             # Postprocess
             _f0=f0*self.args["pitch_rate"]
