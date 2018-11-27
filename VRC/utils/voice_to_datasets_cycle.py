@@ -46,7 +46,7 @@ for file in files:
     resp=np.zeros([NFFT//2])
     for i in range(times):
 
-        ind=term+SHIFT*dilations+SHIFT
+        ind=term+SHIFT*dilations+NFFT
         startpos=term*i+data_realA.shape[0]%term
         data_realAb = data_realA[max(startpos-ind,0):startpos].copy()
         r=ind-data_realAb.shape[0]
@@ -55,7 +55,7 @@ for file in files:
         _f0, t = pw.dio(data_realAb,16000)
         f0=pw.stonemask(data_realAb,_f0,t,16000)
         sp=pw.cheaptrick(data_realAb,f0,t,16000)
-        a = sp[::4]
+        a = sp
         f0=f0[f0>0.0]
         if len(f0)!=0:
             ff.extend(f0)
@@ -66,7 +66,7 @@ for file in files:
 m=np.asarray(m[:15000],dtype=np.float32)
 np.save("./datasets/train/" + str(name) + "/" + str(cnt) + ".npy", m)
 print(" [*] ソースデータ変換完了")
-print(cnt,np.mean(ff))
+print(cnt,np.mean(ff),a.shape)
 print(np.max(m),np.min(m))
 
 plt.subplot(2,2,1)
@@ -102,7 +102,7 @@ for file in files:
     ttm=time.time()
     resp=np.zeros([NFFT//2])
     for i in range(times):
-        ind=term+SHIFT*dilations+SHIFT
+        ind=term+SHIFT*dilations+NFFT
         startpos=term*i+data_realA.shape[0]%term
         data_realAb = data_realA[max(startpos-ind,0):startpos]
         r=ind-data_realAb.shape[0]
@@ -112,7 +112,7 @@ for file in files:
         _f0, t = pw.dio(data_realAb,16000)
         f0=pw.stonemask(data_realAb,_f0,t,16000)
         sp=pw.cheaptrick(data_realAb,f0,t,16000)
-        a=sp[::4]
+        a=sp
         f0=f0[f0>0.0]
         if len(f0)!=0:
             ff.extend(f0)

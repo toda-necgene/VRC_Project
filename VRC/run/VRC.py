@@ -16,20 +16,19 @@ sampling_target=16000
 # samplingrate=441*160
 gain=0.9
 pitch=1.32
+
 def encode(data):
     fs=16000
     _f0,t=pw.dio(data,fs)
     f0=pw.stonemask(data,_f0,t,fs)
     sp=pw.cheaptrick(data,f0,t,fs)
     ap=pw.d4c(data,f0,t,fs)
-    return f0[::4].astype(np.float32),(sp/20.0)[::4].astype(np.float32),ap[::4].astype(np.float32)
+    return f0.astype(np.float64),np.clip((np.log(sp)+15)/20,-1.0,1.0).astype(np.float64),ap.astype(np.float64)
 def decode(f0,sp,ap):
-    ap = np.tile(ap.reshape(-1, 1, 513), (1, 4, 1)).astype(np.float)
-    ap = ap.reshape(-1, 513)
-    f0 = np.tile(f0.reshape(-1, 1), (1, 4)).astype(np.float)
-    f0 = f0.reshape(-1)
-    sp=np.tile(sp.reshape(-1,1,513),(1,4,1)).astype(np.float)*20.0
-    sp=sp.reshape(-1,513)
+    ap = ap.reshape(-1, 513).astype(np.float)
+    f0 = f0.reshape(-1).astype(np.float)
+    sp = np.exp(sp.reshape(-1, 1, 513).astype(np.float) * 20 - 15)
+    sp=sp.reshape(-1,513).astype(np.float)
     return pw.synthesize(f0,sp,ap,16000)
 
 net=Model("./setting.json")
@@ -70,20 +69,17 @@ def terminate():
     print("Stream Stop")
 la=np.zeros([5])
 atexit.register(terminate)
-las=np.zeros([SHIFT])
-noise_filter=np.zeros(SHIFT)
+las=np.zeros([NFFT])
 t=0.0
 tt = time.time()
 print("変換　開始")
 while stream.is_active():
     ins=stream.read(up)
+    tt = time.time()
     inputs = np.frombuffer(ins,dtype=np.int16).astype(np.float64)/32767.0*gain
-    # inputs=scipy.signal.resample(inputs,TERM)
     inputs=np.clip(inputs,-1.0,1.0)
-    # inp=np.append(las,inputs).reshape(TERM+SHIFT)
-    # las = inputs[-SHIFT:]
-    # roll_stride=SHIFT//2
-
+    inp=np.append(las,inputs).reshape(TERM+NFFT)
+    las = inputs[-NFFT:]
     f0,sp,ap = encode(inputs.copy())
     sp=sp.astype(np.float32)
     sp=normlize(f0,sp)
@@ -91,10 +87,8 @@ while stream.is_active():
     resp = process(res.copy())
     resb = decode(f0*pitch,resp[0],ap)
     res = (np.clip(resb,-1.0,1.0).reshape(-1)*32767)[:inputs.shape[0]]
-    # res=scipy.signal.resample(res,up)
-    vs=res.astype(np.int16).tobytes()
+    vs=res.astype(np.int16)[SHIFT:-SHIFT].tobytes()
     la=np.append(la,time.time() - tt)
     la=la[-5:]
-    print("CPS:%1.3f" % (np.mean(la)/(up/fs)))
+    print("CPS:%1.3f" % float(np.mean(la)/(up/fs)))
     output = stream.write(vs)
-    tt = time.time()

@@ -87,10 +87,10 @@ class Model:
         self.args["name_save"] = self.args["model_name"] + self.args["version"]
 
         # shapes of inputs
-        self.input_size_model=[self.args["batch_size"],15,513,1]
-        self.input_size_test = [1, 15,513,1]
+        self.input_size_model=[self.args["batch_size"],65,513,1]
+        self.input_size_test = [1, 65,513,1]
 
-        self.output_size_model = [self.args["batch_size"], 15,513,1]
+        self.output_size_model = [self.args["batch_size"], 65,513,1]
 
         self.sess=tf.InteractiveSession(config=tf.ConfigProto(gpu_options=tf.GPUOptions()))
 
@@ -216,7 +216,7 @@ class Model:
         #To convert wave file
 
         conversion_start_time=time.time()
-        input_size_one_term=self.args["input_size"]+self.args["SHIFT"]+self.args["dilated_size"]*self.args["SHIFT"]
+        input_size_one_term=self.args["input_size"]+self.args["NFFT"]
         executing_times=in_put.shape[0]//(self.args["input_size"])+1
         if in_put.shape[0]%((self.args["input_size"])*self.args["batch_size"])==0:
             executing_times-=1
@@ -227,7 +227,7 @@ class Model:
 
             # Padiing
             start_pos=self.args["input_size"]*t+(in_put.shape[0]%self.args["input_size"])
-            resorce=in_put[max(0,start_pos-input_size_one_term):start_pos]
+            resorce=in_put[max(0,start_pos-input_size_one_term+self.args["SHIFT"]):start_pos+self.args["SHIFT"]]
             r=max(0,input_size_one_term-resorce.shape[0])
             if r>0:
                 resorce=np.pad(resorce,(r,0),'constant')
@@ -243,9 +243,9 @@ class Model:
 
             # IFFT
             f0=(f0-self.args["pitch_rate_mean_s"])*self.args["pitch_rate_var"]+self.args["pitch_rate_mean_t"]
-            result_wave=decode(f0,result[0].copy().reshape(15,513).astype(np.float),ap)*32767
+            result_wave=decode(f0,result[0].copy().reshape(-1,513).astype(np.float),ap)*32767
 
-            result_wave_fixed=np.clip(result_wave,-32767.0,32767.0)[-self.args["input_size"]:]
+            result_wave_fixed=np.clip(result_wave,-32767.0,32767.0)[self.args["SHIFT"]:-self.args["SHIFT"]]
             result_wave_int16=result_wave_fixed.reshape(-1).astype(np.int16)
 
             #adding result
@@ -478,14 +478,12 @@ def encode(data):
     f0=pw.stonemask(data,_f0,t,fs)
     sp=pw.cheaptrick(data,f0,t,fs)
     ap=pw.d4c(data,f0,t,fs)
-    return f0[::4].astype(np.float64),np.clip((np.log(sp)+15)/20,-1.0,1.0)[::4].astype(np.float64),ap[::4].astype(np.float64)
+    return f0.astype(np.float64),np.clip((np.log(sp)+15)/20,-1.0,1.0).astype(np.float64),ap.astype(np.float64)
 def decode(f0,sp,ap):
-    ap = np.tile(ap.reshape(-1, 1, 513), (1, 4, 1)).astype(np.float)
-    ap = ap.reshape(-1, 513)
-    f0 = np.tile(f0.reshape(-1, 1), (1, 4)).astype(np.float)
-    f0 = f0.reshape(-1)
-    sp=np.exp(np.tile(sp.reshape(-1,1,513),(1,4,1)).astype(np.float)*20-15)
-    sp=sp.reshape(-1,513)
+    ap = ap.reshape(-1, 513).astype(np.float)
+    f0 = f0.reshape(-1).astype(np.float)
+    sp = np.exp(sp.reshape(-1, 1, 513).astype(np.float) * 20 - 15)
+    sp=sp.reshape(-1,513).astype(np.float)
     return pw.synthesize(f0,sp,ap,16000)
 
 def back_drop(ten,rate):

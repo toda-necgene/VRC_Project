@@ -113,7 +113,7 @@ class Model:
         #function of test
         #To convert wave file
         tt=time.time()
-        ipt_size=self.args["input_size"]+self.args["SHIFT"]
+        ipt_size=self.args["input_size"]+self.args["NFFT"]
         times=in_put.shape[0]//(ipt_size)+1
         if in_put.shape[0]%(ipt_size*self.args["batch_size"])==0:
             times-=1
@@ -125,7 +125,7 @@ class Model:
 
             # Padiing
             start_pos=ipt_size*t+(in_put.shape[0]%ipt_size)
-            resorce=np.reshape(in_put[max(0,start_pos-ipt_size):start_pos],(-1))
+            resorce=np.reshape(in_put[max(0,start_pos-ipt_size+self.args["SHIFT"]):start_pos+self.args["SHIFT"]],(-1))
             r=max(0,ipt_size-resorce.shape[0])
             if r>0:
                 resorce=np.pad(resorce,(r,0),'constant')
@@ -136,11 +136,11 @@ class Model:
             response=self.sess.run(self.test_outputaB,feed_dict={ self.input_model_test:res})
             # Postprocess
             _f0=f0*self.args["pitch_rate"]
-            rest = decode(_f0,response[0].reshape(15,513).astype(np.double),ap2)
+            rest = decode(_f0,response[0].reshape(-1,513).astype(np.double),ap2)
             res = np.clip(rest, -1.0, 1.0)*32767
 
             # chaching results
-            res=res.reshape(-1).astype(np.int16)
+            res=res.reshape(-1).astype(np.int16)[self.args["SHIFT"]:-self.args["SHIFT"]]
             otp=np.append(otp,res)
         h=otp.shape[0]-in_put.shape[0]
         if h>0:
@@ -165,21 +165,18 @@ class Model:
         else:
             return False
 
-
 def encode(data):
     fs=16000
     _f0,t=pw.dio(data,fs)
     f0=pw.stonemask(data,_f0,t,fs)
     sp=pw.cheaptrick(data,f0,t,fs)
     ap=pw.d4c(data,f0,t,fs)
-    return f0[::4].astype(np.float32),(sp/20.0)[::4].astype(np.float32),ap[::4].astype(np.float32)
+    return f0.astype(np.float64),np.clip((np.log(sp)+15)/20,-1.0,1.0).astype(np.float64),ap.astype(np.float64)
 def decode(f0,sp,ap):
-    ap = np.tile(ap.reshape(-1, 1, 513), (1, 4, 1)).astype(np.float)
-    ap = ap.reshape(-1, 513)
-    f0 = np.tile(f0.reshape(-1, 1), (1, 4)).astype(np.float)
-    f0 = f0.reshape(-1)
-    sp=np.tile(sp.reshape(-1,1,513),(1,4,1)).astype(np.float)*20.0
-    sp=sp.reshape(-1,513)
+    ap = ap.reshape(-1, 513).astype(np.float)
+    f0 = f0.reshape(-1).astype(np.float)
+    sp = np.exp(sp.reshape(-1, 1, 513).astype(np.float) * 20 - 15)
+    sp=sp.reshape(-1,513).astype(np.float)
     return pw.synthesize(f0,sp,ap,16000)
 
 
