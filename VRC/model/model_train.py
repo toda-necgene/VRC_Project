@@ -10,7 +10,7 @@ from tensorflow.python.debug.lib.debug_data import has_inf_or_nan
 import pyaudio
 from datetime import datetime
 import json
-from .model import discriminator,generator
+from .model_v2 import discriminator,generator
 import matplotlib.pyplot as plt
 import pyworld as pw
 
@@ -56,6 +56,7 @@ class Model:
         self.args["pitch_rate_var"]=1.0
         self.args["pitch_rate_mean_s"]=1.0
         self.args["pitch_rate_mean_t"]=1.0
+        self.args["stop_value"]=1e-24
         # reading json file
         try:
             with open(path, "r") as f:
@@ -142,10 +143,14 @@ class Model:
 
         #objective-functions of discriminator
 
-        d_loss_AR = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_AR),predictions=d_judge_AR)
-        d_loss_AF = tf.losses.mean_squared_error(labels=tf.zeros_like(d_judge_AF),predictions=d_judge_AF)
-        d_loss_BR = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_BR),predictions=d_judge_BR)
-        d_loss_BF = tf.losses.mean_squared_error(labels=tf.zeros_like(d_judge_BF),predictions=d_judge_BF)
+        # d_loss_AR = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_AR),predictions=d_judge_AR)
+        # d_loss_AF = tf.losses.mean_squared_error(labels=tf.zeros_like(d_judge_AF),predictions=d_judge_AF)
+        # d_loss_BR = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_BR),predictions=d_judge_BR)
+        # d_loss_BF = tf.losses.mean_squared_error(labels=tf.zeros_like(d_judge_BF),predictions=d_judge_BF)
+        d_loss_AR = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(d_judge_AR), logits=d_judge_AR)
+        d_loss_AF = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.zeros_like(d_judge_AF), logits=d_judge_AF)
+        d_loss_BR = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(d_judge_BR), logits=d_judge_BR)
+        d_loss_BF = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.zeros_like(d_judge_BF), logits=d_judge_BF)
 
         d_loss_A=d_loss_AR + d_loss_AF
         d_loss_B=d_loss_BR + d_loss_BF
@@ -155,21 +160,24 @@ class Model:
         # objective-functions of generator
 
         # Cycle lossA
-        # g_loss_cyc_A=tf.reduce_mean(tf.abs(fake_Ba_image-input_model_A_fixed))* self.args["weight_Cycle_Pow"]
+        # g_loss_cyc_A=tf.reduce_mean(tf.abs(input_model_A_fixed-fake_Ba_image))* self.args["weight_Cycle_Pow"]
         g_loss_cyc_A = tf.losses.mean_squared_error(predictions=fake_Ba_image,labels=input_model_A_fixed)* self.args["weight_Cycle_Pow"]
         # Gan lossB
-        g_loss_gan_B = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_BF),predictions=d_judge_BF)* self.args["weight_GAN"]
+        # g_loss_gan_B = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_BF),predictions=d_judge_BF)* self.args["weight_GAN"]
+        g_loss_gan_B = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(d_judge_BF), logits=d_judge_BF) * \
+                       self.args["weight_GAN"]
 
         # generator lossA
         self.g_loss_aB = g_loss_cyc_A +g_loss_gan_B
 
 
         # Cyc lossB
-        # g_loss_cyc_B=tf.reduce_mean(tf.abs(fake_Ab_image-input_model_B_fixed))* self.args["weight_Cycle_Pow"]
+        # g_loss_cyc_B=tf.reduce_mean(tf.abs(input_model_B_fixed-fake_Ab_image))* self.args["weight_Cycle_Pow"]
         g_loss_cyc_B = tf.losses.mean_squared_error(predictions=fake_Ab_image, labels=input_model_B_fixed) * self.args["weight_Cycle_Pow"]
 
         # Gan lossA
-        g_loss_gan_A = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_AF),predictions=d_judge_AF)* self.args["weight_GAN"]
+        # g_loss_gan_A = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_AF),predictions=d_judge_AF)* self.args["weight_GAN"]
+        g_loss_gan_A = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(d_judge_AF), logits=d_judge_AF) * self.args["weight_GAN"]
 
         # generator lossB
         self.g_loss_bA = g_loss_cyc_B + g_loss_gan_A
@@ -261,7 +269,7 @@ class Model:
         T_cur=0
         self.best=999999
         T=self.args["lr_decay_term"]
-
+        self.test_results=[]
         # naming output-directory
         lr_g = tf.placeholder(tf.float32, None, name="g_lr")
         lr_d = tf.placeholder(tf.float32, None, name="d_lr")
@@ -289,8 +297,8 @@ class Model:
         data2 = glob(self.args["train_data_dir"] + '/Answer_data/*')
         # loading test data
         self.test=isread(self.args["test_data_dir"]+'/test.wav')[0:160000]
-
-
+        self.label = isread(self.args["test_data_dir"] + '/label.wav')[0:160000]
+        self.label_im = fft(self.label)[:,:self.args["SHIFT"],:]
         # prepareing training-data
         batch_files = data[0]
         batch_files2 = data2[0]
@@ -332,10 +340,10 @@ class Model:
             np.random.shuffle(index_list2)
 
             prepareing_time_total = 0.0
-
             if self.args["test"] and epoch%self.args["save_interval"]==0:
-               self.test_and_save(epoch)
-
+                vv=self.test_and_save(epoch)
+                if vv < self.args["stop_value"]:
+                    break
             for idx in xrange(0, self.batch_idxs):
                 start_preparing = time.time()
                 # getting batch
@@ -362,7 +370,7 @@ class Model:
             eta=np.mean(tt_list)*(self.args["train_epoch"]-epoch-1)
 
             # console outputs
-            print(" [I] Epoch %04d / %04d finished. ETA: %02d:%02d:%02d takes %3.2f secs(preprocess %2.3f secs)" % (epoch,self.args["train_epoch"],eta//3600,eta//60%60,int(eta%60),taken_time,prepareing_time_total))
+            print(" [I] Epoch %04d / %04d finished. ETA: %02d:%02d:%02d takes %2.3f secs(preprocess %2.3f secs)" % (epoch,self.args["train_epoch"],eta//3600,eta//60%60,int(eta%60),taken_time,prepareing_time_total))
 
             T_cur += 1
 
@@ -376,6 +384,7 @@ class Model:
         hour_f=tnt//3600
         minute_f=tnt//60%60
         second_f=int(tnt%60)
+        np.savetxt("log.csv",np.asarray(self.test_results),delimiter=",")
         print(" [I] ALL train process finished successfully!! in %04d : %02d : %02d" % (hour_f, minute_f, second_f))
 
     def test_and_save(self,epoch):
@@ -388,6 +397,7 @@ class Model:
         out_put = out_puts.copy().astype(np.float32) / 32767.0
 
         im = fft(out_put)[:,:self.args["SHIFT"],:]
+        test_value=np.mean(np.log(np.abs(np.exp(im)-np.exp(self.label_im))+1e-4))
         otp_im = im.copy().reshape(1,-1,512)
 
         # writing epoch-result into tensorboard
@@ -410,8 +420,9 @@ class Model:
             plt.savefig(path + ".png")
             upload(out_puts, path)
         self.save(self.args["checkpoint_dir"],epoch,self.saver)
-        print(" [I] Epoch %04d tested. time: %2.3f " % (epoch,taken_time_test))
-
+        print(" [I] Epoch %04d tested. distance: %f " % (epoch,float(test_value)))
+        self.test_results.append(float(test_value))
+        return test_value
 
     def save(self, checkpoint_dir, step,saver):
         model_name = "wave2wave.model"

@@ -2,14 +2,15 @@
     "saving_config":{
         "checkpoint_dir":"Z://bestmodel/",
         "wave_otp_dir":"Z://waves/",
-        "version":"0.8.106"
+        "version":"0.8.216"
     },
     "training_config":{
         "input_size":4096,
         "pre_train_epoch": 0,
-        "train_epoch": 1000,
+        "train_epoch": 300,
+        "stop_value":5.0,
         "P_train_epoch":0,
-        "batch_size":1,
+        "batch_size":64,
         "start_epoch":0,
         "train_data_dir":"./datasets/train",
         "test_data_dir":"./datasets/test",
@@ -17,11 +18,11 @@
         "lr_min":2e-4,
         "beta1":0.5,
         "beta2":0.999,
-        "lr_decay_term":1000,
-        "save_interval":1,
+        "lr_decay_term":100,
+        "save_interval":5,
         "weight_GAN":1.0,
-        "weight_Cycle_Pow":0.1,
-        "pitch_rate_var":1.68,
+        "weight_Cycle_Pow":100.0,
+        "pitch_rate_var":1.78,
         "pitch_rate_mean_s":0.0,
         "pitch_rate_mean_t":0.0
 
