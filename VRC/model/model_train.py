@@ -1,18 +1,21 @@
 from glob import glob
-import tensorflow as tf
 import os
 import time
-from six.moves import xrange
-import numpy as np
+import json
+from datetime import datetime
+
 import wave
+import pyaudio
+import pyworld as pw
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+import tensorflow as tf
 from tensorflow.python import debug as tf_debug
 from tensorflow.python.debug.lib.debug_data import has_inf_or_nan
-import pyaudio
-from datetime import datetime
-import json
-from .model_v2 import discriminator,generator
-import matplotlib.pyplot as plt
-import pyworld as pw
+
+from .model import discriminator,generator
 
 class Model:
     def __init__(self,path):
@@ -20,44 +23,35 @@ class Model:
 
         self.args=dict()
 
-        # default setting
-        self.args["model_name"] = "wave2wave"
+        # default setting paramater
+
+        self.args["model_name"] = "VRC"
         self.args["version"] = "1.0.0"
 
         self.args["checkpoint_dir"]="./trained_models"
-        self.args["best_checkpoint_dir"]="./best_model"
         self.args["wave_otp_dir"] = "./havests"
         self.args["train_data_dir"]="./datasets/train"
         self.args["test_data_dir"] ="./datasets/test"
 
         self.args["test"]=True
-        self.args["tensorboard"]=True
+        self.args["tensorboard"]=False
         self.args["debug"] = False
 
-        self.args["batch_size"] = 8
+        self.args["batch_size"] = 32
         self.args["input_size"] = 4096
-        self.args["dilated_size"] = 0
-        self.args["NFFT"]=1024
-        self.args["KEPFILTERE"]=64
+        self.args["padding"]=1024
 
-        self.args["lr_max"]=2e-4
-        self.args["lr_min"] = 2e-6
+        self.args["lr"]=2e-4
         self.args["beta1"] = 0.5
         self.args["beta2"] = 0.999
-        self.args["weight_Cycle_Pow"]=100.0
-        self.args["weight_Cycle_f0"]=0.1
+        self.args["weight_Cycle"]=100.0
         self.args["weight_GAN"] = 1.0
         self.args["train_epoch"]=1000
-        self.args["pre_train_epoch"] = 0
-        self.args["P_train_epoch"]=100
         self.args["start_epoch"]=0
-        self.args["save_interval"]=10
-        self.args["lr_decay_term"]=20
-        self.args["pitch_rate_var"]=1.0
-        self.args["pitch_rate_mean_s"]=1.0
-        self.args["pitch_rate_mean_t"]=1.0
-        self.args["stop_value"]=1e-24
+        self.args["save_interval"]=5
+
         # reading json file
+
         try:
             with open(path, "r") as f:
                 dd = json.load(f)
@@ -82,71 +76,66 @@ class Model:
             print(" [W] JSONDecodeError: ", e)
             print(" [W] Use default setting")
 
-        # initializing paramaters
-        self.args["SHIFT"] = self.args["NFFT"]//2
+        a = np.load("./voice_profile.npy")
+        self.args["pitch_rate_mean_s"] = a[0]
+        self.args["pitch_rate_mean_t"] = a[1]
+        self.args["pitch_rate_var"] = a[2]
+        # initializing hidden paramaters
+
+        self.args["padding_shift"] = self.args["padding"]//2
         self.args["name_save"] = self.args["model_name"] + self.args["version"]
 
-        # shapes of inputs
-        self.input_size_model=[self.args["batch_size"],65,513,1]
+        # shapes setting
+        self.input_size_model=[self.args["batch_size"],13,513,1]
         self.input_size_test = [1, 65,513,1]
-
         self.output_size_model = [self.args["batch_size"], 65,513,1]
 
-        self.sess=tf.InteractiveSession(config=tf.ConfigProto(gpu_options=tf.GPUOptions()))
 
         if bool(self.args["debug"]):
             self.sess=tf_debug.LocalCLIDebugWrapperSession(self.sess)
             self.sess.add_tensor_filter('has_inf_or_nan', has_inf_or_nan)
+
         if  self.args["wave_otp_dir"] is not "False" :
             self.args["wave_otp_dir"]=self.args["wave_otp_dir"]+ self.args["name_save"]+"/"
             if not os.path.exists(self.args["wave_otp_dir"]):
                 os.makedirs(self.args["wave_otp_dir"])
 
+        self.sess = tf.Session()
         self.build_model()
     def build_model(self):
 
         #inputs place holder
-        self.input_model_A=tf.placeholder(tf.float32, self.input_size_model, "inputs_G-net_A")
-        self.input_model_B = tf.placeholder(tf.float32, self.input_size_model, "inputs_G-net_B")
+        self.input_model_A=tf.placeholder(tf.float32, self.input_size_model, "inputs_g_A")
+        self.input_model_B = tf.placeholder(tf.float32, self.input_size_model, "inputs_g_B")
+        self.input_model_test = tf.placeholder(tf.float32, self.input_size_test, "inputs_g_test")
 
-        self.input_model_test = tf.placeholder(tf.float32, self.input_size_test, "inputs_G-net_test")
-
-        input_model_A_fixed = self.input_model_A
-        input_model_B_fixed = self.input_model_B
-        input_model_test_fixed=self.input_model_test
         #creating generator
         with tf.variable_scope("generators"):
 
             with tf.variable_scope("generator_1"):
-                fake_aB_image12 = generator(input_model_A_fixed, reuse=None, train=True)
-                self.fake_aB_image_test_fixed= generator(input_model_test_fixed, reuse=True, train=False)
+                fake_aB_image = generator(self.input_model_A, reuse=None, train=True)
+                self.fake_aB_image_test= generator(self.input_model_test, reuse=True, train=False)
             with tf.variable_scope("generator_2"):
-                fake_bA_image12 = generator(input_model_B_fixed, reuse=None, train=True)
-            with tf.variable_scope("generator_2",reuse=True):
-                fake_Ba_image = generator(fake_aB_image12, reuse=True,train=True)
+                fake_bA_image = generator(self.input_model_B, reuse=None, train=True)
+                fake_Ba_image = generator(fake_aB_image, reuse=True,train=True)
             with tf.variable_scope("generator_1",reuse=True):
-                fake_Ab_image = generator(fake_bA_image12, reuse=True,train=True)
+                fake_Ab_image = generator(fake_bA_image, reuse=True,train=True)
 
         #creating discriminator
-        with tf.variable_scope("discrims"):
-            with tf.variable_scope("discrims_A"):
-                d_judge_BR= discriminator(input_model_B_fixed, None)
-                d_judge_BF = discriminator(fake_aB_image12, True)
-            with tf.variable_scope("discrims_B"):
-                d_judge_AR = discriminator(input_model_A_fixed, None)
-                d_judge_AF = discriminator(fake_bA_image12, True)
+        with tf.variable_scope("discriminators"):
+            with tf.variable_scope("discriminators_A"):
+                d_judge_BR= discriminator(self.input_model_B, None)
+                d_judge_BF = discriminator(fake_aB_image, True)
+            with tf.variable_scope("discriminators_B"):
+                d_judge_AR = discriminator(self.input_model_A, None)
+                d_judge_AF = discriminator(fake_bA_image, True)
 
         #getting individual variabloes
         self.g_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"generators")
-        self.d_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"discrims")
+        self.d_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"discriminators")
         self.update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 
         #objective-functions of discriminator
-
-        # d_loss_AR = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_AR),predictions=d_judge_AR)
-        # d_loss_AF = tf.losses.mean_squared_error(labels=tf.zeros_like(d_judge_AF),predictions=d_judge_AF)
-        # d_loss_BR = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_BR),predictions=d_judge_BR)
-        # d_loss_BF = tf.losses.mean_squared_error(labels=tf.zeros_like(d_judge_BF),predictions=d_judge_BF)
         d_loss_AR = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(d_judge_AR), logits=d_judge_AR)
         d_loss_AF = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.zeros_like(d_judge_AF), logits=d_judge_AF)
         d_loss_BR = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(d_judge_BR), logits=d_judge_BR)
@@ -160,23 +149,18 @@ class Model:
         # objective-functions of generator
 
         # Cycle lossA
-        # g_loss_cyc_A=tf.reduce_mean(tf.abs(input_model_A_fixed-fake_Ba_image))* self.args["weight_Cycle_Pow"]
-        g_loss_cyc_A = tf.losses.mean_squared_error(predictions=fake_Ba_image,labels=input_model_A_fixed)* self.args["weight_Cycle_Pow"]
+        g_loss_cyc_A = tf.losses.mean_squared_error(predictions=fake_Ba_image,labels=self.input_model_A)* self.args["weight_Cycle"]
         # Gan lossB
-        # g_loss_gan_B = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_BF),predictions=d_judge_BF)* self.args["weight_GAN"]
-        g_loss_gan_B = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(d_judge_BF), logits=d_judge_BF) * \
-                       self.args["weight_GAN"]
+        g_loss_gan_B = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(d_judge_BF), logits=d_judge_BF) * self.args["weight_GAN"]
 
         # generator lossA
         self.g_loss_aB = g_loss_cyc_A +g_loss_gan_B
 
 
         # Cyc lossB
-        # g_loss_cyc_B=tf.reduce_mean(tf.abs(input_model_B_fixed-fake_Ab_image))* self.args["weight_Cycle_Pow"]
-        g_loss_cyc_B = tf.losses.mean_squared_error(predictions=fake_Ab_image, labels=input_model_B_fixed) * self.args["weight_Cycle_Pow"]
+        g_loss_cyc_B = tf.losses.mean_squared_error(predictions=fake_Ab_image, labels=self.input_model_B) * self.args["weight_Cycle"]
 
         # Gan lossA
-        # g_loss_gan_A = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_AF),predictions=d_judge_AF)* self.args["weight_GAN"]
         g_loss_gan_A = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(d_judge_AF), logits=d_judge_AF) * self.args["weight_GAN"]
 
         # generator lossB
@@ -184,39 +168,37 @@ class Model:
 
         # generator loss
         self.g_loss=self.g_loss_aB+self.g_loss_bA
-        self.g_loss_pre = g_loss_cyc_B + g_loss_cyc_A
         #tensorboard functions
-        g_loss_cyc_A_display= tf.summary.scalar("g_loss_cycle_A", tf.reduce_mean(g_loss_cyc_A),family="g_loss")
-        g_loss_gan_A_display = tf.summary.scalar("g_loss_gan_A", tf.reduce_mean(g_loss_gan_A),family="g_loss")
+        g_loss_cyc_A_display= tf.summary.scalar("g_loss_cycle_AtoA", tf.reduce_mean(g_loss_cyc_A),family="g_loss")
+        g_loss_gan_A_display = tf.summary.scalar("g_loss_gan_BtoA", tf.reduce_mean(g_loss_gan_A),family="g_loss")
         g_loss_sum_A_display = tf.summary.merge([g_loss_cyc_A_display, g_loss_gan_A_display])
 
-        g_loss_cyc_B_display = tf.summary.scalar("g_loss_cycle_B", tf.reduce_mean(g_loss_cyc_B),family="g_loss")
-        g_loss_gan_B_display = tf.summary.scalar("g_loss_gan_B", tf.reduce_mean(g_loss_gan_B),family="g_loss")
+        g_loss_cyc_B_display = tf.summary.scalar("g_loss_cycle_BtoB", tf.reduce_mean(g_loss_cyc_B),family="g_loss")
+        g_loss_gan_B_display = tf.summary.scalar("g_loss_gan_AtoB", tf.reduce_mean(g_loss_gan_B),family="g_loss")
         g_loss_sum_B_display = tf.summary.merge([g_loss_cyc_B_display,g_loss_gan_B_display])
 
-        d_loss_sum_A_display = tf.summary.scalar("d_lossA", tf.reduce_mean(d_loss_A),family="d_loss")
-        d_loss_sum_B_display = tf.summary.scalar("d_lossB", tf.reduce_mean(d_loss_B),family="d_loss")
+        d_loss_sum_A_display = tf.summary.scalar("d_loss_A", tf.reduce_mean(d_loss_A),family="d_loss")
+        d_loss_sum_B_display = tf.summary.scalar("d_loss_B", tf.reduce_mean(d_loss_B),family="d_loss")
 
 
         self.loss_display=tf.summary.merge([g_loss_sum_A_display,g_loss_sum_B_display,d_loss_sum_A_display,d_loss_sum_B_display])
 
-        self.result_audio_display= tf.placeholder(tf.float32, [1,1,160000], name="FB")
-        self.result_image_display= tf.placeholder(tf.float32, [1,None,512], name="FBI0")
+        self.result_audio_display= tf.placeholder(tf.float32, [1,1,160000], name="FakeAudio")
+        self.result_image_display= tf.placeholder(tf.float32, [1,None,512], name="FakeSpectrum")
         image_pow_display=tf.reshape(tf.transpose(self.result_image_display[:,:,:],[0,2,1]),[1,512,-1,1])
-        fake_B_audio_display = tf.summary.audio("fake_B", tf.reshape(self.result_audio_display,[1,160000,1]), 16000, 1)
-        fake_B_image_display = tf.summary.image("fake_B_image_power", image_pow_display, 1)
+        fake_B_audio_display = tf.summary.audio("Fake_audio_AtoB", tf.reshape(self.result_audio_display,[1,160000,1]), 16000, 1)
+        fake_B_image_display = tf.summary.image("Fake_spectrum_AtoB", image_pow_display, 1)
         self.g_test_display=tf.summary.merge([fake_B_audio_display,fake_B_image_display])
 
         #saver
         self.saver = tf.train.Saver()
-        self.saver_best = tf.train.Saver(max_to_keep=1)
 
     def convert(self,in_put):
         #function of test
         #To convert wave file
 
         conversion_start_time=time.time()
-        input_size_one_term=self.args["input_size"]+self.args["NFFT"]
+        input_size_one_term=self.args["input_size"]+self.args["padding"]
         executing_times=in_put.shape[0]//(self.args["input_size"])+1
         if in_put.shape[0]%((self.args["input_size"])*self.args["batch_size"])==0:
             executing_times-=1
@@ -227,7 +209,7 @@ class Model:
 
             # Padiing
             start_pos=self.args["input_size"]*t+(in_put.shape[0]%self.args["input_size"])
-            resorce=in_put[max(0,start_pos-input_size_one_term+self.args["SHIFT"]):start_pos+self.args["SHIFT"]]
+            resorce=in_put[max(0,start_pos-input_size_one_term):start_pos]
             r=max(0,input_size_one_term-resorce.shape[0])
             if r>0:
                 resorce=np.pad(resorce,(r,0),'constant')
@@ -237,7 +219,7 @@ class Model:
             #main process
 
             # running network
-            result=self.sess.run(self.fake_aB_image_test_fixed,feed_dict={ self.input_model_test:resource})
+            result=self.sess.run(self.fake_aB_image_test,feed_dict={ self.input_model_test:resource})
 
             # Postprocess
 
@@ -245,7 +227,7 @@ class Model:
             f0=(f0-self.args["pitch_rate_mean_s"])*self.args["pitch_rate_var"]+self.args["pitch_rate_mean_t"]
             result_wave=decode(f0,result[0].copy().reshape(-1,513).astype(np.float),ap)*32767
 
-            result_wave_fixed=np.clip(result_wave,-32767.0,32767.0)[self.args["SHIFT"]:-self.args["SHIFT"]]
+            result_wave_fixed=np.clip(result_wave,-32767.0,32767.0)[self.args["padding_shift"]:-self.args["padding_shift"]]
             result_wave_int16=result_wave_fixed.reshape(-1).astype(np.int16)
 
             #adding result
@@ -262,18 +244,12 @@ class Model:
     def train(self):
 
         # setting paramaters
-        lr_opt_max=self.args["lr_max"]
-        lr_opt_min=self.args["lr_min"]
+        lr_opt=self.args["lr"]
         beta_opt=self.args["beta1"]
         beta_2_opt=self.args["beta2"]
-        T_cur=0
-        self.best=999999
-        T=self.args["lr_decay_term"]
-        self.test_results=[]
         # naming output-directory
         lr_g = tf.placeholder(tf.float32, None, name="g_lr")
         lr_d = tf.placeholder(tf.float32, None, name="d_lr")
-        g_optim_pre = tf.train.AdamOptimizer(1e-4, 0.9).minimize(self.g_loss_pre,var_list=self.g_vars)
 
         g_optim = tf.train.AdamOptimizer(lr_g, beta_opt, beta_2_opt).minimize(self.g_loss,
                                                                                   var_list=self.g_vars)
@@ -293,19 +269,17 @@ class Model:
             print(" [I] Load FAILED.")
 
         # loading training data directory
-        data = glob(self.args["train_data_dir"]+'/Source_data/*')
-        data2 = glob(self.args["train_data_dir"] + '/Answer_data/*')
+        data = glob(self.args["train_data_dir"]+'/A/*')
+        data2 = glob(self.args["train_data_dir"] + '/B/*')
         # loading test data
-        self.test=isread(self.args["test_data_dir"]+'/test.wav')[0:160000]
-        self.label = isread(self.args["test_data_dir"] + '/label.wav')[0:160000]
-        self.label_im = fft(self.label)[:,:self.args["SHIFT"],:]
+        self.test=isread(self.args["test_data_dir"]+'/test.wav')
         # prepareing training-data
         batch_files = data[0]
         batch_files2 = data2[0]
 
         print(" [I] loading dataset...")
-        self.sounds_r = imread(batch_files)
-        self.sounds_t = imread(batch_files2)
+        self.sounds_r = np.load(batch_files)
+        self.sounds_t = np.load(batch_files2)
         # times of one epoch
         train_data_num = min(self.sounds_r.shape[0],self.sounds_t.shape[0])
         self.batch_idxs = train_data_num // self.args["batch_size"]
@@ -318,86 +292,71 @@ class Model:
         # initializing training infomation
         start_time = time.time()
         start_time_all=time.time()
-        for epoch in range(self.args["pre_train_epoch"]):
-            np.random.shuffle(index_list)
-            np.random.shuffle(index_list2)
-            for idx in xrange(0, self.batch_idxs):
-                st = self.args["batch_size"] * idx
-                batch_sounds_resource = np.asarray(
-                    [self.sounds_r[ind] for ind in index_list[st:st + self.args["batch_size"]]])
-                batch_sounds_target = np.asarray(
-                    [self.sounds_t[ind] for ind in index_list2[st:st + self.args["batch_size"]]])
-                # update G network
-                self.sess.run([g_optim_pre, self.update_ops],feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target})
-            print(" [I] Epoch %04d / %04d finished." % (epoch, self.args["pre_train_epoch"]))
         for epoch in range(self.args["train_epoch"]):
 
-            # calculating learning-rate
-            lr_culced = np.cos(np.pi*T_cur/T/2)*(lr_opt_max-lr_opt_min)+lr_opt_min
 
             # shuffling train_data_index
             np.random.shuffle(index_list)
             np.random.shuffle(index_list2)
 
-            prepareing_time_total = 0.0
             if self.args["test"] and epoch%self.args["save_interval"]==0:
-                vv=self.test_and_save(epoch)
-                if vv < self.args["stop_value"]:
-                    break
-            for idx in xrange(0, self.batch_idxs):
-                start_preparing = time.time()
+                self.test_and_save(epoch)
+            for idx in range(0, self.batch_idxs):
                 # getting batch
                 st=self.args["batch_size"]*idx
                 batch_sounds_resource = np.asarray([self.sounds_r[ind] for ind in index_list[st:st+self.args["batch_size"]]])
                 batch_sounds_target= np.asarray([self.sounds_t[ind] for ind in index_list2[st:st+self.args["batch_size"]]])
-                # getting training data
-                prepareing_time_total+=time.time()-start_preparing
 
                 # update D network (2time)
                 for _ in range(2):
                     self.sess.run([d_optim],
-                                  feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target,lr_d:lr_culced})
+                                  feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target,lr_d:lr_opt})
                 # update G network
                 self.sess.run([g_optim,  self.update_ops],
-                              feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target, lr_g: lr_culced})
+                              feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target, lr_g: lr_opt})
 
             # calculating ETA
             taken_time = time.time() - start_time
             start_time = time.time()
             tt_list.append(taken_time)
-            if len(tt_list)>20:
-                tt_list=tt_list[0:20]
+            if len(tt_list)>self.args["save_interval"]:
+                tt_list=tt_list[1:-1]
             eta=np.mean(tt_list)*(self.args["train_epoch"]-epoch-1)
-
             # console outputs
-            print(" [I] Epoch %04d / %04d finished. ETA: %02d:%02d:%02d takes %2.3f secs(preprocess %2.3f secs)" % (epoch,self.args["train_epoch"],eta//3600,eta//60%60,int(eta%60),taken_time,prepareing_time_total))
+            print(" [I] Epoch %04d / %04d finished. ETA: %02d:%02d:%02d takes %2.3f secs" % (epoch,self.args["train_epoch"],eta//3600,eta//60%60,int(eta%60),taken_time))
 
-            T_cur += 1
-
-            # update learning_rate
-            if T==T_cur:
-                T=T*2
-                T_cur=0
 
         self.test_and_save(self.args["train_epoch"])
-        tnt=time.time()-start_time_all
-        hour_f=tnt//3600
-        minute_f=tnt//60%60
-        second_f=int(tnt%60)
-        np.savetxt("log.csv",np.asarray(self.test_results),delimiter=",")
-        print(" [I] ALL train process finished successfully!! in %04d : %02d : %02d" % (hour_f, minute_f, second_f))
+        taken_time_all=time.time()-start_time_all
+        hour_display=taken_time_all//3600
+        minute_display=taken_time_all//60%60
+        second_display=int(taken_time_all%60)
+        print(" [I] ALL train process finished successfully!! in %04d : %02d : %02d" % (hour_display, minute_display, second_display))
 
     def test_and_save(self,epoch):
 
         # last testing
         out_puts, taken_time_test = self.convert(self.test)
-
-
         # fixing havests types
         out_put = out_puts.copy().astype(np.float32) / 32767.0
 
-        im = fft(out_put)[:,:self.args["SHIFT"],:]
-        test_value=np.mean(np.log(np.abs(np.exp(im)-np.exp(self.label_im))+1e-4))
+        # calcurating power spectrum
+        time_ruler = out_put.shape[0] // 512
+        if out_put.shape[0] % 512 == 0:
+            time_ruler -= 1
+        pos = 0
+        windowed = np.zeros([time_ruler, 1024])
+        window = np.hamming(1024)
+        for fft_index in range(time_ruler):
+            frame = out_put[pos:pos + 1024]
+            #padding input
+            r = 1024 - frame.shape[0]
+            if r > 0:
+                frame = np.pad(frame, (0, r), "constant")
+            windowed[fft_index] = frame * window
+            pos += 512
+        fft_result = np.fft.fft(windowed, n=1024, axis=1)
+        im = np.log(np.power(fft_result.real, 2) + np.power(fft_result.imag, 2) + 1e-24).reshape(time_ruler, -1, 1)[:,:512]
         otp_im = im.copy().reshape(1,-1,512)
 
         # writing epoch-result into tensorboard
@@ -410,19 +369,30 @@ class Model:
                                                                self.result_image_display: otp_im})
             self.writer.add_summary(rs, epoch)
 
-        # saving test havests
+        # saving test harvests
         if os.path.exists(self.args["wave_otp_dir"]):
+            # saving fake spectrum
             plt.clf()
             ins = np.transpose(im[:,:,0], (1, 0))
-            plt.imshow(ins, vmin=-35, vmax=5,aspect="auto")
+            plt.imshow(ins, vmin=-25, vmax=5,aspect="auto")
             plt.colorbar()
-            path = self.args["wave_otp_dir"] + nowtime() + "_e" + str(epoch)
+            path = self.args["wave_otp_dir"] + datetime.now().strftime("%m_%d_%H_%M_%S") + "_" + str(epoch)+"Epochs"
             plt.savefig(path + ".png")
-            upload(out_puts, path)
+
+            #saving fake waves
+            voiced = out_puts.astype(np.int16)
+            p = pyaudio.PyAudio()
+            FORMAT = pyaudio.paInt16
+            ww = wave.open(path + ".wav", 'wb')
+            ww.setnchannels(1)
+            ww.setsampwidth(p.get_sample_size(FORMAT))
+            ww.setframerate(16000)
+            ww.writeframes(voiced.reshape(-1).tobytes())
+            ww.close()
+            p.terminate()
+
         self.save(self.args["checkpoint_dir"],epoch,self.saver)
-        print(" [I] Epoch %04d tested. distance: %f " % (epoch,float(test_value)))
-        self.test_results.append(float(test_value))
-        return test_value
+        print(" [I] Epoch %04d tested. " % epoch)
 
     def save(self, checkpoint_dir, step,saver):
         model_name = "wave2wave.model"
@@ -451,27 +421,7 @@ class Model:
             return True
         else:
             return False
-def fft(data):
-    NFFT=1024
-    SHIFT=512
-    time_ruler = data.shape[0] // SHIFT
-    if data.shape[0] % SHIFT == 0:
-        time_ruler -= 1
-    pos = 0
-    wined = np.zeros([time_ruler, NFFT])
-    window=np.hamming(NFFT)
-    for fft_index in range(time_ruler):
-        frame = data[pos:pos + NFFT]
-        r=NFFT-frame.shape[0]
-        if r>0:
-            frame=np.pad(frame,(0,r),"constant")
-        wined[fft_index] = frame*window
-        pos += SHIFT
-    fft_r = np.fft.fft(wined, n=NFFT, axis=1)
-    re = fft_r.real.reshape(time_ruler, -1)
-    im = fft_r.imag.reshape(time_ruler, -1)
-    spec = np.log(np.power(re, 2) + np.power(im, 2) + 1e-24).reshape(time_ruler, -1, 1)
-    return spec
+
 def encode(data):
     fs=16000
     _f0,t=pw.dio(data,fs)
@@ -479,6 +429,7 @@ def encode(data):
     sp=pw.cheaptrick(data,f0,t,fs)
     ap=pw.d4c(data,f0,t,fs)
     return f0.astype(np.float64),np.clip((np.log(sp)+15)/20,-1.0,1.0).astype(np.float64),ap.astype(np.float64)
+
 def decode(f0,sp,ap):
     ap = ap.reshape(-1, 513).astype(np.float)
     f0 = f0.reshape(-1).astype(np.float)
@@ -486,27 +437,6 @@ def decode(f0,sp,ap):
     sp=sp.reshape(-1,513).astype(np.float)
     return pw.synthesize(f0,sp,ap,16000)
 
-def back_drop(ten,rate):
-    s = ten.get_shape()
-    prop = tf.random_uniform(s, 0.0, 1.0) + rate
-    prop = tf.floor(prop)
-    tenA = ten * prop
-    tenB = ten * (1 - prop)
-    return tenA+tf.stop_gradient(tenB)
-def nowtime():
-    return datetime.now().strftime("%Y_%m_%d %H_%M_%S")
-
-def upload(voice,to):
-    voiced=voice.astype(np.int16)
-    p=pyaudio.PyAudio()
-    FORMAT = pyaudio.paInt16
-    ww = wave.open(to+".wav", 'wb')
-    ww.setnchannels(1)
-    ww.setsampwidth(p.get_sample_size(FORMAT))
-    ww.setframerate(16000)
-    ww.writeframes(voiced.reshape(-1).tobytes())
-    ww.close()
-    p.terminate()
 
 def isread(path):
     wf=wave.open(path,"rb")
@@ -523,6 +453,3 @@ def isread(path):
     else:
         ans=ans[:160000]
     return ans
-def imread(path):
-    ns=np.load(path)
-    return ns

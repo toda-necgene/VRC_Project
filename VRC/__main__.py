@@ -7,10 +7,11 @@ elif len(sys.argv)!=0 and sys.argv.__contains__("--test"):
     from utils import model_test
 elif len(sys.argv)!=0 and sys.argv.__contains__("--vrc"):
      import run.VRC
-elif len(sys.argv)!=0 and sys.argv.__contains__("--vrc-vocal"):
-     import run.VocalRC
 elif len(sys.argv)!=0 and sys.argv.__contains__("--create_dataset"):
     from utils import voice_to_datasets_cycle
+elif len(sys.argv)!=0 and sys.argv.__contains__("--training_auto"):
+    from utils import voice_to_datasets_cycle
+    import train
 else :
     print("コマンドがありません。")
     print("--コマンド説明--")

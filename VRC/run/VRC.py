@@ -1,14 +1,18 @@
 from model.model_cpu import Model
 import numpy as np
-import scipy,scipy.signal
 import pyaudio as pa
 import pyworld as pw
 import atexit
 import time
-path_to_networks = './best_model'
+args=dict()
+a=np.load("./voice_profile.npy")
 
-NFFT=1024
-SHIFT=512
+args["pitch_rate_mean_s"] = a[0]
+args["pitch_rate_mean_t"] = a[1]
+args["pitch_rate_var"] = a[2]
+
+padding=1024
+padding_shift=512
 TERM=4096
 fs = 16000
 channels = 1
@@ -49,17 +53,7 @@ stream=p_in.open(format = pa.paInt16,
 		frames_per_buffer = TERM*2,
 		input = True,
 		output = True)
-rdd=np.zeros(SHIFT)
-rdd2=np.zeros(SHIFT)
 tt=time.time()
-def normlize(f0,sp):
-    me=np.mean(sp,axis=1)
-    ra=np.tile((0.0007/(me+1e-8)).reshape(-1,1),(1,513))
-    ra[me<5e-7]=1e-8
-    sp=sp*(ra)*0.8+sp*0.2
-    sp[f0 == 0] =1e-8
-
-    return sp
 def terminate():
     stream.stop_stream()
     stream.close()
@@ -67,23 +61,22 @@ def terminate():
     print("Stream Stop")
 la=np.zeros([5])
 atexit.register(terminate)
-las=np.zeros([NFFT])
+las=np.zeros([padding])
 print("変換　開始")
 while stream.is_active():
     ins=stream.read(up)
     tt = time.time()
     inputs = np.frombuffer(ins,dtype=np.int16).astype(np.float64)/32767.0*gain
     inputs=np.clip(inputs,-1.0,1.0)
-    inp=np.append(las,inputs).reshape(TERM+NFFT)
-    las = inputs[-NFFT:]
+    inp=np.append(las,inputs).reshape(TERM+padding)
+    las = inputs[-padding:]
     f0,sp,ap = encode(inp.copy())
     sp=sp.astype(np.float32)
-    sp=normlize(f0,sp)
     res=sp.reshape(1,65,513,1)
     resp = process(res.copy())
-    resb = decode(f0*pitch,resp[0],ap)
+    resb = decode((f0-args["pitch_rate_mean_s"])*args["pitch_rate_var"]+args["pitch_rate_mean_t"],resp[0],ap)
     res = (np.clip(resb,-1.0,1.0).reshape(-1)*32767)
-    vs=res.astype(np.int16)[SHIFT:-SHIFT].tobytes()
+    vs=res.astype(np.int16)[padding_shift:-padding_shift].tobytes()
     la=np.append(la,time.time() - tt)
     la=la[-5:]
     print("CPS:%1.3f" % float(np.mean(la)/(up/fs)))

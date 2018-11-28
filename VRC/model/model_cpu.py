@@ -5,7 +5,7 @@ import numpy as np
 from tensorflow.python import debug as tf_debug
 from tensorflow.python.debug.lib.debug_data import has_inf_or_nan
 import json
-from .model_v2 import generator
+from .model import generator
 import pyworld as pw
 class Model:
     def __init__(self,path):
@@ -16,7 +16,6 @@ class Model:
         self.args["version"] = "1.0.0"
 
         self.args["checkpoint_dir"] = "./trained_models"
-        self.args["best_checkpoint_dir"] = "./best_model"
         self.args["wave_otp_dir"] = "./havests"
         self.args["train_data_dir"] = "./datasets/train"
         self.args["test_data_dir"] = "./datasets/test"
@@ -28,23 +27,9 @@ class Model:
         self.args["batch_size"] = 32
         self.args["input_size"] = 4096
         self.args["NFFT"] = 1024
-        self.args["dilated_size"]=0
-        self.args["g_lr_max"] = 2e-4
-        self.args["g_lr_min"] = 2e-6
-        self.args["d_lr_max"] = 2e-4
-        self.args["d_lr_min"] = 2e-6
-        self.args["g_b1"] = 0.5
-        self.args["g_b2"] = 0.999
-        self.args["d_b1"] = 0.5
-        self.args["d_b2"] = 0.999
-        self.args["weight_Cycle_Pow"] = 100.0
-        self.args["weight_Cycle_Pha"] = 100.0
-        self.args["weight_GAN"] = 1.0
-        self.args["train_epoch"] = 1000
-        self.args["start_epoch"] = 0
-        self.args["save_interval"] = 10
-        self.args["lr_decay_term"] = 20
-        self.args["pitch_rate"]=1.0
+        self.args["pitch_rate_var"]=1.0
+        self.args["pitch_rate_mean_s"]=0.0
+        self.args["pitch_rate_mean_t"]=0.0
 
         # reading json file
         try:
@@ -134,7 +119,7 @@ class Model:
             res=res.reshape(1,-1,513,1)
             response=self.sess.run(self.test_outputaB,feed_dict={ self.input_model_test:res})
             # Postprocess
-            _f0=f0*self.args["pitch_rate"]
+            _f0=(f0-self.args["pitch_rate_mean_s"])*self.args["pitch_rate_var"]+self.args["pitch_rate_mean_t"]
             rest = decode(_f0,response[0].reshape(-1,513).astype(np.double),ap2)
             res = np.clip(rest, -1.0, 1.0)*32767
 

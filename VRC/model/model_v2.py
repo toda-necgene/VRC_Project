@@ -46,8 +46,9 @@ def generator(ten,reuse,train):
                                 data_format="channels_last", reuse=reuse, name="residual_conv_C_3x1_" + str(i))
         tenA = tf.layers.batch_normalization(tenA, axis=3, training=train, trainable=True, reuse=reuse,
                                              name="residual_bn_" + str(i))
+        tenA=tf.nn.leaky_relu(tenA)
 
-        ten = tf.nn.leaky_relu(tenA + ten)
+        ten = tenA + ten
 
     # decodeing
     ten = tf.layers.conv2d(ten, 128, [3, 1], [1, 1], padding="SAME",
