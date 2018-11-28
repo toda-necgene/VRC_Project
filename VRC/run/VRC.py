@@ -13,11 +13,10 @@ args["pitch_rate_var"] = a[2]
 
 padding=1024
 padding_shift=512
-TERM=4096
+TERM=4175
 fs = 16000
 channels = 1
-gain=0.9
-pitch=1.32
+gain=0.8
 
 def encode(data):
     fs=16000
@@ -29,10 +28,9 @@ def encode(data):
 def decode(f0,sp,ap):
     ap = ap.reshape(-1, 513).astype(np.float)
     f0 = f0.reshape(-1).astype(np.float)
-    sp = np.exp(sp.reshape(-1, 1, 513).astype(np.float) * 20 - 15)
-    sp=sp.reshape(-1,513).astype(np.float)
-    return pw.synthesize(f0,sp,ap,16000)
-
+    sp = np.exp(sp.reshape(-1, 513).astype(np.float) * 20 - 15)
+    ww=pw.synthesize(f0,sp,ap,16000)
+    return ww
 net=Model("./setting.json")
 net.load()
 p_in = pa.PyAudio()
@@ -71,12 +69,13 @@ while stream.is_active():
     inp=np.append(las,inputs).reshape(TERM+padding)
     las = inputs[-padding:]
     f0,sp,ap = encode(inp.copy())
-    sp=sp.astype(np.float32)
     res=sp.reshape(1,65,513,1)
     resp = process(res.copy())
     resb = decode((f0-args["pitch_rate_mean_s"])*args["pitch_rate_var"]+args["pitch_rate_mean_t"],resp[0],ap)
     res = (np.clip(resb,-1.0,1.0).reshape(-1)*32767)
-    vs=res.astype(np.int16)[padding_shift:-padding_shift].tobytes()
+    vs=res.astype(np.int16)[:-padding]
+    vs=vs[-TERM:]
+    vs=vs.tobytes()
     la=np.append(la,time.time() - tt)
     la=la[-5:]
     print("CPS:%1.3f" % float(np.mean(la)/(up/fs)))

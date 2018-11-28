@@ -12,7 +12,7 @@ class Model:
         self.args = dict()
 
         # default setting
-        self.args["model_name"] = "wave2wave"
+        self.args["model_name"] = "VRC"
         self.args["version"] = "1.0.0"
 
         self.args["checkpoint_dir"] = "./trained_models"
