@@ -38,7 +38,7 @@ def generator(ten,reuse,train):
                                 kernel_initializer=tf.contrib.layers.xavier_initializer_conv2d(),
                                 reuse=reuse, name="residual_conv_B_3x1_" + str(i))
 
-        ten=tenA*tf.sigmoid(tenB)
+        ten=tenA*tf.sigmoid(tenB)+ten
         ten = tf.layers.batch_normalization(ten, axis=3, training=train, trainable=True, reuse=reuse,
                                              name="residual_bn_" + str(i))
 

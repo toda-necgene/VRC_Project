@@ -2,7 +2,7 @@
     "saving_config":{
         "checkpoint_dir":"Z://bestmodel/",
         "wave_otp_dir":"Z://waves/",
-        "version":"0.8.416"
+        "version":"0.8.417"
     },
     "training_config":{
         "train_epoch": 1000,
