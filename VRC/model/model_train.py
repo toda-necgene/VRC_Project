@@ -41,12 +41,9 @@ class Model:
         self.args["input_size"] = 4096
         self.args["padding"]=1024
 
-        self.args["lr"]=2e-4
-        self.args["beta1"] = 0.5
-        self.args["beta2"] = 0.999
         self.args["weight_Cycle"]=100.0
         self.args["weight_GAN"] = 1.0
-        self.args["train_epoch"]=1000
+        self.args["train_epoch"]=1725
         self.args["start_epoch"]=0
         self.args["save_interval"]=5
 
@@ -243,17 +240,13 @@ class Model:
 
     def train(self):
 
-        # setting paramaters
-        lr_opt=self.args["lr"]
-        beta_opt=self.args["beta1"]
-        beta_2_opt=self.args["beta2"]
         # naming output-directory
         lr_g = tf.placeholder(tf.float32, None, name="g_lr")
         lr_d = tf.placeholder(tf.float32, None, name="d_lr")
 
-        g_optim = tf.train.AdamOptimizer(lr_g, beta_opt, beta_2_opt).minimize(self.g_loss,
+        g_optim = tf.train.AdamOptimizer(lr_g, 0.5, 0.999).minimize(self.g_loss,
                                                                                   var_list=self.g_vars)
-        d_optim = tf.train.AdamOptimizer(lr_d, beta_opt, beta_2_opt).minimize(self.d_loss,
+        d_optim = tf.train.AdamOptimizer(lr_d, 0.5, 0.999).minimize(self.d_loss,
                                                                                   var_list=self.d_vars)
 
         tt_list=list()
@@ -293,7 +286,12 @@ class Model:
         start_time = time.time()
         start_time_all=time.time()
         for epoch in range(self.args["train_epoch"]):
-
+            if epoch<1000:
+                lr_opt = 2e-4
+            elif epoch<1500:
+                lr_opt = 2e-5
+            else:
+                lr_opt = 2e-6
 
             # shuffling train_data_index
             np.random.shuffle(index_list)
@@ -306,7 +304,7 @@ class Model:
                 st=self.args["batch_size"]*idx
                 batch_sounds_resource = np.asarray([self.sounds_r[ind] for ind in index_list[st:st+self.args["batch_size"]]])
                 batch_sounds_target= np.asarray([self.sounds_t[ind] for ind in index_list2[st:st+self.args["batch_size"]]])
-
+                
                 # update D network (2time)
                 for _ in range(2):
                     self.sess.run([d_optim],
@@ -319,7 +317,7 @@ class Model:
             taken_time = time.time() - start_time
             start_time = time.time()
             tt_list.append(taken_time)
-            if len(tt_list)>self.args["save_interval"]:
+            if len(tt_list)>self.args["save_interval"]*2:
                 tt_list=tt_list[1:-1]
             eta=np.mean(tt_list)*(self.args["train_epoch"]-epoch-1)
             # console outputs
@@ -376,10 +374,10 @@ class Model:
             ins = np.transpose(im[:,:,0], (1, 0))
             plt.imshow(ins, vmin=-25, vmax=5,aspect="auto")
             plt.colorbar()
-            path = self.args["wave_otp_dir"] + datetime.now().strftime("%m_%d_%H_%M_%S") + "_" + str(epoch)+"Epochs"
-            plt.savefig(path + ".png")
-
+            path = "%s%04d.png" % (self.args["wave_otp_dir"],epoch//self.args["save_interval"])
+            plt.savefig(path)
             #saving fake waves
+            path = self.args["wave_otp_dir"] + datetime.now().strftime("%m_%d_%H_%M_%S") + "_" + str(epoch) + "Epochs"
             voiced = out_puts.astype(np.int16)
             p = pyaudio.PyAudio()
             FORMAT = pyaudio.paInt16
