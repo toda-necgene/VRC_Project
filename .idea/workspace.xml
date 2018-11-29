@@ -3,10 +3,8 @@
   <component name="ChangeListManager">
     <list default="true" id="bcabb495-93d4-437a-b14b-9cb2802ec5b1" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/model/model.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/model/model.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/VRC/model/model_train.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/model/model_train.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/VRC/setting.json" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/setting.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/setting_examples.json" beforeDir="false" />
     </list>
     <ignored path="C:\Users\tadop\git\vrc\.idea\shelf/" />
     <ignored path="$PROJECT_DIR$/VRC/Network/to/" />
@@ -20,14 +18,14 @@
     <session id="715546864">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
-          <entry key="project.closed" value="82" />
+          <entry key="project.closed" value="83" />
           <entry key="project.open.time.0" value="2" />
           <entry key="project.open.time.10" value="5" />
           <entry key="project.open.time.11" value="4" />
           <entry key="project.open.time.12" value="6" />
           <entry key="project.open.time.13" value="2" />
           <entry key="project.open.time.14" value="3" />
-          <entry key="project.open.time.15" value="3" />
+          <entry key="project.open.time.15" value="4" />
           <entry key="project.open.time.16" value="4" />
           <entry key="project.open.time.17" value="2" />
           <entry key="project.open.time.18" value="1" />
@@ -66,7 +64,7 @@
           <entry key="project.open.time.8" value="1" />
           <entry key="project.open.time.84" value="1" />
           <entry key="project.open.time.9" value="2" />
-          <entry key="project.opened" value="99" />
+          <entry key="project.opened" value="100" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
@@ -103,10 +101,10 @@
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="JSON" value="3955" />
+          <entry key="JSON" value="3973" />
           <entry key="Markdown" value="2725" />
-          <entry key="PLAIN_TEXT" value="3342" />
-          <entry key="Python" value="30219" />
+          <entry key="PLAIN_TEXT" value="3362" />
+          <entry key="Python" value="30408" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.vcs.git.usages" />
@@ -120,8 +118,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/setting.json">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="112">
-              <caret line="7" column="27" selection-start-line="7" selection-start-column="27" selection-end-line="7" selection-end-column="27" />
+            <state relative-caret-position="128">
+              <caret line="8" column="23" selection-start-line="8" selection-start-column="23" selection-end-line="8" selection-end-column="23" />
             </state>
           </provider>
         </entry>
@@ -138,8 +136,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/VRC/model/model_train.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="176">
-              <caret line="247" column="17" selection-start-line="247" selection-start-column="17" selection-end-line="247" selection-end-column="17" />
+            <state relative-caret-position="384">
+              <caret line="324" column="56" selection-start-line="324" selection-start-column="56" selection-end-line="324" selection-end-column="56" />
             </state>
           </provider>
         </entry>
@@ -237,7 +235,6 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -260,6 +257,7 @@
           <select />
         </subPane>
       </pane>
+      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -404,13 +402,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1534034935853</updated>
-    </task>
-    <task id="LOCAL-00161" summary="[0.4.059] 対数に変更">
-      <created>1539016113913</created>
-      <option name="number" value="00161" />
-      <option name="presentableId" value="LOCAL-00161" />
-      <option name="project" value="LOCAL" />
-      <updated>1539016113913</updated>
     </task>
     <task id="LOCAL-00162" summary="[0.4.065] 変更">
       <created>1539038914948</created>
@@ -748,7 +739,14 @@
       <option name="project" value="LOCAL" />
       <updated>1543460169225</updated>
     </task>
-    <option name="localTasksCounter" value="210" />
+    <task id="LOCAL-00210" summary="[0.8.433]　学習がかなりうまくいったのでコミット">
+      <created>1543497173430</created>
+      <option name="number" value="00210" />
+      <option name="presentableId" value="LOCAL-00210" />
+      <option name="project" value="LOCAL" />
+      <updated>1543497173431</updated>
+    </task>
+    <option name="localTasksCounter" value="211" />
     <servers />
   </component>
   <component name="TodoView">
@@ -764,7 +762,7 @@
     <frame x="-8" y="-8" width="1456" height="876" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.49865228" visible="true" weight="0.24047954" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" sideWeight="0.49865228" visible="true" weight="0.24047954" />
       <window_info id="Structure" order="1" sideWeight="0.5013477" side_tool="true" weight="0.30253878" />
       <window_info id="Favorites" order="2" sideWeight="0.5013477" side_tool="true" weight="0.30253878" />
       <window_info anchor="bottom" id="Message" order="0" />
@@ -772,9 +770,9 @@
       <window_info anchor="bottom" id="Debug" order="2" weight="0.3997344" />
       <window_info anchor="bottom" id="Cvs" order="3" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="4" weight="0.4" />
-      <window_info active="true" anchor="bottom" id="Run" order="5" sideWeight="0.49083215" visible="true" weight="0.31132075" />
+      <window_info anchor="bottom" id="Run" order="5" sideWeight="0.49083215" weight="0.31132075" />
       <window_info anchor="bottom" id="TODO" order="6" show_stripe_button="false" weight="0.32884097" />
-      <window_info anchor="bottom" id="Event Log" order="7" sideWeight="0.5070522" side_tool="true" weight="0.37196764" />
+      <window_info anchor="bottom" id="Event Log" order="7" sideWeight="0.50916785" side_tool="true" weight="0.31132075" />
       <window_info anchor="bottom" id="Python Console" order="8" show_stripe_button="false" weight="0.32884097" />
       <window_info anchor="bottom" id="Messages" order="9" />
       <window_info anchor="bottom" id="Version Control" order="10" sideWeight="0.49858958" weight="0.32210243" />
@@ -788,7 +786,6 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[0.7.021] 安定化を目指して" />
     <MESSAGE value="[0.7.022] 安定化を目指して" />
     <MESSAGE value="[0.7.041] 学習成功版の復元" />
     <MESSAGE value="[0.7.041] バッチサイズを16に変更" />
@@ -813,7 +810,8 @@
     <MESSAGE value="[0.8.400]　正式版に向けての整理整頓" />
     <MESSAGE value="[0.8.416]　GLUを実装した。" />
     <MESSAGE value="[0.8.417]　skip-connectionを実装した。" />
-    <option name="LAST_COMMIT_MESSAGE" value="[0.8.417]　skip-connectionを実装した。" />
+    <MESSAGE value="[0.8.433]　学習がかなりうまくいったのでコミット" />
+    <option name="LAST_COMMIT_MESSAGE" value="[0.8.433]　学習がかなりうまくいったのでコミット" />
   </component>
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/VRC/logs/[glr=0.0002,gb=0.5,dlr=0.0002,db=0.5]wave2wave4.2.140/events.out.tfevents.1535163488.DESKTOP-QFC16G3" />
@@ -966,13 +964,7 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/setting_examples.json">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="176">
-          <caret line="11" column="41" lean-forward="true" selection-start-line="11" selection-start-column="41" selection-end-line="11" selection-end-column="41" />
-        </state>
-      </provider>
-    </entry>
+    <entry file="file://$PROJECT_DIR$/VRC/setting_examples.json" />
     <entry file="file://$PROJECT_DIR$/VRC/__main__.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="192">
@@ -1005,13 +997,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/setting.json">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="112">
-          <caret line="7" column="27" selection-start-line="7" selection-start-column="27" selection-end-line="7" selection-end-column="27" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/VRC/model/model.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="80">
@@ -1019,10 +1004,17 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/VRC/setting.json">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="128">
+          <caret line="8" column="23" selection-start-line="8" selection-start-column="23" selection-end-line="8" selection-end-column="23" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/VRC/model/model_train.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="176">
-          <caret line="247" column="17" selection-start-line="247" selection-start-column="17" selection-end-line="247" selection-end-column="17" />
+        <state relative-caret-position="384">
+          <caret line="324" column="56" selection-start-line="324" selection-start-column="56" selection-end-line="324" selection-end-column="56" />
         </state>
       </provider>
     </entry>

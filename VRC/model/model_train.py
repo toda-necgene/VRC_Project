@@ -146,25 +146,30 @@ class Model:
         # objective-functions of generator
 
         # Cycle lossA
-        g_loss_cyc_A = tf.losses.mean_squared_error(predictions=fake_Ba_image,labels=self.input_model_A)* self.args["weight_Cycle"]
+        # g_loss_cyc_A = tf.losses.mean_squared_error(predictions=fake_Ba_image,labels=self.input_model_A)* self.args["weight_Cycle"]
+        g_loss_cyc_A = tf.reduce_mean(tf.abs(fake_Ba_image-self.input_model_A)) * self.args["weight_Cycle"]
+
         # Gan lossB
         g_loss_gan_B = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(d_judge_BF), logits=d_judge_BF) * self.args["weight_GAN"]
 
         # generator lossA
-        self.g_loss_aB = g_loss_cyc_A +g_loss_gan_B
+        g_loss_aB = g_loss_cyc_A +g_loss_gan_B
 
 
         # Cyc lossB
-        g_loss_cyc_B = tf.losses.mean_squared_error(predictions=fake_Ab_image, labels=self.input_model_B) * self.args["weight_Cycle"]
+        # g_loss_cyc_B = tf.losses.mean_squared_error(predictions=fake_Ab_image, labels=self.input_model_B) * self.args["weight_Cycle"]
+        g_loss_cyc_B = tf.reduce_mean(tf.abs(fake_Ab_image - self.input_model_B)) * self.args["weight_Cycle"]
 
         # Gan lossA
         g_loss_gan_A = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(d_judge_AF), logits=d_judge_AF) * self.args["weight_GAN"]
 
         # generator lossB
-        self.g_loss_bA = g_loss_cyc_B + g_loss_gan_A
+        g_loss_bA = g_loss_cyc_B + g_loss_gan_A
 
         # generator loss
-        self.g_loss=self.g_loss_aB+self.g_loss_bA
+        self.g_loss = g_loss_aB+g_loss_bA
+        self.g_loss_pre = g_loss_cyc_A + g_loss_cyc_B
+
         #tensorboard functions
         g_loss_cyc_A_display= tf.summary.scalar("g_loss_cycle_AtoA", tf.reduce_mean(g_loss_cyc_A),family="g_loss")
         g_loss_gan_A_display = tf.summary.scalar("g_loss_gan_BtoA", tf.reduce_mean(g_loss_gan_A),family="g_loss")
@@ -242,11 +247,13 @@ class Model:
 
         # naming output-directory
         lr_g = tf.placeholder(tf.float32, None, name="g_lr")
-        lr_d = tf.placeholder(tf.float32, None, name="d_lr")
 
         g_optim = tf.train.AdamOptimizer(lr_g, 0.5, 0.999).minimize(self.g_loss,
                                                                                   var_list=self.g_vars)
-        d_optim = tf.train.AdamOptimizer(lr_d, 0.5, 0.999).minimize(self.d_loss,
+        g_optim_pre = tf.train.AdamOptimizer(2e-4, 0.5, 0.999).minimize(self.g_loss_pre,
+                                                                    var_list=self.g_vars)
+
+        d_optim = tf.train.AdamOptimizer(lr_g, 0.5, 0.999).minimize(self.d_loss,
                                                                                   var_list=self.d_vars)
 
         tt_list=list()
@@ -285,10 +292,44 @@ class Model:
         # initializing training infomation
         start_time = time.time()
         start_time_all=time.time()
+
+        # pre-training
+        for epoch in range(100):
+            # shuffling train_data_index
+            np.random.shuffle(index_list)
+            np.random.shuffle(index_list2)
+
+            if self.args["test"] and epoch % self.args["save_interval"] == 0:
+                self.test_and_save(epoch)
+            for idx in range(0, self.batch_idxs):
+                # getting batch
+                st = self.args["batch_size"] * idx
+                batch_sounds_resource = np.asarray(
+                    [self.sounds_r[ind] for ind in index_list[st:st + self.args["batch_size"]]])
+                batch_sounds_target = np.asarray(
+                    [self.sounds_t[ind] for ind in index_list2[st:st + self.args["batch_size"]]])
+
+                # update G network
+                self.sess.run([g_optim_pre, self.update_ops],
+                              feed_dict={self.input_model_A: batch_sounds_resource,
+                                         self.input_model_B: batch_sounds_target})
+            # calculating ETA
+            taken_time = time.time() - start_time
+            start_time = time.time()
+            tt_list.append(taken_time)
+            if len(tt_list) > self.args["save_interval"] * 2:
+                tt_list = tt_list[1:-1]
+            eta = np.mean(tt_list) * (100 - epoch - 1)
+            # console outputs
+            print(" [I] Pre-epoch %04d / 100 finished. ETA: %02d:%02d:%02d takes %2.3f secs" % (
+            epoch, int(eta // 3600), int(eta // 60 % 60), int(eta % 60), taken_time))
+
+        start_time = time.time()
+        # main-training
         for epoch in range(self.args["train_epoch"]):
-            if epoch<1000:
+            if epoch<500:
                 lr_opt = 2e-4
-            elif epoch<1500:
+            elif epoch<750:
                 lr_opt = 2e-5
             else:
                 lr_opt = 2e-6
@@ -308,7 +349,7 @@ class Model:
                 # update D network (2time)
                 for _ in range(2):
                     self.sess.run([d_optim],
-                                  feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target,lr_d:lr_opt})
+                                  feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target,lr_g:lr_opt})
                 # update G network
                 self.sess.run([g_optim,  self.update_ops],
                               feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target, lr_g: lr_opt})
