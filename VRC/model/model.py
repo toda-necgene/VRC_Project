@@ -26,7 +26,7 @@ def generator(ten,reuse,train):
                                          name="encode_bn_3")
 
     ten = tf.nn.leaky_relu(ten)
-    # resnet 16blocks
+    # resnet 8blocks
     for i in range(16):
         tenA=ten
         tenA = tf.layers.conv2d(tenA, 64, [3, 1], [1, 1], padding="SAME",
@@ -34,8 +34,8 @@ def generator(ten,reuse,train):
                                 use_bias=False, reuse=reuse, name="residual_conv_A_3x1_" + str(i))
         tenA = tf.layers.batch_normalization(tenA, axis=3, training=train, trainable=True, reuse=reuse,
                                              name="residual_bn_A_" + str(i))
-        # rate=1-(i/32)
-        # tenA=ShakeDrop(tenA,rate,train)
+        rate=1-(i/32)
+        tenA=ShakeDrop(tenA,rate,train)
         tenB=ten
         tenB = tf.layers.conv2d(tenB, 64, [1, 1], [1, 1],
                                 kernel_initializer=tf.contrib.layers.xavier_initializer_conv2d(),
