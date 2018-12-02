@@ -37,15 +37,15 @@ class Model:
         self.args["tensorboard"]=False
         self.args["debug"] = False
 
-        self.args["batch_size"] = 32
+        self.args["batch_size"] = 1
         self.args["input_size"] = 4096
         self.args["padding"]=1024
 
-        self.args["weight_Cycle"]=100.0
+        self.args["weight_Cycle"]=150.0
         self.args["weight_GAN"] = 1.0
         self.args["train_iteration"]=60000
         self.args["start_epoch"]=0
-        self.args["save_interval"]=50
+        self.args["save_interval"]=2000
 
         # reading json file
 
@@ -284,7 +284,7 @@ class Model:
         start_time_all=time.time()
         tt_list=list()
         start_time = time.time()
-        train_epoch=self.args["train_iteration"]//self.batch_idxs
+        train_epoch=self.args["train_iteration"]//self.batch_idxs+1
         iterations=0
         interval_memory=-1
         # main-training
@@ -298,6 +298,8 @@ class Model:
                 interval_memory=iterations//self.args["save_interval"]
             for idx in range(0, self.batch_idxs):
                 # getting batch
+                if iterations==self.args["train_iteration"]:
+                    break
                 lr_opt = np.cos(iterations / self.args["train_iteration"] / 2 * np.pi) * 1.98e-4 + 2e-6
                 st=self.args["batch_size"]*idx
                 batch_sounds_resource = np.asarray([self.sounds_r[ind] for ind in index_list[st:st+self.args["batch_size"]]])
@@ -312,12 +314,14 @@ class Model:
                               feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target, lr_g: lr_opt})
                 iterations+=1
             # calculating ETA
+            if iterations == self.args["train_iteration"]:
+                break
             taken_time = time.time() - start_time
             start_time = time.time()
             tt_list.append(taken_time)
             if len(tt_list)>10:
                 tt_list=tt_list[1:-1]
-            eta=np.mean(tt_list)*(train_epoch-epoch-1)
+            eta=np.mean(tt_list)*(train_epoch-epoch)
             # console outputs
             print(" [I] Iteration %04d / %04d finished. ETA: %02d:%02d:%02d takes %2.3f secs" % (iterations,self.args["train_iteration"],eta//3600,eta//60%60,int(eta%60),taken_time))
 
@@ -375,7 +379,7 @@ class Model:
             path = "%s%04d.png" % (self.args["wave_otp_dir"],epoch//self.args["save_interval"])
             plt.savefig(path)
             #saving fake waves
-            path = self.args["wave_otp_dir"] + datetime.now().strftime("%m_%d_%H_%M_%S") + "_" + str(epoch) + "Epochs"
+            path = self.args["wave_otp_dir"] + datetime.now().strftime("%m-%d_%H-%M-%S") + "_" + str(epoch)
             voiced = out_puts.astype(np.int16)
             p = pyaudio.PyAudio()
             FORMAT = pyaudio.paInt16

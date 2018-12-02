@@ -2,12 +2,12 @@
     "saving_config":{
         "checkpoint_dir":"Z://bestmodel/",
         "wave_otp_dir":"Z://waves/",
-        "version":"0.8.471"
+        "version":"0.8.475"
     },
     "training_config":{
         "train_iteration": 60000,
-        "batch_size":128,
-        "save_interval":3000,
+        "batch_size":1,
+        "save_interval":2000,
         "train_data_dir":"./datasets/train",
         "test_data_dir":"./datasets/test"
     },
