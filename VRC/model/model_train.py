@@ -83,7 +83,7 @@ class Model:
         self.args["name_save"] = self.args["model_name"] + self.args["version"]
 
         # shapes setting
-        self.input_size_model=[self.args["batch_size"],13,513,1]
+        self.input_size_model=[self.args["batch_size"],17,513,1]
         self.input_size_test = [1, 65,513,1]
         self.output_size_model = [self.args["batch_size"], 65,513,1]
 
@@ -242,12 +242,9 @@ class Model:
 
         # naming output-directory
         lr_g = tf.placeholder(tf.float32, None, name="g_lr")
-
-        g_optim = tf.train.AdamOptimizer(lr_g, 0.5, 0.999).minimize(self.g_loss,
-                                                                                  var_list=self.g_vars)
-
-        d_optim = tf.train.AdamOptimizer(lr_g, 0.5, 0.999).minimize(self.d_loss,
-                                                                                  var_list=self.d_vars)
+        with tf.control_dependencies(self.update_ops):
+            g_optim = tf.train.AdamOptimizer(lr_g, 0.5, 0.999).minimize(self.g_loss,var_list=self.g_vars)
+        d_optim = tf.train.AdamOptimizer(lr_g, 0.5, 0.999).minimize(self.d_loss,var_list=self.d_vars)
 
         # logging
         if self.args["tensorboard"]:
@@ -286,21 +283,20 @@ class Model:
         start_time = time.time()
         train_epoch=self.args["train_iteration"]//self.batch_idxs+1
         iterations=0
-        interval_memory=-1
         # main-training
         for epoch in range(train_epoch):
             # shuffling train_data_index
             np.random.shuffle(index_list)
             np.random.shuffle(index_list2)
 
-            if self.args["test"] and iterations//self.args["save_interval"]!=interval_memory:
-                self.test_and_save(iterations)
-                interval_memory=iterations//self.args["save_interval"]
+            if self.args["test"] :
+                self.test_and_save(epoch)
             for idx in range(0, self.batch_idxs):
                 # getting batch
                 if iterations==self.args["train_iteration"]:
                     break
-                lr_opt = np.cos(iterations / self.args["train_iteration"] / 2 * np.pi) * 1.98e-4 + 2e-6
+                # lr_opt = (1.0-np.tanh(iterations / self.args["train_iteration"] * np.pi)) * 1.98e-4 + 2e-6
+                lr_opt = 2e-4
                 st=self.args["batch_size"]*idx
                 batch_sounds_resource = np.asarray([self.sounds_r[ind] for ind in index_list[st:st+self.args["batch_size"]]])
                 batch_sounds_target= np.asarray([self.sounds_t[ind] for ind in index_list2[st:st+self.args["batch_size"]]])
@@ -310,7 +306,7 @@ class Model:
                     self.sess.run([d_optim],
                                   feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target,lr_g:lr_opt})
                 # update G network
-                self.sess.run([g_optim,  self.update_ops],
+                self.sess.run([g_optim],
                               feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target, lr_g: lr_opt})
                 iterations+=1
             # calculating ETA
@@ -376,7 +372,7 @@ class Model:
             ins = np.transpose(im[:,:,0], (1, 0))
             plt.imshow(ins, vmin=-25, vmax=5,aspect="auto")
             plt.colorbar()
-            path = "%s%04d.png" % (self.args["wave_otp_dir"],epoch//self.args["save_interval"])
+            path = "%s%04d.png" % (self.args["wave_otp_dir"],epoch)
             plt.savefig(path)
             #saving fake waves
             path = self.args["wave_otp_dir"] + datetime.now().strftime("%m-%d_%H-%M-%S") + "_" + str(epoch)

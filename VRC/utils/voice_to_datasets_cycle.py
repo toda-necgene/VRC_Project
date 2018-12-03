@@ -18,7 +18,6 @@ WAVE_INPUT_FILENAME2 = "./datasets/source/B"
 
 files=glob.glob(WAVE_INPUT_FILENAME+"/*.wav")
 name="/A"
-cnt=0
 ff=list()
 m=list()
 for file in files:
@@ -45,7 +44,7 @@ for file in files:
     resp=np.zeros([NFFT//2])
     for i in range(times):
 
-        ind=term+SHIFT*dilations+NFFT
+        ind=8192
         startpos=term*i+data_realA.shape[0]%term
         data_realAb = data_realA[max(startpos-ind,0):startpos].copy()
         r=ind-data_realAb.shape[0]
@@ -54,26 +53,26 @@ for file in files:
         _f0, t = pw.dio(data_realAb,16000)
         f0=pw.stonemask(data_realAb,_f0,t,16000)
         sp=pw.cheaptrick(data_realAb,f0,t,16000)
-        a  = sp[::5]
-        a2 = sp[::5] * 0.8
-        a3 = sp[::5] * 0.4
+        a  = sp[:68:4]
+        a2 = sp[:17] * 0.8
+        a3 = sp[17:34] * 0.4
+        a4 = sp[34:51] * 0.7
+        a5 = sp[51:68] * 0.9
         f0=f0[f0>0.0]
         if len(f0)!=0:
             ff.extend(f0)
         m.append(np.clip((np.log(a)+15.0)/20,-1.0,1.0))
         m.append(np.clip((np.log(a2) + 15.0) / 20, -1.0, 1.0))
         m.append(np.clip((np.log(a3) + 15.0) / 20, -1.0, 1.0))
-        cnt+=1
-        if cnt>15000:
-            break
-m=np.asarray(m[:15000],dtype=np.float32)
+        m.append(np.clip((np.log(a4) + 15.0) / 20, -1.0, 1.0))
+        m.append(np.clip((np.log(a5) + 15.0) / 20, -1.0, 1.0))
+m=np.asarray(m,dtype=np.float32)
 np.save("./datasets/train/" + str(name) + "/00.npy", m)
 print(" [*] ソースデータ変換完了")
 pitch_mean_s=np.mean(ff)
 pitch_var_s=np.std(ff)
 files=glob.glob(WAVE_INPUT_FILENAME2+"/*.wav")
 name="/B"
-cnt=0
 ff=list()
 m=list()
 for file in files:
@@ -99,7 +98,7 @@ for file in files:
     ttm=time.time()
     resp=np.zeros([NFFT//2])
     for i in range(times):
-        ind=term+SHIFT*dilations+NFFT
+        ind=8192
         startpos=term*i+data_realA.shape[0]%term
         data_realAb = data_realA[max(startpos-ind,0):startpos]
         r=ind-data_realAb.shape[0]
@@ -109,19 +108,20 @@ for file in files:
         _f0, t = pw.dio(data_realAb,16000)
         f0=pw.stonemask(data_realAb,_f0,t,16000)
         sp=pw.cheaptrick(data_realAb,f0,t,16000)
-        a = sp[::5]
-        a2 = sp[::5] * 0.8
-        a3 = sp[::5] * 0.4
-        f0 = f0[f0 > 0.0]
-        if len(f0) != 0:
+        a  = sp[:68:4]
+        a2 = sp[:17] * 0.8
+        a3 = sp[17:34] * 0.4
+        a4 = sp[34:51] * 0.7
+        a5 = sp[51:68] * 0.9
+        f0=f0[f0>0.0]
+        if len(f0)!=0:
             ff.extend(f0)
-        m.append(np.clip((np.log(a) + 15.0) / 20, -1.0, 1.0))
+        m.append(np.clip((np.log(a)+15.0)/20,-1.0,1.0))
         m.append(np.clip((np.log(a2) + 15.0) / 20, -1.0, 1.0))
         m.append(np.clip((np.log(a3) + 15.0) / 20, -1.0, 1.0))
-        cnt+=1
-        if cnt>15000:
-            break
-m=np.asarray(m[:15000],dtype=np.float32)
+        m.append(np.clip((np.log(a4) + 15.0) / 20, -1.0, 1.0))
+        m.append(np.clip((np.log(a5) + 15.0) / 20, -1.0, 1.0))
+m=np.asarray(m,dtype=np.float32)
 np.save("./datasets/train/" + str(name) + "/00.npy", m)
 print(" [*] アンサーデータ変換完了")
 pitch_mean_t=np.mean(ff)
