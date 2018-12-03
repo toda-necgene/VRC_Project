@@ -45,7 +45,6 @@ class Model:
         self.args["weight_GAN"] = 1.0
         self.args["train_iteration"]=60000
         self.args["start_epoch"]=0
-        self.args["save_interval"]=2000
 
         # reading json file
 

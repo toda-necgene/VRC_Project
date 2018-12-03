@@ -58,6 +58,7 @@ for file in files:
         a3 = sp[17:34] * 0.4
         a4 = sp[34:51] * 0.7
         a5 = sp[51:68] * 0.9
+        a6 = sp[34:102:4]
         f0=f0[f0>0.0]
         if len(f0)!=0:
             ff.extend(f0)
@@ -66,6 +67,7 @@ for file in files:
         m.append(np.clip((np.log(a3) + 15.0) / 20, -1.0, 1.0))
         m.append(np.clip((np.log(a4) + 15.0) / 20, -1.0, 1.0))
         m.append(np.clip((np.log(a5) + 15.0) / 20, -1.0, 1.0))
+        m.append(np.clip((np.log(a6) + 15.0) / 20, -1.0, 1.0))
 m=np.asarray(m,dtype=np.float32)
 np.save("./datasets/train/" + str(name) + "/00.npy", m)
 print(" [*] ソースデータ変換完了")
@@ -113,6 +115,7 @@ for file in files:
         a3 = sp[17:34] * 0.4
         a4 = sp[34:51] * 0.7
         a5 = sp[51:68] * 0.9
+        a6 = sp[34:102:4]
         f0=f0[f0>0.0]
         if len(f0)!=0:
             ff.extend(f0)
@@ -121,6 +124,7 @@ for file in files:
         m.append(np.clip((np.log(a3) + 15.0) / 20, -1.0, 1.0))
         m.append(np.clip((np.log(a4) + 15.0) / 20, -1.0, 1.0))
         m.append(np.clip((np.log(a5) + 15.0) / 20, -1.0, 1.0))
+        m.append(np.clip((np.log(a6) + 15.0) / 20, -1.0, 1.0))
 m=np.asarray(m,dtype=np.float32)
 np.save("./datasets/train/" + str(name) + "/00.npy", m)
 print(" [*] アンサーデータ変換完了")

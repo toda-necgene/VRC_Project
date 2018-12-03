@@ -2,18 +2,17 @@
     "saving_config":{
         "checkpoint_dir":"Z://bestmodel/",
         "wave_otp_dir":"Z://waves/",
-        "version":"0.8.518"
+        "version":"0.8.520"
     },
     "training_config":{
-        "train_iteration": 100000,
+        "train_iteration": 400000,
         "batch_size":1,
-        "save_interval":3000,
         "train_data_dir":"./datasets/train",
         "test_data_dir":"./datasets/test"
     },
     "training_paramaters":{
         "weight_GAN":1.0,
-        "weight_Cycle":150.0
+        "weight_Cycle":10.0
     },
     "plugin_config":{
         "test":true,
