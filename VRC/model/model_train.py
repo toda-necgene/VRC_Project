@@ -242,8 +242,8 @@ class Model:
         # naming output-directory
         lr_g = tf.placeholder(tf.float32, None, name="g_lr")
         with tf.control_dependencies(self.update_ops):
-            g_optim = tf.train.AdamOptimizer(lr_g, 0.5, 0.999).minimize(self.g_loss,var_list=self.g_vars)
-        d_optim = tf.train.AdamOptimizer(lr_g, 0.5, 0.999).minimize(self.d_loss,var_list=self.d_vars)
+            g_optim = tf.train.AdamOptimizer(lr_g, 0.1, 0.999).minimize(self.g_loss,var_list=self.g_vars)
+        d_optim = tf.train.AdamOptimizer(lr_g, 0.1, 0.999).minimize(self.d_loss,var_list=self.d_vars)
 
         # logging
         if self.args["tensorboard"]:
@@ -282,6 +282,9 @@ class Model:
         start_time = time.time()
         train_epoch=self.args["train_iteration"]//self.batch_idxs+1
         iterations=0
+        lr_max=0.0002
+        lr_min=0.00008
+        lr_decay=0.4
         # main-training
         for epoch in range(train_epoch):
             # shuffling train_data_index
@@ -294,8 +297,8 @@ class Model:
                 # getting batch
                 if iterations==self.args["train_iteration"]:
                     break
-                # lr_opt = (1.0-np.tanh(iterations / self.args["train_iteration"] * np.pi)) * 1.98e-4 + 2e-6
-                lr_opt = 2e-4
+                lr_opt = ((np.cos(iterations%50000 / 50000 /2 * np.pi)) * (lr_max-lr_min)  + lr_min) * (lr_decay ** (iterations//50000))
+                # lr_opt = 2e-4
                 st=self.args["batch_size"]*idx
                 batch_sounds_resource = np.asarray([self.sounds_r[ind] for ind in index_list[st:st+self.args["batch_size"]]])
                 batch_sounds_target= np.asarray([self.sounds_t[ind] for ind in index_list2[st:st+self.args["batch_size"]]])
@@ -316,12 +319,12 @@ class Model:
             tt_list.append(taken_time)
             if len(tt_list)>10:
                 tt_list=tt_list[1:-1]
-            eta=np.mean(tt_list)*(train_epoch-epoch)
+            eta=np.mean(tt_list)*(train_epoch-epoch-1)
             # console outputs
             print(" [I] Iteration %04d / %04d finished. ETA: %02d:%02d:%02d takes %2.3f secs" % (iterations,self.args["train_iteration"],eta//3600,eta//60%60,int(eta%60),taken_time))
 
 
-        self.test_and_save(self.args["train_iteration"])
+        self.test_and_save(train_epoch)
         taken_time_all=time.time()-start_time_all
         hour_display=taken_time_all//3600
         minute_display=taken_time_all//60%60

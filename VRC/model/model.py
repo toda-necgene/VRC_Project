@@ -3,7 +3,7 @@ import tensorflow as tf
 
 def discriminator(inp,reuse):
     # setting paramater
-    chs=[256,128,64,1]
+    chs=[256,128,1]
     ten = inp
     ten = tf.transpose(ten, [0, 1, 3, 2])
     # convolution(3*5,stride 1*4)
@@ -24,7 +24,7 @@ def generator(ten,reuse,train):
     ten = tf.layers.batch_normalization(ten, training=train, reuse=reuse, name="encode_bn_3")
 
     ten = tf.nn.leaky_relu(ten)
-    # resnet 8blocks
+    # resnet(GLU) 4blocks
     for i in range(4):
         tenA = tf.layers.conv2d(ten, 64, [3, 1], padding="SAME",
                                 kernel_initializer=tf.initializers.he_normal(),
