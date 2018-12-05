@@ -126,7 +126,7 @@ class Model:
                 d_judge_BR= discriminator(self.input_model_B, None)
                 d_judge_BF = discriminator(fake_aB_image, True)
             with tf.variable_scope("discriminators_B"):
-                d_judge_AR = discriminator(self.input_model_A_noisy, None)
+                d_judge_AR = discriminator(self.input_model_A, None)
                 d_judge_AF = discriminator(fake_bA_image, True)
 
         #getting individual variabloes
