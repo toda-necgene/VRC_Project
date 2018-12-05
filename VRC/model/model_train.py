@@ -104,12 +104,15 @@ class Model:
         self.input_model_A=tf.placeholder(tf.float32, self.input_size_model, "inputs_g_A")
         self.input_model_B = tf.placeholder(tf.float32, self.input_size_model, "inputs_g_B")
         self.input_model_test = tf.placeholder(tf.float32, self.input_size_test, "inputs_g_test")
+        s = [int(self.input_model_A.get_shape()[0]), int(self.input_model_A.get_shape()[1]), 1, 1]
+        self.input_model_A_noisy=self.input_model_A*tf.random_uniform(s, 0.2, 1.0)
+
 
         #creating generator
         with tf.variable_scope("generators"):
 
             with tf.variable_scope("generator_1"):
-                fake_aB_image = generator(self.input_model_A, reuse=None, train=True)
+                fake_aB_image = generator(self.input_model_A_noisy, reuse=None, train=True)
                 self.fake_aB_image_test= generator(self.input_model_test, reuse=True, train=False)
             with tf.variable_scope("generator_2"):
                 fake_bA_image = generator(self.input_model_B, reuse=None, train=True)
@@ -123,7 +126,7 @@ class Model:
                 d_judge_BR= discriminator(self.input_model_B, None)
                 d_judge_BF = discriminator(fake_aB_image, True)
             with tf.variable_scope("discriminators_B"):
-                d_judge_AR = discriminator(self.input_model_A, None)
+                d_judge_AR = discriminator(self.input_model_A_noisy, None)
                 d_judge_AF = discriminator(fake_bA_image, True)
 
         #getting individual variabloes
@@ -145,7 +148,7 @@ class Model:
         # objective-functions of generator
 
         # Cycle lossA
-        g_loss_cyc_A = tf.losses.mean_squared_error(predictions=fake_Ba_image,labels=self.input_model_A)* self.args["weight_Cycle"]
+        g_loss_cyc_A = tf.losses.mean_squared_error(predictions=fake_Ba_image,labels=self.input_model_A_noisy)* self.args["weight_Cycle"]
 
         # Gan lossB
         g_loss_gan_B = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_BF), predictions=d_judge_BF) * self.args["weight_GAN"]
@@ -283,8 +286,8 @@ class Model:
         train_epoch=self.args["train_iteration"]//self.batch_idxs+1
         iterations=0
         lr_max=0.0002
-        lr_min=0.00008
-        lr_decay=0.4
+        lr_min=0.00016
+        lr_decay=0.8
         # main-training
         for epoch in range(train_epoch):
             # shuffling train_data_index
