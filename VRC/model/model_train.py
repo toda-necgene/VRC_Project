@@ -105,7 +105,7 @@ class Model:
         self.input_model_B = tf.placeholder(tf.float32, self.input_size_model, "inputs_g_B")
         self.input_model_test = tf.placeholder(tf.float32, self.input_size_test, "inputs_g_test")
         s = [int(self.input_model_A.get_shape()[0]), int(self.input_model_A.get_shape()[1]), 1, 1]
-        self.input_model_A_noisy=self.input_model_A*tf.random_uniform(s, 0.2, 1.0)
+        self.input_model_A_noisy=self.input_model_A*tf.random_uniform(s, 0.5, 1.5)
 
 
         #creating generator
@@ -148,7 +148,7 @@ class Model:
         # objective-functions of generator
 
         # Cycle lossA
-        g_loss_cyc_A = tf.losses.mean_squared_error(predictions=fake_Ba_image,labels=self.input_model_A_noisy)* self.args["weight_Cycle"]
+        g_loss_cyc_A = tf.losses.mean_squared_error(predictions=fake_Ba_image,labels=self.input_model_A)* self.args["weight_Cycle"]
 
         # Gan lossB
         g_loss_gan_B = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_BF), predictions=d_judge_BF) * self.args["weight_GAN"]
@@ -294,7 +294,7 @@ class Model:
             np.random.shuffle(index_list)
             np.random.shuffle(index_list2)
 
-            if self.args["test"] :
+            if self.args["test"] and epoch % 10 == 0:
                 self.test_and_save(epoch)
             for idx in range(0, self.batch_idxs):
                 # getting batch
