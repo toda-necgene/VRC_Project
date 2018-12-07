@@ -54,10 +54,15 @@ for file in files:
         f0=pw.stonemask(data_realAb,_f0,t,16000)
         sp=pw.cheaptrick(data_realAb,f0,t,16000)
         a  = sp[:68:4]
+        a2  = sp[:68:4]*0.8
+        a3  = sp[:68:4]*0.6
+
         f0=f0[f0>0.0]
         if len(f0)!=0:
             ff.extend(f0)
         m.append(np.clip((np.log(a)+15.0)/20,-1.0,1.0))
+        m.append(np.clip((np.log(a2) + 15.0) / 20, -1.0, 1.0))
+        m.append(np.clip((np.log(a3) + 15.0) / 20, -1.0, 1.0))
 m=np.asarray(m,dtype=np.float32)
 np.save("./datasets/train/" + str(name) + "/00.npy", m)
 print(" [*] ソースデータ変換完了")
@@ -101,10 +106,14 @@ for file in files:
         f0=pw.stonemask(data_realAb,_f0,t,16000)
         sp=pw.cheaptrick(data_realAb,f0,t,16000)
         a  = sp[:68:4]
+        a2  = sp[:17]
+        a3  = sp[17:34]
         f0=f0[f0>0.0]
         if len(f0)!=0:
             ff.extend(f0)
         m.append(np.clip((np.log(a)+15.0)/20,-1.0,1.0))
+        m.append(np.clip((np.log(a2) + 15.0) / 20, -1.0, 1.0))
+        m.append(np.clip((np.log(a3) + 15.0) / 20, -1.0, 1.0))
 m=np.asarray(m,dtype=np.float32)
 np.save("./datasets/train/" + str(name) + "/00.npy", m)
 print(" [*] アンサーデータ変換完了")

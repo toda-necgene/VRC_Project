@@ -19,29 +19,45 @@ def discriminator(inp,reuse):
 def generator(ten,reuse,train):
     ten = tf.transpose(ten, [0, 1, 3, 2])
 
-    ten=tf.layers.conv2d(ten, 64, [3, 1], [1, 1], padding="SAME",
-                           kernel_initializer=tf.initializers.he_normal(), use_bias=False,reuse=reuse, name="encode_conv_3x1_3")
+    tenR=ten
+    ten=tf.layers.conv2d_transpose(ten, 171, [3, 3], [1, 3], padding="SAME",
+                           kernel_initializer=tf.initializers.he_normal(), use_bias=False,reuse=reuse, name="encode_conv_1")
+    ten = tf.layers.batch_normalization(ten, training=train, reuse=reuse, name="encode_bn_1")
+
+    ten = tf.nn.leaky_relu(ten)
+    ten+=ten+tf.reshape(tenR,ten.shape)
+    tenR=ten
+    ten = tf.layers.conv2d_transpose(ten, 57, [3, 5], [1, 3], padding="SAME",
+                                     kernel_initializer=tf.initializers.he_normal(), use_bias=False, reuse=reuse,
+                                     name="encode_conv_2")
+    ten = tf.layers.batch_normalization(ten, training=train, reuse=reuse, name="encode_bn_2")
+
+    ten = tf.nn.leaky_relu(ten)
+
+    ten=ten+tf.reshape(tenR,ten.shape)
+    tenR=ten
+
+    ten = tf.layers.conv2d_transpose(ten, 19, [3, 5], [1, 3], padding="SAME",
+                                     kernel_initializer=tf.initializers.he_normal(), use_bias=False, reuse=reuse,
+                                     name="encode_conv_3")
     ten = tf.layers.batch_normalization(ten, training=train, reuse=reuse, name="encode_bn_3")
 
     ten = tf.nn.leaky_relu(ten)
-    # resnet(GLU) 4blocks
-    for i in range(4):
-        tenA = tf.layers.conv2d(ten, 64, [3, 1], padding="SAME",
-                                kernel_initializer=tf.initializers.he_normal(),
-                                use_bias=False, reuse=reuse, name="residual_conv_A_3x1_" + str(i))
-        tenA = tf.layers.batch_normalization(tenA, training=train, reuse=reuse,name="residual_bn_A_" + str(i))
-        rate=1-(i/8)
-        tenA=ShakeDrop(tenA,rate,train)
-        tenB = tf.layers.conv2d(ten, 64, [1, 1], kernel_initializer=tf.initializers.he_normal(),
-                                use_bias=False,reuse=reuse, name="residual_conv_B_1x1_" + str(i))
-        tenB = tf.layers.batch_normalization(tenB,  training=train, reuse=reuse,name="residual_bn_B_" + str(i))
-        ten= tenA*tf.tanh(tenB)+ten
 
-    # decodeing
-    ten = tf.layers.conv2d(ten, 513, [1, 1],kernel_initializer=tf.truncated_normal_initializer(stddev=0.02),
-                           reuse=reuse, name="decode_conv_1x1_3")
+    ten=ten+tf.reshape(tenR,ten.shape)
+    tenR=ten
+    ten = tf.layers.conv2d_transpose(ten, 6, [1, 7], [1, 3], padding="VALID",
+                                     kernel_initializer=tf.initializers.he_normal(), use_bias=False, reuse=reuse,
+                                     name="encode_conv_4")
+    ten = tf.layers.batch_normalization(ten, training=train, reuse=reuse, name="encode_bn_4")
 
-    ten = tf.transpose(ten, [0, 1, 3, 2])
+    ten = tf.nn.leaky_relu(ten)
+
+    ten = tf.layers.conv2d_transpose(ten, 1, [1, 9], [1, 6], padding="VALID",
+                                     kernel_initializer=tf.initializers.he_normal(), use_bias=False, reuse=reuse,
+                                     name="encode_conv_3x1_5")
+
+    ten=ten+tf.reshape(tenR,ten.shape)
     return tf.tanh(ten)
 
 def ShakeDrop(ten,rate,train):
@@ -64,4 +80,4 @@ def ShakeDrop(ten,rate,train):
         return ten
     else:
 
-        return ten*rate
+        return ten

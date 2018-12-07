@@ -104,15 +104,12 @@ class Model:
         self.input_model_A=tf.placeholder(tf.float32, self.input_size_model, "inputs_g_A")
         self.input_model_B = tf.placeholder(tf.float32, self.input_size_model, "inputs_g_B")
         self.input_model_test = tf.placeholder(tf.float32, self.input_size_test, "inputs_g_test")
-        s = [int(self.input_model_A.get_shape()[0]), int(self.input_model_A.get_shape()[1]), 1, 1]
-        self.input_model_A_noisy=self.input_model_A*tf.random_uniform(s, 0.5, 1.5)
-
 
         #creating generator
         with tf.variable_scope("generators"):
 
             with tf.variable_scope("generator_1"):
-                fake_aB_image = generator(self.input_model_A_noisy, reuse=None, train=True)
+                fake_aB_image = generator(self.input_model_A, reuse=None, train=True)
                 self.fake_aB_image_test= generator(self.input_model_test, reuse=True, train=False)
             with tf.variable_scope("generator_2"):
                 fake_bA_image = generator(self.input_model_B, reuse=None, train=True)
@@ -120,14 +117,23 @@ class Model:
             with tf.variable_scope("generator_1",reuse=True):
                 fake_Ab_image = generator(fake_bA_image, reuse=True,train=True)
 
+
         #creating discriminator
         with tf.variable_scope("discriminators"):
-            with tf.variable_scope("discriminators_A"):
-                d_judge_BR= discriminator(self.input_model_B, None)
-                d_judge_BF = discriminator(fake_aB_image, True)
             with tf.variable_scope("discriminators_B"):
-                d_judge_AR = discriminator(self.input_model_A, None)
-                d_judge_AF = discriminator(fake_bA_image, True)
+                d_judge_BF = discriminator(fake_aB_image, None)
+                d_judge_BS = tf.stop_gradient(tf.clip_by_value(discriminator(self.input_model_B, True),0.0,1.0) * 1 - tf.clip_by_value(d_judge_BF,0.0,1.0))
+                self.R_rate_B =1 - d_judge_BS * 0.5
+                F_rate=d_judge_BS*0.5
+                D_input_R_B = self.R_rate_B * self.input_model_B + F_rate * fake_aB_image
+                d_judge_BR= discriminator(D_input_R_B, True)
+            with tf.variable_scope("discriminators_A"):
+                d_judge_AF = discriminator(fake_bA_image, None)
+                d_judge_AS = tf.stop_gradient(tf.clip_by_value(discriminator(self.input_model_A, True),0.0,1.0) * 1 - tf.clip_by_value(d_judge_AF,0.0,1.0))
+                self.R_rate_A = 1 - d_judge_AS * 0.5
+                F_rate = d_judge_AS * 0.5
+                D_input_R_A = self.R_rate_A * self.input_model_A + F_rate * fake_bA_image
+                d_judge_AR = discriminator(D_input_R_A, True)
 
         #getting individual variabloes
         self.g_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"generators")
@@ -135,9 +141,9 @@ class Model:
         self.update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 
         #objective-functions of discriminator
-        d_loss_AR = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_AR), predictions=d_judge_AR)
+        d_loss_AR = tf.losses.mean_squared_error(labels=self.R_rate_A, predictions=d_judge_AR)
         d_loss_AF = tf.losses.mean_squared_error(labels=tf.zeros_like(d_judge_AF), predictions=d_judge_AF)
-        d_loss_BR = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_BR), predictions=d_judge_BR)
+        d_loss_BR = tf.losses.mean_squared_error(labels=self.R_rate_B, predictions=d_judge_BR)
         d_loss_BF = tf.losses.mean_squared_error(labels=tf.zeros_like(d_judge_BF), predictions=d_judge_BF)
 
         d_loss_A=d_loss_AR + d_loss_AF
@@ -243,10 +249,9 @@ class Model:
     def train(self):
 
         # naming output-directory
-        lr_g = tf.placeholder(tf.float32, None, name="g_lr")
         with tf.control_dependencies(self.update_ops):
-            g_optim = tf.train.AdamOptimizer(lr_g, 0.1, 0.999).minimize(self.g_loss,var_list=self.g_vars)
-        d_optim = tf.train.AdamOptimizer(lr_g, 0.1, 0.999).minimize(self.d_loss,var_list=self.d_vars)
+            g_optim = tf.train.AdamOptimizer(1e-3, 0.5, 0.999).minimize(self.g_loss,var_list=self.g_vars)
+        d_optim = tf.train.AdamOptimizer(1e-3, 0.5, 0.999).minimize(self.d_loss,var_list=self.d_vars)
 
         # logging
         if self.args["tensorboard"]:
@@ -285,34 +290,26 @@ class Model:
         start_time = time.time()
         train_epoch=self.args["train_iteration"]//self.batch_idxs+1
         iterations=0
-        lr_max=0.0002
-        lr_min=0.00016
-        lr_decay=0.8
         # main-training
         for epoch in range(train_epoch):
             # shuffling train_data_index
             np.random.shuffle(index_list)
             np.random.shuffle(index_list2)
 
-            if self.args["test"] and epoch % 10 == 0:
+            if self.args["test"] and epoch % 1 == 0:
                 self.test_and_save(epoch)
             for idx in range(0, self.batch_idxs):
                 # getting batch
                 if iterations==self.args["train_iteration"]:
                     break
-                lr_opt = ((np.cos(iterations%50000 / 50000 /2 * np.pi)) * (lr_max-lr_min)  + lr_min) * (lr_decay ** (iterations//50000))
-                # lr_opt = 2e-4
                 st=self.args["batch_size"]*idx
                 batch_sounds_resource = np.asarray([self.sounds_r[ind] for ind in index_list[st:st+self.args["batch_size"]]])
                 batch_sounds_target= np.asarray([self.sounds_t[ind] for ind in index_list2[st:st+self.args["batch_size"]]])
-                
-                # update D network (2time)
-                for _ in range(2):
-                    self.sess.run([d_optim],
-                                  feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target,lr_g:lr_opt})
+
+                # update D network
+                self.sess.run([d_optim],feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target})
                 # update G network
-                self.sess.run([g_optim],
-                              feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target, lr_g: lr_opt})
+                self.sess.run([g_optim],feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target})
                 iterations+=1
             # calculating ETA
             if iterations == self.args["train_iteration"]:
