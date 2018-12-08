@@ -3,7 +3,7 @@ import tensorflow as tf
 
 def discriminator(inp,reuse):
     # setting paramater
-    chs=[256,128,1]
+    chs=[64,32,1]
     ten = inp
     ten = tf.transpose(ten, [0, 1, 3, 2])
     # convolution(3*5,stride 1*4)
