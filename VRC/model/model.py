@@ -59,25 +59,3 @@ def generator(ten,reuse,train):
 
     ten=ten+tf.reshape(tenR,ten.shape)
     return tf.tanh(ten)
-
-def ShakeDrop(ten,rate,train):
-    # shakedrop layer
-    # s=ten.get_shape()
-    if train:
-        s = [int(ten.get_shape()[0]), int(ten.get_shape()[1]), 1, 1]
-        # random noise
-        f_rand = tf.random_uniform(s, -1.0, 1.0)
-        b_rand = tf.random_uniform(s, 0.0, 1.0)
-        # droping
-        prop=tf.random_uniform(s,0.0,1.0)+rate
-        prop=tf.floor(prop)
-        tenA= ten*prop
-        tenB = ten*(1-prop)
-
-        # shaking
-        ten=tenA+tenB*b_rand+tf.stop_gradient(tenB*(f_rand-b_rand))
-
-        return ten
-    else:
-
-        return ten

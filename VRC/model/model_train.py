@@ -296,7 +296,7 @@ class Model:
             np.random.shuffle(index_list)
             np.random.shuffle(index_list2)
 
-            if self.args["test"] and epoch % 1 == 0:
+            if self.args["test"] and epoch % 10 == 0:
                 self.test_and_save(epoch)
             for idx in range(0, self.batch_idxs):
                 # getting batch
