@@ -3,8 +3,9 @@
   <component name="ChangeListManager">
     <list default="true" id="bcabb495-93d4-437a-b14b-9cb2802ec5b1" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/VRC/model/model.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/model/model.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/VRC/model/model_train.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/model/model_train.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/VRC/setting.json" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/setting.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/VRC/utils/voice_to_datasets_cycle.py" beforeDir="false" afterPath="$PROJECT_DIR$/VRC/utils/voice_to_datasets_cycle.py" afterDir="false" />
     </list>
     <ignored path="C:\Users\tadop\git\vrc\.idea\shelf/" />
     <ignored path="$PROJECT_DIR$/VRC/Network/to/" />
@@ -31,8 +32,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets_cycle.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state>
-              <caret line="5" column="20" selection-start-line="5" selection-start-column="20" selection-end-line="5" selection-end-column="20" />
+            <state relative-caret-position="309">
+              <caret line="85" column="20" selection-start-line="85" selection-start-column="20" selection-end-line="85" selection-end-column="20" />
             </state>
           </provider>
         </entry>
@@ -40,8 +41,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/VRC/model/model.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="80">
-              <caret line="5" column="14" selection-start-line="5" selection-start-column="14" selection-end-line="5" selection-end-column="14" />
+            <state relative-caret-position="294">
+              <caret line="36" selection-start-line="36" selection-end-line="36" />
             </state>
           </provider>
         </entry>
@@ -49,8 +50,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/VRC/model/model_train.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-2592">
-              <caret line="77" column="42" selection-start-line="77" selection-start-column="42" selection-end-line="77" selection-end-column="42" />
+            <state relative-caret-position="288">
+              <caret line="365" column="74" selection-start-line="365" selection-start-column="74" selection-end-line="365" selection-end-column="74" />
             </state>
           </provider>
         </entry>
@@ -114,16 +115,16 @@
         <option value="$PROJECT_DIR$/VRC/setting_examples.json" />
         <option value="$PROJECT_DIR$/VRC/__main__.py" />
         <option value="$PROJECT_DIR$/VRC/utils/model_test.py" />
-        <option value="$PROJECT_DIR$/VRC/utils/voice_to_datasets_cycle.py" />
-        <option value="$PROJECT_DIR$/VRC/model/model_train.py" />
         <option value="$PROJECT_DIR$/VRC/model/model.py" />
         <option value="$PROJECT_DIR$/VRC/setting.json" />
+        <option value="$PROJECT_DIR$/VRC/utils/voice_to_datasets_cycle.py" />
+        <option value="$PROJECT_DIR$/VRC/model/model_train.py" />
       </list>
     </option>
   </component>
   <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="1741" />
-    <option name="y" value="-10" />
+    <option name="x" value="88" />
+    <option name="y" value="-8" />
     <option name="width" value="1150" />
     <option name="height" value="766" />
   </component>
@@ -180,6 +181,14 @@
               <item name="vrc" type="462c0819:PsiDirectoryNode" />
               <item name="VRC" type="462c0819:PsiDirectoryNode" />
               <item name="datasets" type="462c0819:PsiDirectoryNode" />
+              <item name="source" type="462c0819:PsiDirectoryNode" />
+              <item name="A" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="vrc" type="b2602c69:ProjectViewProjectNode" />
+              <item name="vrc" type="462c0819:PsiDirectoryNode" />
+              <item name="VRC" type="462c0819:PsiDirectoryNode" />
+              <item name="datasets" type="462c0819:PsiDirectoryNode" />
               <item name="train" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
@@ -209,10 +218,10 @@
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\Users\tadop\git\vrc\VRC\datasets\source\B" />
+      <recent name="C:\Users\tadop\git\vrc\VRC\datasets\source\A" />
       <recent name="C:\Users\tadop\git\vrc\VRC\datasets\test" />
       <recent name="C:\Users\tadop\git\vrc\VRC\model" />
       <recent name="C:\Users\tadop\git\vrc\VRC\datasets\source\02" />
-      <recent name="C:\Users\tadop\git\vrc\VRC\datasets\source\01" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\tadop\git\vrc\VRC" />
@@ -336,20 +345,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1534034935853</updated>
-    </task>
-    <task id="LOCAL-00173" summary="[0.5.030] 出力を正規化">
-      <created>1541159925228</created>
-      <option name="number" value="00173" />
-      <option name="presentableId" value="LOCAL-00173" />
-      <option name="project" value="LOCAL" />
-      <updated>1541159925229</updated>
-    </task>
-    <task id="LOCAL-00174" summary="[0.5.067] 高速化の実験的実装">
-      <created>1542155964481</created>
-      <option name="number" value="00174" />
-      <option name="presentableId" value="LOCAL-00174" />
-      <option name="project" value="LOCAL" />
-      <updated>1542155964481</updated>
     </task>
     <task id="LOCAL-00175" summary="[0.5.080] CPUモードの実装">
       <created>1542254257924</created>
@@ -680,7 +675,21 @@
       <option name="project" value="LOCAL" />
       <updated>1544230181904</updated>
     </task>
-    <option name="localTasksCounter" value="222" />
+    <task id="LOCAL-00222" summary="[0.9.019] ノンパラレルで実験">
+      <created>1544278324314</created>
+      <option name="number" value="00222" />
+      <option name="presentableId" value="LOCAL-00222" />
+      <option name="project" value="LOCAL" />
+      <updated>1544278324314</updated>
+    </task>
+    <task id="LOCAL-00223" summary="[0.9.028] 暫定版">
+      <created>1544350303750</created>
+      <option name="number" value="00223" />
+      <option name="presentableId" value="LOCAL-00223" />
+      <option name="project" value="LOCAL" />
+      <updated>1544350303750</updated>
+    </task>
+    <option name="localTasksCounter" value="224" />
     <servers />
   </component>
   <component name="TodoView">
@@ -693,10 +702,10 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="1432" y="-8" width="1296" height="1000" extended-state="6" />
+    <frame x="-8" y="-8" width="1456" height="876" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.49865228" visible="true" weight="0.27106518" />
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.49865228" visible="true" weight="0.24047954" />
       <window_info id="Structure" order="1" sideWeight="0.5013477" side_tool="true" weight="0.30253878" />
       <window_info id="Favorites" order="2" sideWeight="0.5013477" side_tool="true" weight="0.30253878" />
       <window_info anchor="bottom" id="Message" order="0" />
@@ -704,21 +713,19 @@
       <window_info anchor="bottom" id="Debug" order="2" weight="0.3997344" />
       <window_info anchor="bottom" id="Cvs" order="3" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="4" weight="0.4" />
-      <window_info active="true" anchor="bottom" id="Run" order="5" sideWeight="0.49012694" visible="true" weight="0.26182237" />
+      <window_info active="true" anchor="bottom" id="Run" order="5" sideWeight="0.49012694" visible="true" weight="0.26110363" />
       <window_info anchor="bottom" id="TODO" order="6" show_stripe_button="false" weight="0.32884097" />
       <window_info anchor="bottom" id="Event Log" order="7" sideWeight="0.50987303" side_tool="true" weight="0.31090176" />
       <window_info anchor="bottom" id="Python Console" order="8" show_stripe_button="false" weight="0.32884097" />
       <window_info anchor="bottom" id="Messages" order="9" />
       <window_info anchor="bottom" id="Version Control" order="10" sideWeight="0.49858958" weight="0.32210243" />
-      <window_info anchor="bottom" id="Terminal" order="11" sideWeight="0.49294782" weight="0.30449826" />
+      <window_info anchor="bottom" id="Terminal" order="11" sideWeight="0.49294782" weight="0.3526245" />
       <window_info anchor="right" id="Commander" order="0" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
     </layout>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[0.8.047]　音声をより似せる" />
-    <MESSAGE value="[0.8.048]　音声をより似せる" />
     <MESSAGE value="[0.8.049]　音声をより似せる" />
     <MESSAGE value="[0.8.050]　音声をより似せる" />
     <MESSAGE value="[0.8.060]　音量スパースにしたい" />
@@ -742,7 +749,9 @@
     <MESSAGE value="[0.8.547] ノイズの乗せ方を変更" />
     <MESSAGE value="[0.9.011] spiral構造を実装" />
     <MESSAGE value="[0.9.015] ノンパラレルで実験" />
-    <option name="LAST_COMMIT_MESSAGE" value="[0.9.015] ノンパラレルで実験" />
+    <MESSAGE value="[0.9.019] ノンパラレルで実験" />
+    <MESSAGE value="[0.9.028] 暫定版" />
+    <option name="LAST_COMMIT_MESSAGE" value="[0.9.028] 暫定版" />
   </component>
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/VRC/logs/[glr=0.0002,gb=0.5,dlr=0.0002,db=0.5]wave2wave4.3.024/events.out.tfevents.1535717867.DESKTOP-QFC16G3" />
@@ -930,6 +939,13 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/VRC/model/model.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="294">
+          <caret line="36" selection-start-line="36" selection-end-line="36" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/VRC/setting.json">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="64">
@@ -939,22 +955,15 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/utils/voice_to_datasets_cycle.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state>
-          <caret line="5" column="20" selection-start-line="5" selection-start-column="20" selection-end-line="5" selection-end-column="20" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/VRC/model/model.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="80">
-          <caret line="5" column="14" selection-start-line="5" selection-start-column="14" selection-end-line="5" selection-end-column="14" />
+        <state relative-caret-position="309">
+          <caret line="85" column="20" selection-start-line="85" selection-start-column="20" selection-end-line="85" selection-end-column="20" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/VRC/model/model_train.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-2592">
-          <caret line="77" column="42" selection-start-line="77" selection-start-column="42" selection-end-line="77" selection-end-column="42" />
+        <state relative-caret-position="288">
+          <caret line="365" column="74" selection-start-line="365" selection-start-column="74" selection-end-line="365" selection-end-column="74" />
         </state>
       </provider>
     </entry>

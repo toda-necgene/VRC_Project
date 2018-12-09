@@ -82,8 +82,8 @@ class Model:
         self.args["name_save"] = self.args["model_name"] + self.args["version"]
 
         # shapes setting
-        self.input_size_model=[self.args["batch_size"],17,513,1]
-        self.input_size_test = [1, 65,513,1]
+        self.input_size_model=[self.args["batch_size"],52,513,1]
+        self.input_size_test = [1, 52,513,1]
         self.output_size_model = [self.args["batch_size"], 65,513,1]
 
 
@@ -188,12 +188,10 @@ class Model:
 
         self.loss_display=tf.summary.merge([g_loss_sum_A_display,g_loss_sum_B_display,d_loss_sum_A_display,d_loss_sum_B_display])
 
-        self.result_audio_display= tf.placeholder(tf.float32, [1,1,160000], name="FakeAudio")
         self.result_image_display= tf.placeholder(tf.float32, [1,None,512], name="FakeSpectrum")
         image_pow_display=tf.reshape(tf.transpose(self.result_image_display[:,:,:],[0,2,1]),[1,512,-1,1])
-        fake_B_audio_display = tf.summary.audio("Fake_audio_AtoB", tf.reshape(self.result_audio_display,[1,160000,1]), 16000, 1)
         fake_B_image_display = tf.summary.image("Fake_spectrum_AtoB", image_pow_display, 1)
-        self.g_test_display=tf.summary.merge([fake_B_audio_display,fake_B_image_display])
+        self.g_test_display=tf.summary.merge([fake_B_image_display])
 
         #saver
         self.saver = tf.train.Saver()
@@ -203,7 +201,7 @@ class Model:
         #To convert wave file
 
         conversion_start_time=time.time()
-        input_size_one_term=self.args["input_size"]+self.args["padding"]
+        input_size_one_term=self.args["input_size"]
         executing_times=in_put.shape[0]//(self.args["input_size"])+1
         if in_put.shape[0]%((self.args["input_size"])*self.args["batch_size"])==0:
             executing_times-=1
@@ -232,7 +230,7 @@ class Model:
             f0=(f0-self.args["pitch_rate_mean_s"])*self.args["pitch_rate_var"]+self.args["pitch_rate_mean_t"]
             result_wave=decode(f0,result[0].copy().reshape(-1,513).astype(np.float),ap)*32767
 
-            result_wave_fixed=np.clip(result_wave,-32767.0,32767.0)[self.args["padding_shift"]:-self.args["padding_shift"]]
+            result_wave_fixed=np.clip(result_wave,-32767.0,32767.0)[:self.args["input_size"]]
             result_wave_int16=result_wave_fixed.reshape(-1).astype(np.int16)
 
             #adding result
@@ -365,8 +363,7 @@ class Model:
                                       feed_dict={self.input_model_A: self.sounds_r[0:self.args["batch_size"]],
                                                  self.input_model_B: self.sounds_t[0:self.args["batch_size"]]})
             self.writer.add_summary(tb_result, epoch)
-            rs = self.sess.run(self.g_test_display, feed_dict={self.result_audio_display: out_put.reshape(1, 1, -1),
-                                                               self.result_image_display: otp_im})
+            rs = self.sess.run(self.g_test_display, feed_dict={self.result_image_display: otp_im})
             self.writer.add_summary(rs, epoch)
 
         # saving test harvests

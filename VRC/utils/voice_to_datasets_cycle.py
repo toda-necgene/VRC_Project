@@ -5,9 +5,6 @@ import time
 import glob
 import pyworld as pw
 
-NFFT=1024
-SHIFT=NFFT//2
-dilations=0
 term = 4096
 FORMAT = pyaudio.paInt16
 CHANNELS = 1        #モノラル
@@ -41,10 +38,9 @@ for file in files:
     if data_realA.shape[0]%term==0:
         times-=1
     ttm=time.time()
-    resp=np.zeros([NFFT//2])
     for i in range(times):
 
-        ind=8192
+        ind=term
         startpos=term*i+data_realA.shape[0]%term
         data_realAb = data_realA[max(startpos-ind,0):startpos].copy()
         r=ind-data_realAb.shape[0]
@@ -53,16 +49,10 @@ for file in files:
         _f0, t = pw.dio(data_realAb,16000)
         f0=pw.stonemask(data_realAb,_f0,t,16000)
         sp=pw.cheaptrick(data_realAb,f0,t,16000)
-        a  = sp[:68:4]
-        a2  = sp[:17]*0.8
-        a3  = sp[:68:4]*0.6
-
         f0=f0[f0>0.0]
         if len(f0)!=0:
             ff.extend(f0)
-        m.append(np.clip((np.log(a)+15.0)/20,-1.0,1.0))
-        m.append(np.clip((np.log(a2) + 15.0) / 20, -1.0, 1.0))
-        m.append(np.clip((np.log(a3) + 15.0) / 20, -1.0, 1.0))
+        m.append(np.clip((np.log(sp)+15.0)/20,-1.0,1.0))
 m=np.asarray(m,dtype=np.float32)
 np.save("./datasets/train/" + str(name) + "/00.npy", m)
 print(" [*] ソースデータ変換完了")
@@ -93,9 +83,8 @@ for file in files:
     if data_realA.shape[0]%term==0:
         times-=1
     ttm=time.time()
-    resp=np.zeros([NFFT//2])
     for i in range(times):
-        ind=8192
+        ind = term
         startpos=term*i+data_realA.shape[0]%term
         data_realAb = data_realA[max(startpos-ind,0):startpos]
         r=ind-data_realAb.shape[0]
@@ -105,15 +94,11 @@ for file in files:
         _f0, t = pw.dio(data_realAb,16000)
         f0=pw.stonemask(data_realAb,_f0,t,16000)
         sp=pw.cheaptrick(data_realAb,f0,t,16000)
-        a  = sp[:68:4]
-        a2  = sp[:17]
-        a3  = sp[17:34]
+        a  = sp
         f0=f0[f0>0.0]
         if len(f0)!=0:
             ff.extend(f0)
         m.append(np.clip((np.log(a)+15.0)/20,-1.0,1.0))
-        m.append(np.clip((np.log(a2) + 15.0) / 20, -1.0, 1.0))
-        m.append(np.clip((np.log(a3) + 15.0) / 20, -1.0, 1.0))
 m=np.asarray(m,dtype=np.float32)
 np.save("./datasets/train/" + str(name) + "/00.npy", m)
 print(" [*] アンサーデータ変換完了")
