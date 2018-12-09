@@ -249,9 +249,10 @@ class Model:
     def train(self):
 
         # naming output-directory
+        opt_lr=tf.placeholder(tf.float64)
         with tf.control_dependencies(self.update_ops):
-            g_optim = tf.train.AdamOptimizer(1e-3, 0.5, 0.999).minimize(self.g_loss,var_list=self.g_vars)
-        d_optim = tf.train.AdamOptimizer(1e-3, 0.5, 0.999).minimize(self.d_loss,var_list=self.d_vars)
+            g_optim = tf.train.AdamOptimizer(opt_lr, 0.5, 0.999).minimize(self.g_loss,var_list=self.g_vars)
+        d_optim = tf.train.AdamOptimizer(opt_lr, 0.5, 0.999).minimize(self.d_loss,var_list=self.d_vars)
 
         # logging
         if self.args["tensorboard"]:
@@ -296,7 +297,7 @@ class Model:
             np.random.shuffle(index_list)
             np.random.shuffle(index_list2)
 
-            if self.args["test"] and epoch % 10 == 0:
+            if self.args["test"] and epoch % 1 == 0:
                 self.test_and_save(epoch)
             for idx in range(0, self.batch_idxs):
                 # getting batch
@@ -306,10 +307,11 @@ class Model:
                 batch_sounds_resource = np.asarray([self.sounds_r[ind] for ind in index_list[st:st+self.args["batch_size"]]])
                 batch_sounds_target= np.asarray([self.sounds_t[ind] for ind in index_list2[st:st+self.args["batch_size"]]])
 
+                lr=1e-3*(0.1**(iterations//100000))
                 # update D network
-                self.sess.run([d_optim],feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target})
+                self.sess.run([d_optim],feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target,opt_lr:lr})
                 # update G network
-                self.sess.run([g_optim],feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target})
+                self.sess.run([g_optim],feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target,opt_lr:lr})
                 iterations+=1
             # calculating ETA
             if iterations == self.args["train_iteration"]:

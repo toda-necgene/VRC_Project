@@ -54,7 +54,7 @@ for file in files:
         f0=pw.stonemask(data_realAb,_f0,t,16000)
         sp=pw.cheaptrick(data_realAb,f0,t,16000)
         a  = sp[:68:4]
-        a2  = sp[:68:4]*0.8
+        a2  = sp[:17]*0.8
         a3  = sp[:68:4]*0.6
 
         f0=f0[f0>0.0]

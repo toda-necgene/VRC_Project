@@ -3,7 +3,7 @@ import tensorflow as tf
 
 def discriminator(inp,reuse):
     # setting paramater
-    chs=[64,32,1]
+    chs=[256,128,1]
     ten = inp
     ten = tf.transpose(ten, [0, 1, 3, 2])
     # convolution(3*5,stride 1*4)
@@ -18,44 +18,30 @@ def discriminator(inp,reuse):
 
 def generator(ten,reuse,train):
     ten = tf.transpose(ten, [0, 1, 3, 2])
-
     tenR=ten
-    ten=tf.layers.conv2d_transpose(ten, 171, [3, 3], [1, 3], padding="SAME",
+    ten=tf.layers.conv2d_transpose(ten, 57, [3, 9], [1, 9], padding="SAME",
                            kernel_initializer=tf.initializers.he_normal(), use_bias=False,reuse=reuse, name="encode_conv_1")
     ten = tf.layers.batch_normalization(ten, training=train, reuse=reuse, name="encode_bn_1")
-
-    ten = tf.nn.leaky_relu(ten)
-    ten+=ten+tf.reshape(tenR,ten.shape)
+    ten=tf.nn.leaky_relu(ten)+tf.reshape(tenR,ten.shape)
     tenR=ten
-    ten = tf.layers.conv2d_transpose(ten, 57, [3, 5], [1, 3], padding="SAME",
+    ten = tf.layers.conv2d_transpose(ten, 19, [3, 3], [1, 3], padding="SAME",
                                      kernel_initializer=tf.initializers.he_normal(), use_bias=False, reuse=reuse,
                                      name="encode_conv_2")
     ten = tf.layers.batch_normalization(ten, training=train, reuse=reuse, name="encode_bn_2")
-
-    ten = tf.nn.leaky_relu(ten)
-
-    ten=ten+tf.reshape(tenR,ten.shape)
+    ten=tf.nn.leaky_relu(ten)+tf.reshape(tenR,ten.shape)
     tenR=ten
+    tenA = tf.layers.conv2d_transpose(ten, 9, [1, 5], [1, 2], padding="VALID",
+                                    kernel_initializer=tf.initializers.he_normal(), use_bias=False, reuse=reuse,
+                                    name="encode_conv_S")
+    tenA = tf.layers.batch_normalization(tenA, training=train, reuse=reuse, name="encode_bn_S")
 
-    ten = tf.layers.conv2d_transpose(ten, 19, [3, 5], [1, 3], padding="SAME",
+    ten = tf.layers.conv2d_transpose(ten, 9, [1, 5], [1, 2], padding="VALID",
                                      kernel_initializer=tf.initializers.he_normal(), use_bias=False, reuse=reuse,
                                      name="encode_conv_3")
     ten = tf.layers.batch_normalization(ten, training=train, reuse=reuse, name="encode_bn_3")
 
-    ten = tf.nn.leaky_relu(ten)
-
-    ten=ten+tf.reshape(tenR,ten.shape)
-    tenR=ten
-    ten = tf.layers.conv2d_transpose(ten, 6, [1, 7], [1, 3], padding="VALID",
-                                     kernel_initializer=tf.initializers.he_normal(), use_bias=False, reuse=reuse,
+    ten = ten*tf.tanh(tenA)+tf.reshape(tenR,ten.shape)
+    ten = tf.layers.conv2d_transpose(ten, 1, [1, 9], [1, 9], padding="VALID",
+                                     kernel_initializer=tf.initializers.he_normal(), use_bias=True, reuse=reuse,
                                      name="encode_conv_4")
-    ten = tf.layers.batch_normalization(ten, training=train, reuse=reuse, name="encode_bn_4")
-
-    ten = tf.nn.leaky_relu(ten)
-
-    ten = tf.layers.conv2d_transpose(ten, 1, [1, 9], [1, 6], padding="VALID",
-                                     kernel_initializer=tf.initializers.he_normal(), use_bias=False, reuse=reuse,
-                                     name="encode_conv_3x1_5")
-
-    ten=ten+tf.reshape(tenR,ten.shape)
     return tf.tanh(ten)
