@@ -3,7 +3,7 @@ import numpy as np
 import wave
 import matplotlib.pyplot as pl
 import time
-from model.model_cpu import Model as model
+from model_run import Model as model
 
 Add_Effect=True
 NFFT=1024

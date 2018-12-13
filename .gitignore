@@ -5,9 +5,10 @@
 *.npy
 *.pyc
 *.xml
+_windows/*
 VRC/havests/*
-VRC/trained_models/*
-VRC/best_model/*
+VRC/trained_model/*
 VRC/logs/*
 VRC/datasets/*
-VRC/.idea/*
+VRC/waves/*
+vrc_chainer/*

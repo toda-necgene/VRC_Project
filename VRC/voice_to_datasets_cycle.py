@@ -1,17 +1,15 @@
-import pyaudio
 import numpy as np
 import wave
 import time
 import glob
-import pyworld as pw
+import pyworld.pyworld as pw
 
 term = 4096
-FORMAT = pyaudio.paInt16
 CHANNELS = 1        #モノラル
 RATE = 16000       #サンプルレート
 CHUNK = 1024     #データ点数
-WAVE_INPUT_FILENAME = "./datasets/source/A"
-WAVE_INPUT_FILENAME2 = "./datasets/source/B"
+WAVE_INPUT_FILENAME = "./dataset/source/A"
+WAVE_INPUT_FILENAME2 = "./dataset/source/B"
 
 files=glob.glob(WAVE_INPUT_FILENAME+"/*.wav")
 name="/A"
@@ -19,7 +17,6 @@ ff=list()
 m=list()
 for file in files:
     print(" [*] パッチデータに変換を開始します。 :",file)
-    index=0
     dms=[]
     wf = wave.open(file, 'rb')
     dds = wf.readframes(CHUNK)
@@ -30,10 +27,6 @@ for file in files:
     data = np.frombuffer(dms, 'int16')
     data_real=(data/32767).reshape(-1).astype(np.float)
     data_realA=dmn=data_real.copy()
-    timee=data_realA.shape[0]
-    rate=16000
-    b=np.zeros([1])
-
     times=data_realA.shape[0]//term+1
     if data_realA.shape[0]%term==0:
         times-=1
@@ -54,7 +47,7 @@ for file in files:
             ff.extend(f0)
         m.append(np.clip((np.log(sp)+15.0)/20,-1.0,1.0))
 m=np.asarray(m,dtype=np.float32)
-np.save("./datasets/train/" + str(name) + "/00.npy", m)
+np.save("./dataset/train/A.npy", m)
 print(" [*] ソースデータ変換完了")
 pitch_mean_s=np.mean(ff)
 pitch_var_s=np.std(ff)
@@ -64,7 +57,6 @@ ff=list()
 m=list()
 for file in files:
     print(" [*] パッチデータに変換を開始します。 :",file)
-    index=0
     dms=[]
     wf = wave.open(file, 'rb')
     dds = wf.readframes(CHUNK)
@@ -75,10 +67,6 @@ for file in files:
     data = np.frombuffer(dms, 'int16')
     data_real=(data/32767).reshape(-1).astype(np.float)
     data_realA=dmn=data_real.copy()
-    timee=data_realA.shape[0]
-    rate=16000
-    b=np.zeros([1])
-
     times=data_realA.shape[0]//term+1
     if data_realA.shape[0]%term==0:
         times-=1
@@ -100,7 +88,7 @@ for file in files:
             ff.extend(f0)
         m.append(np.clip((np.log(a)+15.0)/20,-1.0,1.0))
 m=np.asarray(m,dtype=np.float32)
-np.save("./datasets/train/" + str(name) + "/00.npy", m)
+np.save("./dataset/train/B.npy", m)
 print(" [*] アンサーデータ変換完了")
 pitch_mean_t=np.mean(ff)
 pitch_var_t=np.std(ff)

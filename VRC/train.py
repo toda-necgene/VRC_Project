@@ -6,16 +6,15 @@ from datetime import datetime
 
 import wave
 import pyaudio
-import pyworld as pw
+import pyworld.pyworld as pw
 
 import numpy as np
 import matplotlib.pyplot as plt
 
 import tensorflow as tf
-from tensorflow.python import debug as tf_debug
-from tensorflow.python.debug.lib.debug_data import has_inf_or_nan
+from model import discriminator,generator
 
-from .model import discriminator,generator
+import voice_to_datasets_cycle
 
 class Model:
     def __init__(self,path):
@@ -30,20 +29,19 @@ class Model:
 
         self.args["checkpoint_dir"]="./trained_models"
         self.args["wave_otp_dir"] = "./havests"
-        self.args["train_data_dir"]="./datasets/train"
-        self.args["test_data_dir"] ="./datasets/test"
+        self.args["train_data_dir"]="./dataset/train"
+        self.args["test_data_dir"] ="./dataset/test"
 
         self.args["test"]=True
         self.args["tensorboard"]=False
-        self.args["debug"] = False
-
+        
         self.args["batch_size"] = 1
         self.args["input_size"] = 4096
         self.args["padding"]=1024
 
-        self.args["weight_Cycle"]=150.0
+        self.args["weight_Cycle"]=100.0
         self.args["weight_GAN"] = 1.0
-        self.args["train_iteration"]=60000
+        self.args["train_iteration"]=600000
         self.args["start_epoch"]=0
 
         # reading json file
@@ -86,11 +84,6 @@ class Model:
         self.input_size_test = [1, 52,513,1]
         self.output_size_model = [self.args["batch_size"], 65,513,1]
 
-
-        if bool(self.args["debug"]):
-            self.sess=tf_debug.LocalCLIDebugWrapperSession(self.sess)
-            self.sess.add_tensor_filter('has_inf_or_nan', has_inf_or_nan)
-
         if  self.args["wave_otp_dir"] is not "False" :
             self.args["wave_otp_dir"]=self.args["wave_otp_dir"]+ self.args["name_save"]+"/"
             if not os.path.exists(self.args["wave_otp_dir"]):
@@ -122,14 +115,14 @@ class Model:
         with tf.variable_scope("discriminators"):
             with tf.variable_scope("discriminators_B"):
                 d_judge_BF = discriminator(fake_aB_image, None)
-                d_judge_BS = tf.stop_gradient(tf.clip_by_value(discriminator(self.input_model_B, True),0.0,1.0) * 1 - tf.clip_by_value(d_judge_BF,0.0,1.0))
+                d_judge_BS = tf.stop_gradient(tf.clip_by_value(discriminator(self.input_model_B, True),0.0,1.0) *( 1 - tf.clip_by_value(d_judge_BF,0.0,1.0)))
                 self.R_rate_B =1 - d_judge_BS * 0.5
                 F_rate=d_judge_BS*0.5
                 D_input_R_B = self.R_rate_B * self.input_model_B + F_rate * fake_aB_image
                 d_judge_BR= discriminator(D_input_R_B, True)
             with tf.variable_scope("discriminators_A"):
                 d_judge_AF = discriminator(fake_bA_image, None)
-                d_judge_AS = tf.stop_gradient(tf.clip_by_value(discriminator(self.input_model_A, True),0.0,1.0) * 1 - tf.clip_by_value(d_judge_AF,0.0,1.0))
+                d_judge_AS = tf.stop_gradient(tf.clip_by_value(discriminator(self.input_model_A, True),0.0,1.0) * (1 - tf.clip_by_value(d_judge_AF,0.0,1.0)))
                 self.R_rate_A = 1 - d_judge_AS * 0.5
                 F_rate = d_judge_AS * 0.5
                 D_input_R_A = self.R_rate_A * self.input_model_A + F_rate * fake_bA_image
@@ -153,25 +146,22 @@ class Model:
 
         # objective-functions of generator
 
-        # Cycle lossA
-        g_loss_cyc_A = tf.losses.mean_squared_error(predictions=fake_Ba_image,labels=self.input_model_A)* self.args["weight_Cycle"]
-
-        # Gan lossB
-        g_loss_gan_B = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_BF), predictions=d_judge_BF) * self.args["weight_GAN"]
-        # generator lossA
-        g_loss_aB = g_loss_cyc_A +g_loss_gan_B
-
 
         # Cyc lossB
-        g_loss_cyc_B = tf.losses.mean_squared_error(predictions=fake_Ab_image, labels=self.input_model_B) * self.args["weight_Cycle"]
+        g_loss_cyc_B = tf.losses.mean_squared_error(predictions=fake_Ab_image, labels=self.input_model_B) * self.args["weight_Cycle"] * (1-tf.reduce_mean(d_judge_AS))
 
         # Gan lossA
-        g_loss_gan_A = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_AF), predictions=d_judge_AF) * self.args["weight_GAN"]
-        # generator lossB
-        g_loss_bA = g_loss_cyc_B + g_loss_gan_A
+        g_loss_gan_A = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_AF), predictions=d_judge_AF) * self.args["weight_GAN"]* tf.reduce_mean(d_judge_AS)
+        
+        # Cycle lossA
+        g_loss_cyc_A = tf.losses.mean_squared_error(predictions=fake_Ba_image,labels=self.input_model_A)* self.args["weight_Cycle"] * (1-tf.reduce_mean(d_judge_BS))
 
+        # Gan lossB
+        g_loss_gan_B = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_BF), predictions=d_judge_BF) * self.args["weight_GAN"]* tf.reduce_mean(d_judge_BS)
+        
+        
         # generator loss
-        self.g_loss = g_loss_aB+g_loss_bA
+        self.g_loss = g_loss_cyc_A +g_loss_gan_B + g_loss_cyc_B + g_loss_gan_A
 
         #tensorboard functions
         g_loss_cyc_A_display= tf.summary.scalar("g_loss_cycle_AtoA", tf.reduce_mean(g_loss_cyc_A),family="g_loss")
@@ -187,11 +177,12 @@ class Model:
 
 
         self.loss_display=tf.summary.merge([g_loss_sum_A_display,g_loss_sum_B_display,d_loss_sum_A_display,d_loss_sum_B_display])
-
+        self.result_score= tf.placeholder(tf.float32, name="FakeFFTScore")
         self.result_image_display= tf.placeholder(tf.float32, [1,None,512], name="FakeSpectrum")
         image_pow_display=tf.reshape(tf.transpose(self.result_image_display[:,:,:],[0,2,1]),[1,512,-1,1])
         fake_B_image_display = tf.summary.image("Fake_spectrum_AtoB", image_pow_display, 1)
-        self.g_test_display=tf.summary.merge([fake_B_image_display])
+        fale_B_FFT_score_display= tf.summary.scalar("g_error_AtoB", tf.reduce_mean(self.result_score),family="g_test")
+        self.g_test_display=tf.summary.merge([fake_B_image_display,fale_B_FFT_score_display])
 
         #saver
         self.saver = tf.train.Saver()
@@ -247,10 +238,9 @@ class Model:
     def train(self):
 
         # naming output-directory
-        opt_lr=tf.placeholder(tf.float64)
         with tf.control_dependencies(self.update_ops):
-            g_optim = tf.train.AdamOptimizer(opt_lr, 0.5, 0.999).minimize(self.g_loss,var_list=self.g_vars)
-        d_optim = tf.train.AdamOptimizer(opt_lr, 0.5, 0.999).minimize(self.d_loss,var_list=self.d_vars)
+            g_optim = tf.train.AdamOptimizer(2e-4, 0.5, 0.999).minimize(self.g_loss,var_list=self.g_vars)
+        d_optim = tf.train.AdamOptimizer(2e-4, 0.5, 0.999).minimize(self.d_loss,var_list=self.d_vars)
 
         # logging
         if self.args["tensorboard"]:
@@ -263,13 +253,26 @@ class Model:
             print(" [I] Load FAILED.")
 
         # loading training data directory
-        data = glob(self.args["train_data_dir"]+'/A/*')
-        data2 = glob(self.args["train_data_dir"] + '/B/*')
         # loading test data
-        self.test=isread(self.args["test_data_dir"]+'/test.wav')
+        self.test  = isread(self.args["test_data_dir"]+'/test.wav')
+        self.label = isread(self.args["test_data_dir"] + '/label.wav')
+
+        im = fft(self.label[800:156000]/32767)
+        self.label_spec = np.mean(im, axis=0)
+        plt.clf()
+        plt.subplot(2, 1, 1)
+        ins = np.transpose(im, (1, 0))
+        plt.imshow(ins, vmin=-15, vmax=5, aspect="auto")
+        plt.colorbar()
+        plt.subplot(2, 1, 2)
+        plt.plot(self.label_spec, "r")
+        plt.ylim(-15, 5)
+        path = "%starget.png" % (self.args["wave_otp_dir"])
+        plt.savefig(path)
+
         # prepareing training-data
-        batch_files = data[0]
-        batch_files2 = data2[0]
+        batch_files = self.args["train_data_dir"]+'/A.npy'
+        batch_files2 = self.args["train_data_dir"]+'/B.npy'
 
         print(" [I] loading dataset...")
         self.sounds_r = np.load(batch_files)
@@ -295,8 +298,8 @@ class Model:
             np.random.shuffle(index_list)
             np.random.shuffle(index_list2)
 
-            if self.args["test"] and epoch % 1 == 0:
-                self.test_and_save(epoch)
+            if self.args["test"] and  epoch % 10 == 0:
+                self.test_and_save(epoch,iterations)
             for idx in range(0, self.batch_idxs):
                 # getting batch
                 if iterations==self.args["train_iteration"]:
@@ -304,12 +307,10 @@ class Model:
                 st=self.args["batch_size"]*idx
                 batch_sounds_resource = np.asarray([self.sounds_r[ind] for ind in index_list[st:st+self.args["batch_size"]]])
                 batch_sounds_target= np.asarray([self.sounds_t[ind] for ind in index_list2[st:st+self.args["batch_size"]]])
-
-                lr=1e-3*(0.1**(iterations//100000))
                 # update D network
-                self.sess.run([d_optim],feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target,opt_lr:lr})
+                self.sess.run([d_optim],feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target})
                 # update G network
-                self.sess.run([g_optim],feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target,opt_lr:lr})
+                self.sess.run([g_optim],feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target})
                 iterations+=1
             # calculating ETA
             if iterations == self.args["train_iteration"]:
@@ -324,57 +325,55 @@ class Model:
             print(" [I] Iteration %04d / %04d finished. ETA: %02d:%02d:%02d takes %2.3f secs" % (iterations,self.args["train_iteration"],eta//3600,eta//60%60,int(eta%60),taken_time))
 
 
-        self.test_and_save(train_epoch)
+        self.test_and_save(train_epoch,iterations)
         taken_time_all=time.time()-start_time_all
         hour_display=taken_time_all//3600
         minute_display=taken_time_all//60%60
         second_display=int(taken_time_all%60)
         print(" [I] ALL train process finished successfully!! in %04d : %02d : %02d" % (hour_display, minute_display, second_display))
 
-    def test_and_save(self,epoch):
+    def test_and_save(self,epoch,itr):
 
         # last testing
-        out_puts, taken_time_test = self.convert(self.test)
+        out_puts, _ = self.convert(self.test)
         # fixing havests types
         out_put = out_puts.copy().astype(np.float32) / 32767.0
 
         # calcurating power spectrum
-        time_ruler = out_put.shape[0] // 512
-        if out_put.shape[0] % 512 == 0:
-            time_ruler -= 1
-        pos = 0
-        windowed = np.zeros([time_ruler, 1024])
-        window = np.hamming(1024)
-        for fft_index in range(time_ruler):
-            frame = out_put[pos:pos + 1024]
-            #padding input
-            r = 1024 - frame.shape[0]
-            if r > 0:
-                frame = np.pad(frame, (0, r), "constant")
-            windowed[fft_index] = frame * window
-            pos += 512
-        fft_result = np.fft.fft(windowed, n=1024, axis=1)
-        im = np.log(np.power(fft_result.real, 2) + np.power(fft_result.imag, 2) + 1e-24).reshape(time_ruler, -1, 1)[:,:512]
+        im = fft(out_put[800:156000])
+        spec = np.mean(im, axis=0)
+        diff=spec-self.label_spec
+        score=np.mean(diff*diff)
         otp_im = im.copy().reshape(1,-1,512)
-
         # writing epoch-result into tensorboard
         if self.args["tensorboard"]:
             tb_result = self.sess.run(self.loss_display,
                                       feed_dict={self.input_model_A: self.sounds_r[0:self.args["batch_size"]],
                                                  self.input_model_B: self.sounds_t[0:self.args["batch_size"]]})
-            self.writer.add_summary(tb_result, epoch)
-            rs = self.sess.run(self.g_test_display, feed_dict={self.result_image_display: otp_im})
-            self.writer.add_summary(rs, epoch)
+            self.writer.add_summary(tb_result, itr)
+            rs = self.sess.run(self.g_test_display, feed_dict={self.result_image_display: otp_im,self.result_score:score})
+            self.writer.add_summary(rs, itr)
 
         # saving test harvests
         if os.path.exists(self.args["wave_otp_dir"]):
             # saving fake spectrum
             plt.clf()
-            ins = np.transpose(im[:,:,0], (1, 0))
-            plt.imshow(ins, vmin=-25, vmax=5,aspect="auto")
+            plt.subplot(3,1,1)
+            ins = np.transpose(im, (1, 0))
+            plt.imshow(ins, vmin=-15, vmax=5,aspect="auto")
             plt.colorbar()
+            plt.subplot(3,1,2)
+            plt.plot(spec)
+            plt.plot(self.label_spec, "r")
+            plt.ylim(-15,5)
+            plt.subplot(3,1,3)
+            plt.plot(out_put)
+            plt.ylim(-1,1)
             path = "%s%04d.png" % (self.args["wave_otp_dir"],epoch)
             plt.savefig(path)
+            path = "%slatest.png" % (self.args["wave_otp_dir"])
+            plt.savefig(path)
+            
             #saving fake waves
             path = self.args["wave_otp_dir"] + datetime.now().strftime("%m-%d_%H-%M-%S") + "_" + str(epoch)
             voiced = out_puts.astype(np.int16)
@@ -387,9 +386,8 @@ class Model:
             ww.writeframes(voiced.reshape(-1).tobytes())
             ww.close()
             p.terminate()
-
         self.save(self.args["checkpoint_dir"],epoch,self.saver)
-        print(" [I] Epoch %04d tested. " % epoch)
+        print(" [I] Epoch %04d tested. score=%.5f" % (epoch,float(score)))
 
     def save(self, checkpoint_dir, step,saver):
         model_name = "wave2wave.model"
@@ -411,7 +409,7 @@ class Model:
         checkpoint_dir = os.path.join(self.args["checkpoint_dir"], model_dir)
 
         ckpt = tf.train.get_checkpoint_state(checkpoint_dir)
-        if ckpt and ckpt.model_checkpoint_path:
+        if ckpt is not None and ckpt:
             ckpt_name = os.path.basename(ckpt.model_checkpoint_path)
             self.saver.restore(self.sess, os.path.join(checkpoint_dir, ckpt_name))
             self.epoch=self.saver
@@ -450,3 +448,30 @@ def isread(path):
     else:
         ans=ans[:160000]
     return ans
+
+def fft(data):
+
+    time_ruler = data.shape[0] // 512
+    if data.shape[0] % 512 == 0:
+        time_ruler -= 1
+    window = np.hamming(1024)
+    pos = 0
+    wined = np.zeros([time_ruler, 1024])
+    for fft_index in range(time_ruler):
+        frame = data[pos:pos + 1024]
+        r=1024-frame.shape[0]
+        if r>0:
+            frame=np.pad(frame,(0,r),"constant")
+        wined[fft_index] = frame * window
+        pos += 512
+    fft_r = np.fft.fft(wined, n=1024, axis=1)
+    re = fft_r.real.reshape(time_ruler, -1)
+    im = fft_r.imag.reshape(time_ruler, -1)
+    c = np.log(np.power(re, 2) + np.power(im, 2) + 1e-24).reshape(time_ruler, -1)[:,512:]
+    return np.clip(c,-15.0,5.0)
+
+
+if __name__ == '__main__':
+    path="./setting.json"
+    net = Model(path)
+    net.train()

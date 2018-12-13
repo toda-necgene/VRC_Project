@@ -2,11 +2,9 @@ import tensorflow as tf
 import os
 import time
 import numpy as np
-from tensorflow.python import debug as tf_debug
-from tensorflow.python.debug.lib.debug_data import has_inf_or_nan
 import json
-from .model import generator
-import pyworld as pw
+from model import generator
+import pyworld.pyworld as pw
 class Model:
     def __init__(self,path):
         self.args = dict()
@@ -69,9 +67,6 @@ class Model:
 
         self.sess = tf.InteractiveSession(config=tf.ConfigProto(gpu_options=tf.GPUOptions()))
 
-        if bool(self.args["debug"]):
-            self.sess = tf_debug.LocalCLIDebugWrapperSession(self.sess)
-            self.sess.add_tensor_filter('has_inf_or_nan', has_inf_or_nan)
         if self.args["wave_otp_dir"] is not "False":
             self.args["wave_otp_dir"] = self.args["wave_otp_dir"] + self.args["name_save"] + "/"
             if not os.path.exists(self.args["wave_otp_dir"]):
@@ -141,7 +136,7 @@ class Model:
         checkpoint_dir = os.path.join(self.args["checkpoint_dir"], model_dir)
 
         ckpt = tf.train.get_checkpoint_state(checkpoint_dir)
-        if ckpt and ckpt.model_checkpoint_path:
+        if ckpt :
             ckpt_name = os.path.basename(ckpt.model_checkpoint_path)
             self.saver.restore(self.sess, os.path.join(checkpoint_dir, ckpt_name))
             self.epoch=self.saver
