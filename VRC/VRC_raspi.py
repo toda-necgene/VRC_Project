@@ -1,4 +1,4 @@
-from model.model_cpu import Model
+from model_run import Model
 from multiprocessing import Queue,Process
 import numpy as np
 import pyaudio as pa
