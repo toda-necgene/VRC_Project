@@ -63,7 +63,7 @@ class Model:
 
         # shapes of inputs
         self.input_size_model = [self.args["batch_size"], 65,513,1]
-        self.input_size_test = [None, 65,513,1]
+        self.input_size_test = [1, 52,513,1]
 
         self.sess = tf.InteractiveSession(config=tf.ConfigProto(gpu_options=tf.GPUOptions()))
 
@@ -93,7 +93,7 @@ class Model:
         #function of test
         #To convert wave file
         tt=time.time()
-        ipt_size=self.args["input_size"]+self.args["NFFT"]
+        ipt_size=self.args["input_size"]
         times=in_put.shape[0]//(ipt_size)+1
         if in_put.shape[0]%(ipt_size*self.args["batch_size"])==0:
             times-=1
@@ -105,21 +105,22 @@ class Model:
 
             # Padiing
             start_pos=ipt_size*t+(in_put.shape[0]%ipt_size)
-            resorce=np.reshape(in_put[max(0,start_pos-ipt_size+self.args["SHIFT"]):start_pos+self.args["SHIFT"]],(-1))
+            resorce=np.reshape(in_put[max(0,start_pos-ipt_size):start_pos],(-1))
+            # resorce=resorce+np.random.uniform(-0.5,0.5,resorce.shape)
             r=max(0,ipt_size-resorce.shape[0])
             if r>0:
                 resorce=np.pad(resorce,(r,0),'constant')
-            # FFT
             f0,res,ap2=encode((resorce/32767.0).astype(np.double))
             res=res.reshape(1,-1,513,1)
             response=self.sess.run(self.test_outputaB,feed_dict={ self.input_model_test:res})
             # Postprocess
-            _f0=(f0-self.args["pitch_rate_mean_s"])*self.args["pitch_rate_var"]+self.args["pitch_rate_mean_t"]
+            _f0=(f0-100)*1.
+            2+180
+            # ap2=np.zeros_like(ap2)
             rest = decode(_f0,response[0].reshape(-1,513).astype(np.double),ap2)
-            res = np.clip(rest, -1.0, 1.0)*32767
 
-            # chaching results
-            res=res.reshape(-1).astype(np.int16)[self.args["SHIFT"]:-self.args["SHIFT"]]
+            res = np.clip(rest, -1.0, 1.0)*32767
+            res=res.reshape(-1).astype(np.int16)
             otp=np.append(otp,res)
         h=otp.shape[0]-in_put.shape[0]
         if h>0:
