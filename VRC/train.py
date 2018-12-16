@@ -89,10 +89,6 @@ class Model:
             if not os.path.exists(self.args["wave_otp_dir"]):
                 os.makedirs(self.args["wave_otp_dir"])
 
-        self.sess = tf.Session()
-        self.build_model()
-    def build_model(self):
-
         #inputs place holder
         self.input_model_A=tf.placeholder(tf.float32, self.input_size_model, "inputs_g_A")
         self.input_model_B = tf.placeholder(tf.float32, self.input_size_model, "inputs_g_B")
@@ -115,18 +111,10 @@ class Model:
         with tf.variable_scope("discriminators"):
             with tf.variable_scope("discriminators_B"):
                 d_judge_BF = discriminator(fake_aB_image, None)
-                d_judge_BS = tf.stop_gradient(tf.clip_by_value(discriminator(self.input_model_B, True),0.0,1.0) *( 1 - tf.clip_by_value(d_judge_BF,0.0,1.0)))
-                self.R_rate_B =1 - d_judge_BS * 0.5
-                F_rate=d_judge_BS*0.5
-                D_input_R_B = self.R_rate_B * self.input_model_B + F_rate * fake_aB_image
-                d_judge_BR= discriminator(D_input_R_B, True)
+                d_judge_BR= discriminator(self.input_model_B, True)
             with tf.variable_scope("discriminators_A"):
                 d_judge_AF = discriminator(fake_bA_image, None)
-                d_judge_AS = tf.stop_gradient(tf.clip_by_value(discriminator(self.input_model_A, True),0.0,1.0) * (1 - tf.clip_by_value(d_judge_AF,0.0,1.0)))
-                self.R_rate_A = 1 - d_judge_AS * 0.5
-                F_rate = d_judge_AS * 0.5
-                D_input_R_A = self.R_rate_A * self.input_model_A + F_rate * fake_bA_image
-                d_judge_AR = discriminator(D_input_R_A, True)
+                d_judge_AR = discriminator(self.input_model_A, True)
 
         #getting individual variabloes
         self.g_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"generators")
@@ -134,9 +122,9 @@ class Model:
         self.update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 
         #objective-functions of discriminator
-        d_loss_AR = tf.losses.mean_squared_error(labels=self.R_rate_A, predictions=d_judge_AR)
+        d_loss_AR = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_AR), predictions=d_judge_AR)
         d_loss_AF = tf.losses.mean_squared_error(labels=tf.zeros_like(d_judge_AF), predictions=d_judge_AF)
-        d_loss_BR = tf.losses.mean_squared_error(labels=self.R_rate_B, predictions=d_judge_BR)
+        d_loss_BR = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_BR), predictions=d_judge_BR)
         d_loss_BF = tf.losses.mean_squared_error(labels=tf.zeros_like(d_judge_BF), predictions=d_judge_BF)
 
         d_loss_A=d_loss_AR + d_loss_AF
@@ -148,17 +136,17 @@ class Model:
 
 
         # Cyc lossB
-        g_loss_cyc_B = tf.losses.mean_squared_error(predictions=fake_Ab_image, labels=self.input_model_B) * self.args["weight_Cycle"] * (1-tf.reduce_mean(d_judge_AS))
+        g_loss_cyc_B = tf.losses.mean_squared_error(predictions=fake_Ab_image, labels=self.input_model_B) * self.args["weight_Cycle"]
 
         # Gan lossA
-        g_loss_gan_A = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_AF), predictions=d_judge_AF) * self.args["weight_GAN"]* tf.reduce_mean(d_judge_AS)
+        g_loss_gan_A = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_AF), predictions=d_judge_AF) * self.args["weight_GAN"]#* tf.reduce_mean(d_judge_AS)
         
         # Cycle lossA
-        g_loss_cyc_A = tf.losses.mean_squared_error(predictions=fake_Ba_image,labels=self.input_model_A)* self.args["weight_Cycle"] * (1-tf.reduce_mean(d_judge_BS))
+        g_loss_cyc_A = tf.losses.mean_squared_error(predictions=fake_Ba_image,labels=self.input_model_A)* self.args["weight_Cycle"]
 
         # Gan lossB
-        g_loss_gan_B = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_BF), predictions=d_judge_BF) * self.args["weight_GAN"]* tf.reduce_mean(d_judge_BS)
-        
+        g_loss_gan_B = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_BF), predictions=d_judge_BF) * self.args["weight_GAN"]#* tf.reduce_mean(d_judge_BS)
+
         
         # generator loss
         self.g_loss = g_loss_cyc_A +g_loss_gan_B + g_loss_cyc_B + g_loss_gan_A
@@ -186,6 +174,7 @@ class Model:
 
         #saver
         self.saver = tf.train.Saver()
+        self.sess = tf.Session()
 
     def convert(self,in_put):
         #function of test
@@ -237,11 +226,11 @@ class Model:
 
     def train(self):
 
+        rl=tf.placeholder(tf.float32)
         # naming output-directory
         with tf.control_dependencies(self.update_ops):
-            g_optim = tf.train.AdamOptimizer(2e-4, 0.5, 0.999).minimize(self.g_loss,var_list=self.g_vars)
-        d_optim = tf.train.AdamOptimizer(2e-4, 0.5, 0.999).minimize(self.d_loss,var_list=self.d_vars)
-
+            g_optim = tf.train.AdamOptimizer(rl, 0.9, 0.999).minimize(self.g_loss,var_list=self.g_vars)
+        d_optim = tf.train.AdamOptimizer(rl, 0.9, 0.999).minimize(self.d_loss,var_list=self.d_vars)
         # logging
         if self.args["tensorboard"]:
             self.writer = tf.summary.FileWriter("./logs/"+self.args["name_save"], self.sess.graph)
@@ -259,16 +248,7 @@ class Model:
 
         im = fft(self.label[800:156000]/32767)
         self.label_spec = np.mean(im, axis=0)
-        plt.clf()
-        plt.subplot(2, 1, 1)
-        ins = np.transpose(im, (1, 0))
-        plt.imshow(ins, vmin=-15, vmax=5, aspect="auto")
-        plt.colorbar()
-        plt.subplot(2, 1, 2)
-        plt.plot(self.label_spec, "r")
-        plt.ylim(-15, 5)
-        path = "%starget.png" % (self.args["wave_otp_dir"])
-        plt.savefig(path)
+        self.label_spec_v = np.std(im, axis=0)
 
         # prepareing training-data
         batch_files = self.args["train_data_dir"]+'/A.npy'
@@ -298,7 +278,7 @@ class Model:
             np.random.shuffle(index_list)
             np.random.shuffle(index_list2)
 
-            if self.args["test"] and  epoch % 10 == 0:
+            if self.args["test"] and  epoch % self.args["batch_size"] == 0:
                 self.test_and_save(epoch,iterations)
             for idx in range(0, self.batch_idxs):
                 # getting batch
@@ -307,10 +287,11 @@ class Model:
                 st=self.args["batch_size"]*idx
                 batch_sounds_resource = np.asarray([self.sounds_r[ind] for ind in index_list[st:st+self.args["batch_size"]]])
                 batch_sounds_target= np.asarray([self.sounds_t[ind] for ind in index_list2[st:st+self.args["batch_size"]]])
+                opt_lr=2e-4
                 # update D network
-                self.sess.run([d_optim],feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target})
+                self.sess.run([d_optim],feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target,rl:opt_lr})
                 # update G network
-                self.sess.run([g_optim],feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target})
+                self.sess.run([g_optim],feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target,rl:opt_lr})
                 iterations+=1
             # calculating ETA
             if iterations == self.args["train_iteration"]:
@@ -322,7 +303,7 @@ class Model:
                 tt_list=tt_list[1:-1]
             eta=np.mean(tt_list)*(train_epoch-epoch-1)
             # console outputs
-            print(" [I] Iteration %04d / %04d finished. ETA: %02d:%02d:%02d takes %2.3f secs" % (iterations,self.args["train_iteration"],eta//3600,eta//60%60,int(eta%60),taken_time))
+            print(" [I] Iteration %06d / %06d finished. ETA: %02d:%02d:%02d takes %2.3f secs" % (iterations,self.args["train_iteration"],eta//3600,eta//60%60,int(eta%60),taken_time))
 
 
         self.test_and_save(train_epoch,iterations)
@@ -330,7 +311,7 @@ class Model:
         hour_display=taken_time_all//3600
         minute_display=taken_time_all//60%60
         second_display=int(taken_time_all%60)
-        print(" [I] ALL train process finished successfully!! in %04d : %02d : %02d" % (hour_display, minute_display, second_display))
+        print(" [I] ALL train process finished successfully!! in %06d : %02d : %02d" % (hour_display, minute_display, second_display))
 
     def test_and_save(self,epoch,itr):
 
@@ -342,8 +323,10 @@ class Model:
         # calcurating power spectrum
         im = fft(out_put[800:156000])
         spec = np.mean(im, axis=0)
+        spec_v = np.std(im, axis=0)
         diff=spec-self.label_spec
-        score=np.mean(diff*diff)
+        diff2=spec_v-self.label_spec_v
+        score=np.mean(diff*diff+diff2*diff2)
         otp_im = im.copy().reshape(1,-1,512)
         # writing epoch-result into tensorboard
         if self.args["tensorboard"]:
@@ -363,15 +346,13 @@ class Model:
             plt.imshow(ins, vmin=-15, vmax=5,aspect="auto")
             plt.colorbar()
             plt.subplot(3,1,2)
-            plt.plot(spec)
-            plt.plot(self.label_spec, "r")
-            plt.ylim(-15,5)
+            plt.plot(diff*diff+diff2*diff2)
             plt.subplot(3,1,3)
             plt.plot(out_put)
             plt.ylim(-1,1)
             path = "%s%04d.png" % (self.args["wave_otp_dir"],epoch)
             plt.savefig(path)
-            path = "%slatest.png" % (self.args["wave_otp_dir"])
+            path = "./latest.png"
             plt.savefig(path)
             
             #saving fake waves

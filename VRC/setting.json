@@ -2,18 +2,18 @@
     "saving_config":{
         "checkpoint_dir":"./trained_model/",
         "wave_otp_dir":"./waves/",
-        "version":"1.0.019"
+        "version":"1.0.001"
     },
     "training_config":{
         "train_iteration": 200000
     },
     "training_paramaters":{
         "weight_GAN":1.0,
-        "weight_Cycle":100.0
+        "weight_Cycle":10.0
     },
     "plugin_config":{
         "test":true,
-        "tensorboard":false
+        "tensorboard":true
     }
 
 }
