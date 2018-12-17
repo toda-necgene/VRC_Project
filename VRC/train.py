@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 from model import discriminator,generator
 
-import voice_to_datasets_cycle
+# import voice_to_datasets_cycle
 
 class Model:
     def __init__(self,path):
@@ -109,12 +109,10 @@ class Model:
 
         #creating discriminator
         with tf.variable_scope("discriminators"):
-            with tf.variable_scope("discriminators_B"):
-                d_judge_BF = discriminator(fake_aB_image, None)
-                d_judge_BR= discriminator(self.input_model_B, True)
-            with tf.variable_scope("discriminators_A"):
-                d_judge_AF = discriminator(fake_bA_image, None)
-                d_judge_AR = discriminator(self.input_model_A, True)
+            d_judge_BF = discriminator(fake_aB_image, None)
+            d_judge_BR= discriminator(self.input_model_B, True)
+            d_judge_AF = discriminator(fake_bA_image, True)
+            d_judge_AR = discriminator(self.input_model_A, True)
 
         #getting individual variabloes
         self.g_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"generators")
@@ -122,10 +120,17 @@ class Model:
         self.update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 
         #objective-functions of discriminator
-        d_loss_AR = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_AR), predictions=d_judge_AR)
-        d_loss_AF = tf.losses.mean_squared_error(labels=tf.zeros_like(d_judge_AF), predictions=d_judge_AF)
-        d_loss_BR = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_BR), predictions=d_judge_BR)
-        d_loss_BF = tf.losses.mean_squared_error(labels=tf.zeros_like(d_judge_BF), predictions=d_judge_BF)
+        l0 = tf.reshape(tf.one_hot(0, 3),[1,1,3])
+        l1 = tf.reshape(tf.one_hot(1, 3),[1,1,3])
+        l2 = tf.reshape(tf.one_hot(2, 3),[1,1,3])
+        labelA=tf.tile(l0,[self.input_size_model[0],self.input_size_model[1],1])
+        labelB = tf.tile(l1, [self.input_size_model[0], self.input_size_model[1], 1])
+        labelO = tf.tile(l2, [self.input_size_model[0], self.input_size_model[1], 1])
+
+        d_loss_AR = tf.losses.mean_squared_error(labels=labelA, predictions=d_judge_AR)
+        d_loss_AF = tf.losses.mean_squared_error(labels=labelO, predictions=d_judge_AF)
+        d_loss_BR = tf.losses.mean_squared_error(labels=labelB, predictions=d_judge_BR)
+        d_loss_BF = tf.losses.mean_squared_error(labels=labelO, predictions=d_judge_BF)
 
         d_loss_A=d_loss_AR + d_loss_AF
         d_loss_B=d_loss_BR + d_loss_BF
@@ -139,13 +144,13 @@ class Model:
         g_loss_cyc_B = tf.losses.mean_squared_error(predictions=fake_Ab_image, labels=self.input_model_B) * self.args["weight_Cycle"]
 
         # Gan lossA
-        g_loss_gan_A = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_AF), predictions=d_judge_AF) * self.args["weight_GAN"]#* tf.reduce_mean(d_judge_AS)
+        g_loss_gan_A = tf.losses.mean_squared_error(labels=labelA, predictions=d_judge_AF) * self.args["weight_GAN"]
         
         # Cycle lossA
         g_loss_cyc_A = tf.losses.mean_squared_error(predictions=fake_Ba_image,labels=self.input_model_A)* self.args["weight_Cycle"]
 
         # Gan lossB
-        g_loss_gan_B = tf.losses.mean_squared_error(labels=tf.ones_like(d_judge_BF), predictions=d_judge_BF) * self.args["weight_GAN"]#* tf.reduce_mean(d_judge_BS)
+        g_loss_gan_B = tf.losses.mean_squared_error(labels=labelB, predictions=d_judge_BF) * self.args["weight_GAN"]
 
         
         # generator loss

@@ -1,8 +1,8 @@
 {
     "saving_config":{
-        "checkpoint_dir":"./trained_model/",
-        "wave_otp_dir":"./waves/",
-        "version":"1.1.010"
+        "checkpoint_dir":"Z://trained_model/",
+        "wave_otp_dir":"Z://waves/",
+        "version":"1.2.000"
     },
     "training_config":{
         "train_iteration": 200000
