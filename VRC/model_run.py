@@ -79,10 +79,9 @@ class Model:
         self.input_model_test = tf.placeholder(tf.float32, self.input_size_test, "inputs_G-net_A")
         self.input_model_testa =self.input_model_test
         #creating generator
-        with tf.variable_scope("generators"):
 
-            with tf.variable_scope("generator_1"):
-                self.test_outputaB = generator(self.input_model_testa, reuse=None, train=False)
+        with tf.variable_scope("generator_1"):
+            self.test_outputaB = generator(self.input_model_testa, reuse=None, training=False)
 
         #saver
         self.saver = tf.train.Saver()
