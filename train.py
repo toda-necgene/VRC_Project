@@ -24,23 +24,21 @@ class Model:
         # default setting paramater
 
         self.args["model_name"] = "VRC"
-        self.args["version"] = "1.0.0"
+        self.args["version"] = "1.0.2"
 
         self.args["checkpoint_dir"]="./trained_models"
-        self.args["wave_otp_dir"] = "./havests"
+        self.args["wave_otp_dir"] = "./harvests"
         self.args["train_data_dir"]="./dataset/train"
         self.args["test_data_dir"] ="./dataset/test"
-
+        self.args["real_}data_compare"]=False
         self.args["test"]=True
         self.args["tensorboard"]=False
         
         self.args["batch_size"] = 1
-        # self.args["lr"] = 2e-4
-
         self.args["input_size"] = 4096
 
         self.args["weight_Cycle"]=100.0
-        self.args["train_iteration"]=600000
+        self.args["train_iteration"]=100000
         self.args["start_epoch"]=0
 
         # reading json file
@@ -160,11 +158,8 @@ class Model:
 
         self.loss_display=tf.summary.merge([g_loss_sum_A_display,g_loss_sum_B_display,d_loss_sum_A_display])
         self.result_score= tf.placeholder(tf.float32, name="FakeFFTScore")
-        self.result_image_display= tf.placeholder(tf.float32, [1,None,512], name="FakeSpectrum")
-        image_pow_display=tf.reshape(tf.transpose(self.result_image_display[:,:,:],[0,2,1]),[1,512,-1,1])
-        fake_B_image_display = tf.summary.image("Fake_spectrum_AtoB", image_pow_display, 1)
         fale_B_FFT_score_display= tf.summary.scalar("g_error_AtoB", tf.reduce_mean(self.result_score),family="g_test")
-        self.g_test_display=tf.summary.merge([fake_B_image_display,fale_B_FFT_score_display])
+        self.g_test_display=tf.summary.merge([fale_B_FFT_score_display])
 
         #saver
         self.saver = tf.train.Saver()
@@ -237,11 +232,12 @@ class Model:
         # loading training data directory
         # loading test data
         self.test  = isread(self.args["test_data_dir"]+'/test.wav')
-        self.label = isread(self.args["test_data_dir"] + '/label.wav')
+        if self.args["real-data-compare"]:
+            self.label = isread(self.args["test_data_dir"] + '/label.wav')
 
-        im = fft(self.label[800:156000]/32767)
-        self.label_spec = np.mean(im, axis=0)
-        self.label_spec_v = np.std(im, axis=0)
+            im = fft(self.label/32767)
+            self.label_spec = np.mean(im, axis=0)
+            self.label_spec_v = np.std(im, axis=0)
 
         # prepareing training-data
         batch_files = self.args["train_data_dir"]+'/A.npy'
@@ -307,12 +303,7 @@ class Model:
         out_put = out_puts.copy().astype(np.float32) / 32767.0
 
         # calcurating power spectrum
-        im = fft(out_put[800:156000])
-        spec = np.mean(im, axis=0)
-        spec_v = np.std(im, axis=0)
-        diff=spec-self.label_spec
-        diff2=spec_v-self.label_spec_v
-        score=np.mean(diff*diff+diff2*diff2)
+        im = fft(out_put)
         otp_im = im.copy().reshape(1,-1,512)
         # writing epoch-result into tensorboard
         if self.args["tensorboard"]:
@@ -320,21 +311,24 @@ class Model:
                                       feed_dict={self.input_model_A: self.sounds_r[0:self.args["batch_size"]],
                                                  self.input_model_B: self.sounds_t[0:self.args["batch_size"]],self.time:np.zeros([1])})
             self.writer.add_summary(tb_result, itr)
-            rs = self.sess.run(self.g_test_display, feed_dict={self.result_image_display: otp_im,self.result_score:score})
-            self.writer.add_summary(rs, itr)
+            if self.args["real-data-compare"]:
+                spec = np.mean(im, axis=0)
+                spec_v = np.std(im, axis=0)
+                diff = spec - self.label_spec
+                diff2 = spec_v - self.label_spec_v
+                score = np.mean(diff * diff + diff2 * diff2)
+                rs = self.sess.run(self.g_test_display, feed_dict={self.result_score:score})
+                self.writer.add_summary(rs, itr)
 
         # saving test harvests
         if os.path.exists(self.args["wave_otp_dir"]):
             # saving fake spectrum
             plt.clf()
-            plt.subplot(3,1,1)
+            plt.subplot(2,1,1)
             ins = np.transpose(im, (1, 0))
             plt.imshow(ins, vmin=-15, vmax=5,aspect="auto")
-            plt.subplot(3,1,2)
-            plt.plot(diff*diff+diff2*diff2)
-            plt.ylim(0,100)
-            plt.subplot(3,1,3)
-            plt.plot(out_put[800:156000])
+            plt.subplot(2,1,2)
+            plt.plot(out_put)
             plt.ylim(-1,1)
             path = "%s%04d.png" % (self.args["wave_otp_dir"],epoch//self.args["batch_size"])
             plt.savefig(path)
@@ -362,7 +356,7 @@ class Model:
                 self.tt_list = self.tt_list[1:-1]
             eta = np.mean(self.tt_list) * (self.args["train_iteration"] - itr)
             print(" [I] Iteration %06d / %06d finished. ETA: %02d:%02d:%02d takes %2.3f secs" % (itr, self.args["train_iteration"], eta // 3600, eta // 60 % 60, int(eta % 60), taken_time))
-        print(" [I] Epoch %04d tested. score=%.5f" % (epoch,float(score)))
+        print(" [I] Epoch %04d tested." % epoch)
 
     def save(self, checkpoint_dir, step,saver):
         model_name = "wave2wave.model"

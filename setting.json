@@ -2,7 +2,7 @@
     "saving_config":{
         "checkpoint_dir":"./trained_model/",
         "wave_otp_dir":"./waves/",
-        "version":"18.12.22"
+        "version":"1.0.2"
     },
     "training_config":{
         "train_iteration": 100000,
@@ -11,6 +11,7 @@
     },
     "plugin_config":{
         "test":true,
+	"real_datat_compare":false,
         "tensorboard":false
     }
 }
