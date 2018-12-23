@@ -1,6 +1,5 @@
 import tensorflow as tf
 import os
-import time
 import numpy as np
 import json
 from model import generator
@@ -11,20 +10,11 @@ class Model:
 
         # default setting
         self.args["model_name"] = "VRC"
-        self.args["version"] = "1.0.0"
+        self.args["version"] = "18.12.22"
 
         self.args["checkpoint_dir"] = "./trained_models"
-        self.args["wave_otp_dir"] = "./havests"
-        self.args["train_data_dir"] = "./datasets/train"
-        self.args["test_data_dir"] = "./datasets/test"
 
-        self.args["test"] = True
-        self.args["tensorboard"] = True
-        self.args["debug"] = False
-
-        self.args["batch_size"] = 32
         self.args["input_size"] = 4096
-        self.args["NFFT"] = 1024
         self.args["pitch_rate_var"]=1.0
         self.args["pitch_rate_mean_s"]=0.0
         self.args["pitch_rate_mean_t"]=0.0
@@ -58,74 +48,25 @@ class Model:
             print(" [W] Use default setting")
 
         # initializing paramaters
-        self.args["SHIFT"] = self.args["NFFT"] // 2
         self.args["name_save"] = self.args["model_name"] + self.args["version"]
 
         # shapes of inputs
-        self.input_size_model = [self.args["batch_size"], 65,513,1]
         self.input_size_test = [1, 52,513,1]
-
         self.sess = tf.InteractiveSession(config=tf.ConfigProto(gpu_options=tf.GPUOptions()))
-
-        if self.args["wave_otp_dir"] is not "False":
-            self.args["wave_otp_dir"] = self.args["wave_otp_dir"] + self.args["name_save"] + "/"
-            if not os.path.exists(self.args["wave_otp_dir"]):
-                os.makedirs(self.args["wave_otp_dir"])
 
         self.build_model()
     def build_model(self):
 
         #inputs place holder
         self.input_model_test = tf.placeholder(tf.float32, self.input_size_test, "inputs_G-net_A")
-        self.input_model_testa =self.input_model_test
         #creating generator
 
         with tf.variable_scope("generator_1"):
-            self.test_outputaB = generator(self.input_model_testa, reuse=None, training=False)
+            self.test_outputaB = generator(self.input_model_test, reuse=None, training=False)
 
         #saver
         self.saver = tf.train.Saver()
 
-
-
-    def convert(self,in_put):
-        #function of test
-        #To convert wave file
-        tt=time.time()
-        ipt_size=self.args["input_size"]
-        times=in_put.shape[0]//(ipt_size)+1
-        if in_put.shape[0]%(ipt_size*self.args["batch_size"])==0:
-            times-=1
-        otp=np.array([],dtype=np.int16)
-        res3 = np.zeros([1,self.args["NFFT"],2], dtype=np.float32)
-
-        for t in range(times):
-            # Preprocess
-
-            # Padiing
-            start_pos=ipt_size*t+(in_put.shape[0]%ipt_size)
-            resorce=np.reshape(in_put[max(0,start_pos-ipt_size):start_pos],(-1))
-            # resorce=resorce+np.random.uniform(-0.5,0.5,resorce.shape)
-            r=max(0,ipt_size-resorce.shape[0])
-            if r>0:
-                resorce=np.pad(resorce,(r,0),'constant')
-            f0,res,ap2=encode((resorce/32767.0).astype(np.double))
-            res=res.reshape(1,-1,513,1)
-            response=self.sess.run(self.test_outputaB,feed_dict={ self.input_model_test:res})
-            # Postprocess
-            _f0=(f0-100)*1.
-            2+180
-            # ap2=np.zeros_like(ap2)
-            rest = decode(_f0,response[0].reshape(-1,513).astype(np.double),ap2)
-
-            res = np.clip(rest, -1.0, 1.0)*32767
-            res=res.reshape(-1).astype(np.int16)
-            otp=np.append(otp,res)
-        h=otp.shape[0]-in_put.shape[0]
-        if h>0:
-            otp=otp[h:]
-
-        return otp.reshape(-1),time.time()-tt,res3[1:]
 
     def load(self):
         # initialize variables
