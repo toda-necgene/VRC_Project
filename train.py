@@ -30,7 +30,7 @@ class Model:
         self.args["wave_otp_dir"] = "./harvests"
         self.args["train_data_dir"]="./dataset/train"
         self.args["test_data_dir"] ="./dataset/test"
-        self.args["real_}data_compare"]=False
+        self.args["real_data_compare"]=False
         self.args["test"]=True
         self.args["tensorboard"]=False
         
@@ -232,7 +232,7 @@ class Model:
         # loading training data directory
         # loading test data
         self.test  = isread(self.args["test_data_dir"]+'/test.wav')
-        if self.args["real-data-compare"]:
+        if self.args["real_data_compare"]:
             self.label = isread(self.args["test_data_dir"] + '/label.wav')
 
             im = fft(self.label/32767)
