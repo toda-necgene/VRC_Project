@@ -1,12 +1,91 @@
-from model_run import Model
 from multiprocessing import Queue,Process
 import numpy as np
 import pyaudio as pa
 import pyworld as pw
+import os
 import atexit
+import json
+import tensorflow as tf
+from model import generator
 import scipy.signal
 # Process Of guess
+class Model:
+    def __init__(self,path):
+        self.args = dict()
 
+        # default setting
+        self.args["model_name"] = "VRC"
+        self.args["version"] = "18.12.22"
+
+        self.args["checkpoint_dir"] = "./trained_models"
+
+        self.args["input_size"] = 4096
+        self.args["pitch_rate_var"]=1.0
+        self.args["pitch_rate_mean_s"]=0.0
+        self.args["pitch_rate_mean_t"]=0.0
+
+        # reading json file
+        try:
+            with open(path, "r") as f:
+                dd = json.load(f)
+                keys = dd.keys()
+                for j in keys:
+                    data = dd[j]
+                    keys2 = data.keys()
+                    for k in keys2:
+                        if k in self.args:
+                            if type(self.args[k]) == type(data[k]):
+                                self.args[k] = data[k]
+                            else:
+                                print(
+                                    " [W] Argumet \"" + k + "\" is incorrect data type. Please change to \"" + str(
+                                        type(self.args[k])) + "\"")
+                        elif k[0] == "#":
+                            pass
+                        else:
+                            print(" [W] Argument \"" + k + "\" is not exsits.")
+
+        except json.JSONDecodeError as e:
+            print(" [W] JSONDecodeError: ", e)
+            print(" [W] Use default setting")
+        except FileNotFoundError:
+            print(" [W] Setting file is not found :", path)
+            print(" [W] Use default setting")
+
+        # initializing paramaters
+        self.args["name_save"] = self.args["model_name"] + self.args["version"]
+
+        # shapes of inputs
+        self.input_size_test = [1, 52,513,1]
+        self.sess = tf.InteractiveSession(config=tf.ConfigProto(gpu_options=tf.GPUOptions()))
+
+        #inputs place holder
+        self.input_model_test = tf.placeholder(tf.float32, self.input_size_test, "inputs_G-net_A")
+        #creating generator
+
+        with tf.variable_scope("generator_1"):
+            self.test_outputaB = generator(self.input_model_test, reuse=None, training=False)
+
+        #saver
+        self.saver = tf.train.Saver()
+
+
+    def load(self):
+        # initialize variables
+        init_op = tf.global_variables_initializer()
+        self.sess.run(init_op)
+        print(" [*] Reading checkpoint...")
+        model_dir = self.args["name_save"]
+        checkpoint_dir = os.path.join(self.args["checkpoint_dir"], model_dir)
+
+        ckpt = tf.train.get_checkpoint_state(checkpoint_dir)
+        if ckpt :
+            ckpt_name = os.path.basename(ckpt.model_checkpoint_path)
+            self.saver.restore(self.sess, os.path.join(checkpoint_dir, ckpt_name))
+            self.epoch=self.saver
+            return True
+        else:
+            return False
 padding = 1024
 padding_shift = 512
 TERM = 4096

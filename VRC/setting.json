@@ -1,16 +1,18 @@
 {
     "saving_config":{
         "checkpoint_dir":"./trained_model/",
-        "wave_otp_dir":"./waves/",
-        "version":"18.12.22"
+        "wave_otp_dir":"Z://waves/",
+        "version":"18.12.28.37"
     },
     "training_config":{
-        "train_iteration": 100000,
+        "train_iteration": 10000,
         "batch_size": 1,
-        "weight_Cycle":100.0
+        "weight_Cycle":10.0
     },
     "plugin_config":{
         "test":true,
-        "tensorboard":false
+        "tensor-board":true,
+        "real_sample_compare": true,
+        "use_old_dataset": true
     }
 }

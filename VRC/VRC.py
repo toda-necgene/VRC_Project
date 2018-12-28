@@ -57,9 +57,6 @@ class Model:
         self.input_size_test = [1, 52,513,1]
         self.sess = tf.InteractiveSession(config=tf.ConfigProto(gpu_options=tf.GPUOptions()))
 
-        self.build_model()
-    def build_model(self):
-
         #inputs place holder
         self.input_model_test = tf.placeholder(tf.float32, self.input_size_test, "inputs_G-net_A")
         #creating generator
@@ -90,11 +87,10 @@ class Model:
 
 
 def encode(data):
-    fs = 16000
-    f0, t = pw.dio(data, fs)
-    f0 = pw.stonemask(data, f0, t, fs)
-    sp = pw.cheaptrick(data, f0, t, fs)
-    ap = pw.d4c(data, f0, t, fs)
+    f0, t = pw.dio(data, 16000)
+    f0 = pw.stonemask(data, f0, t, 16000)
+    sp = pw.cheaptrick(data, f0, t, 16000)
+    ap = pw.d4c(data, f0, t, 16000)
     return f0.astype(np.float64), np.clip((np.log(sp) + 15) / 20, -1.0, 1.0).astype(np.float64), ap.astype(np.float64)
 
 
