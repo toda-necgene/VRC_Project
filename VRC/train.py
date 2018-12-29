@@ -280,7 +280,7 @@ class Model:
         max_lr = 2e-4
         min_lr = 2e-5
         T_c=0
-        T=5000
+        T=50000
         # main-training
         for epoch in range(train_epoch):
             # shuffling train_data_index
