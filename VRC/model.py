@@ -19,7 +19,7 @@ def generator(ten,reuse,training):
 
     ten = tf.nn.leaky_relu(tenA)
     ten=tf.transpose(ten,[0,1,3,2])
-    for i in range(6):
+    for i in range(4):
         tenA = tf.layers.conv2d(ten,64,[4,4],[1,1],"SAME",kernel_initializer=tf.initializers.random_normal(stddev=0.02),use_bias=False,reuse=reuse, name="guru_mid_A_" + str(i))
         tenB = tf.layers.conv2d(tenA,64,[1,1],kernel_initializer=tf.initializers.random_normal(stddev=0.02),use_bias=False,reuse=reuse, name="guru_mid_B_" + str(i))
         tenA = tf.layers.batch_normalization(tenA, training=training, reuse=reuse, name="mid_A_bn" + str(i))
