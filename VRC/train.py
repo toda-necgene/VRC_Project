@@ -138,10 +138,10 @@ class Model:
         self.update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 
         # Least squared loss
-        d_loss_AR = -tf.log(d_judgeAR)
-        d_loss_AF = -tf.log(1-d_judgeAF)
-        d_loss_BR = -tf.log(d_judgeBR)
-        d_loss_BF = -tf.log(1-d_judgeBF)
+        d_loss_AR = -tf.log(d_judgeAR+1e-8)
+        d_loss_AF = -tf.log(1-d_judgeAF+1e-8)
+        d_loss_BR = -tf.log(d_judgeBR+1e-8)
+        d_loss_BF = -tf.log(1-d_judgeBF+1e-8)
         self.d_loss=d_loss_AR+d_loss_AF+d_loss_BR+d_loss_BF
 
         # objective-functions of generator
@@ -151,8 +151,8 @@ class Model:
         g_loss_cyc_B = tf.squared_difference(self.input_model_B,fake_Ab_image)+tf.squared_difference(self.input_model_B*mfb,fake_Ab_image*mfb)
 
         # Gan loss (using a difference of like WGAN )
-        g_loss_gan_A = -tf.log(d_judgeAF)
-        g_loss_gan_B = -tf.log(d_judgeBF)
+        g_loss_gan_A = -tf.log(d_judgeAF+1e-8)
+        g_loss_gan_B = -tf.log(d_judgeBF+1e-8)
 
 
         self.g_loss =tf.losses.compute_weighted_loss( g_loss_cyc_A  + g_loss_cyc_B,self.args["weight_Cycle"]*0.5) + g_loss_gan_B+ g_loss_gan_A
@@ -276,10 +276,10 @@ class Model:
         train_epoch=self.args["train_iteration"]//self.loop_num+1
         one_itr_num=self.loop_num*self.args["batch_size"]
         iterations=0
-        max_lr = 2e-4
-        min_lr = 1e-4
+        max_lr = 2e-6
+        min_lr = 2e-7
         T_c=0
-        T=10000
+        T=100000
         # main-training
         for epoch in range(train_epoch):
             # shuffling train_data_index
@@ -303,7 +303,7 @@ class Model:
                 if T==T_c:
                     T_c=0
                     max_lr=min_lr
-                    min_lr*=0.5
+                    min_lr*=0.1
                 iterations+=1
         self.test_and_save(train_epoch,iterations,one_itr_num)
         taken_time_all=time.time()-start_time_all
