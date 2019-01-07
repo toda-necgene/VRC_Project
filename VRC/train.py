@@ -80,12 +80,6 @@ class Model:
             print(" [W] Use default setting")
 
 
-        # loading f0 parameters
-        a = np.load("./voice_profile.npy")
-        self.args["pitch_rate_mean_s"] = a[0]
-        self.args["pitch_rate_mean_t"] = a[1]
-        self.args["pitch_rate_var"] = a[2]
-
         # shapes properties
         self.input_size_model=[self.args["batch_size"],52,513,1]
         self.input_size_test = [1, 52,513,1]
@@ -103,6 +97,13 @@ class Model:
 
         if not self.args["use_old_dataset"]:
             create_dataset()
+
+        # loading f0 parameters
+        a = np.load("./voice_profile.npy")
+        self.args["pitch_rate_mean_s"] = a[0]
+        self.args["pitch_rate_mean_t"] = a[1]
+        self.args["pitch_rate_var"] = a[2]
+
         #inputs place holders
 
         self.input_model_A=tf.placeholder(tf.float32, self.input_size_model, "inputs_g_A")
@@ -111,52 +112,50 @@ class Model:
 
         #creating generator (if you want to view more codes then ./model.py)
         with tf.variable_scope("generator_1"):
-            fake_aB_image = generator(self.input_model_A, reuse=None,training=True)
-            self.fake_aB_image_test= generator(self.input_model_test, reuse=True,training=False)
+            fake_aB_image = generator(self.input_model_A, reuse=None)
+            self.fake_aB_image_test= generator(self.input_model_test, reuse=True)
         with tf.variable_scope("generator_2"):
-            fake_bA_image = generator(self.input_model_B, reuse=None,training=True)
-        with tf.variable_scope("generator_2",reuse=True):
-            fake_Ba_image = generator(fake_aB_image, reuse=True,training=True)
+            fake_bA_image = generator(self.input_model_B, reuse=None)
+            fake_Ba_image = generator(fake_aB_image, reuse=True)
         with tf.variable_scope("generator_1",reuse=True):
-            fake_Ab_image = generator(fake_bA_image, reuse=True,training=True)
+            fake_Ab_image = generator(fake_bA_image, reuse=True)
+
+        # create mel_filter_bank
+        mfb=tf.constant(mel_filter_bank(),shape=[1,1,513,20],dtype=tf.float32)
 
 
         #creating discriminator (if you want to view more codes then ./model.py)
         with tf.variable_scope("discriminator_1"):
-            d_judgeAR = discriminator(self.input_model_A, None)
-            d_judgeAF = discriminator(fake_bA_image, True)
+            d_judgeAR = discriminator(self.input_model_A*mfb, None)
+            d_judgeAF = discriminator(fake_bA_image*mfb, True)
         with tf.variable_scope("discriminator_2"):
-            d_judgeBR = discriminator(self.input_model_B,None)
-            d_judgeBF = discriminator(fake_aB_image, True)
+            d_judgeBR = discriminator(self.input_model_B*mfb,None)
+            d_judgeBF = discriminator(fake_aB_image*mfb, True)
 
         #getting individual variables of architectures
         self.g_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"generator_1")+tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"generator_2")
         self.d_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"discriminator_1")+tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"discriminator_2")
         self.update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 
-        #objective-functions of discriminator
-        label1 = tf.ones_like(d_judgeAR)
-        label0 = tf.zeros_like(d_judgeAR)
-
         # Least squared loss
-        d_loss_AR = tf.squared_difference(label1, d_judgeAR)
-        d_loss_AF = tf.squared_difference(label0, d_judgeAF)
-        d_loss_BR = tf.squared_difference(label1, d_judgeBR)
-        d_loss_BF = tf.squared_difference(label0, d_judgeBF)
+        d_loss_AR = -tf.log(d_judgeAR)
+        d_loss_AF = -tf.log(1-d_judgeAF)
+        d_loss_BR = -tf.log(d_judgeBR)
+        d_loss_BF = -tf.log(1-d_judgeBF)
         self.d_loss=d_loss_AR+d_loss_AF+d_loss_BR+d_loss_BF
 
         # objective-functions of generator
 
         # Cycle loss (L2 norm is better than L1 norm for keeping words)
-        g_loss_cyc_A = tf.losses.absolute_difference(self.input_model_A,fake_Ba_image)
-        g_loss_cyc_B = tf.losses.absolute_difference(self.input_model_B,fake_Ab_image)
+        g_loss_cyc_A = tf.squared_difference(self.input_model_A,fake_Ba_image)+tf.squared_difference(self.input_model_A*mfb,fake_Ba_image*mfb)
+        g_loss_cyc_B = tf.squared_difference(self.input_model_B,fake_Ab_image)+tf.squared_difference(self.input_model_B*mfb,fake_Ab_image*mfb)
 
         # Gan loss (using a difference of like WGAN )
-        g_loss_gan_A = tf.squared_difference(label1 , d_judgeAF)
-        g_loss_gan_B = tf.squared_difference(label1 , d_judgeBF)
+        g_loss_gan_A = -tf.log(d_judgeAF)
+        g_loss_gan_B = -tf.log(d_judgeBF)
 
 
-        self.g_loss =tf.losses.compute_weighted_loss( g_loss_cyc_A  + g_loss_cyc_B,self.args["weight_Cycle"]) + g_loss_gan_B+ g_loss_gan_A
+        self.g_loss =tf.losses.compute_weighted_loss( g_loss_cyc_A  + g_loss_cyc_B,self.args["weight_Cycle"]*0.5) + g_loss_gan_B+ g_loss_gan_A
 
         #tensorboard functions
         if self.args["tensor-board"]:
@@ -238,7 +237,7 @@ class Model:
         lr=tf.placeholder(tf.float32)
         with tf.control_dependencies(self.update_ops):
             g_optimizer = tf.train.AdamOptimizer(lr, 0.5, 0.999).minimize(self.g_loss,var_list=self.g_vars)
-        d_optimizer = tf.train.AdamOptimizer(lr, 0.5, 0.999).minimize(self.d_loss,var_list=self.d_vars)
+        d_optimizer = tf.train.AdamOptimizer(lr*0.5, 0.5, 0.999).minimize(self.d_loss,var_list=self.d_vars)
 
         # loading net
         if self.load():
@@ -278,9 +277,9 @@ class Model:
         one_itr_num=self.loop_num*self.args["batch_size"]
         iterations=0
         max_lr = 2e-4
-        min_lr = 2e-5
+        min_lr = 1e-4
         T_c=0
-        T=50000
+        T=10000
         # main-training
         for epoch in range(train_epoch):
             # shuffling train_data_index
@@ -297,13 +296,14 @@ class Model:
                 opt=np.cos(T_c/T*np.pi*0.5)*(max_lr-min_lr)+min_lr
                 # update D network
                 self.sess.run(d_optimizer, feed_dict={self.input_model_A: batch_sounds_resource,self.input_model_B: batch_sounds_target,lr:opt})
+                self.sess.run(d_optimizer, feed_dict={self.input_model_A: batch_sounds_resource,self.input_model_B: batch_sounds_target,lr:opt})
                 # update G network
                 self.sess.run(g_optimizer,feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target,lr:opt})
                 T_c+=1
                 if T==T_c:
                     T_c=0
                     max_lr=min_lr
-                    min_lr*=0.1
+                    min_lr*=0.5
                 iterations+=1
         self.test_and_save(train_epoch,iterations,one_itr_num)
         taken_time_all=time.time()-start_time_all
@@ -413,7 +413,22 @@ class Model:
             return True
         else:
             return False
-
+def mel_filter_bank():
+    h_h =[300,517.33,781.90,1103.97,1496.04,1973.32,2554.33,3261.62,4122.63,5170.76,6446.70,8000]
+    fs = np.fft.fftfreq(1024,d=1.0/16000)[:512]
+    h=list()
+    for n in range(12):
+        idx = np.abs(fs-h_h[n]).argmin()
+        h.append(idx)
+    f=np.zeros([512,20])
+    f[:,10:]=0.5
+    for i in range(10):
+        st=int(np.floor(h[i]))
+        ft=int(np.floor(h[i+2]))
+        mt = (st+ft)//2
+        f[st:mt,i]=np.linspace(0.0,1.0,mt-st)
+        f[mt:ft,i]=np.linspace(1.0,0.0,ft-mt)
+    return f
 def encode(data):
     fs=16000
     _f0,t=pw.dio(data,fs)
