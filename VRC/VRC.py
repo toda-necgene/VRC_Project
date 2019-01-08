@@ -62,7 +62,7 @@ class Model:
         #creating generator
 
         with tf.variable_scope("generator_1"):
-            self.test_outputaB = generator(self.input_model_test, reuse=None, training=False)
+            self.test_outputaB = generator(self.input_model_test, reuse=None)
 
         #saver
         self.saver = tf.train.Saver()

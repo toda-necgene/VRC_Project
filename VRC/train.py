@@ -237,7 +237,7 @@ class Model:
         lr=tf.placeholder(tf.float32)
         with tf.control_dependencies(self.update_ops):
             g_optimizer = tf.train.AdamOptimizer(lr, 0.5, 0.999).minimize(self.g_loss,var_list=self.g_vars)
-        d_optimizer = tf.train.AdamOptimizer(lr*0.5, 0.5, 0.999).minimize(self.d_loss,var_list=self.d_vars)
+        d_optimizer = tf.train.AdamOptimizer(lr, 0.5, 0.999).minimize(self.d_loss,var_list=self.d_vars)
 
         # loading net
         if self.load():
@@ -274,12 +274,8 @@ class Model:
         # initializing training information
         start_time_all=time.time()
         train_epoch=self.args["train_iteration"]//self.loop_num+1
-        one_itr_num=self.loop_num*self.args["batch_size"]
+        one_itr_num=self.loop_num
         iterations=0
-        max_lr = 2e-6
-        min_lr = 2e-7
-        T_c=0
-        T=100000
         # main-training
         for epoch in range(train_epoch):
             # shuffling train_data_index
@@ -293,17 +289,12 @@ class Model:
                 st=self.args["batch_size"]*idx
                 batch_sounds_resource = np.asarray([self.sounds_r[ind] for ind in index_list[st:st+self.args["batch_size"]]])
                 batch_sounds_target= np.asarray([self.sounds_t[ind] for ind in index_list2[st:st+self.args["batch_size"]]])
-                opt=np.cos(T_c/T*np.pi*0.5)*(max_lr-min_lr)+min_lr
+                opt=4e-5
                 # update D network
                 self.sess.run(d_optimizer, feed_dict={self.input_model_A: batch_sounds_resource,self.input_model_B: batch_sounds_target,lr:opt})
                 self.sess.run(d_optimizer, feed_dict={self.input_model_A: batch_sounds_resource,self.input_model_B: batch_sounds_target,lr:opt})
                 # update G network
                 self.sess.run(g_optimizer,feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target,lr:opt})
-                T_c+=1
-                if T==T_c:
-                    T_c=0
-                    max_lr=min_lr
-                    min_lr*=0.1
                 iterations+=1
         self.test_and_save(train_epoch,iterations,one_itr_num)
         taken_time_all=time.time()-start_time_all
