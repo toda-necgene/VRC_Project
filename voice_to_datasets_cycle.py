@@ -5,65 +5,99 @@ import glob
 import pyworld.pyworld as pw
 import os
 
-term = 4096
-CHANNELS = 1  #モノラル
-RATE = 16000  #サンプルレート
-CHUNK = 1024  #データ点数
+import util
 
-INPUT_NAMES = ["A", "B"]
-WAVE_INPUT_DIR = os.path.join("dataset", "source")
 
-TRAIN_DIR = os.path.join(".", "dataset", "train")
+class Voice2Dataset:
+    """
+    WAVEデータ群をパッチデータに変換する
 
-pitch = {}
+    Attributes
+    ----------
+    voice_dir : str
+        WAVEデータ群が格納されているルートディレクトリ
+    train_dir : str
+        学習用データを保存するディレクトリ
+    term : int
+        音響特性を計算するときのブロックサイズ
+    rate : int
+        WAVEデータのサンプリング周波数
+    """
+    def __init__(self, voice_dir, train_dir, term=4096, rate=16000):
+        """
+        Parameters
+        ----------
+        voice_dir : str
+            WAVEデータ群が格納されているルートディレクトリ
+        train_dir : str
+            学習用データを保存するディレクトリ
+        term : int optional
+            音響特性を計算するときのブロックサイズ
+        rate : int optional
+            WAVEデータのサンプリング周波数
+        """
+        self.voice_dir = voice_dir
+        self.train_dir = train_dir
+        self.term = term
+        self.rate = rate
 
-for name in INPUT_NAMES:
-    WAVE_INPUT_FILENAME = os.path.join(WAVE_INPUT_DIR, name)
-    files = sorted(glob.glob(os.path.join(WAVE_INPUT_FILENAME, "*.wav")))
-    ff = list()
-    m = list()
-    for file in files:
-        print(" [*] パッチデータに変換を開始します。 :", file)
-        dms = []
-        wf = wave.open(file, 'rb')
-        dds = wf.readframes(CHUNK)
-        while dds != b'':
-            dms.append(dds)
-            dds = wf.readframes(CHUNK)
-        dms = b''.join(dms)
-        data = np.frombuffer(dms, 'int16')
-        data_real = (data / 32767).reshape(-1).astype(np.float)
-        data_realA = data_real.copy()
-        times = data_realA.shape[0] // term + 1
-        if data_realA.shape[0] % term == 0:
-            times -= 1
-        ttm = time.time()
-        for i in range(times):
+    def convert(self, source, target):
+        """
+        第一, 第二話者のデータを変換する
 
-            ind = term
-            startpos = term * i + data_realA.shape[0] % term
-            data_realAb = data_realA[max(startpos - ind, 0):startpos].copy()
-            r = ind - data_realAb.shape[0]
-            if r > 0:
-                data_realAb = np.pad(data_realAb, (r, 0), "constant")
-            _f0, t = pw.dio(data_realAb, 16000)
-            f0 = pw.stonemask(data_realAb, _f0, t, 16000)
-            sp = pw.cheaptrick(data_realAb, f0, t, 16000)
-            f0 = f0[f0 > 0.0]
-            if len(f0) != 0:
-                ff.extend(f0)
-            m.append(np.clip((np.log(sp) + 15.0) / 20, -1.0, 1.0))
-    m = np.asarray(m, dtype=np.float32)
-    np.save(os.path.join(TRAIN_DIR, name + ".npy"), m)
-    print(" [*] " + name + "データ変換完了")
-    pitch[name] = {}
-    pitch[name]["mean"] = np.mean(ff)
-    pitch[name]["var"] = np.std(ff)
+        Parameters
+        ----------
+        source : str
+            第一話者名、実際のWAVEデータはこの名前のサブディレクトリに格納されていること
+        target : str
+            第二話者名、実際のWAVEデータはこの名前のサブディレクトリに格納されていること
 
-pitch_mean_s = pitch[INPUT_NAMES[0]]["mean"]
-pitch_var_s = pitch[INPUT_NAMES[0]]["var"]
-pitch_mean_t = pitch[INPUT_NAMES[1]]["mean"]
-pitch_var_t = pitch[INPUT_NAMES[1]]["var"]
+        Returns
+        -------
+        plof : np.array [第一話者のピッチ平均, 第二話者のピッチ平均, 第一話者と第二話者のピッチの標準偏差の比]
+        """
+        pitch = {}
+        for name in [source, target]:
+            files = sorted(
+                glob.glob(os.path.join(self.voice_dir, name, "*.wav")))
+            ff = list()
+            m = list()
+            for file in files:
+                print(" [*] パッチデータに変換を開始します。 :", file)
+                wf = wave.open(file, 'rb')
+                dms = wf.readframes(wf.getnframes())
+                data = np.frombuffer(dms, 'int16')
+                data_real = (data / 32767).reshape(-1).astype(np.float)
+                times = (data_real.shape[0] - 1) // self.term + 1
 
-plof = np.asarray([pitch_mean_s, pitch_mean_t, pitch_var_t / pitch_var_s])
-np.save(os.path.join(".", "voice_profile.npy"), plof)
+                ttm = time.time()
+                endpos = data_real.shape[0] % self.term
+                for i in range(times):
+                    data_realAb = data_real[max(endpos -
+                                                self.term, 0):endpos].copy()
+                    shortage = self.term - data_realAb.shape[0]
+                    if shortage > 0:
+                        data_realAb = np.pad(data_realAb, (shortage, 0),
+                                             "constant")
+
+                    f0, psp, _ = util.encode(data_realAb)
+                    ff.extend(f0[f0 > 0.0])
+                    m.append(psp)
+
+                    endpos += self.term * i
+
+            m = np.asarray(m, dtype=np.float32)
+            np.save(os.path.join(self.train_dir, name + ".npy"), m)
+            print(" [*] " + name + "データ変換完了")
+            pitch[name] = {}
+            pitch[name]["mean"] = np.mean(ff)
+            pitch[name]["var"] = np.std(ff)
+
+        pitch_mean_s = pitch[source]["mean"]
+        pitch_var_s = pitch[source]["var"]
+        pitch_mean_t = pitch[target]["mean"]
+        pitch_var_t = pitch[target]["var"]
+
+        plof = np.asarray([pitch_mean_s, pitch_mean_t, pitch_var_t / pitch_var_s])
+        return plof
+

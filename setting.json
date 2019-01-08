@@ -1,17 +1,21 @@
 {
-    "saving_config":{
-        "checkpoint_dir":"./trained_model/",
-        "wave_otp_dir":"./waves/",
-        "version":"1.0.2"
+    "saving_config": {
+        "checkpoint_dir": "./trained_model/",
+        "wave_otp_dir": "./waves/",
+        "version": "1.0.2"
     },
-    "training_config":{
+    "training_config": {
         "train_iteration": 100000,
         "batch_size": 1,
-        "weight_Cycle":100.0
+        "weight_Cycle": 100.0
     },
-    "plugin_config":{
-        "test":true,
-	"real_datat_compare":false,
-        "tensorboard":false
+    "plugin_config": {
+        "test": true,
+        "real_data_compare": false,
+        "tensorboard": false
+    },
+    "colaboratory": {
+        "use_colab": false,
+        "colab_hardware": "tpu"
     }
 }
