@@ -113,3 +113,17 @@ def decode(f0, psp, ap):
     sp = np.exp(psp.reshape(-1, 1, 513).astype(np.float) * 20 - 15)
     sp = sp.reshape(-1, 513).astype(np.float)
     return pw.synthesize(f0, sp, ap, fs)
+
+class ConsoleSummary():
+    def __init__(self):
+        pass
+
+    def add_summary(self, value, iteration):
+        print("[Iteration %d] " % iteration, end='')
+        print(value)
+        value = value.replace(b'\n\x26\n\x1f', b'\n  Variable 261f: ')
+        value = value.replace(b'\n\x24\n\x1d', b'\n  Variable 241d: ')
+        value = value.replace(b'\n\x1b\n\x1f', b'\n  Variable 1b1f: ')
+        value = value.replace(b'\n\x1b\n\x14', b'\n  Variable 1b14: ')
+        value = value.replace(b'\x15', b' : ')
+        print(value.decode())

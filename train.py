@@ -31,7 +31,7 @@ class Model:
                 #
                 "real_data_compare": False,
                 "test": True,
-                "tensorboard": False,
+                "summary": "console", # or "tensorboard", False
                 #
                 "batch_size": 1,
                 "input_size": 4096,
@@ -159,9 +159,9 @@ class Model:
         self.loss_display = tf.summary.merge(
             [g_loss_sum_A_display, g_loss_sum_B_display, d_loss_sum_A_display])
         self.result_score = tf.placeholder(tf.float32, name="FakeFFTScore")
-        fale_B_FFT_score_display = tf.summary.scalar(
+        fake_B_FFT_score_display = tf.summary.scalar(
             "g_error_AtoB", tf.reduce_mean(self.result_score), family="g_test")
-        self.g_test_display = tf.summary.merge([fale_B_FFT_score_display])
+        self.g_test_display = tf.summary.merge([fake_B_FFT_score_display])
 
         #saver
         self.saver = tf.train.Saver()
@@ -231,17 +231,30 @@ class Model:
 
         return otp, time.time() - conversion_start_time
 
+    def _new_optimizer(self):
+        if self.args["use_colab"]:
+            pass
+
+        return tf.train.AdamOptimizer(4e-6, 0.5, 0.999)
+
     def train(self):
         # naming output-directory
         with tf.control_dependencies(self.update_ops):
-            g_optim = tf.train.AdamOptimizer(4e-6, 0.5, 0.999).minimize(
+            optimizer = self._new_optimizer()
+            g_optim = optimizer.minimize(
                 self.g_loss, var_list=self.g_vars)
-        d_optim = tf.train.AdamOptimizer(4e-6, 0.5, 0.999).minimize(
+                
+        optimizer = self._new_optimizer()
+        d_optim = optimizer.minimize(
             self.d_loss, var_list=self.d_vars)
         # logging
-        if self.args["tensorboard"]:
+        if self.args["summary"] == "tensorboard":
             self.writer = tf.summary.FileWriter(
                 "./logs/" + self.args["name_save"], self.sess.graph)
+        elif self.args["summary"] == "console":
+            self.writer = util.ConsoleSummary()
+        else:
+            self.writer = None
 
         # loading net
         if self.load():
@@ -260,12 +273,12 @@ class Model:
             self.label_spec_v = np.std(im, axis=0)
 
         # prepareing training-data
-        batch_files = self.args["train_data_dir"] + '/A.npy'
-        batch_files2 = self.args["train_data_dir"] + '/B.npy'
+        batch_files_r = self.args["train_data_dir"] + '/A.npy'
+        batch_files_t = self.args["train_data_dir"] + '/B.npy'
 
         print(" [I] loading dataset...")
-        self.sounds_r = np.load(batch_files)
-        self.sounds_t = np.load(batch_files2)
+        self.sounds_r = np.load(batch_files_r)
+        self.sounds_t = np.load(batch_files_t)
         # times of one epoch
         train_data_num = min(self.sounds_r.shape[0], self.sounds_t.shape[0])
         self.batch_idxs = train_data_num // self.args["batch_size"]
@@ -287,6 +300,7 @@ class Model:
         self.start_time = time.time()
         self.train_epoch = self.args["train_iteration"] // self.batch_idxs + 1
         self.one_itr_num = self.batch_idxs * self.args["batch_size"]
+        
         iterations = 0
         # main-training
         for epoch in range(self.train_epoch):
@@ -363,7 +377,7 @@ class Model:
         im = fft(out_put)
         otp_im = im.copy().reshape(1, -1, 512)
         # writing epoch-result into tensorboard
-        if self.args["tensorboard"]:
+        if self.writer:
             tb_result = self.sess.run(
                 self.loss_display,
                 feed_dict={
@@ -374,7 +388,7 @@ class Model:
                     self.time: np.zeros([1])
                 })
             self.writer.add_summary(tb_result, itr)
-            if self.args["real-data-compare"]:
+            if self.args["real_data_compare"]:
                 spec = np.mean(im, axis=0)
                 spec_v = np.std(im, axis=0)
                 diff = spec - self.label_spec
@@ -511,13 +525,13 @@ def fft(data):
 
 
 if __name__ == '__main__':
-    v2d = V2D(
-        os.path.join(".", "dataset", "wave"),
-        os.path.join(".", "dataset", "train"))
-    plof = v2d.convert("A", "B")
-    np.save("./voice_profile.npy", plof)
+    if False:
+        v2d = V2D(
+            os.path.join(".", "dataset", "wave"),
+            os.path.join(".", "dataset", "train"))
+        plof = v2d.convert("A", "B")
+        np.save("./voice_profile.npy", plof)
 
     path = "./setting.json"
     net = Model(path)
     net.train()
-    

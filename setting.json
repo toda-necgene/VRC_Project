@@ -12,7 +12,7 @@
     "plugin_config": {
         "test": true,
         "real_data_compare": false,
-        "tensorboard": false
+        "summary": "console"
     },
     "colaboratory": {
         "use_colab": false,
