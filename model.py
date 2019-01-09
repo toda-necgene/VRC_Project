@@ -1,9 +1,10 @@
 import tensorflow as tf
 
 class Model():
-    def __init__(self):
+    def __init__(self, batch_size=1):
         self.name = "forked_VRC"
         self.version = "1.0.2"
+        self.input_size = [batch_size, 52, 513, 1]
 
     def discriminator(self, inp,reuse):
         # setting paramater

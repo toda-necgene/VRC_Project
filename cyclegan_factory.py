@@ -9,11 +9,12 @@ class Dummy():
 
 
 class CycleGAN():
-    def __init__(self, model=None):
-        self.session = tf.Session()
-        self.saver = tf.train.Saver()
-
+    def __init__(self, model=None, cycle_weight=1.0, create_optimizer=None):
         self.name = model.name + model.version
+        self.batch_size = model.input_size[0]
+
+        self.test_size = model.input_size.copy()
+        self.test_size[0] = 1
 
         self.sounds_r = []
         self.sounds_t = []
@@ -21,45 +22,131 @@ class CycleGAN():
         self._create_optimizer = None
         self.callback_every_epoch = {}
 
-        self.input = Dummy()
-        self.input.A = []
-        self.input.B = []
-        self.loss = Dummy()
-        self.loss.g = []
-        self.loss.d = []
-        self.loss.display = []
-        self.time = []
-        self.vars = Dummy()
-        self.vars.g = []
-        self.vars.d = []
-        self.update_ops = []
+        input = Dummy()
+        input.A = tf.placeholder(tf.float32, model.input_size, "inputs_g_A")
+        input.B = tf.placeholder(tf.float32, model.input_size, "inputs_g_B")
+        input.test = tf.placeholder(tf.float32, self.test_size, "inputs_g_test")
+        self.time = tf.placeholder(tf.float32, [1], "inputs_g_test")
 
-    def train(self, batch_size=1, train_iteration=100000):
-        assert len(self.sounds_r) > 0
-        assert len(self.sounds_r) == len(self.sounds_t)
+        #creating generator
+        with tf.variable_scope("generator_1"):
+            fake_aB = model.generator(input.A, reuse=None, training=True)
+            self.fake_aB_test = model.generator(input.test, reuse=True, training=False)
+        with tf.variable_scope("generator_2"):
+            fake_bA = model.generator(input.B, reuse=None, training=True)
+        with tf.variable_scope("generator_2", reuse=True):
+            fake_Ba = model.generator(fake_aB, reuse=True, training=True)
+        with tf.variable_scope("generator_1", reuse=True):
+            fake_Ab = model.generator(fake_bA, reuse=True, training=True)
+
+        #creating discriminator
+        with tf.variable_scope("discriminators"):
+            inp = tf.concat([fake_aB, input.B, fake_bA, input.A], axis=0)
+            d_judge = model.discriminator(inp, None)
+
+        vars = Dummy()
+        #getting individual variabloes
+        vars.g = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, "generator_1")
+        vars.g += tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, "generator_2")
+        vars.d = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, "discriminators")
+        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+
+        #objective-functions of discriminator
+        l0 = tf.reshape(tf.one_hot(0, 3), [1, 1, 3])
+        l1 = tf.reshape(tf.one_hot(1, 3), [1, 1, 3])
+        l2 = tf.reshape(tf.one_hot(2, 3), [1, 1, 3])
+        labelA = tf.tile(l0, [model.input_size[0], model.input_size[1], 1])
+        labelB = tf.tile(l1, [model.input_size[0], model.input_size[1], 1])
+        labelO = tf.tile(l2, [model.input_size[0], model.input_size[1], 1])
+        labels = tf.concat([labelO, labelB, labelO, labelA], axis=0)
+
+        loss = Dummy()
+        loss.d = tf.nn.softmax_cross_entropy_with_logits_v2(labels=labels, logits=d_judge) * 4
+
+        # objective-functions of generator
+
+        # Cyc lossB
+        g_loss_cyc_B = tf.pow(tf.abs(fake_Ab - input.B), 2)
+
+        # Gan lossA
+        g_loss_gan_A = tf.nn.softmax_cross_entropy_with_logits_v2(
+            logits=d_judge[self.batch_size * 2:self.batch_size * 3],
+            labels=labelA)
+
+        # Cycle lossA
+        g_loss_cyc_A = tf.pow(tf.abs(fake_Ba - input.A), 2)
+
+        # Gan lossB
+        g_loss_gan_B = tf.nn.softmax_cross_entropy_with_logits_v2(
+            logits=d_judge[:self.batch_size], labels=labelB)
+
+        # generator loss
+        loss.g = tf.losses.compute_weighted_loss(
+            g_loss_cyc_A + g_loss_cyc_B,
+            cycle_weight) + g_loss_gan_B + g_loss_gan_A
+
+        #tensorboard functions
+        g_loss_cyc_A_display = tf.summary.scalar(
+            "g_loss_cycle_AtoA", tf.reduce_mean(g_loss_cyc_A), family="g_loss")
+        g_loss_gan_A_display = tf.summary.scalar(
+            "g_loss_gan_BtoA", tf.reduce_mean(g_loss_gan_A), family="g_loss")
+        g_loss_sum_A_display = tf.summary.merge(
+            [g_loss_cyc_A_display, g_loss_gan_A_display])
+
+        g_loss_cyc_B_display = tf.summary.scalar(
+            "g_loss_cycle_BtoB", tf.reduce_mean(g_loss_cyc_B), family="g_loss")
+        g_loss_gan_B_display = tf.summary.scalar(
+            "g_loss_gan_AtoB", tf.reduce_mean(g_loss_gan_B), family="g_loss")
+        g_loss_sum_B_display = tf.summary.merge(
+            [g_loss_cyc_B_display, g_loss_gan_B_display])
+
+        d_loss_sum_A_display = tf.summary.scalar(
+            "d_loss", tf.reduce_mean(loss.d), family="d_loss")
+
+        loss.display = tf.summary.merge(
+            [g_loss_sum_A_display, g_loss_sum_B_display, d_loss_sum_A_display])
+        result_score = tf.placeholder(tf.float32, name="FakeFFTScore")
+        fake_B_FFT_score_display = tf.summary.scalar(
+            "g_error_AtoB", tf.reduce_mean(result_score), family="g_test")
+        # g_test_display = tf.summary.merge([fake_B_FFT_score_display])
+
+        self.input = input
+        self.vars = vars
+        self.loss = loss
+        
+        self.session = tf.Session()
+        self.saver = tf.train.Saver()
 
         # naming output-directory
-        with tf.control_dependencies(self.update_ops):
-            optimizer = self._create_optimizer()
-            g_optim = optimizer.minimize(self.loss.g, var_list=self.vars.g)
+        with tf.control_dependencies(update_ops):
+            optimizer = create_optimizer()
+            self.g_optim = optimizer.minimize(self.loss.g, var_list=self.vars.g)
 
-        optimizer = self._create_optimizer()
-        d_optim = optimizer.minimize(self.loss.d, var_list=self.vars.d)
+        optimizer = create_optimizer()
+        self.d_optim = optimizer.minimize(self.loss.d, var_list=self.vars.d)
+
+    def train(self, train_iteration=100000):
+        assert len(self.sounds_r) > 0
+        assert len(self.sounds_r) == len(self.sounds_t)
 
         # initializing training infomation
         start_time_all = time.time()
 
-        batch_idxs = self.sounds_r // batch_size
+        batch_idxs = self.sounds_r.shape[0] // self.batch_size
         train_epoch = train_iteration // batch_idxs + 1
 
         index_list_r = [h for h in range(self.sounds_r.shape[0])]
         index_list_t = [h for h in range(self.sounds_r.shape[0])]
 
+
+        train_iteration = 2
+        train_epoch = 1
+
         iterations = 0
         # main-training
         epoch_count_time = time.time()
         for epoch in range(train_epoch):
-            if epoch % batch_size == 0:
+            if epoch % self.batch_size == 0:
                 period = time.time() - epoch_count_time
                 for f in self.callback_every_epoch.values():
                     f(epoch, iterations, period)
@@ -73,19 +160,19 @@ class CycleGAN():
                 # getting batch
                 if iterations == train_iteration:
                     break
-                st = batch_size * idx
+                st = self.batch_size * idx
                 batch_sounds_resource = np.asarray([
                     self.sounds_r[ind]
-                    for ind in index_list_r[st:st + batch_size]
+                    for ind in index_list_r[st:st + self.batch_size]
                 ])
                 batch_sounds_target = np.asarray([
                     self.sounds_t[ind]
-                    for ind in index_list_t[st:st + batch_size]
+                    for ind in index_list_t[st:st + self.batch_size]
                 ])
                 ttt = np.array([1.0 - iterations / train_iteration])
                 # update D network
                 self.session.run(
-                    d_optim,
+                    self.d_optim,
                     feed_dict={
                         self.input.A: batch_sounds_resource,
                         self.input.B: batch_sounds_target,
@@ -93,7 +180,7 @@ class CycleGAN():
                     })
                 # update G network
                 self.session.run(
-                    g_optim,
+                    self.g_optim,
                     feed_dict={
                         self.input.A: batch_sounds_resource,
                         self.input.B: batch_sounds_target,
@@ -114,14 +201,11 @@ class CycleGAN():
               taken_time_all / 3600)
 
     def a_to_b(self, array):
-        """
-        resource = array.reshape(self.input_size_test)
+        resource = array.reshape(self.test_size)
         result = self.session.run(
-                self.fake_aB_image_test,
-                feed_dict={self.input_model_test: resource})
+                self.fake_aB_test,
+                feed_dict={self.input.test: resource})
         return result[0].reshape(-1, 513).astype(np.float)
-        """
-        pass
 
     def b_to_a(self, tensor):
         pass
@@ -204,10 +288,9 @@ class CycleGANFactory():
                 "train_data_dir": "./dataset/train",
                 #
                 "real_data_compare": False,
-                "test": False,
+                "test": "",
                 "summary": "console",  # or "tensorboard", False
                 #
-                "batch_size": 1,
                 "weight_Cycle": 100.0,
                 "train_iteration": 100000,
                 "start_epoch": 0,
@@ -216,16 +299,13 @@ class CycleGANFactory():
                 "colab_hardware": "tpu",
             })
 
-        self.net = CycleGAN(model)
+        optimizer = lambda: tf.train.AdamOptimizer(4e-6, 0.5, 0.999)
+
+        self.net = CycleGAN(model, cycle_weight=self.args["weight_Cycle"], create_optimizer=optimizer)
         f0_transfer = util.generate_f0_transfer("./voice_profile.npy")
         self.converter = Converter(self.net, f0_transfer).convert
         
         self.sample_size = 2
-
-        if self.args["use_colab"]:
-            pass
-        else:
-            self.net._create_optimizer = lambda self: tf.train.AdamOptimizer(4e-6, 0.5, 0.999)
 
         if self.args["summary"]:
             self.summary(self.args["summary"])
@@ -235,7 +315,6 @@ class CycleGANFactory():
 
         if self.args["checkpoint_dir"]:
             self.checkpoint(self.args["checkpoint_dir"])
-
 
         if self.args["train_data_dir"]:
             self.batch_files(self.args["train_data_dir"] + '/A.npy', self.args["train_data_dir"] + '/B.npy')
@@ -254,9 +333,9 @@ class CycleGANFactory():
                 self.net.loss.display,
                 feed_dict={
                     self.net.input.A:
-                    self.net.sounds_r[0:self.args["batch_size"]],
+                    self.net.sounds_r[0:self.net.batch_size],
                     self.net.input.B:
-                    self.net.sounds_t[0:self.args["batch_size"]],
+                    self.net.sounds_t[0:self.net.batch_size],
                     self.net.time:
                     np.zeros([1])
                 })
@@ -280,8 +359,10 @@ class CycleGANFactory():
             sounds_t.shape[2], 1
         ])
 
-        self.net.sounds_r = sounds_r
-        self.net.sounds_t = sounds_t
+        size = min(sounds_r.shape[0], sounds_t.shape[0])
+
+        self.net.sounds_r = sounds_r[:size]
+        self.net.sounds_t = sounds_t[:size]
         return self
 
     def test(self, test_files):
@@ -303,7 +384,7 @@ class CycleGANFactory():
                 plt.ylim(-1, 1)
                 path = os.path.join(
                     self.args["wave_otp_dir"],
-                    "%s_%d_%s" % (basename, epoch // self.args["batch_size"],
+                    "%s_%d_%s" % (basename, epoch // self.net.batch_size,
                                   datetime.now().strftime("%m-%d_%H-%M-%S")))
                 plt.savefig(path + ".png")
                 plt.savefig("latest.png")
@@ -335,3 +416,9 @@ class CycleGANFactory():
         self.net.load(dir)
 
         return self
+
+from model import Model as w2w
+if __name__ == '__main__':
+    create_optimizer = lambda: tf.train.AdamOptimizer(4e-6, 0.5, 0.999)
+    net = CycleGANFactory(w2w(1), 'settings.json').net
+    net.train(100000)
