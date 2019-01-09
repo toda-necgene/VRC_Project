@@ -197,8 +197,8 @@ class CycleGAN():
             f(train_epoch, iterations, period)
 
         taken_time_all = time.time() - start_time_all
-        print(" [I] ALL train process finished successfully!! in %d Hours" %
-              taken_time_all / 3600)
+        print(" [I] ALL train process finished successfully!! in %f Hours" %
+              (taken_time_all / 3600))
 
     def a_to_b(self, array):
         resource = array.reshape(self.test_size)
