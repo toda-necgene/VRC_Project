@@ -41,7 +41,7 @@ def config_reader(path, default={}):
 import numpy as np
 
 
-def generate_f0_translater(source_mean, target_mean=None, stdev_rate=None):
+def generate_f0_transfer(source_mean, target_mean=None, stdev_rate=None):
     """
 	f0 変換関数を提供します
 
@@ -60,7 +60,7 @@ def generate_f0_translater(source_mean, target_mean=None, stdev_rate=None):
 
 	Returns
 	-------
-	translater : function
+	transfer : function
 		f0変換を提供する関数です
 	
 
@@ -71,11 +71,42 @@ def generate_f0_translater(source_mean, target_mean=None, stdev_rate=None):
         target_mean = a[1]
         stdev_rate = a[2]
 
-    def translater(f0):
+    def transfer(f0):
         f0 = (f0 - source_mean) * stdev_rate + target_mean
         return f0
 
-    return translater
+    return transfer
+
+import wave
+def isread(path):
+    """
+    WAVEファイルから各フレームをINT16配列にして返す
+
+    Returns
+    -------
+    長さ160,000(10秒分)のdtype=np.int16のndarray
+
+    Notes
+    -----
+    WAVEファイルのサンプリングレートは16[kHz]でなければならない。
+    WAVEファイルが10秒未満の場合、配列の長さが10秒になるようにパディングする
+    WAVEファイルが10秒を超える場合、超えた分を切り詰める
+    """
+
+    wf = wave.open(path, "rb")
+    ans = np.zeros([1], dtype=np.int16)
+    dds = wf.readframes(1024)
+    while dds != b'':
+        ans = np.append(ans, np.frombuffer(dds, "int16"))
+        dds = wf.readframes(1024)
+    wf.close()
+    ans = ans[1:]
+    i = 160000 - ans.shape[0]
+    if i > 0:
+        ans = np.pad(ans, (0, i), "constant")
+    else:
+        ans = ans[:160000]
+    return ans
 
 
 from pyworld import pyworld as pw
@@ -114,16 +145,61 @@ def decode(f0, psp, ap):
     sp = sp.reshape(-1, 513).astype(np.float)
     return pw.synthesize(f0, sp, ap, fs)
 
+import struct
+from functools import reduce
 class ConsoleSummary():
     def __init__(self):
+        self.results = {}
+        self.iteration = []
         pass
 
-    def add_summary(self, value, iteration):
-        print("[Iteration %d] " % iteration, end='')
-        print(value)
-        value = value.replace(b'\n\x26\n\x1f', b'\n  Variable 261f: ')
-        value = value.replace(b'\n\x24\n\x1d', b'\n  Variable 241d: ')
-        value = value.replace(b'\n\x1b\n\x1f', b'\n  Variable 1b1f: ')
-        value = value.replace(b'\n\x1b\n\x14', b'\n  Variable 1b14: ')
-        value = value.replace(b'\x15', b' : ')
-        print(value.decode())
+    def add_summary(self, summary, iteration):
+        self.iteration.append(iteration)
+        values = [i for i in summary.split(b'\n') if i]
+        for i in range(len(values) // 2):
+            _type = bytes([0x20, values[i * 2][0], 0x20, values[i * 2 + 1][0]]) # どんな情報か不明
+            name = values[i * 2 + 1][1:-5].decode()
+            value = struct.unpack('<f', values[i * 2 + 1][-4:])[0]
+            if name in self.results:
+                self.results[name].append(value)
+            else:
+                self.results[name] = [value]
+
+        
+        print("--- Summary ---")
+        padding = max(map(lambda a: len(a), self.results.keys())) + 1
+
+        for k in self.results:
+            print("%s: " % k.rjust(padding, ' '), end='')
+            prev = False
+            for v in self.results[k][-5:]:
+                if prev:
+                    print("-> %f (%+f) " % (v , v - prev), end='')
+                else:
+                    print("%f " % v, end='')
+                prev = v
+            print()
+            
+        print("----------------")
+    
+
+def fft(data):
+    time_ruler = data.shape[0] // 512
+    if data.shape[0] % 512 == 0:
+        time_ruler -= 1
+    window = np.hamming(1024)
+    pos = 0
+    wined = np.zeros([time_ruler, 1024])
+    for fft_index in range(time_ruler):
+        frame = data[pos:pos + 1024]
+        r = 1024 - frame.shape[0]
+        if r > 0:
+            frame = np.pad(frame, (0, r), "constant")
+        wined[fft_index] = frame * window
+        pos += 512
+    fft_r = np.fft.fft(wined, n=1024, axis=1)
+    re = fft_r.real.reshape(time_ruler, -1)
+    im = fft_r.imag.reshape(time_ruler, -1)
+    c = np.log(np.power(re, 2) + np.power(im, 2) + 1e-24).reshape(
+        time_ruler, -1)[:, 512:]
+    return np.clip(c, -15.0, 5.0)

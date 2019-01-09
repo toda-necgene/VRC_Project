@@ -9,13 +9,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import tensorflow as tf
-from model import discriminator, generator
+from model import Model
 
 from voice_to_datasets_cycle import Voice2Dataset as V2D
 
 import util
 
-class Model:
+
+class CycleGAN:
     def __init__(self, path):
         self.args = util.config_reader(
             path,
@@ -31,10 +32,9 @@ class Model:
                 #
                 "real_data_compare": False,
                 "test": True,
-                "summary": "console", # or "tensorboard", False
+                "summary": "console",  # or "tensorboard", False
                 #
                 "batch_size": 1,
-                "input_size": 4096,
                 "weight_Cycle": 100.0,
                 "train_iteration": 100000,
                 "start_epoch": 0,
@@ -43,7 +43,7 @@ class Model:
                 "colab_hardware": "tpu",
             })
 
-        self.f0_translater = util.generate_f0_translater("./voice_profile.npy")
+        self.f0_transfer = util.generate_f0_transfer("./voice_profile.npy")
         # initializing hidden paramaters
 
         self.args["name_save"] = self.args["model_name"] + self.args["version"]
@@ -51,13 +51,11 @@ class Model:
         # shapes setting
         self.input_size_model = [self.args["batch_size"], 52, 513, 1]
         self.input_size_test = [1, 52, 513, 1]
-        self.output_size_model = [self.args["batch_size"], 65, 513, 1]
 
-        if self.args["wave_otp_dir"] is not "False":
-            self.args["wave_otp_dir"] = self.args["wave_otp_dir"] + self.args[
-                "name_save"] + "/"
-            if not os.path.exists(self.args["wave_otp_dir"]):
-                os.makedirs(self.args["wave_otp_dir"])
+        if self.args["wave_otp_dir"]:
+            self.args["wave_otp_dir"] = os.path.join(self.args["wave_otp_dir"],
+                                                     self.args["name_save"])
+            os.makedirs(self.args["wave_otp_dir"], exist_ok=True)
 
         #inputs place holder
         self.input_model_A = tf.placeholder(tf.float32, self.input_size_model,
@@ -69,18 +67,22 @@ class Model:
         self.time = tf.placeholder(tf.float32, [1], "inputs_g_test")
         #creating generator
 
+        model = Model()
+
         with tf.variable_scope("generator_1"):
-            fake_aB_image = generator(
+            fake_aB_image = model.generator(
                 self.input_model_A, reuse=None, training=True)
-            self.fake_aB_image_test = generator(
+            self.fake_aB_image_test = model.generator(
                 self.input_model_test, reuse=True, training=False)
         with tf.variable_scope("generator_2"):
-            fake_bA_image = generator(
+            fake_bA_image = model.generator(
                 self.input_model_B, reuse=None, training=True)
         with tf.variable_scope("generator_2", reuse=True):
-            fake_Ba_image = generator(fake_aB_image, reuse=True, training=True)
+            fake_Ba_image = model.generator(
+                fake_aB_image, reuse=True, training=True)
         with tf.variable_scope("generator_1", reuse=True):
-            fake_Ab_image = generator(fake_bA_image, reuse=True, training=True)
+            fake_Ab_image = model.generator(
+                fake_bA_image, reuse=True, training=True)
 
         #creating discriminator
         with tf.variable_scope("discriminators"):
@@ -89,7 +91,7 @@ class Model:
                 self.input_model_A
             ],
                             axis=0)
-            d_judge = discriminator(inp, None)
+            d_judge = model.discriminator(inp, None)
 
         #getting individual variabloes
         self.g_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,
@@ -167,7 +169,7 @@ class Model:
         self.saver = tf.train.Saver()
         self.sess = tf.Session()
 
-    def convert(self, in_put):
+    def convert(self, in_put, term=4096):
         """ WAVEファイルを最新の学習結果でA⇒B変換する
         Parameters
         ----------
@@ -185,19 +187,16 @@ class Model:
         #To convert wave file
 
         conversion_start_time = time.time()
-        input_size_one_term = self.args["input_size"]
-        executing_times = (in_put.shape[0] - 1) // (
-            self.args["input_size"]) + 1
+        executing_times = (in_put.shape[0] - 1) // term + 1
         otp = np.array([], dtype=np.int16)
 
         for t in range(executing_times):
             # Preprocess
 
             # Padiing
-            start_pos = self.args["input_size"] * t + (
-                in_put.shape[0] % self.args["input_size"])
-            resorce = in_put[max(0, start_pos - input_size_one_term):start_pos]
-            r = max(0, input_size_one_term - resorce.shape[0])
+            start_pos = term * t + (in_put.shape[0] % term)
+            resorce = in_put[max(0, start_pos - term):start_pos]
+            r = max(0, term - resorce.shape[0])
             if r > 0:
                 resorce = np.pad(resorce, (r, 0), 'constant')
             # FFT
@@ -213,13 +212,13 @@ class Model:
             # Postprocess
 
             # IFFT
-            f0 = self.f0_translater(f0)
+            f0 = self.f0_transfer(f0)
             result_wave = util.decode(
                 f0, result[0].copy().reshape(-1, 513).astype(np.float),
                 ap) * 32767
 
             result_wave_fixed = np.clip(result_wave, -32767.0,
-                                        32767.0)[:self.args["input_size"]]
+                                        32767.0)[:term]
             result_wave_int16 = result_wave_fixed.reshape(-1).astype(np.int16)
 
             #adding result
@@ -241,18 +240,17 @@ class Model:
         # naming output-directory
         with tf.control_dependencies(self.update_ops):
             optimizer = self._new_optimizer()
-            g_optim = optimizer.minimize(
-                self.g_loss, var_list=self.g_vars)
-                
+            g_optim = optimizer.minimize(self.g_loss, var_list=self.g_vars)
+
         optimizer = self._new_optimizer()
-        d_optim = optimizer.minimize(
-            self.d_loss, var_list=self.d_vars)
+        d_optim = optimizer.minimize(self.d_loss, var_list=self.d_vars)
         # logging
         if self.args["summary"] == "tensorboard":
             self.writer = tf.summary.FileWriter(
                 "./logs/" + self.args["name_save"], self.sess.graph)
         elif self.args["summary"] == "console":
             self.writer = util.ConsoleSummary()
+            self.args["real_data_compare"] = False
         else:
             self.writer = None
 
@@ -300,8 +298,10 @@ class Model:
         self.start_time = time.time()
         self.train_epoch = self.args["train_iteration"] // self.batch_idxs + 1
         self.one_itr_num = self.batch_idxs * self.args["batch_size"]
-        
+
         iterations = 0
+        self.train_epoch = 1
+        self.batch_idxs = 2
         # main-training
         for epoch in range(self.train_epoch):
             # shuffling train_data_index
@@ -408,18 +408,21 @@ class Model:
             plt.subplot(2, 1, 2)
             plt.plot(out_put)
             plt.ylim(-1, 1)
-            path = "%s%04d.png" % (self.args["wave_otp_dir"],
-                                   epoch // self.args["batch_size"])
+            path = os.path.join(
+                self.args["wave_otp_dir"],
+                "%04d.png" % (epoch // self.args["batch_size"]))
             plt.savefig(path)
             path = "./latest.png"
             plt.savefig(path)
 
             #saving fake waves
-            path = self.args["wave_otp_dir"] + datetime.now().strftime(
-                "%m-%d_%H-%M-%S") + "_" + str(epoch // self.args["batch_size"])
+            path = os.path.join(
+                self.args["wave_otp_dir"],
+                "%s_%d.wave" % (datetime.now().strftime("%m-%d_%H-%M-%S"),
+                                epoch // self.args["batch_size"]))
             voiced = out_puts.astype(np.int16)[800:156000]
 
-            ww = wave.open(path + ".wav", 'wb')
+            ww = wave.open(path, 'wb')
             ww.setnchannels(1)
             ww.setsampwidth(self._get_sample_size())
             ww.setframerate(16000)
@@ -444,8 +447,7 @@ class Model:
         model_dir = self.args["name_save"]
         checkpoint_dir = os.path.join(checkpoint_dir, model_dir)
 
-        if not os.path.exists(checkpoint_dir):
-            os.makedirs(checkpoint_dir)
+        os.makedirs(checkpoint_dir, exist_ok=True)
 
         saver.save(
             self.sess,
@@ -462,13 +464,14 @@ class Model:
 
         ckpt = tf.train.get_checkpoint_state(checkpoint_dir)
         if ckpt is not None and ckpt:
-            ckpt_name = os.path.basename(ckpt.model_checkpoint_path)
+            ckpt_name = os.path.basename(ckpt.model_checkpoint_path)  # pylint: disable=E1101
             self.saver.restore(self.sess,
                                os.path.join(checkpoint_dir, ckpt_name))
             self.epoch = self.saver
             return True
         else:
             return False
+
 
 def isread(path):
     """
@@ -533,5 +536,5 @@ if __name__ == '__main__':
         np.save("./voice_profile.npy", plof)
 
     path = "./setting.json"
-    net = Model(path)
+    net = CycleGAN(path)
     net.train()

@@ -9,7 +9,7 @@
         "weight_Cycle": 100.0
     },
     "plugin_config": {
-        "test": true,
+        "test": "./dataset/test/*.wav",
         "real_data_compare": false,
         "summary": "console"
     },
