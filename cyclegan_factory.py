@@ -339,7 +339,7 @@ class CycleGANFactory():
                     self.net.time:
                     np.zeros([1])
                 })
-            print(" [I] finish epoch %04d : iterations %d in %d seconds" %
+            print(" [I] finish epoch %04d : iterations %d in %f seconds" %
                   (epoch, iteration, period))
             writer.add_summary(tb_result, iteration)
 
