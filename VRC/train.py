@@ -120,42 +120,34 @@ class Model:
         with tf.variable_scope("generator_1",reuse=True):
             fake_Ab_image = generator(fake_bA_image, reuse=True)
 
-        # create mel_filter_bank
-        mfb=tf.constant(mel_filter_bank(),shape=[1,1,513,20],dtype=tf.float32)
-
-
         #creating discriminator (if you want to view more codes then ./model.py)
-        with tf.variable_scope("discriminator_1"):
-            d_judgeAR = discriminator(self.input_model_A*mfb, None)
-            d_judgeAF = discriminator(fake_bA_image*mfb, True)
-        with tf.variable_scope("discriminator_2"):
-            d_judgeBR = discriminator(self.input_model_B*mfb,None)
-            d_judgeBF = discriminator(fake_aB_image*mfb, True)
+        with tf.variable_scope("discriminator"):
+            inp=tf.concat([self.input_model_A,fake_bA_image,self.input_model_B,fake_aB_image],axis=0)
+            d_judge = discriminator(inp, None)
 
         #getting individual variables of architectures
         self.g_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"generator_1")+tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"generator_2")
-        self.d_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"discriminator_1")+tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"discriminator_2")
+        self.d_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"discriminator")
         self.update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-
-        # Least squared loss
-        d_loss_AR = -tf.log(d_judgeAR+1e-8)
-        d_loss_AF = -tf.log(1-d_judgeAF+1e-8)
-        d_loss_BR = -tf.log(d_judgeBR+1e-8)
-        d_loss_BF = -tf.log(1-d_judgeBF+1e-8)
-        self.d_loss=d_loss_AR+d_loss_AF+d_loss_BR+d_loss_BF
+        _l=int(d_judge.shape[1])
+        lN=tf.tile(tf.reshape(tf.one_hot(0,3),[1,1,3]),[1,_l,1])
+        lA=tf.tile(tf.reshape(tf.one_hot(1,3),[1,1,3]),[1,_l,1])
+        lB=tf.tile(tf.reshape(tf.one_hot(2,3),[1,1,3]),[1,_l,1])
+        label=tf.concat([lA,lN,lB,lN],axis=0)
+        # crassifer loss
+        self.d_loss=-tf.log(tf.abs(label-d_judge)+1e-8)
 
         # objective-functions of generator
 
         # Cycle loss (L2 norm is better than L1 norm for keeping words)
-        g_loss_cyc_A = tf.squared_difference(self.input_model_A,fake_Ba_image)+tf.squared_difference(self.input_model_A*mfb,fake_Ba_image*mfb)
-        g_loss_cyc_B = tf.squared_difference(self.input_model_B,fake_Ab_image)+tf.squared_difference(self.input_model_B*mfb,fake_Ab_image*mfb)
+        g_loss_cyc_A = tf.squared_difference(self.input_model_A,fake_Ba_image)
+        g_loss_cyc_B = tf.squared_difference(self.input_model_B,fake_Ab_image)
+        # Gan loss (using a KL divergence )
+        g_loss_gan_A = -tf.log(tf.abs(d_judge[0]-d_judge[1])+1e-8)
+        g_loss_gan_B = -tf.log(tf.abs(d_judge[2]-d_judge[3])+1e-8)
 
-        # Gan loss (using a difference of like WGAN )
-        g_loss_gan_A = -tf.log(d_judgeAF+1e-8)
-        g_loss_gan_B = -tf.log(d_judgeBF+1e-8)
 
-
-        self.g_loss =tf.losses.compute_weighted_loss( g_loss_cyc_A  + g_loss_cyc_B,self.args["weight_Cycle"]*0.5) + g_loss_gan_B+ g_loss_gan_A
+        self.g_loss =tf.losses.compute_weighted_loss( g_loss_cyc_A  + g_loss_cyc_B,self.args["weight_Cycle"]) + g_loss_gan_B+ g_loss_gan_A
 
         #tensorboard functions
         if self.args["tensor-board"]:
@@ -289,9 +281,9 @@ class Model:
                 st=self.args["batch_size"]*idx
                 batch_sounds_resource = np.asarray([self.sounds_r[ind] for ind in index_list[st:st+self.args["batch_size"]]])
                 batch_sounds_target= np.asarray([self.sounds_t[ind] for ind in index_list2[st:st+self.args["batch_size"]]])
-                opt=4e-5
+                opt=2e-6
                 # update D network
-                self.sess.run(d_optimizer, feed_dict={self.input_model_A: batch_sounds_resource,self.input_model_B: batch_sounds_target,lr:opt})
+                # self.sess.run(d_optimizer, feed_dict={self.input_model_A: batch_sounds_resource,self.input_model_B: batch_sounds_target,lr:opt})
                 self.sess.run(d_optimizer, feed_dict={self.input_model_A: batch_sounds_resource,self.input_model_B: batch_sounds_target,lr:opt})
                 # update G network
                 self.sess.run(g_optimizer,feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target,lr:opt})
@@ -411,8 +403,8 @@ def mel_filter_bank():
     for n in range(12):
         idx = np.abs(fs-h_h[n]).argmin()
         h.append(idx)
-    f=np.zeros([512,20])
-    f[:,10:]=0.5
+    f=np.zeros([512,11])
+    f[:,10:]=1.0
     for i in range(10):
         st=int(np.floor(h[i]))
         ft=int(np.floor(h[i+2]))
