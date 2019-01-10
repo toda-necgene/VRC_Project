@@ -117,10 +117,6 @@ class CycleGAN():
         self.vars = vars
         self.loss = loss
         
-        print(processor)
-        self.session = tf.Session(processor)
-        print(' [I] Devices list: %s' % self.session.list_devices())
-        self.saver = tf.train.Saver()
 
         # naming output-directory
         with tf.control_dependencies(update_ops):
@@ -130,6 +126,14 @@ class CycleGAN():
         optimizer = create_optimizer()
         self.d_optim = optimizer.minimize(self.loss.d, var_list=self.vars.d)
 
+
+        print(processor)
+        self.session = tf.Session(processor)
+        print(' [I] Devices list: ')
+        print(self.session.list_devices())
+        self.saver = tf.train.Saver()
+
+        
         print(' [D] created optimizer')
 
     def train(self, train_iteration=100000):
