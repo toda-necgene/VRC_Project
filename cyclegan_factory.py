@@ -115,8 +115,9 @@ class CycleGAN():
         self.vars = vars
         self.loss = loss
         
+        print(processor)
         self.session = tf.Session(processor)
-        print(' [I] Devices list' % self.session.list_devices())
+        print(' [I] Devices list: %s' % self.session.list_devices())
         self.saver = tf.train.Saver()
 
         # naming output-directory
@@ -126,6 +127,8 @@ class CycleGAN():
 
         optimizer = create_optimizer()
         self.d_optim = optimizer.minimize(self.loss.d, var_list=self.vars.d)
+
+        print(' [D] created optimizer')
 
     def train(self, train_iteration=100000):
         assert len(self.sounds_r) > 0
@@ -185,6 +188,8 @@ class CycleGAN():
                         self.time: ttt
                     })
 
+                print('run')
+
                 iterations += 1
             # calculating ETA
             if iterations == train_iteration:
@@ -214,6 +219,7 @@ class CycleGAN():
     def load(self, dir):
         # initialize variables
         # initializer = tf.global_variables_initializer()
+        print(' [D] load start')
         initializer = tf.contrib.tpu.initialize_system()
         self.session.run(initializer)
         print(" [I] Reading checkpoint...")
