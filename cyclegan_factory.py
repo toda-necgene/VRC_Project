@@ -29,7 +29,7 @@ class CycleGAN():
         input.A = tf.placeholder(tf.float32, model.input_size, "inputs_g_A")
         input.B = tf.placeholder(tf.float32, model.input_size, "inputs_g_B")
         input.test = tf.placeholder(tf.float32, self.test_size, "inputs_g_test")
-        self.time = tf.placeholder(tf.float32, [1], "inputs_g_test")
+        # self.time = tf.placeholder(tf.float32, [1], "inputs_g_test")
 
         #creating generator
         with tf.variable_scope("generator_1"):
@@ -179,7 +179,7 @@ class CycleGAN():
                     feed_dict={
                         self.input.A: batch_sounds_resource,
                         self.input.B: batch_sounds_target,
-                        self.time: ttt
+                        # self.time: ttt
                     })
                 # update G network
                 self.session.run(
@@ -187,7 +187,7 @@ class CycleGAN():
                     feed_dict={
                         self.input.A: batch_sounds_resource,
                         self.input.B: batch_sounds_target,
-                        self.time: ttt
+                        # self.time: ttt
                     })
 
                 print('run')
@@ -340,12 +340,9 @@ class CycleGANFactory():
             tb_result = net.session.run(
                 net.loss.display,
                 feed_dict={
-                    self.net.input.A:
-                    self.net.sounds_r[0:self.net.batch_size],
-                    self.net.input.B:
-                    self.net.sounds_t[0:self.net.batch_size],
-                    self.net.time:
-                    np.zeros([1])
+                    self.net.input.A: self.net.sounds_r[0:self.net.batch_size],
+                    self.net.input.B: self.net.sounds_t[0:self.net.batch_size],
+                    # self.net.time: np.zeros([1])
                 })
             print(" [I] finish epoch %04d : iterations %d in %f seconds" %
                   (epoch, iteration, period))
