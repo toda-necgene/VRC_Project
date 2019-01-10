@@ -88,7 +88,6 @@ class CycleGAN():
             g_loss_cyc_A + g_loss_cyc_B,
             cycle_weight) + g_loss_gan_B + g_loss_gan_A
 
-        """
         #tensorboard functions
         g_loss_cyc_A_display = tf.summary.scalar(
             "g_loss_cycle_AtoA", tf.reduce_mean(g_loss_cyc_A), family="g_loss")
@@ -113,7 +112,6 @@ class CycleGAN():
         # fake_B_FFT_score_display = tf.summary.scalar(
         #    "g_error_AtoB", tf.reduce_mean(result_score), family="g_test")
         # g_test_display = tf.summary.merge([fake_B_FFT_score_display])
-        """
 
         self.input = input
         self.vars = vars
@@ -226,7 +224,6 @@ class CycleGAN():
         print(' [D] load start')
         if self.tpu:
             self.session.run(tf.contrib.tpu.initialize_system())
-
         initializer = tf.global_variables_initializer()
         self.session.run(initializer)
         print(" [I] Reading checkpoint...")
@@ -339,8 +336,6 @@ class CycleGANFactory():
             self.args["real_data_compare"] = False
 
         def update_summary(net, epoch, iteration, period):
-            if net.tpu:
-                return
             tb_result = net.session.run(
                 net.loss.display,
                 feed_dict={

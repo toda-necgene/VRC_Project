@@ -6,7 +6,7 @@ class Model():
         self.version = "1.0.2"
         self.input_size = [batch_size, 52, 513, 1]
 
-    def discriminator(self, inp,reuse):
+    def discriminator(self, inp, reuse):
         # setting paramater
         chs=[64,128,256,512]
         ten = inp
@@ -19,7 +19,7 @@ class Model():
                             use_bias=True, name="disc_last", reuse=reuse)
         return tf.reshape(ten,[ten.shape[0],ten.shape[1],3])
 
-    def generator(self, ten,reuse,training):
+    def generator(self, ten, reuse,training):
         ten = tf.transpose(ten, [0, 1, 3, 2]) # => batch, time_axis, channel, frequency
         ten = self._conv2d(ten, 64,[1,10],[1,1,1,1],False,"VALID",kernel_initializer=tf.initializers.he_normal()
                     , use_bias=False, reuse=reuse,name="encode_fc")
@@ -70,15 +70,19 @@ class Model():
         """
         with tf.variable_scope(name,reuse=reuse):
             if down_sample:
-                filter_shape = [f[0], f[1], ten.shape[-1], int(out_ch)]
+                filter_shape = [f[0], f[1], int(ten.shape[-1]), int(out_ch)]
+                print(filter_shape)
                 weight = tf.get_variable("kernel", filter_shape, initializer=kernel_initializer,dtype=tf.float32)
                 ten=tf.nn.conv2d(ten,weight,s,padding)
             else:
                 filter_shape = [f[0], f[1], out_ch, int(ten.shape[-1])]
                 output_shape = [int(ten.shape[0]),int(ten.shape[1]),f[1],out_ch]
+                print(filter_shape)
+                print(output_shape)
                 weight = tf.get_variable("kernel", filter_shape, initializer=kernel_initializer,dtype=tf.float32)
                 ten = tf.nn.conv2d_transpose(ten, weight,output_shape, s, padding)
             if use_bias:
+                print([out_ch])
                 bias = tf.get_variable("bias",[out_ch],initializer=tf.zeros_initializer())
                 ten=tf.nn.bias_add(ten,bias)
         return  ten
