@@ -147,24 +147,36 @@ def decode(f0, psp, ap):
 
 import struct
 from functools import reduce
+import time
 class ConsoleSummary():
-    def __init__(self):
+    def __init__(self, file=None):
         self.results = {}
         self.iteration = []
+        self.file = file
         pass
 
     def add_summary(self, summary, iteration):
+        result = {
+            "time": time.time(),
+            "iteration": iteration,
+        }
+
         self.iteration.append(iteration)
         values = [i for i in summary.split(b'\n') if i]
         for i in range(len(values) // 2):
             _type = bytes([0x20, values[i * 2][0], 0x20, values[i * 2 + 1][0]]) # どんな情報か不明
             name = values[i * 2 + 1][1:-5].decode()
             value = struct.unpack('<f', values[i * 2 + 1][-4:])[0]
+
+            result[name] = value
             if name in self.results:
                 self.results[name].append(value)
             else:
                 self.results[name] = [value]
 
+        if self.file:
+            with LoggingJSON(self.file) as f:
+                f.append(result)
         
         print("--- Summary ---")
         padding = max(map(lambda a: len(a), self.results.keys())) + 1
@@ -203,3 +215,18 @@ def fft(data):
     c = np.log(np.power(re, 2) + np.power(im, 2) + 1e-24).reshape(
         time_ruler, -1)[:, 512:]
     return np.clip(c, -15.0, 5.0)
+
+class LoggingJSON():
+    def __init__(self, file):
+        self.file = file
+
+    def __enter__(self):
+        self.fp = open(self.file, 'a+')
+        return self
+    
+    def __exit__(self, exception_type, exception_value, traceback):
+        self.fp.close()
+
+    def append(self, dict):
+        self.fp.write(json.dumps(dict) + '\n')
+

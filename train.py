@@ -300,8 +300,6 @@ class CycleGAN:
         self.one_itr_num = self.batch_idxs * self.args["batch_size"]
 
         iterations = 0
-        self.train_epoch = 1
-        self.batch_idxs = 2
         # main-training
         for epoch in range(self.train_epoch):
             # shuffling train_data_index

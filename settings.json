@@ -1,19 +1,16 @@
 {
     "saving_config": {
-        "checkpoint_dir": "./trained_model/",
-        "wave_otp_dir": "./waves"
+        "checkpoint_dir": "./trained_model/"
     },
     "training_config": {
         "train_iteration": 100000,
         "weight_Cycle": 100.0
     },
     "plugin_config": {
-        "test": "./dataset/test/*.wav",
-        "real_data_compare": false,
         "summary": "console"
     },
     "colaboratory": {
-        "use_colab": false,
+        "use_colab": true,
         "colab_hardware": "tpu"
     }
 }

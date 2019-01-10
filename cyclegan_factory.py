@@ -21,6 +21,7 @@ class CycleGAN():
 
         self._create_optimizer = None
         self.callback_every_epoch = {}
+        self.callback_every_iteration = {}
 
         input = Dummy()
         input.A = tf.placeholder(tf.float32, model.input_size, "inputs_g_A")
@@ -105,9 +106,9 @@ class CycleGAN():
 
         loss.display = tf.summary.merge(
             [g_loss_sum_A_display, g_loss_sum_B_display, d_loss_sum_A_display])
-        result_score = tf.placeholder(tf.float32, name="FakeFFTScore")
-        fake_B_FFT_score_display = tf.summary.scalar(
-            "g_error_AtoB", tf.reduce_mean(result_score), family="g_test")
+        # result_score = tf.placeholder(tf.float32, name="FakeFFTScore")
+        # fake_B_FFT_score_display = tf.summary.scalar(
+        #    "g_error_AtoB", tf.reduce_mean(result_score), family="g_test")
         # g_test_display = tf.summary.merge([fake_B_FFT_score_display])
 
         self.input = input
@@ -138,10 +139,6 @@ class CycleGAN():
         index_list_r = [h for h in range(self.sounds_r.shape[0])]
         index_list_t = [h for h in range(self.sounds_r.shape[0])]
 
-
-        train_iteration = 2
-        train_epoch = 1
-
         iterations = 0
         # main-training
         epoch_count_time = time.time()
@@ -149,7 +146,7 @@ class CycleGAN():
             if epoch % self.batch_size == 0:
                 period = time.time() - epoch_count_time
                 for f in self.callback_every_epoch.values():
-                    f(epoch, iterations, period)
+                    f(self, epoch, iterations, period)
                 epoch_count_time = time.time()
 
             # shuffling train_data_index
@@ -194,7 +191,7 @@ class CycleGAN():
 
         period = time.time() - epoch_count_time
         for f in self.callback_every_epoch.values():
-            f(train_epoch, iterations, period)
+            f(self, train_epoch, iterations, period)
 
         taken_time_all = time.time() - start_time_all
         print(" [I] ALL train process finished successfully!! in %f Hours" %
@@ -284,11 +281,8 @@ class CycleGANFactory():
             default={
                 #
                 "checkpoint_dir": "./trained_models",
-                "wave_otp_dir": "./harvests",
                 "train_data_dir": "./dataset/train",
                 #
-                "real_data_compare": False,
-                "test": "",
                 "summary": "console",  # or "tensorboard", False
                 #
                 "weight_Cycle": 100.0,
@@ -299,19 +293,15 @@ class CycleGANFactory():
                 "colab_hardware": "tpu",
             })
 
-        optimizer = lambda: tf.train.AdamOptimizer(4e-6, 0.5, 0.999)
+        adam_optimizer = lambda: tf.train.AdamOptimizer(4e-6, 0.5, 0.999)
+        optimizer = adam_optimizer
+        if self.args["use_colab"] and "colab_hardware" == "tpu":
+            optimizer = lambda: tf.contrib.tpu.CrossShardOptimizer(adam_optimizer())
 
         self.net = CycleGAN(model, cycle_weight=self.args["weight_Cycle"], create_optimizer=optimizer)
-        f0_transfer = util.generate_f0_transfer("./voice_profile.npy")
-        self.converter = Converter(self.net, f0_transfer).convert
         
-        self.sample_size = 2
-
         if self.args["summary"]:
             self.summary(self.args["summary"])
-
-        if self.args["test"]:
-            self.test(self.args["test"])
 
         if self.args["checkpoint_dir"]:
             self.checkpoint(self.args["checkpoint_dir"])
@@ -325,12 +315,12 @@ class CycleGANFactory():
             writer = tf.summary.FileWriter(
                 os.path.join("logs", self.net.name), self.net.session.graph)
         elif summary == "console":
-            writer = util.ConsoleSummary()
+            writer = util.ConsoleSummary('./training_value.jsond')
             self.args["real_data_compare"] = False
 
-        def update_summary(epoch, iteration, period):
-            tb_result = self.net.session.run(
-                self.net.loss.display,
+        def update_summary(net, epoch, iteration, period):
+            tb_result = net.session.run(
+                net.loss.display,
                 feed_dict={
                     self.net.input.A:
                     self.net.sounds_r[0:self.net.batch_size],
@@ -365,42 +355,11 @@ class CycleGANFactory():
         self.net.sounds_t = sounds_t[:size]
         return self
 
-    def test(self, test_files):
-        def save_converting_test_files(epoch, iteration, period):
-            for file in glob(test_files):
-                basename = os.path.basename(file)
-
-                testdata = util.isread(file)
-                converted, _ = self.converter(testdata)
-                im = util.fft(converted.copy().astype(np.float32) / 32767.0)
-
-                # saving fake spectrum
-                plt.clf()
-                plt.subplot(2, 1, 1)
-                ins = np.transpose(im, (1, 0))
-                plt.imshow(ins, vmin=-15, vmax=5, aspect="auto")
-                plt.subplot(2, 1, 2)
-                plt.plot(converted)
-                plt.ylim(-1, 1)
-                path = os.path.join(
-                    self.args["wave_otp_dir"],
-                    "%s_%d_%s" % (basename, epoch // self.net.batch_size,
-                                  datetime.now().strftime("%m-%d_%H-%M-%S")))
-                plt.savefig(path + ".png")
-                plt.savefig("latest.png")
-
-                #saving fake waves
-                voiced = converted.astype(np.int16)[800:156000]
-
-                ww = wave.open(path + ".wav", 'wb')
-                ww.setnchannels(1)
-                ww.setsampwidth(self.sample_size)
-                ww.setframerate(16000)
-                ww.writeframes(voiced.reshape(-1).tobytes())
-                ww.close()
-                pass
-
-        self.net.callback_every_epoch["test"] = save_converting_test_files
+    def test(self, callback, append=False):
+        if not append:
+            self.net.callback_every_epoch["test"] = callback
+        else:
+            raise Exception("未実装")
         return self
 
     def checkpoint(self, checkpoint_dir):
@@ -408,8 +367,8 @@ class CycleGANFactory():
         dir = os.path.join(checkpoint_dir, self.net.name)
         os.makedirs(dir, exist_ok=True)
 
-        def save_checkpoint(epoch, iteration, period):
-            self.net.save(os.path.join(dir, model_name), global_step=epoch)
+        def save_checkpoint(net, epoch, iteration, period):
+            net.save(os.path.join(dir, model_name), global_step=epoch)
 
         self.net.callback_every_epoch["save"] = save_checkpoint
 
@@ -417,8 +376,53 @@ class CycleGANFactory():
 
         return self
 
+
+
 from model import Model as w2w
+import matplotlib.pyplot as plt
+
 if __name__ == '__main__':
-    create_optimizer = lambda: tf.train.AdamOptimizer(4e-6, 0.5, 0.999)
-    net = CycleGANFactory(w2w(1), 'settings.json').net
+    test_files = "dataset\\test\\*.wav"
+    test_output_dir = "waves"
+    f0_transfer = util.generate_f0_transfer("./voice_profile.npy")
+    sample_size = 2
+    def save_converting_test_files(net, epoch, iteration, period):
+        converter = Converter(net, f0_transfer).convert
+        for file in glob(test_files):
+            basename = os.path.basename(file)
+
+            testdata = util.isread(file)
+            converted, _ = converter(testdata)
+            converted_norm = converted.copy().astype(np.float32) / 32767.0
+            im = util.fft(converted_norm)
+
+            # saving fake spectrum
+            plt.clf()
+            plt.subplot(2, 1, 1)
+            ins = np.transpose(im, (1, 0))
+            plt.imshow(ins, vmin=-15, vmax=5, aspect="auto")
+            plt.subplot(2, 1, 2)
+            plt.plot(converted_norm)
+            plt.ylim(-1, 1)
+            path = os.path.join(
+                test_output_dir,
+                "%s_%d_%s" % (basename, epoch // net.batch_size,
+                                datetime.now().strftime("%m-%d_%H-%M-%S")))
+            plt.savefig(path + ".png")
+            plt.savefig("latest.png")
+
+            #saving fake waves
+            voiced = converted.astype(np.int16)[800:156000]
+
+            ww = wave.open(path + ".wav", 'wb')
+            ww.setnchannels(1)
+            ww.setsampwidth(sample_size)
+            ww.setframerate(16000)
+            ww.writeframes(voiced.reshape(-1).tobytes())
+            ww.close()
+
+    net = CycleGANFactory(w2w(1), 'settings.json') \
+          .test(save_converting_test_files) \
+          .net
+
     net.train(100000)
