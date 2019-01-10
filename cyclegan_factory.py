@@ -9,7 +9,7 @@ class Dummy():
 
 
 class CycleGAN():
-    def __init__(self, model=None, cycle_weight=1.0, create_optimizer=None):
+    def __init__(self, model=None, processor='', cycle_weight=1.0, create_optimizer=None):
         self.name = model.name + model.version
         self.batch_size = model.input_size[0]
 
@@ -115,7 +115,8 @@ class CycleGAN():
         self.vars = vars
         self.loss = loss
         
-        self.session = tf.Session()
+        self.session = tf.Session(processor)
+        print(' [I] Devices list' % self.session.list_devices())
         self.saver = tf.train.Saver()
 
         # naming output-directory
@@ -212,7 +213,8 @@ class CycleGAN():
 
     def load(self, dir):
         # initialize variables
-        initializer = tf.global_variables_initializer()
+        # initializer = tf.global_variables_initializer()
+        initializer = tf.contrib.tpu.initialize_system()
         self.session.run(initializer)
         print(" [I] Reading checkpoint...")
 
@@ -294,11 +296,15 @@ class CycleGANFactory():
             })
 
         adam_optimizer = lambda: tf.train.AdamOptimizer(4e-6, 0.5, 0.999)
+
         optimizer = adam_optimizer
+        processor = ''
         if self.args["use_colab"] and "colab_hardware" == "tpu":
             optimizer = lambda: tf.contrib.tpu.CrossShardOptimizer(adam_optimizer())
+            processor = 'grpc://' + os.environ['COLAB_TPU_ADDR']
 
-        self.net = CycleGAN(model, cycle_weight=self.args["weight_Cycle"], create_optimizer=optimizer)
+
+        self.net = CycleGAN(model, cycle_weight=self.args["weight_Cycle"], create_optimizer=optimizer, processor=processor)
         
         if self.args["summary"]:
             self.summary(self.args["summary"])
