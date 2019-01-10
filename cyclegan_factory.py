@@ -117,24 +117,24 @@ class CycleGAN():
         self.vars = vars
         self.loss = loss
         
+
+        # naming output-directory
+        with tf.control_dependencies(update_ops):
+            self.g_optim = tf.contrib.tpu.CrossShardOptimizer(tf.train.GradientDescentOptimizer(4e-6)).minimize(self.loss.g, var_list=self.vars.g)
+            # optimizer = create_optimizer()
+            # self.g_optim = optimizer.minimize(self.loss.g, var_list=self.vars.g)
+
+        # optimizer = create_optimizer()
+        # self.d_optim = optimizer.minimize(self.loss.d, var_list=self.vars.d)
+        self.d_optim = tf.contrib.tpu.CrossShardOptimizer(tf.train.GradientDescentOptimizer(4e-6)).minimize(self.loss.d, var_list=self.vars.d)
+
+
         print(processor)
         self.session = tf.Session(processor)
         print(' [I] Devices list: ')
         for d in self.session.list_devices():
             print(d)
         self.saver = tf.train.Saver()
-
-        # naming output-directory
-        with tf.control_dependencies(update_ops):
-            self.g_optim = tf.contrib.tpu.CrossShardOptimizer(tf.train.GradientDescentOptimizer(4e-6))
-            # optimizer = create_optimizer()
-            # self.g_optim = optimizer.minimize(self.loss.g, var_list=self.vars.g)
-
-        # optimizer = create_optimizer()
-        # self.d_optim = optimizer.minimize(self.loss.d, var_list=self.vars.d)
-        self.d_optim = tf.contrib.tpu.CrossShardOptimizer(tf.train.GradientDescentOptimizer(4e-6))
-
-
         
         if self.tpu:
             self.session.run(tf.contrib.tpu.initialize_system())
