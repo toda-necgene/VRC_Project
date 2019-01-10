@@ -132,10 +132,12 @@ class CycleGAN():
         print(processor)
         self.session = tf.Session(processor)
         print(' [I] Devices list: ')
-        print(self.session.list_devices())
+        for d in self.session.list_devices():
+            print(d)
         self.saver = tf.train.Saver()
         
-        print(' [D] created optimizer')
+        if self.tpu:
+            self.session.run(tf.contrib.tpu.initialize_system())
 
     def train(self, train_iteration=100000):
         assert len(self.sounds_r) > 0
@@ -226,9 +228,6 @@ class CycleGAN():
 
     def load(self, dir):
         # initialize variables
-        print(' [D] load start')
-        if self.tpu:
-            self.session.run(tf.contrib.tpu.initialize_system())
         initializer = tf.global_variables_initializer()
         self.session.run(initializer)
         print(" [I] Reading checkpoint...")
