@@ -216,7 +216,8 @@ class CycleGAN():
         pass
 
     def save(self, file, global_step):
-        self.saver.save(self.session, file, global_step=global_step)
+        if not self.tpu:
+            self.saver.save(self.session, file, global_step=global_step)
 
     def load(self, dir):
         # initialize variables
