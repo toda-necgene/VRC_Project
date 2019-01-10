@@ -10,6 +10,8 @@ class Dummy():
 
 class CycleGAN():
     def __init__(self, model=None, processor='', cycle_weight=1.0, create_optimizer=None):
+        self.tpu = True
+
         self.name = model.name + model.version
         self.batch_size = model.input_size[0]
 
@@ -218,9 +220,11 @@ class CycleGAN():
 
     def load(self, dir):
         # initialize variables
-        # initializer = tf.global_variables_initializer()
         print(' [D] load start')
-        initializer = tf.contrib.tpu.initialize_system()
+        if self.tpu:
+            initializer = tf.contrib.tpu.initialize_system()
+            self.session.run(initializer)
+        initializer = tf.global_variables_initializer()
         self.session.run(initializer)
         print(" [I] Reading checkpoint...")
 
