@@ -305,9 +305,10 @@ class CycleGANFactory():
 
         optimizer = adam_optimizer
         processor = ''
-        if self.args["use_colab"] and "colab_hardware" == "tpu":
+        if self.args["use_colab"] and self.args["colab_hardware"] == "tpu":
             optimizer = lambda: tf.contrib.tpu.CrossShardOptimizer(adam_optimizer())
             processor = 'grpc://' + os.environ['COLAB_TPU_ADDR']
+            print(' [D] use TPU')
 
 
         self.net = CycleGAN(model, cycle_weight=self.args["weight_Cycle"], create_optimizer=optimizer, processor=processor)
