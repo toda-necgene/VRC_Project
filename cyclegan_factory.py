@@ -117,6 +117,12 @@ class CycleGAN():
         self.vars = vars
         self.loss = loss
         
+        print(processor)
+        self.session = tf.Session(processor)
+        print(' [I] Devices list: ')
+        for d in self.session.list_devices():
+            print(d)
+        self.saver = tf.train.Saver()
 
         # naming output-directory
         with tf.control_dependencies(update_ops):
@@ -129,12 +135,6 @@ class CycleGAN():
         self.d_optim = tf.contrib.tpu.CrossShardOptimizer(tf.train.GradientDescentOptimizer(4e-6))
 
 
-        print(processor)
-        self.session = tf.Session(processor)
-        print(' [I] Devices list: ')
-        for d in self.session.list_devices():
-            print(d)
-        self.saver = tf.train.Saver()
         
         if self.tpu:
             self.session.run(tf.contrib.tpu.initialize_system())
