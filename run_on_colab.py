@@ -69,7 +69,7 @@ if __name__ == '__main__':
             .summary("console") \
             .test(save_converting_test_files) \
             .hardware("colab,tpu") \
-            .checkpoint(os.path.join(".", "trained_model", "colab_tpu")) \
+            .checkpoint("gs://colab_bucket") \
             .input(dataset[0], dataset[1]) \
             .build()
 
