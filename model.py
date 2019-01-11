@@ -33,9 +33,7 @@ class Model():
                 name="disc_" + str(i),
                 reuse=reuse)
             # ten = self._batch_norm(ten,reuse=reuse,name="disc_bn"+str(i))
-            print(ten.shape)
             ten = tf.nn.leaky_relu(ten)
-            print(ten.shape)
 
         ten = self._conv2d(
             ten, 3, [1, 3], [1, 1, 1, 1],
@@ -45,17 +43,14 @@ class Model():
             use_bias=True,
             name="disc_last",
             reuse=reuse)
-        print(ten.shape)
 
         result = tf.reshape(ten, [ten.shape[0], ten.shape[1], 3])
-        print(result.shape)
         # XLAコンパイラのために、正確なshape推論ができるなければならない
         # return tf.reshape(ten, [ten.shape[0], ten.shape[1], 3]) としてはならない
         return result
 
     def generator(self, ten, reuse, training):
         ten = tf.transpose(ten, [0, 1, 3, 2]) # => batch, time_axis, channel, frequency
-        print(ten.shape)
         ten = self._conv2d(
             ten, 64, [1, 10], [1, 1, 1, 1],
             down_sample=False,
@@ -64,11 +59,8 @@ class Model():
             use_bias=False,
             reuse=reuse,
             name="encode_fc")
-        print(ten.shape)
         ten = self._batch_norm(ten, reuse=reuse, name="encode_bn")
-        print(ten.shape)
         ten = tf.nn.leaky_relu(ten)
-        print(ten.shape)
 
         for i in range(4):
             tenA = self._conv2d(
@@ -79,10 +71,8 @@ class Model():
                 use_bias=False,
                 reuse=reuse,
                 name="guru_conv_A_" + str(i))
-            print(tenA.shape)
             tenA = self._batch_norm(
                 tenA, reuse=reuse, name="guru_A_bn" + str(i))
-            print(tenA.shape)
             tenB = self._conv2d(
                 tenA, 64, [1, 1], [1, 1, 1, 1],
                 down_sample=True,
@@ -91,12 +81,9 @@ class Model():
                 use_bias=False,
                 reuse=reuse,
                 name="guru_conv_B_" + str(i))
-            print(tenB.shape)
             tenB = self._batch_norm(tenB, reuse=reuse, name="guru_B_bn" + str(i))
-            print(tenB.shape)
 
             ten = tf.nn.leaky_relu(tenA * tf.tanh(tenB))
-            print(ten.shape)
 
         ten = self._conv2d(
             ten, 513, [1, 10], [1, 1, 1, 1],
@@ -106,12 +93,9 @@ class Model():
             use_bias=True,
             reuse=reuse,
             name="decode_fc")
-        print(ten.shape)
         ten = tf.transpose(ten, [0, 1, 3, 2])
-        print(ten.shape)
 
         result = tf.tanh(ten)
-        print(result.shape)
 
         return result
 

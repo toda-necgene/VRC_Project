@@ -189,7 +189,7 @@ class ConsoleSummary():
                 f.append(result)
         
         print("--- Summary ---")
-        padding = max(map(lambda a: len(a), self.results.keys())) + 1
+        padding = max([len(a) for a in self.results.keys()]) + 1
 
         for k in self.results:
             print("%s: " % k.rjust(padding, ' '), end='')
