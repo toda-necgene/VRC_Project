@@ -114,16 +114,16 @@ class CycleGAN():
         self.session = tf.Session(processor)
         self.saver = tf.train.Saver()
 
-    def initialize(self):
+    def initialize(self, use_tpu=True):
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
         with tf.control_dependencies(update_ops):
             optimizer = tf.train.GradientDescentOptimizer(4e-6)
-            if self._tpu:
+            if use_tpu:
                 optimizer = tf.contrib.tpu.CrossShardOptimizer(optimizer)
             self.g_optim = optimizer.minimize(self.loss.g, var_list=self.vars.g)
 
         optimizer = tf.train.GradientDescentOptimizer(4e-6)
-        if self._tpu:
+        if use_tpu:
             optimizer = tf.contrib.tpu.CrossShardOptimizer(optimizer)
         self.d_optim = optimizer.minimize(self.loss.d, var_list=self.vars.d)
 
