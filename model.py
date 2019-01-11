@@ -10,40 +10,59 @@ class Model():
         # setting paramater
         chs=[64,128,256,512]
         ten = inp
+        print(ten.shape)
         for i in range(len(chs)):
             ten = self._conv2d(ten,chs[i],[4,8],[1,1,4,1],True,padding="SAME",kernel_initializer=tf.initializers.he_normal(),use_bias=True,name="disc_"+str(i),reuse=reuse)
+            print(ten.shape)
             # ten = self._batch_norm(ten,reuse=reuse,name="disc_bn"+str(i))
             ten = tf.nn.leaky_relu(ten)
+            print(ten.shape)
 
         ten = self._conv2d(ten, 3, [1, 3], [1, 1,1,1],True, "VALID", kernel_initializer=tf.initializers.random_normal(stddev=0.02),
                             use_bias=True, name="disc_last", reuse=reuse)
-        return tf.reshape(ten,[ten.shape[0],ten.shape[1],3])
+        print(ten.shape)
+        result = tf.reshape(ten,[ten.shape[0],ten.shape[1],3])
+        print(result.shape)
+        return result
 
     def generator(self, ten, reuse,training):
         ten = tf.transpose(ten, [0, 1, 3, 2]) # => batch, time_axis, channel, frequency
+        print(ten.shape)
         ten = self._conv2d(ten, 64,[1,10],[1,1,1,1],False,"VALID",kernel_initializer=tf.initializers.he_normal()
                     , use_bias=False, reuse=reuse,name="encode_fc")
+        print(ten.shape)
         ten = self._batch_norm(ten, reuse=reuse, name="encode_bn")
+        print(ten.shape)
         ten = tf.nn.leaky_relu(ten)
 
         for i in range(4):
             tenA = self._conv2d(ten, 64, [3, 2], [1, 1,1,1], down_sample=True,padding="SAME",
                                     kernel_initializer=tf.initializers.random_normal(stddev=0.02), use_bias=False,
                                     reuse=reuse,name="guru_conv_A_" + str(i))
+            print(tenA.shape)
             tenA = self._batch_norm(tenA, reuse=reuse, name="guru_A_bn"+str(i))
 
+            print(tenA.shape)
             tenB = self._conv2d(tenA, 64, [1, 1], [1, 1, 1, 1],down_sample=True, padding="SAME",
                                     kernel_initializer=tf.initializers.random_normal(stddev=0.02), use_bias=False, reuse=reuse,
                                     name="guru_conv_B_"+str(i))
+            print(tenB.shape)
             tenB = self._batch_norm(tenB, reuse=reuse, name="guru_B_bn" + str(i))
+            print(tenB.shape)
 
             ten=tf.nn.leaky_relu(tenA*tf.tanh(tenB))
+            print(ten.shape)
 
         ten = self._conv2d(ten, 513 ,[1,10],[1,1,1,1],True,"VALID",kernel_initializer=tf.initializers.random_normal(stddev=0.002),
                     use_bias=True, reuse=reuse,name="decode_fc")
+        print(ten.shape)
         ten = tf.transpose(ten, [0, 1, 3, 2])
+        print(ten.shape)
 
-        return tf.tanh(ten)
+        result = tf.tanh(ten)
+        print(result.shape)
+
+        return result
 
 
     def _conv2d(self, ten,out_ch,f,s,down_sample,padding,kernel_initializer,use_bias,reuse,name):
@@ -72,15 +91,22 @@ class Model():
             if down_sample:
                 filter_shape = [f[0], f[1], int(ten.shape[-1]), int(out_ch)]
                 weight = tf.get_variable("kernel", filter_shape, initializer=kernel_initializer,dtype=tf.float32)
+                print(weight.shape)
                 ten=tf.nn.conv2d(ten,weight,s,padding)
+                print(ten.shape)
             else:
                 filter_shape = [f[0], f[1], out_ch, int(ten.shape[-1])]
                 output_shape = [int(ten.shape[0]),int(ten.shape[1]),f[1],out_ch]
                 weight = tf.get_variable("kernel", filter_shape, initializer=kernel_initializer,dtype=tf.float32)
+                print(weight.shape)
                 ten = tf.nn.conv2d_transpose(ten, weight,output_shape, s, padding)
+                print(ten.shape)
             if use_bias:
                 bias = tf.get_variable("bias",[out_ch],initializer=tf.zeros_initializer())
+                print(bias.shape)
                 ten=tf.nn.bias_add(ten,bias)
+                print(ten.shape)
+        print(ten.shape)
         return  ten
 
     def _batch_norm(self, ten,reuse,name):
@@ -96,7 +122,13 @@ class Model():
         """
         with tf.variable_scope(name, reuse=reuse):
             gamma = tf.get_variable("gamma",shape=ten.shape[-1],initializer=tf.ones_initializer(),dtype=tf.float32)
+            print(gamma.shape)
             beta = tf.get_variable("beta",shape=ten.shape[-1],initializer=tf.zeros_initializer(),dtype=tf.float32)
+            print(beta.shape)
             mean,var=tf.nn.moments(ten,[1,2],keep_dims=True)
+            print(mean.shape)
+            print(var.shape)
             ten=tf.nn.batch_normalization(ten,mean,var,beta,gamma,1e-6)
+            print(ten.shape)
+        print(ten.shape)
         return ten

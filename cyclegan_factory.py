@@ -3,15 +3,13 @@ import util
 import time
 from datetime import datetime
 
-from tensorflow.contrib.compiler import xla
-
 class Dummy():
     pass
 
 
 class CycleGAN():
     def __init__(self, model=None, processor='', cycle_weight=1.0, create_optimizer=None):
-        self.tpu = True
+        self.tpu = False
 
         self.name = model.name + model.version
         self.batch_size = model.input_size[0]
@@ -25,70 +23,101 @@ class CycleGAN():
         self._create_optimizer = None
         self.callback_every_epoch = {}
         self.callback_every_iteration = {}
-        
-    def create(self, model, cycle_weight=1.0, processor=''):
+
         input = Dummy()
         input.A = tf.placeholder(tf.float32, model.input_size, "inputs_g_A")
+        print(input.A.shape)
         input.B = tf.placeholder(tf.float32, model.input_size, "inputs_g_B")
+        print(input.B.shape)
         input.test = tf.placeholder(tf.float32, self.test_size, "inputs_g_test")
+        print(input.test.shape)
         self.time = tf.placeholder(tf.float32, [1], "inputs_g_test")
+        print(self.time.shape)
 
         #creating generator
         with tf.variable_scope("generator_1"):
             fake_aB = model.generator(input.A, reuse=None, training=True)
+            print(fake_aB.shape)
             self.fake_aB_test = model.generator(input.test, reuse=True, training=False)
+            print(self.fake_aB_test.shape)
         with tf.variable_scope("generator_2"):
             fake_bA = model.generator(input.B, reuse=None, training=True)
+            print(fake_bA.shape)
         with tf.variable_scope("generator_2", reuse=True):
             fake_Ba = model.generator(fake_aB, reuse=True, training=True)
+            print(fake_Ba.shape)
         with tf.variable_scope("generator_1", reuse=True):
             fake_Ab = model.generator(fake_bA, reuse=True, training=True)
+            print(fake_Ab.shape)
 
         #creating discriminator
         with tf.variable_scope("discriminators"):
             inp = tf.concat([fake_aB, input.B, fake_bA, input.A], axis=0)
+            print(inp.shape)
             d_judge = model.discriminator(inp, None)
+            print(d_judge.shape)
 
         vars = Dummy()
         #getting individual variabloes
         vars.g = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, "generator_1")
+        for vg in vars.g:
+            print(vg.shape)
         vars.g += tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, "generator_2")
+        for vg in vars.g:
+            print(vg.shape)
         vars.d = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, "discriminators")
+        for vd in vars.d:
+            print(vd.shape)
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+        for v in update_ops:
+            print(v.shape)
 
         #objective-functions of discriminator
         l0 = tf.reshape(tf.one_hot(0, 3), [1, 1, 3])
+        print(l0.shape)
         l1 = tf.reshape(tf.one_hot(1, 3), [1, 1, 3])
+        print(l1.shape)
         l2 = tf.reshape(tf.one_hot(2, 3), [1, 1, 3])
+        print(l2.shape)
         labelA = tf.tile(l0, [model.input_size[0], model.input_size[1], 1])
+        print(labelA.shape)
         labelB = tf.tile(l1, [model.input_size[0], model.input_size[1], 1])
+        print(labelB.shape)
         labelO = tf.tile(l2, [model.input_size[0], model.input_size[1], 1])
+        print(labelO.shape)
         labels = tf.concat([labelO, labelB, labelO, labelA], axis=0)
+        print(labels.shape)
 
         loss = Dummy()
         loss.d = tf.nn.softmax_cross_entropy_with_logits_v2(labels=labels, logits=d_judge) * 4
+        print(loss.d.shape)
 
         # objective-functions of generator
 
         # Cyc lossB
         g_loss_cyc_B = tf.pow(tf.abs(fake_Ab - input.B), 2)
+        print(g_loss_cyc_B.shape)
 
         # Gan lossA
         g_loss_gan_A = tf.nn.softmax_cross_entropy_with_logits_v2(
             logits=d_judge[self.batch_size * 2:self.batch_size * 3],
             labels=labelA)
+        print(g_loss_gan_A.shape)
 
         # Cycle lossA
         g_loss_cyc_A = tf.pow(tf.abs(fake_Ba - input.A), 2)
+        print(g_loss_cyc_A.shape)
 
         # Gan lossB
         g_loss_gan_B = tf.nn.softmax_cross_entropy_with_logits_v2(
             logits=d_judge[:self.batch_size], labels=labelB)
+        print(g_loss_gan_B.shape)
 
         # generator loss
         loss.g = tf.losses.compute_weighted_loss(
             g_loss_cyc_A + g_loss_cyc_B,
             cycle_weight) + g_loss_gan_B + g_loss_gan_A
+        print(loss.g.shape)
 
         #tensorboard functions
         g_loss_cyc_A_display = tf.summary.scalar(
@@ -128,13 +157,19 @@ class CycleGAN():
 
         # naming output-directory
         with tf.control_dependencies(update_ops):
-            self.g_optim = tf.contrib.tpu.CrossShardOptimizer(tf.train.GradientDescentOptimizer(4e-6)).minimize(self.loss.g, var_list=self.vars.g)
+            optimizer = tf.train.GradientDescentOptimizer(4e-6)
+            if self.tpu:
+                optimizer = tf.contrib.tpu.CrossShardOptimizer(optimizer)
+            self.g_optim = optimizer.minimize(self.loss.g, var_list=self.vars.g)
             # optimizer = create_optimizer()
             # self.g_optim = optimizer.minimize(self.loss.g, var_list=self.vars.g)
 
         # optimizer = create_optimizer()
         # self.d_optim = optimizer.minimize(self.loss.d, var_list=self.vars.d)
-        self.d_optim = tf.contrib.tpu.CrossShardOptimizer(tf.train.GradientDescentOptimizer(4e-6)).minimize(self.loss.d, var_list=self.vars.d)
+        optimizer = tf.train.GradientDescentOptimizer(4e-6)
+        if self.tpu:
+            optimizer = tf.contrib.tpu.CrossShardOptimizer(optimizer)
+        self.d_optim = optimizer.minimize(self.loss.d, var_list=self.vars.d)
 
         
         if self.tpu:
@@ -228,11 +263,13 @@ class CycleGAN():
         pass
 
     def save(self, file, global_step):
+        return
         if not self.tpu:
             self.saver.save(self.session, file, global_step=global_step)
 
     def load(self, dir):
         print(" [I] Reading checkpoint...")
+        return
 
         ckpt = tf.train.get_checkpoint_state(dir)
         if ckpt is not None and ckpt:
@@ -392,7 +429,7 @@ class CycleGANFactory():
 
         self.net.callback_every_epoch["save"] = save_checkpoint
 
-        # self.net.load(dir)
+        self.net.load(dir)
 
         return self
 
@@ -441,13 +478,8 @@ if __name__ == '__main__':
             ww.writeframes(voiced.reshape(-1).tobytes())
             ww.close()
 
-    batch_size = 1
-    model = w2w(batch_size)
-    net = CycleGANFactory(model, 'settings.json') \
+    net = CycleGANFactory(w2w(1), 'settings.json') \
           .test(save_converting_test_files) \
           .net
-
-    compiled = xla.compile(net.create(model))
-    exit()
 
     net.train(100000)
