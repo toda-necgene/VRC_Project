@@ -326,7 +326,7 @@ class CycleGANFactory():
                 tpu_cluster = tf.contrib.cluster_resolver.TPUClusterResolver(tpu='grpc://' + os.environ['COLAB_TPU_ADDR'])
                 self._processor = tpu_cluster
                 self._tpu = True
-                self._d('use TPU : %s' % tpu_cluster.get_master().encode())
+                self._d('use TPU : %s' % tpu_cluster.get_master().decode())
 
         return self
 
