@@ -203,9 +203,7 @@ class CycleGAN():
                         self.input.B: batch_sounds_target,
                         self.time: ttt
                     })
-
-                print('run')
-
+                    
                 iterations += 1
             # calculating ETA
             if iterations == train_iteration:
