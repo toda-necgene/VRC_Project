@@ -15,7 +15,7 @@ class CycleGANFactory():
         self._input_b = None
         self._checkpoint = None
         self._optimizer = {
-            "kind": "GradientDescent",
+            "kind": tf.train.GradientDescentOptimizer,
             "rate": 4e-6,
             "params": {}
         }
@@ -82,9 +82,12 @@ class CycleGANFactory():
         return self
 
     def optimizer(self, kind, rate, params={}):
-        optimizer_list = ["GradientDescent", "Adam"]
+        optimizer_list = {
+            "GradientDescent": tf.train.GradientDescentOptimizer,
+            "Adam": tf.train.AdamOptimizer,
+        }
         if kind in optimizer_list:
-            self._optimizer["kind"] = kind
+            self._optimizer["kind"] = optimizer_list[kind]
         else:
             raise Exception("Unknown optimizer %s" % kind)
 
@@ -93,8 +96,10 @@ class CycleGANFactory():
         else:
             raise Exception("Should larger than 0 training rate")
 
-        if params:
+        if type(params) is dict:
             self._optimizer["params"] = params
+        else:
+            raise Exception("Additional optional params of optimizer should be dict object")
 
         return self
         
@@ -104,14 +109,8 @@ class CycleGANFactory():
         if not self.checkpoint:
             self._w('checkpoint is undefined, trained model is no save')
 
-        optimizer_func = None
-        if self._optimizer is "GradientDescent":
-            optimizer_func = tf.train.GradientDescentOptimizer
-        elif self._optimizer is "Adam":
-            optimizer_func = tf.train.AdamOptimizer
-
         def generate_optimizer():
-            optimizer = optimizer_func(self._optimizer["rate"], **self._optimizer["params"])
+            optimizer = self._optimizer["kind"](self._optimizer["rate"], **self._optimizer["params"])
             # if use_tpu:
             #     optimizer = tf.contrib.tpu.CrossShardOptimizer(optimizer)
             return optimizer
