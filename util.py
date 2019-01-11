@@ -203,7 +203,7 @@ class ConsoleSummary():
                 print()
                 
             print("----------------")
-        except Exception as e:
+        except:
             print("Summary fail")
             import traceback
             traceback.print_exc()

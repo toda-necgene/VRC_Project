@@ -323,10 +323,9 @@ class CycleGANFactory():
             if not 'COLAB_TPU_ADDR' in os.environ:
                 self._w('Failed to get tpu address, do not use TPU (use for CPU or GPU)')
             else:
-                tpu_cluster = tf.contrib.cluster_resolver.TPUClusterResolver(tpu='grpc://' + os.environ['COLAB_TPU_ADDR'])
-                self._processor = tpu_cluster
+                self._processor = 'grpc://' + os.environ['COLAB_TPU_ADDR']
                 self._tpu = True
-                self._d('use TPU : %s' % tpu_cluster.get_master().decode())
+                self._d('use TPU')
 
         return self
 
@@ -427,9 +426,11 @@ import matplotlib.pyplot as plt
 if __name__ == '__main__':
     test_files = "dataset\\test\\*.wav"
     test_output_dir = "waves"
+    os.makedirs(test_output_dir)
     f0_transfer = util.generate_f0_transfer("./voice_profile.npy")
     sample_size = 2
     def save_converting_test_files(net, epoch, iteration, period):
+        print('run test')
         converter = Converter(net, f0_transfer).convert
         for file in glob(test_files):
             basename = os.path.basename(file)
