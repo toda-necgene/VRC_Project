@@ -465,6 +465,7 @@ if __name__ == '__main__':
             ww.writeframes(voiced.reshape(-1).tobytes())
             ww.close()
 
+    data_dir = os.path.join(".", "dataset", "train")
     dataset = list(map(lambda data: data.reshape(list(data.shape) + [1]),
         map(lambda d: np.load(os.path.join(data_dir, d)), ["A.npy", "B.npy"])))
     data_size = min(dataset[0].shape[0], dataset[1].shape[0])
