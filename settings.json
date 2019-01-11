@@ -10,7 +10,6 @@
         "summary": "console"
     },
     "colaboratory": {
-        "use_colab": true,
-        "colab_hardware": "tpu"
+        "use_colab": true
     }
 }

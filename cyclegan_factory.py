@@ -203,7 +203,7 @@ class CycleGAN():
                         self.input.B: batch_sounds_target,
                         self.time: ttt
                     })
-                    
+
                 iterations += 1
             # calculating ETA
             if iterations == train_iteration:
@@ -292,6 +292,7 @@ from glob import glob
 import matplotlib.pyplot as plt
 import os
 import wave
+import sys
 
 
 class CycleGANFactory():
@@ -314,10 +315,12 @@ class CycleGANFactory():
             })
 
         processor = ''
-        if self.args["use_colab"] and self.args["colab_hardware"] == "tpu":
-            optimizer = lambda: tf.contrib.tpu.CrossShardOptimizer(adam_optimizer())
-            processor = 'grpc://' + os.environ['COLAB_TPU_ADDR']
-            print(' [D] use TPU')
+        if self.args["use_colab"]:
+            if not 'COLAB_TPU_ADDR' in os.environ:
+                sys.stderr.write('[W] Failed to get tpu address, do not use TPU (use for CPU or GPU)')
+            else:
+                processor = 'grpc://' + os.environ['COLAB_TPU_ADDR']
+                sys.stderr.write(' [D] use TPU')
 
 
         self.net = CycleGAN(model, cycle_weight=self.args["weight_Cycle"], processor=processor)
@@ -440,7 +443,7 @@ if __name__ == '__main__':
             ww.writeframes(voiced.reshape(-1).tobytes())
             ww.close()
 
-    net = CycleGANFactory(w2w(1), 'settings.json') \
+    net = CycleGANFactory(w2w(8), 'settings.json') \
           .test(save_converting_test_files) \
           .net
 

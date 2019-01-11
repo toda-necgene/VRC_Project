@@ -156,6 +156,7 @@ class ConsoleSummary():
         pass
 
     def add_summary(self, summary, iteration):
+        print(summary)
         result = {
             "time": time.time(),
             "iteration": iteration,

@@ -18,6 +18,8 @@ class Model():
         ten = self._conv2d(ten, 3, [1, 3], [1, 1,1,1],True, "VALID", kernel_initializer=tf.initializers.random_normal(stddev=0.02),
                             use_bias=True, name="disc_last", reuse=reuse)
         result = tf.reshape(ten,[ten.shape[0],ten.shape[1],3])
+        # XLAコンパイラのために、正確なshape推論ができるなければならない
+        # return tf.reshape(ten, [ten.shape[0], ten.shape[1], 3]) としてはならない
         return result
 
     def generator(self, ten, reuse,training):
