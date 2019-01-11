@@ -280,7 +280,7 @@ import matplotlib.pyplot as plt
 import os
 import wave
 import sys
-
+from tensorflow.contrib.tpu.python.tpu import tpu_function
 
 class CycleGANFactory():
     def __init__(self, model):
@@ -382,6 +382,8 @@ class CycleGANFactory():
         if not self.checkpoint:
             self._w('checkpoint is undefined, trained model is no save')
 
+        tpu_function.get_tpu_context().set_number_of_shards(model.batch_size)
+
         net = CycleGAN(model, self._input_a, self._input_b, cycle_weight=self._cycle_weight, processor=self._processor)
 
         # register summary
@@ -471,7 +473,7 @@ if __name__ == '__main__':
     data_size = min(dataset[0].shape[0], dataset[1].shape[0])
     dataset = list(map(lambda data: data[:data_size], dataset))
 
-    model = w2w(1)
+    model = w2w(8)
     name = "_".join([model.name, model.version, "tpu"])
     net = CycleGANFactory(model) \
             .cycle_weight(100.00) \
