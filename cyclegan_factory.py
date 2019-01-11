@@ -424,13 +424,12 @@ from model import Model as w2w
 import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
-    test_files = "dataset\\test\\*.wav"
+    test_files = os.path.join("dataset", "test", "*.wav")
     test_output_dir = "waves"
     os.makedirs(test_output_dir)
     f0_transfer = util.generate_f0_transfer("./voice_profile.npy")
     sample_size = 2
     def save_converting_test_files(net, epoch, iteration, period):
-        print('run test')
         converter = Converter(net, f0_transfer).convert
         for file in glob(test_files):
             basename = os.path.basename(file)
@@ -453,7 +452,6 @@ if __name__ == '__main__':
                 "%s_%d_%s" % (basename, epoch // net.batch_size,
                                 datetime.now().strftime("%m-%d_%H-%M-%S")))
             plt.savefig(path + ".png")
-            plt.savefig("latest.png")
 
             #saving fake waves
             voiced = converted.astype(np.int16)[800:156000]
