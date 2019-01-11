@@ -115,7 +115,7 @@ class CycleGAN():
         self.saver = tf.train.Saver()
 
 
-        use_tpu = False
+        use_tpu = True
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)        
         with tf.control_dependencies(update_ops):
             optimizer = tf.train.GradientDescentOptimizer(4e-6)
@@ -128,6 +128,8 @@ class CycleGAN():
             optimizer = tf.contrib.tpu.CrossShardOptimizer(optimizer)
         self.d_optim = optimizer.minimize(self.loss.d, var_list=self.vars.d)
 
+
+        use_tpu = False
         if use_tpu:
             self.session.run(tf.contrib.tpu.initialize_system())
         
