@@ -115,7 +115,7 @@ class CycleGAN():
         self.saver = tf.train.Saver()
 
 
-        use_tpu = True
+        use_tpu = False
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)        
         with tf.control_dependencies(update_ops):
             optimizer = tf.train.GradientDescentOptimizer(4e-6)
@@ -280,7 +280,6 @@ import matplotlib.pyplot as plt
 import os
 import wave
 import sys
-from tensorflow.contrib.tpu.python.tpu import tpu_function
 
 class CycleGANFactory():
     def __init__(self, model):
@@ -381,8 +380,6 @@ class CycleGANFactory():
             raise Exception("No defined input data")
         if not self.checkpoint:
             self._w('checkpoint is undefined, trained model is no save')
-
-        tpu_function.get_tpu_context().set_number_of_shards(model.batch_size)
 
         net = CycleGAN(model, self._input_a, self._input_b, cycle_weight=self._cycle_weight, processor=self._processor)
 
