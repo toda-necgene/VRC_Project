@@ -475,7 +475,7 @@ if __name__ == '__main__':
     # data_size = min(dataset[0].shape[0], dataset[1].shape[0])
     # dataset = list(map(lambda data: data[:data_size], dataset))
 
-    model = w2w(8)
+    model = w2w(1)
     name = "_".join([model.name, model.version, "tpu"])
     net = CycleGANFactory(model) \
             .cycle_weight(100.00) \
