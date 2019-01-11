@@ -163,12 +163,18 @@ class ConsoleSummary():
         }
 
         self.iteration.append(iteration)
-        values = [i for i in summary.split(b'\n') if i]
-        for i in range(len(values) // 2):
-            _type = bytes([0x20, values[i * 2][0], 0x20, values[i * 2 + 1][0]]) # どんな情報か不明
-            name = values[i * 2 + 1][1:-5].decode()
-            value = struct.unpack('<f', values[i * 2 + 1][-4:])[0]
-
+        # summaryはバイナリ配列
+        # [4]xxxx [可変]variable_name \x15 [4]value という構造をしているため、それをパースする
+        parse = []
+        ex = parse.extend
+        for s in [(a[0:4],a[4:8],a[8:]) for a in (b'\0\0\0\0' + summary).split(b'\x15')]:
+            ex(s)
+            
+        parse = [i for i in parse[1:] if i]
+        types = parse[0::3] # どんな情報か不明
+        names = map(lambda b: b.decode(), parse[1::3])
+        values = map(lambda b: struct.unpack('<f', b)[0], parse[2::3])
+        for _, name, value in zip(types, names, values):
             result[name] = value
             if name in self.results:
                 self.results[name].append(value)
