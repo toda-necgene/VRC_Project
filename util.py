@@ -164,17 +164,20 @@ class ConsoleSummary():
 
         self.iteration.append(iteration)
         # summaryはバイナリ配列
-        # [4]xxxx [可変]variable_name \x15 [4]value という構造をしているため、それをパースする
+        # \x20 ? \x20 [1]name_length [可変]variable_name \x15 [4]value という構造をしているため、それをパースする
         parse = []
-        ex = parse.extend
-        for s in [(a[0:4],a[4:8],a[8:]) for a in (b'\0\0\0\0' + summary).split(b'\x15')]:
-            ex(s)
-            
-        parse = [i for i in parse[1:] if i]
-        types = parse[0::3] # どんな情報か不明
-        names = map(lambda b: b.decode(), parse[1::3])
-        values = map(lambda b: struct.unpack('<f', b)[0], parse[2::3])
-        for _, name, value in zip(types, names, values):
+        pos = 0
+        while pos < len(summary):
+            _t = summary[pos:pos + 4]
+            name_length = summary[pos + 3]
+            pos += 4
+            name = summary[pos:pos+name_length].decode()
+            pos += 1 + name_length
+            value = struct.unpack('<f', summary[pos:pos+4])[0]
+            parse.append((_t, name, value))
+            pos += 4
+
+        for _, name, value in parse:
             result[name] = value
             if name in self.results:
                 self.results[name].append(value)

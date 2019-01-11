@@ -6,19 +6,16 @@ from datetime import datetime
 class Dummy():
     pass
 
-
 class CycleGAN():
-    def __init__(self, model=None, processor='', cycle_weight=1.0):
-        self.tpu = False
-
+    def __init__(self, model, input_a, input_b, processor='', cycle_weight=1.0):
         self.name = model.name + model.version
         self.batch_size = model.input_size[0]
 
         self.test_size = model.input_size.copy()
         self.test_size[0] = 1
 
-        self.sounds_r = []
-        self.sounds_t = []
+        self.sounds_r = input_a
+        self.sounds_t = input_b
 
         self.callback_every_epoch = {}
         self.callback_every_iteration = {}
@@ -50,7 +47,6 @@ class CycleGAN():
         vars.g = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, "generator_1")
         vars.g += tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, "generator_2")
         vars.d = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, "discriminators")
-        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 
         #objective-functions of discriminator
         l0 = tf.reshape(tf.one_hot(0, 3), [1, 1, 3])
@@ -115,36 +111,21 @@ class CycleGAN():
         self.vars = vars
         self.loss = loss
         
-        print(processor)
         self.session = tf.Session(processor)
-        print(' [I] Devices list: ')
-        for d in self.session.list_devices():
-            print(d)
         self.saver = tf.train.Saver()
 
-        # naming output-directory
+    def initialize(self, optimizer_generator, use_tpu=False):
+        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
         with tf.control_dependencies(update_ops):
-            optimizer = tf.train.GradientDescentOptimizer(4e-6)
-            if self.tpu:
-                optimizer = tf.contrib.tpu.CrossShardOptimizer(optimizer)
-            self.g_optim = optimizer.minimize(self.loss.g, var_list=self.vars.g)
-            # optimizer = create_optimizer()
-            # self.g_optim = optimizer.minimize(self.loss.g, var_list=self.vars.g)
+            self.g_optim = optimizer_generator().minimize(self.loss.g, var_list=self.vars.g)
+        self.d_optim = optimizer_generator().minimize(self.loss.d, var_list=self.vars.d)
 
-        # optimizer = create_optimizer()
-        # self.d_optim = optimizer.minimize(self.loss.d, var_list=self.vars.d)
-        optimizer = tf.train.GradientDescentOptimizer(4e-6)
-        if self.tpu:
-            optimizer = tf.contrib.tpu.CrossShardOptimizer(optimizer)
-        self.d_optim = optimizer.minimize(self.loss.d, var_list=self.vars.d)
-
-        
-        if self.tpu:
+        if use_tpu:
             self.session.run(tf.contrib.tpu.initialize_system())
         
-        # initialize variables
         initializer = tf.global_variables_initializer()
         self.session.run(initializer)
+
 
     def train(self, train_iteration=100000):
         assert len(self.sounds_r) > 0
@@ -228,9 +209,8 @@ class CycleGAN():
         pass
 
     def save(self, file, global_step):
-        return
-        if not self.tpu:
-            self.saver.save(self.session, file, global_step=global_step)
+        # self.saver.save(self.session, file, global_step=global_step)
+        pass
 
     def load(self, dir):
         print(" [I] Reading checkpoint...")
@@ -296,95 +276,64 @@ import sys
 
 
 class CycleGANFactory():
-    def __init__(self, model, config_json):
-        self.args = util.config_reader(
-            config_json,
-            default={
-                #
-                "checkpoint_dir": "./trained_models",
-                "train_data_dir": "./dataset/train",
-                #
-                "summary": "console",  # or "tensorboard", False
-                #
-                "weight_Cycle": 100.0,
-                "train_iteration": 100000,
-                "start_epoch": 0,
-                #
-                "use_colab": False,
-                "colab_hardware": "tpu",
-            })
+    def __init__(self, model):
+        self._model = model
+        self._processor = ''
+        self._tpu = False
+        self._cycle_weight = 100.0
 
-        processor = ''
-        if self.args["use_colab"]:
-            if not 'COLAB_TPU_ADDR' in os.environ:
-                sys.stderr.write('[W] Failed to get tpu address, do not use TPU (use for CPU or GPU)')
-            else:
-                processor = 'grpc://' + os.environ['COLAB_TPU_ADDR']
-                sys.stderr.write(' [D] use TPU')
+        self._input_a = None
+        self._input_b = None
+        self._checkpoint = None
+        self._optimizer = {
+            "kind": "GradientDescent",
+            "rate": 4e-6,
+            "params": {}
+        }
+        self._summaries = []
+        self._test = []
 
 
-        self.net = CycleGAN(model, cycle_weight=self.args["weight_Cycle"], processor=processor)
-        
-        if self.args["summary"]:
-            self.summary(self.args["summary"])
+    def _write_message(self, level, str):
+        tag = "VEWDI"
+        sys.stderr.write("[CycleGAN FACTORY] " + tag[level] + ": " + str)
 
-        if self.args["checkpoint_dir"]:
-            self.checkpoint(self.args["checkpoint_dir"])
-
-        if self.args["train_data_dir"]:
-            self.batch_files(self.args["train_data_dir"] + '/A.npy', self.args["train_data_dir"] + '/B.npy')
+    def _v(self, str): self._write_message(0, str)
+    def _e(self, str): self._write_message(1, str)
+    def _w(self, str): self._write_message(2, str)
+    def _d(self, str): self._write_message(3, str)
+    def _i(self, str): self._write_message(4, str)
 
     def summary(self, summary):
-        writer = None
-        if summary == "tensorboard":
-            writer = tf.summary.FileWriter(
-                os.path.join("logs", self.net.name), self.net.session.graph)
-        elif summary == "console":
-            writer = util.ConsoleSummary('./training_value.jsond')
-            self.args["real_data_compare"] = False
+        self._summaries.append(summary)
+        return self
+    
+    def hardware(self, hardware):
+        params = hardware.split(',')
+        self._tpu = False
+        if 'tpu' in params:
+            if not 'COLAB_TPU_ADDR' in os.environ:
+                self._w('Failed to get tpu address, do not use TPU (use for CPU or GPU)')
+            else:
+                self._processor = 'grpc://' + os.environ['COLAB_TPU_ADDR']
+                self._tpu = True
+                self._d('use TPU')
 
-        def update_summary(net, epoch, iteration, period):
-            tb_result = net.session.run(
-                net.loss.display,
-                feed_dict={
-                    self.net.input.A: self.net.sounds_r[0:self.net.batch_size],
-                    self.net.input.B: self.net.sounds_t[0:self.net.batch_size],
-                    self.net.time: np.zeros([1])
-                })
-            print(" [I] finish epoch %04d : iterations %d in %f seconds" %
-                  (epoch, iteration, period))
-            writer.add_summary(tb_result, iteration)
+        return self
 
-        self.net.callback_every_epoch["summary"] = update_summary
+    def input(self, A, B):
+        self._input_a = A
+        self._input_b = B
 
-    def batch_files(self, A, B):
-        print(" [I] loading dataset...")
-        sounds_r = np.load(A)
-        sounds_t = np.load(B)
-        
-        sounds_r = sounds_r.reshape([
-            sounds_r.shape[0], sounds_r.shape[1],
-            sounds_r.shape[2], 1
-        ])
-        sounds_t = sounds_t.reshape([
-            sounds_t.shape[0], sounds_t.shape[1],
-            sounds_t.shape[2], 1
-        ])
-
-        size = min(sounds_r.shape[0], sounds_t.shape[0])
-
-        self.net.sounds_r = sounds_r[:size]
-        self.net.sounds_t = sounds_t[:size]
         return self
 
     def test(self, callback, append=False):
-        if not append:
-            self.net.callback_every_epoch["test"] = callback
-        else:
-            raise Exception("未実装")
+        self._test.append(callback)
+        
         return self
 
     def checkpoint(self, checkpoint_dir):
+        """
         model_name = "wave2wave.model"
         dir = os.path.join(checkpoint_dir, self.net.name)
         os.makedirs(dir, exist_ok=True)
@@ -395,8 +344,83 @@ class CycleGANFactory():
         self.net.callback_every_epoch["save"] = save_checkpoint
 
         self.net.load(dir)
-
+        """
+        def optimizer_generator():
+            optimizer = tf.train.GradientDescentOptimizer(4e-6)
+            if self._tpu:
+                optimizer = tf.contrib.tpu.CrossShardOptimizer(optimizer)
+            return optimizer
+            
         return self
+    
+    def cycle_weight(self, weight):
+        self._cycle_weight = weight
+
+    def optimizer(self, kind, rate, params={}):
+        optimizer_list = ["GradientDescent", "Adam"]
+        if kind in optimizer_list:
+            self._optimizer["kind"] = kind
+        else:
+            raise Exception("Unknown optimizer %s" % kind)
+
+        if rate > 0:
+            self._optimizer["rate"] = rate
+        else:
+            raise Exception("Should larger than 0 training rate")
+
+        if params:
+            self._optimizer["params"] = params
+        
+    def build(self):
+        if not (self._input_a and self._input_b):
+            raise Exception("No defined input data")
+        if not self.checkpoint:
+            self._w('checkpoint is undefined, trained model is no save')
+
+        net = CycleGAN(model, self._input_a, self._input_b, cycle_weight=self._cycle_weight, processor=self._processor)
+
+        # register summary
+        for summary in self._summaries[-1:]: # ラストひとつだけやる。たくさんやるのは未実装
+            writer = None
+            if summary == "tensorboard":
+                writer = tf.summary.FileWriter(
+                    os.path.join("logs", net.name), net.session.graph)
+            elif summary == "console":
+                writer = util.ConsoleSummary('./training_value.jsond')
+
+            def update_summary(epoch, iteration, period):
+                tb_result = net.session.run(
+                    net.loss.display,
+                    feed_dict={
+                        net.input.A: self._input_a[0:model.batch_size],
+                        net.input.B: self._input_b[0:model.batch_size],
+                        net.time: np.zeros([1])
+                    })
+                self._i("finish epoch %04d : iterations %d in %f seconds" %
+                    (epoch, iteration, period))
+                writer.add_summary(tb_result, iteration)
+
+            net.callback_every_epoch["summary"] = update_summary
+
+        # add checkpoint
+        # save
+
+        # initialize
+        def optimizer_generator():
+            optimizer = tf.train.GradientDescentOptimizer(4e-6)
+            if self._tpu:
+                optimizer = tf.contrib.tpu.CrossShardOptimizer(optimizer)
+            return optimizer
+
+        net.initialize(optimizer_generator, self._tpu)
+
+        # register test
+        for test in self._test[-1:]: # ラストひとつだけやる。たくさんやるのは未実装
+            net.callback_every_epoch["test"] = test
+            
+        # load
+
+        return net
 
 
 
@@ -443,8 +467,24 @@ if __name__ == '__main__':
             ww.writeframes(voiced.reshape(-1).tobytes())
             ww.close()
 
-    net = CycleGANFactory(w2w(8), 'settings.json') \
-          .test(save_converting_test_files) \
-          .net
+    data_dir = os.path.join(".", "dataset", "train")
+    dataset = list(map(lambda data: data.reshape([
+        data.shape + [1]
+    ]), map(lambda d: np.load(os.path.join(data_dir, d)), ["A.npy", "B.npy"])))
+    data_size = min(dataset[0].shape[0], dataset[1].shape[0])
+    dataset = list(map(lambda data: data[:data_size]))
+
+    model = w2w(8)
+    name = "_".join([model.name, model.version, "tpu"])
+    net = CycleGANFactory(model) \
+            .cycle_weight(100.00) \
+            .optimzer("GradientDescent", 4e-6) \
+            .summary("console") \
+            .test(save_converting_test_files) \
+            .hardware("colab,tpu") \
+            .checkpoint(os.path.join(".", "trained_model", name)) \
+            .input(dataset[0], dataset[1]) \
+            .build()
 
     net.train(100000)
+

@@ -5,11 +5,13 @@ class Model():
     def __init__(self, batch_size=1, term=4096, fs=16000, frame_period=5.0, fft_size=1024):
         self.name = "forked_VRC"
         self.version = "1.0.2"
+        self.batch_size = batch_size
         self.input_size = [
             batch_size,
             int((term * 1000) // (fs * frame_period)) + 1,
             fft_size // 2 + 1,
             1] # by default [1, 52, 513, 1]
+
 
         self.audio_config = {
             "term": term,

@@ -1,15 +1,13 @@
 {
-    "saving_config": {
-        "checkpoint_dir": "./trained_model/"
+    "gan_config": {
+        "weight_Cycle": 100.0,
+        "optimizer": "GradientDescent"
     },
-    "training_config": {
-        "train_iteration": 100000,
-        "weight_Cycle": 100.0
+    "training_monitor": {
+        "summary": "console",
+        "checkpoint": "./trained_model"
     },
-    "plugin_config": {
-        "summary": "console"
-    },
-    "colaboratory": {
+    "hardware_environ": {
         "use_colab": true
     }
 }
