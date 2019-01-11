@@ -466,9 +466,9 @@ if __name__ == '__main__':
 
     data_dir = os.path.join(".", "dataset", "train")
     data_a = np.load(os.path.join(data_dir, "A.npy"))
-    data_a = data_a.reshape(list(data.shape) + [1])
+    data_a = data_a.reshape(list(data_a.shape) + [1])
     data_b = np.load(os.path.join(data_dir, "B.npy"))
-    data_b = data_b.reshape(list(data.shape) + [1])
+    data_b = data_b.reshape(list(data_b.shape) + [1])
     data_size = min(data_a.shape[0], data_b.shape[0])
     dataset = [data_a[:data_size], data_b[:data_size]]
     # dataset = list(map(lambda data: data.reshape(list(data.shape) + [1]),
