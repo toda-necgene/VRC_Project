@@ -114,11 +114,18 @@ class CycleGAN():
         self.session = tf.Session(processor)
         self.saver = tf.train.Saver()
 
-    def initialize(self, optimizer_generator, use_tpu=False):
+    def initialize(self):
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
         with tf.control_dependencies(update_ops):
-            self.g_optim = optimizer_generator().minimize(self.loss.g, var_list=self.vars.g)
-        self.d_optim = optimizer_generator().minimize(self.loss.d, var_list=self.vars.d)
+            optimizer = tf.train.GradientDescentOptimizer(4e-6)
+            if self._tpu:
+                optimizer = tf.contrib.tpu.CrossShardOptimizer(optimizer)
+            self.g_optim = optimizer.minimize(self.loss.g, var_list=self.vars.g)
+
+        optimizer = tf.train.GradientDescentOptimizer(4e-6)
+        if self._tpu:
+            optimizer = tf.contrib.tpu.CrossShardOptimizer(optimizer)
+        self.d_optim = optimizer.minimize(self.loss.d, var_list=self.vars.d)
 
         if use_tpu:
             self.session.run(tf.contrib.tpu.initialize_system())
@@ -403,15 +410,8 @@ class CycleGANFactory():
         # add checkpoint
         # save
 
-        # initialize
-        def optimizer_generator():
-            optimizer = tf.train.GradientDescentOptimizer(4e-6)
-            if self._tpu:
-                optimizer = tf.contrib.tpu.CrossShardOptimizer(optimizer)
-            return optimizer
-
-        net.initialize(optimizer_generator, self._tpu)
-
+        net.initialize()
+        
         # register test
         for test in self._test[-1:]: # ラストひとつだけやる。たくさんやるのは未実装
             net.callback_every_epoch["test"] = test
