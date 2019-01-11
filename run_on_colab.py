@@ -63,14 +63,13 @@ if __name__ == '__main__':
     # dataset = list(map(lambda data: data[:data_size], dataset))
 
     model = w2w(8)
-    name = "_".join([model.name, model.version, "tpu"])
     net = CycleGANFactory(model) \
             .cycle_weight(100.00) \
             .optimizer("Adam", 4e-6, {"beta1": 0.5, "beta2": 0.999}) \
             .summary("console") \
             .test(save_converting_test_files) \
             .hardware("colab,tpu") \
-            .checkpoint(os.path.join(".", "trained_model", name)) \
+            .checkpoint(os.path.join(".", "trained_model", "colab_tpu")) \
             .input(dataset[0], dataset[1]) \
             .build()
 

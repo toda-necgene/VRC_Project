@@ -113,7 +113,7 @@ class CycleGAN():
         self.loss = loss
         
         self.session = tf.Session(processor)
-        self.saver = tf.train.Saver()
+        self.saver = tf.train.Saver(max_to_keep=None)
 
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)        
         with tf.control_dependencies(update_ops):
@@ -214,18 +214,14 @@ class CycleGAN():
         pass
 
     def save(self, file, global_step):
-        # self.saver.save(self.session, file, global_step=global_step)
-        pass
+        self.saver.save(self.session, file, global_step=global_step)
+        return True
 
     def load(self, dir):
-        return
-
-        ckpt = tf.train.get_checkpoint_state(dir)
-        if ckpt is not None and ckpt:
-            ckpt_name = os.path.basename(ckpt.model_checkpoint_path)  # pylint: disable=E1101
-            self.saver.restore(self.session,
-                               os.path.join(dir, ckpt_name))
-            self.epoch = self.saver
+        checkpoint = tf.train.get_checkpoint_state(dir)
+        if checkpoint:
+            latest_model = checkpoint.model_checkpoint_path  # pylint: disable=E1101
+            self.saver.restore(self.session, latest_model)
             return True
         else:
             return False

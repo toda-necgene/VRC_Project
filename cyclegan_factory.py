@@ -3,6 +3,7 @@ import tensorflow as tf
 from cyclegan import CycleGAN
 import os, sys
 import util
+from datetime import datetime
 
 class CycleGANFactory():
     def __init__(self, model):
@@ -62,18 +63,11 @@ class CycleGANFactory():
         return self
 
     def checkpoint(self, checkpoint_dir):
-        """
-        model_name = "wave2wave.model"
-        dir = os.path.join(checkpoint_dir, self.net.name)
+        dir = os.path.join(checkpoint_dir, self._model.name + "_" + self._model.version)
+        checkpoint_file = os.path.join(dir, datetime.now().strftime('%Y-%m-%d_%H%M%S') + ".ckpt")
         os.makedirs(dir, exist_ok=True)
 
-        def save_checkpoint(net, epoch, iteration, period):
-            net.save(os.path.join(dir, model_name), global_step=epoch)
-
-        self.net.callback_every_epoch["save"] = save_checkpoint
-
-        self.net.load(dir)
-        """
+        self._checkpoint = checkpoint_file
             
         return self
     
@@ -150,6 +144,13 @@ class CycleGANFactory():
             net.callback_every_epoch["test"] = test
             
         # load
+        if self._checkpoint:
+            def save_checkpoint(net, epoch, iteration, period):
+                net.save(self._checkpoint, global_step=iteration)
+
+            net.callback_every_epoch["save"] = save_checkpoint
+
+            net.load(os.path.dirname(self._checkpoint))
 
         return net
 
