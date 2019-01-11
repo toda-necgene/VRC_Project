@@ -3,6 +3,7 @@ import util
 import time
 from datetime import datetime
 
+from tensorflow.contrib.compiler import xla
 
 class Dummy():
     pass
@@ -24,7 +25,8 @@ class CycleGAN():
         self._create_optimizer = None
         self.callback_every_epoch = {}
         self.callback_every_iteration = {}
-
+        
+    def create(self, model, cycle_weight=1.0, processor=''):
         input = Dummy()
         input.A = tf.placeholder(tf.float32, model.input_size, "inputs_g_A")
         input.B = tf.placeholder(tf.float32, model.input_size, "inputs_g_B")
@@ -137,6 +139,10 @@ class CycleGAN():
         
         if self.tpu:
             self.session.run(tf.contrib.tpu.initialize_system())
+        
+        # initialize variables
+        initializer = tf.global_variables_initializer()
+        self.session.run(initializer)
 
     def train(self, train_iteration=100000):
         assert len(self.sounds_r) > 0
@@ -226,9 +232,6 @@ class CycleGAN():
             self.saver.save(self.session, file, global_step=global_step)
 
     def load(self, dir):
-        # initialize variables
-        initializer = tf.global_variables_initializer()
-        self.session.run(initializer)
         print(" [I] Reading checkpoint...")
 
         ckpt = tf.train.get_checkpoint_state(dir)
@@ -389,7 +392,7 @@ class CycleGANFactory():
 
         self.net.callback_every_epoch["save"] = save_checkpoint
 
-        self.net.load(dir)
+        # self.net.load(dir)
 
         return self
 
@@ -438,8 +441,13 @@ if __name__ == '__main__':
             ww.writeframes(voiced.reshape(-1).tobytes())
             ww.close()
 
-    net = CycleGANFactory(w2w(1), 'settings.json') \
+    batch_size = 1
+    model = w2w(batch_size)
+    net = CycleGANFactory(model, 'settings.json') \
           .test(save_converting_test_files) \
           .net
+
+    compiled = xla.compile(net.create(model))
+    exit()
 
     net.train(100000)
