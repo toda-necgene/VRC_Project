@@ -345,16 +345,12 @@ class CycleGANFactory():
 
         self.net.load(dir)
         """
-        def optimizer_generator():
-            optimizer = tf.train.GradientDescentOptimizer(4e-6)
-            if self._tpu:
-                optimizer = tf.contrib.tpu.CrossShardOptimizer(optimizer)
-            return optimizer
             
         return self
     
     def cycle_weight(self, weight):
         self._cycle_weight = weight
+        return self
 
     def optimizer(self, kind, rate, params={}):
         optimizer_list = ["GradientDescent", "Adam"]
@@ -370,9 +366,11 @@ class CycleGANFactory():
 
         if params:
             self._optimizer["params"] = params
+
+        return self
         
     def build(self):
-        if not (self._input_a and self._input_b):
+        if self._input_a is None or self._input_b is None:
             raise Exception("No defined input data")
         if not self.checkpoint:
             self._w('checkpoint is undefined, trained model is no save')
@@ -388,7 +386,7 @@ class CycleGANFactory():
             elif summary == "console":
                 writer = util.ConsoleSummary('./training_value.jsond')
 
-            def update_summary(epoch, iteration, period):
+            def update_summary(net, epoch, iteration, period):
                 tb_result = net.session.run(
                     net.loss.display,
                     feed_dict={
@@ -467,18 +465,16 @@ if __name__ == '__main__':
             ww.writeframes(voiced.reshape(-1).tobytes())
             ww.close()
 
-    data_dir = os.path.join(".", "dataset", "train")
-    dataset = list(map(lambda data: data.reshape([
-        list(data.shape) + [1]
-    ]), map(lambda d: np.load(os.path.join(data_dir, d)), ["A.npy", "B.npy"])))
+    dataset = list(map(lambda data: data.reshape(list(data.shape) + [1]),
+        map(lambda d: np.load(os.path.join(data_dir, d)), ["A.npy", "B.npy"])))
     data_size = min(dataset[0].shape[0], dataset[1].shape[0])
-    dataset = list(map(lambda data: data[:data_size]))
+    dataset = list(map(lambda data: data[:data_size], dataset))
 
-    model = w2w(8)
+    model = w2w(1)
     name = "_".join([model.name, model.version, "tpu"])
     net = CycleGANFactory(model) \
             .cycle_weight(100.00) \
-            .optimzer("GradientDescent", 4e-6) \
+            .optimizer("GradientDescent", 4e-6) \
             .summary("console") \
             .test(save_converting_test_files) \
             .hardware("colab,tpu") \
