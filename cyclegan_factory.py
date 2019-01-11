@@ -323,9 +323,10 @@ class CycleGANFactory():
             if not 'COLAB_TPU_ADDR' in os.environ:
                 self._w('Failed to get tpu address, do not use TPU (use for CPU or GPU)')
             else:
-                self._processor = 'grpc://' + os.environ['COLAB_TPU_ADDR']
+                tpu_cluster = tf.contrib.cluster_resolver.TPUClusterResolver(tpu='grpc://' + os.environ['COLAB_TPU_ADDR'])
+                self._processor = tpu_cluster
                 self._tpu = True
-                self._d('use TPU')
+                self._d('use TPU : %s' % tpu_cluster.get_master().encode())
 
         return self
 
