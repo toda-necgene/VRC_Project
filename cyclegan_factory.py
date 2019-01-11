@@ -63,9 +63,13 @@ class CycleGANFactory():
         return self
 
     def checkpoint(self, checkpoint_dir):
-        dir = os.path.join(checkpoint_dir, self._model.name + "_" + self._model.version)
-        checkpoint_file = os.path.join(dir, datetime.now().strftime('%Y-%m-%d_%H%M%S') + ".ckpt")
-        os.makedirs(dir, exist_ok=True)
+        if checkpoint_dir.startswith("gs://"):
+            dir = checkpoint_dir + "/" + self._model.name + "_" + self._model.version
+            checkpoint_file = dir + "/" + datetime.now().strftime('%Y-%m-%d_%H%M%S') + ".ckpt"
+        else:
+            dir = os.path.join(checkpoint_dir, self._model.name + "_" + self._model.version)
+            checkpoint_file = os.path.join(dir, datetime.now().strftime('%Y-%m-%d_%H%M%S') + ".ckpt")
+            os.makedirs(dir, exist_ok=True)
 
         self._checkpoint = checkpoint_file
             
