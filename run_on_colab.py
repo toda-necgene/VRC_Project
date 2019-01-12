@@ -92,15 +92,15 @@ if __name__ == '__main__':
     input_b = os.path.join(".", "dataset", "train", "B.npy")
     data_a, data_b = _get_dataset(input_a, input_b)
 
-    model = w2w(128)
+    model = w2w(args.batchsize)
     with CycleGANFactory(model) \
-            .cycle_weight(100.00) \
+            .cycle_weight(args.weight) \
             .optimizer("Adam", 4e-6, {"beta1": 0.5, "beta2": 0.999}) \
             .summary("console") \
             .test(tester) \
             .hardware("colab,tpu") \
-            .checkpoint("gs://colab_bucket") \
+            .checkpoint(args.checkpoint) \
             .input(data_a, data_b) \
             .build() as net:
-        net.train(200000)
+        net.train(args.iteration)
 
