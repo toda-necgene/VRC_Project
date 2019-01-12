@@ -121,7 +121,8 @@ class CycleGANFactory():
         net = CycleGAN(self._model, self._input_a, self._input_b,
                 cycle_weight=self._cycle_weight,
                 processor=self._processor,
-                generate_optimizer=generate_optimizer)
+                generate_optimizer=generate_optimizer,
+                use_tpu=self._tpu)
 
         # register summary
         for summary in self._summaries[-1:]: # ラストひとつだけやる。たくさんやるのは未実装

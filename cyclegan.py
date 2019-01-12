@@ -8,7 +8,7 @@ class Dummy():
     pass
 
 class CycleGAN():
-    def __init__(self, model, input_a, input_b, processor='', cycle_weight=1.0, generate_optimizer=None):
+    def __init__(self, model, input_a, input_b, processor='', cycle_weight=1.0, generate_optimizer=None, use_tpu=True):
         self.name = model.name + model.version
         self.batch_size = model.input_size[0]
 
@@ -124,7 +124,7 @@ class CycleGAN():
         self.d_optim = optimizer.minimize(self.loss.d, var_list=self.vars.d)
 
 
-        self._use_tpu = True
+        self._use_tpu = use_tpu
         if self._use_tpu:
             self.session.run(tf.contrib.tpu.initialize_system())
         
