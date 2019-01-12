@@ -14,6 +14,7 @@ from model import Model
 from voice_to_datasets_cycle import Voice2Dataset as V2D
 
 import util
+from console_summary import ConsoleSummary
 
 
 class CycleGAN:
@@ -249,7 +250,7 @@ class CycleGAN:
             self.writer = tf.summary.FileWriter(
                 "./logs/" + self.args["name_save"], self.sess.graph)
         elif self.args["summary"] == "console":
-            self.writer = util.ConsoleSummary()
+            self.writer = ConsoleSummary()
             self.args["real_data_compare"] = False
         else:
             self.writer = None
@@ -373,7 +374,7 @@ class CycleGAN:
 
         # calcurating power spectrum
         im = fft(out_put)
-        otp_im = im.copy().reshape(1, -1, 512)
+        otp_im = im.copy().reshape(1, -1, 512) # pylint: disable=W0612
         # writing epoch-result into tensorboard
         if self.writer:
             tb_result = self.sess.run(

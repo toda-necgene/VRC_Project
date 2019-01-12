@@ -4,6 +4,7 @@ from cyclegan import CycleGAN
 import os, sys
 import util
 from datetime import datetime
+from console_summary import ConsoleSummary
 
 class CycleGANFactory():
     def __init__(self, model):
@@ -125,7 +126,7 @@ class CycleGANFactory():
                 writer = tf.summary.FileWriter(
                     os.path.join("logs", net.name), net.session.graph)
             elif summary == "console":
-                writer = util.ConsoleSummary('./training_value.jsond')
+                writer = ConsoleSummary('./training_value.jsond')
 
             def update_summary(net, epoch, iteration, period):
                 tb_result = net.session.run(
@@ -154,7 +155,7 @@ class CycleGANFactory():
 
             net.callback_every_epoch["save"] = save_checkpoint
 
-            # net.load(os.path.dirname(self._checkpoint))
+            net.load(os.path.dirname(self._checkpoint))
 
         return net
 
