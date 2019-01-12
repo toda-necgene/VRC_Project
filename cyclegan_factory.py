@@ -154,7 +154,7 @@ class CycleGANFactory():
 
             net.callback_every_epoch["save"] = save_checkpoint
 
-            net.load(os.path.dirname(self._checkpoint))
+            # net.load(os.path.dirname(self._checkpoint))
 
         return net
 
