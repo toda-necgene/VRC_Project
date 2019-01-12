@@ -124,13 +124,21 @@ class CycleGAN():
         self.d_optim = optimizer.minimize(self.loss.d, var_list=self.vars.d)
 
 
-        use_tpu = True
-        if use_tpu:
+        self._use_tpu = True
+        if self._use_tpu:
             self.session.run(tf.contrib.tpu.initialize_system())
         
+    def __enter__(self):        
         initializer = tf.global_variables_initializer()
         self.session.run(initializer)
-
+        return self
+    
+    def __exit__(self, exc_type, exc_value, traceback):
+        self._use_tpu = True
+        if self._use_tpu:
+            self.session.run(tf.contrib.tpu.shutdown_system())
+        self.session.close()
+        return True
 
     def train(self, train_iteration=100000):
         assert len(self.sounds_r) > 0

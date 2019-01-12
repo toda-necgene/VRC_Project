@@ -27,7 +27,11 @@ class CycleGANFactory():
 
     def _write_message(self, level, str):
         tag = "VEWDI"
-        sys.stderr.write("[CycleGAN FACTORY] " + tag[level] + ": " + str + '\n')
+        sys.stderr.write(" ".join([
+            tag[level],
+            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "[CycleGAN FACTORY]",
+            str]) + '\n')
 
     def _v(self, str): self._write_message(0, str)
     def _e(self, str): self._write_message(1, str)
