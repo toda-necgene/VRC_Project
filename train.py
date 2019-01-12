@@ -115,7 +115,7 @@ if __name__ == '__main__':
             .optimizer("Adam", 4e-6, {"beta1": 0.5, "beta2": 0.999}) \
             .summary("console") \
             .test(tester) \
-            .hardware(args.hardware) \
+            .hardware(args.processor) \
             .checkpoint(args.checkpoint) \
             .input(data_a, data_b) \
             .build() as net:
