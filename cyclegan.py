@@ -134,7 +134,6 @@ class CycleGAN():
         return self
     
     def __exit__(self, exc_type, exc_value, traceback):
-        self._use_tpu = True
         if self._use_tpu:
             self.session.run(tf.contrib.tpu.shutdown_system())
         self.session.close()
@@ -160,7 +159,10 @@ class CycleGAN():
             if epoch % self.batch_size == 0:
                 period = time.time() - epoch_count_time
                 for f in self.callback_every_epoch.values():
-                    f(self, epoch, iterations, period)
+                    try:
+                        f(self, epoch, iterations, period)
+                    except:
+                        pass
                 epoch_count_time = time.time()
 
             # shuffling train_data_index
@@ -205,7 +207,10 @@ class CycleGAN():
 
         period = time.time() - epoch_count_time
         for f in self.callback_every_epoch.values():
-            f(self, train_epoch, iterations, period)
+            try:
+                f(self, train_epoch, iterations, period)
+            except:
+                pass
 
         taken_time_all = time.time() - start_time_all
         print(" [I] ALL train process finished successfully!! in %f Hours" %
