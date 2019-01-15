@@ -8,7 +8,7 @@ import os
 import util
 
 
-class Voice2Dataset:
+class VoiceToDataset:
     """
     WAVEデータ群をパッチデータに変換する
 
@@ -23,7 +23,7 @@ class Voice2Dataset:
     rate : int
         WAVEデータのサンプリング周波数
     """
-    def __init__(self, voice_dir, train_dir, term=4096, rate=16000):
+    def __init__(self, voice_dir, train_dir, term=4096, rate=16000, fft_size=1024):
         """
         Parameters
         ----------
@@ -38,6 +38,7 @@ class Voice2Dataset:
         """
         self.voice_dir = voice_dir
         self.train_dir = train_dir
+        self.fft_size = fft_size
         self.term = term
         self.rate = rate
 
@@ -54,7 +55,8 @@ class Voice2Dataset:
 
         Returns
         -------
-        plof : np.array [第一話者のピッチ平均, 第二話者のピッチ平均, 第一話者と第二話者のピッチの標準偏差の比]
+        plof : np.array [第一話者と第二話者のピッチ平均の差, 第一話者と第二話者のピッチの標準偏差の比]
+            第一話者のf0を第二話者に変換したいときは (f0 - plof[0]) * plof[1]
         """
         pitch = {}
         for name in [source, target]:
@@ -70,7 +72,6 @@ class Voice2Dataset:
                 data_real = (data / 32767).reshape(-1).astype(np.float)
                 times = (data_real.shape[0] - 1) // self.term + 1
 
-                ttm = time.time()
                 endpos = data_real.shape[0] % self.term
                 for i in range(times):
                     data_realAb = data_real[max(endpos -
@@ -80,7 +81,7 @@ class Voice2Dataset:
                         data_realAb = np.pad(data_realAb, (shortage, 0),
                                              "constant")
 
-                    f0, psp, _ = util.encode(data_realAb)
+                    f0, psp, _ = util.encode(data_realAb, self.rate, fft_size=self.fft_size, frame_period=5.0)
                     ff.extend(f0[f0 > 0.0])
                     m.append(psp)
 
@@ -98,6 +99,6 @@ class Voice2Dataset:
         pitch_mean_t = pitch[target]["mean"]
         pitch_var_t = pitch[target]["var"]
 
-        plof = np.asarray([pitch_mean_s, pitch_mean_t, pitch_var_t / pitch_var_s])
+        plof = np.asarray([pitch_mean_s - pitch_mean_t, pitch_var_t / pitch_var_s])
         return plof
 

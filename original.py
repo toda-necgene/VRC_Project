@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 from model import Model
 
-from voice_to_datasets_cycle import Voice2Dataset as V2D
+from voice_to_dataset import VoiceToDataset as V2D
 
 import util
 from console_summary import ConsoleSummary
@@ -201,7 +201,7 @@ class CycleGAN:
             if r > 0:
                 resorce = np.pad(resorce, (r, 0), 'constant')
             # FFT
-            f0, resource, ap = util.encode((resorce / 32767).astype(np.float))
+            f0, resource, ap = util.encode((resorce / 32767).astype(np.float), 16000)
             resource = resource.reshape(self.input_size_test)
             #main process
 

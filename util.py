@@ -110,7 +110,7 @@ def isread(path):
 
 
 from pyworld import pyworld as pw
-def encode(data):
+def encode(data, fs, frame_period=5.0, fft_size=None):
     """
     振幅データから音響特性を抽出する
     Parameters
@@ -129,15 +129,14 @@ def encode(data):
         fsはデフォルトで16000[Hz]であるため、
         f0のサイズは[ T // 80 + 1 ] となる
     """
-    fs = 16000
-    _f0, t = pw.dio(data, fs)
+    _f0, t = pw.dio(data, fs, frame_period=frame_period)
     f0 = pw.stonemask(data, _f0, t, fs)
-    sp = pw.cheaptrick(data, f0, t, fs)
-    ap = pw.d4c(data, f0, t, fs)
+    sp = pw.cheaptrick(data, f0, t, fs, fft_size=fft_size)
+    ap = pw.d4c(data, f0, t, fs, fft_size=fft_size)
     psp = np.clip((np.log(sp) + 15) / 20, -1.0, 1.0)
     return f0.astype(np.float64), psp.astype(np.float64), ap.astype(np.float64)
 
-def decode(f0, psp, ap):
+def decode(fs, f0, psp, ap):
     fs = 16000
     ap = ap.reshape(-1, 513).astype(np.float)
     f0 = f0.reshape(-1).astype(np.float)
