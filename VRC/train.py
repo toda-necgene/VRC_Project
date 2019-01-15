@@ -120,47 +120,45 @@ class Model:
         with tf.variable_scope("generator_1",reuse=True):
             fake_Ab_image = generator(fake_bA_image, reuse=True)
 
+
         #creating discriminator (if you want to view more codes then ./model.py)
-        with tf.variable_scope("discriminator"):
-            inp=tf.concat([self.input_model_A,fake_bA_image,self.input_model_B,fake_aB_image],axis=0)
+        with tf.variable_scope("discriminator",reuse=tf.AUTO_REUSE):
+            inp=tf.concat([self.input_model_A,self.input_model_B,fake_bA_image,fake_aB_image],axis=0)
             d_judge = discriminator(inp, None)
+            d_judge_to_g = discriminator(inp[2:], reuse=True,train=False)
 
         #getting individual variables of architectures
         self.g_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"generator_1")+tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"generator_2")
         self.d_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"discriminator")
-        self.update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
         _l=int(d_judge.shape[1])
         lN=tf.tile(tf.reshape(tf.one_hot(0,3),[1,1,3]),[1,_l,1])
         lA=tf.tile(tf.reshape(tf.one_hot(1,3),[1,1,3]),[1,_l,1])
         lB=tf.tile(tf.reshape(tf.one_hot(2,3),[1,1,3]),[1,_l,1])
-        label=tf.concat([lA,lN,lB,lN],axis=0)
-        # crassifer loss
-        self.d_loss=-tf.log(tf.abs(label-d_judge)+1e-8)
+        label=tf.concat([lA,lB,lN,lN],axis=0)
 
+        # crassifer loss(using a Least_Squared_Loss)
+        self.d_loss=tf.squared_difference(label,d_judge)
+        
         # objective-functions of generator
 
-        # Cycle loss (L2 norm is better than L1 norm for keeping words)
+        # Cycle loss (L2 norm is better than L1 norm for keeping phonation)
         g_loss_cyc_A = tf.squared_difference(self.input_model_A,fake_Ba_image)
         g_loss_cyc_B = tf.squared_difference(self.input_model_B,fake_Ab_image)
-        # Gan loss (using a KL divergence )
-        g_loss_gan_A = -tf.log(tf.abs(d_judge[0]-d_judge[1])+1e-8)
-        g_loss_gan_B = -tf.log(tf.abs(d_judge[2]-d_judge[3])+1e-8)
+        
+        # Gan loss (using a Least_Squared_Loss)
+        g_loss_gan=tf.squared_difference(label[:2],d_judge_to_g)
+        
 
-
-        self.g_loss =tf.losses.compute_weighted_loss( g_loss_cyc_A  + g_loss_cyc_B,self.args["weight_Cycle"]) + g_loss_gan_B+ g_loss_gan_A
+        self.g_loss =tf.losses.compute_weighted_loss( g_loss_cyc_A  + g_loss_cyc_B,self.args["weight_Cycle"]) + g_loss_gan
 
         #tensorboard functions
         if self.args["tensor-board"]:
-            g_loss_cyc_A_display= tf.summary.scalar("g_loss_cycle_AtoA", tf.reduce_mean(g_loss_cyc_A),family="g_loss")
-            g_loss_gan_A_display = tf.summary.scalar("g_loss_gan_BtoA", tf.reduce_mean(g_loss_gan_A),family="g_loss")
-            g_loss_sum_A_display = tf.summary.merge([g_loss_cyc_A_display, g_loss_gan_A_display])
-
-            g_loss_cyc_B_display = tf.summary.scalar("g_loss_cycle_BtoB", tf.reduce_mean(g_loss_cyc_B),family="g_loss")
-            g_loss_gan_B_display = tf.summary.scalar("g_loss_gan_AtoB", tf.reduce_mean(g_loss_gan_B),family="g_loss")
-            g_loss_sum_B_display = tf.summary.merge([g_loss_cyc_B_display,g_loss_gan_B_display])
-            d_loss_sum_A_display = tf.summary.scalar("d_loss", tf.reduce_mean(self.d_loss),family="d_loss")
-
-            self.loss_display=tf.summary.merge([g_loss_sum_A_display,g_loss_sum_B_display,d_loss_sum_A_display])
+            g_loss_cyc_A_display= tf.summary.scalar("g_loss_cycle_AtoA", tf.reduce_mean(g_loss_cyc_A),family="loss")
+            g_loss_cyc_B_display = tf.summary.scalar("g_loss_cycle_BtoB", tf.reduce_mean(g_loss_cyc_B),family="loss")
+            g_loss_gan_A_display = tf.summary.scalar("g_loss_gan", tf.reduce_mean(g_loss_gan),family="loss")
+            g_loss_sum_display = tf.summary.merge([g_loss_cyc_A_display, g_loss_gan_A_display,g_loss_cyc_B_display])
+            d_loss_sum_display = tf.summary.scalar("d_loss", tf.reduce_mean(self.d_loss),family="loss")
+            self.loss_display=tf.summary.merge([g_loss_sum_display,d_loss_sum_display])
             self.result_score= tf.placeholder(tf.float32, name="FakeFFTScore")
             self.result_image_display= tf.placeholder(tf.float32, [1,None,512], name="FakeSpectrum")
             image_pow_display=tf.reshape(tf.transpose(self.result_image_display[:,:,:],[0,2,1]),[1,512,-1,1])
@@ -227,8 +225,7 @@ class Model:
 
         # naming output-directory
         lr=tf.placeholder(tf.float32)
-        with tf.control_dependencies(self.update_ops):
-            g_optimizer = tf.train.AdamOptimizer(lr, 0.5, 0.999).minimize(self.g_loss,var_list=self.g_vars)
+        g_optimizer = tf.train.AdamOptimizer(lr, 0.5, 0.999).minimize(self.g_loss,var_list=self.g_vars)
         d_optimizer = tf.train.AdamOptimizer(lr, 0.5, 0.999).minimize(self.d_loss,var_list=self.d_vars)
 
         # loading net
@@ -281,9 +278,9 @@ class Model:
                 st=self.args["batch_size"]*idx
                 batch_sounds_resource = np.asarray([self.sounds_r[ind] for ind in index_list[st:st+self.args["batch_size"]]])
                 batch_sounds_target= np.asarray([self.sounds_t[ind] for ind in index_list2[st:st+self.args["batch_size"]]])
-                opt=2e-6
+                opt=8e-7
                 # update D network
-                # self.sess.run(d_optimizer, feed_dict={self.input_model_A: batch_sounds_resource,self.input_model_B: batch_sounds_target,lr:opt})
+                self.sess.run(d_optimizer, feed_dict={self.input_model_A: batch_sounds_resource,self.input_model_B: batch_sounds_target,lr:opt})
                 self.sess.run(d_optimizer, feed_dict={self.input_model_A: batch_sounds_resource,self.input_model_B: batch_sounds_target,lr:opt})
                 # update G network
                 self.sess.run(g_optimizer,feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target,lr:opt})
@@ -297,7 +294,7 @@ class Model:
 
     def test_and_save(self,epoch,itr,one_itr_num):
 
-        # last testing
+        # testing
         out_puts, _ = self.convert(self.test)
 
         # fixing harvests types
@@ -305,11 +302,12 @@ class Model:
 
         # calculating power spectrum
         im = fft(out_put[800:156000])
-        spec = np.mean(im, axis=0)
-        spec_v = np.std(im, axis=0)
-        diff=spec-self.label_spec
-        diff2=spec_v-self.label_spec_v
-        score=np.mean(diff*diff+diff2*diff2)
+        if self.args["real_sample_compare"]:
+            spec = np.mean(im, axis=0)
+            spec_v = np.std(im, axis=0)
+            diff=spec-self.label_spec
+            diff2=spec_v-self.label_spec_v
+            score=np.mean(diff*diff+diff2*diff2)
         otp_im = im.copy().reshape(1,-1,512)
 
         # writing epoch-result into tensor-board
@@ -318,8 +316,9 @@ class Model:
                                       feed_dict={self.input_model_A: self.sounds_r[0:self.args["batch_size"]],
                                                  self.input_model_B: self.sounds_t[0:self.args["batch_size"]]})
             self.writer.add_summary(tb_result, itr)
-            rs = self.sess.run(self.g_test_display, feed_dict={self.result_image_display: otp_im,self.result_score:score})
-            self.writer.add_summary(rs, itr)
+            if self.args["real_sample_compare"]:
+                rs = self.sess.run(self.g_test_display, feed_dict={self.result_image_display: otp_im,self.result_score:score})
+                self.writer.add_summary(rs, itr)
 
         # saving test harvests
         if os.path.exists(self.args["wave_otp_dir"]):
