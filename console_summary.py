@@ -1,6 +1,7 @@
 import struct
 import time
 import json
+import matplotlib.pyplot as plot
 
 class ConsoleSummary():
     def __init__(self, file=None):
@@ -62,6 +63,21 @@ class ConsoleSummary():
             import traceback
             traceback.print_exc()
             print(summary)
+
+    def plot(self):
+        data = LoggingJSON(self.file).all()
+        plot.clf()
+        count = len(data.keys())
+        i = 0
+        for k, v in data.items():
+            i += 1
+            plot.subplot(count, 1, i)
+            plot.plot(v)
+            plot.title(k)
+
+        plot.show()
+        
+
     
 
 class LoggingJSON():
@@ -76,5 +92,19 @@ class LoggingJSON():
         self.fp.close()
 
     def append(self, dict):
-        self.fp.write(json.dumps(dict) + '\n')
+        self.fp.write(json.dumps(dict) + '\n', separators=(',', ':'))
+
+    def all(self):
+        with open(self.file, 'r') as f:
+            dataarray = map(lambda line: json.loads(line), f.readlines())
+            data = {}
+            for d in dataarray:
+                for k, v in d.items():
+                    if k in data:
+                        data[k].append(v)
+                    else:
+                        data[k] = [v]
+        
+        return data
+
 
