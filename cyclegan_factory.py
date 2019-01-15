@@ -1,10 +1,11 @@
 import numpy as np
 import tensorflow as tf
 from cyclegan import CycleGAN
-import os, sys
+import os
 import util
 from datetime import datetime
 from console_summary import ConsoleSummary
+import log
 
 class CycleGANFactory():
     def __init__(self, model):
@@ -24,21 +25,6 @@ class CycleGANFactory():
         self._summaries = []
         self._test = []
 
-
-    def _write_message(self, level, str):
-        tag = "VEWDI"
-        sys.stderr.write(" ".join([
-            tag[level],
-            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "[CycleGAN FACTORY]",
-            str]) + '\n')
-
-    def _v(self, str): self._write_message(0, str)
-    def _e(self, str): self._write_message(1, str)
-    def _w(self, str): self._write_message(2, str)
-    def _d(self, str): self._write_message(3, str)
-    def _i(self, str): self._write_message(4, str)
-
     def summary(self, summary):
         self._summaries.append(summary)
         return self
@@ -48,11 +34,12 @@ class CycleGANFactory():
         self._tpu = False
         if 'tpu' in params:
             if not 'COLAB_TPU_ADDR' in os.environ:
-                self._w('Failed to get tpu address, do not use TPU (use for CPU or GPU)')
+                log.w('Failed to get tpu address, do not use TPU (use for CPU or GPU)')
             else:
                 self._processor = 'grpc://' + os.environ['COLAB_TPU_ADDR']
                 self._tpu = True
-                self._d('use TPU')
+                log.d('use TPU')
+                log.d("aaa")
 
         return self
 
@@ -110,7 +97,7 @@ class CycleGANFactory():
         if self._input_a is None or self._input_b is None:
             raise Exception("No defined input data")
         if not self.checkpoint:
-            self._w('checkpoint is undefined, trained model is no save')
+            log.w('checkpoint is undefined, trained model is no save')
 
         def generate_optimizer():
             optimizer = self._optimizer["kind"](self._optimizer["rate"], **self._optimizer["params"])
@@ -141,7 +128,7 @@ class CycleGANFactory():
                         net.input.B: self._input_b[0:self._model.batch_size],
                         net.time: np.zeros([1])
                     })
-                self._i("finish epoch %04d : iterations %d in %f seconds" %
+                log.i("finish epoch %04d : iterations %d in %f seconds" %
                     (epoch, iteration, period))
                 writer.add_summary(tb_result, iteration)
 

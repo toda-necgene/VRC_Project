@@ -3,6 +3,7 @@ import util
 import time
 import numpy as np
 import os
+import log
 
 class Dummy():
     pass
@@ -213,7 +214,7 @@ class CycleGAN():
                 pass
 
         taken_time_all = time.time() - start_time_all
-        print(" [I] ALL train process finished successfully!! in %f Hours" %
+        log.i("ALL train process finished successfully!! in %f Hours" %
               (taken_time_all / 3600))
 
     def a_to_b(self, array):
@@ -234,8 +235,10 @@ class CycleGAN():
         checkpoint = tf.train.get_checkpoint_state(dir)
         if checkpoint:
             latest_model = checkpoint.model_checkpoint_path  # pylint: disable=E1101
+            log.i("load from %s" % latest_model)
             self.saver.restore(self.session, latest_model)
             return True
         else:
+            log.w("no loaded data")
             return False
 

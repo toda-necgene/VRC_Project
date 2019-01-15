@@ -124,3 +124,7 @@ share/**
 # Temporaly
 portaudio_x64.dll
 snap
+
+run.bat
+
+*.jsond
