@@ -6,6 +6,8 @@ import wave
 import numpy as np
 from datetime import datetime
 from cyclegan_factory import CycleGANFactory
+from waver import Waver
+import log
 
 
 def _get_dataset(a, b):
@@ -99,12 +101,32 @@ if __name__ == '__main__':
                             help="specification of hardware")
                             
     args = argparser.parse_args()
-    
+
+    waver = Waver(block=4096, fs=16000, fft_size=1024, bit_rate=16)
+    # バッチファイル作成
+    if not args.input_a.endswith(".npy"):
+        f0_a, sp, ap, psp = waver.encode(args.input_a, filter_silent=True)
+        args.input_a = os.path.dirname(args.input_a) + ".npy"
+        np.save(args.input_a, psp)
+        log.i("save A")
+        
+    if not args.input_b.endswith(".npy"):
+        f0_b, sp, ap, psp = waver.encode(args.input_b, filter_silent=True)
+        args.input_b = os.path.dirname(args.input_b) + ".npy"
+        np.save(args.input_b, psp)
+        log.i("save B")
+
+    if  'f0_a' in locals() and 'f0_b' in locals():
+        profile = waver.get_f0_transfer_params(f0_a, f0_b)
+        np.save(args.voice_profile, profile)
+        log.i("save profile")
+
     # 中間状況確認
+    f0_mean_diff, f0_std_rate = np.load(args.voice_profile)
     tester = _generate_test_callback(
         args.test_data,
         args.test_dir,
-        util.generate_f0_transfer(args.voice_profile))
+        waver.generate_f0_transfer(f0_mean_diff, f0_std_rate))
 
     # データセット準備
     data_a, data_b = _get_dataset(args.input_a, args.input_b)
