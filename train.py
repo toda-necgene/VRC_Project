@@ -1,13 +1,16 @@
-from model import Model as w2w
-import util
 import os
 from glob import glob
+from datetime import datetime
+
 import wave
 import numpy as np
-from datetime import datetime
-from cyclegan_factory import CycleGANFactory
-from waver import Waver
-import log
+
+from VRC.cyclegan_factory import CycleGANFactory
+from VRC.waver import Waver
+from VRC.model import Model as w2w
+
+import VRC.log as log
+
 
 
 def _get_dataset(a, b):
@@ -26,40 +29,32 @@ def _get_dataset(a, b):
     # data_size = min(dataset[0].shape[0], dataset[1].shape[0])
     # dataset = list(map(lambda data: data[:data_size], dataset))
 
-from converter import Converter
-from waveplot import WavePlot
+import original.util as util
+from VRC.converter import Converter
+from VRC.waveplot import WavePlot
+from VRC.waver import Waver
 def _generate_test_callback(files, output_dir, f0_transfer):
     os.makedirs(output_dir, exist_ok=True)
-    sample_size = 2
+
+    tester = []
+    waver = Waver()
+    for file in glob(files):
+        f0, _, ap, psp = waver.encode(file)
+        tester.append({
+            'f0': f0_transfer(f0),
+            'ap': ap,
+            'psp': psp,
+            'format': os.path.basename(file) + '_%d_%s',
+        })
+    savefig = WavePlot().savefig
+
     def save_converting_test_files(net, epoch, iteration, period):
-        converter = Converter(net, f0_transfer).convert
-        savefig = WavePlot().savefig
-        for file in glob(files):
-            basename = os.path.basename(file)
+        for d in tester:
+            path = d['format'] % (epoch // net.batch_size, datetime.now().strftime("%m-%d_%H-%M-%S"))
+            psp = net.a_to_b(d['psp'])
+            data = waver.decode(d['f0'], d['ap'], psp=psp, file=path + '.wav')
 
-            testdata = util.isread(file)
-            converted, _ = converter(testdata)
-
-            converted_norm = converted.copy().astype(np.float32) / 32767.0
-            im = util.fft(converted_norm)
-            ins = np.transpose(im, (1, 0))
-
-            path = os.path.join(
-                output_dir,
-                "%s_%d_%s" % (basename, epoch // net.batch_size,
-                                datetime.now().strftime("%m-%d_%H-%M-%S")))
-
-            savefig(path + ".png", [ins, converted_norm])
-
-            #saving fake waves
-            voiced = converted.astype(np.int16)[800:156000]
-
-            ww = wave.open(path + ".wav", 'wb')
-            ww.setnchannels(1)
-            ww.setsampwidth(sample_size)
-            ww.setframerate(16000)
-            ww.writeframes(voiced.reshape(-1).tobytes())
-            ww.close()
+            savefig(path + ".png", [psp, data])
 
     return save_converting_test_files
 

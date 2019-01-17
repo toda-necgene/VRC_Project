@@ -2,7 +2,7 @@ import tensorflow as tf
 
 
 class Model():
-    def __init__(self, batch_size=1, term=4096, fs=16000, frame_period=5.0, fft_size=1024):
+    def __init__(self, batch_size=1, term=4096, fs=16000, frame_period=4.0, fft_size=1024):
         self.name = "forked_VRC"
         self.version = "1.0.2"
         self.batch_size = batch_size

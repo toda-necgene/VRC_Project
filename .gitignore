@@ -128,3 +128,10 @@ snap
 run.bat
 
 *.jsond
+
+*.wav
+logs
+*.npy
+waves
+trained_model
+latest.png

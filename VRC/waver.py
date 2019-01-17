@@ -12,24 +12,27 @@ class Waver():
         self.fft_size = fft_size
         self.bit_rate = bit_rate
 
+        self._sox = "C:\\Users\\tal\\bin\\sox-14.4.2\\sox.exe"
+
         if ~(fft_size & (fft_size - 1)) + 1:
             raise Exception("fft size is required power of 2")
 
         if block % fft_size != 0:
             raise Exception("block be valued n times fft_size")
 
-        self.frame_period = block * 32 // fft_size * 1000 / fs
+        self.frame_period = block * 16 // fft_size * 1000 / fs
 
     def _read(self, file, filter_silent=False):
         temp = "temp.wav"
-        print("sox -r %d -c 1 -b %d %s %s" % (self.fs, self.bit_rate, file, temp))
-        res = subprocess.call("C:\\Users\\tal\\bin\\sox-14.4.2\\sox.exe -r %d -c 1 -b %d %s %s" % (self.fs, self.bit_rate, file, temp))
+        res = subprocess.call("%s -r %d -c 1 -b %d %s %s" %
+                                (self._sox, self.fs, self.bit_rate, file, temp))
         if res != 0:
             raise Exception("sox command error")
 
         if filter_silent:
             temp2 = "temp2.wav"
-            res = subprocess.call("C:\\Users\\tal\\bin\\sox-14.4.2\\sox.exe %s %s silence 1 0.08 %f%% 1 0.08 %f%% : restart" % (temp, temp2, filter_silent, filter_silent))
+            res = subprocess.call("%s %s %s silence 1 0.08 %f%% 1 0.08 %f%% : restart" % 
+                                (self._sox, temp, temp2, filter_silent, filter_silent))
             os.remove(temp)
             temp = temp2
 
@@ -63,37 +66,52 @@ class Waver():
         time = len(data) // self.block
         
         result_f0 = np.array([])
-        result_sp = np.array([])
-        result_ap = np.array([])
+        result_sp = []
+        result_ap = []
         result_psp = []
         for i in range(time):
             d = data[i * self.block:(i+1) * self.block]
             f0, sp, ap, psp = self.encode_block(d)
 
             result_f0 = np.append(result_f0, f0)
-            result_sp = np.append(result_f0, sp)
-            result_ap = np.append(result_f0, ap)
+            result_sp.append(sp)
+            result_ap.append(ap)
             result_psp.append(psp)
 
-        return result_f0, result_sp, result_ap, np.array(result_psp)
+        return (result_f0, 
+                np.concatenate(result_sp, axis=0), 
+                np.concatenate(result_ap, axis=0), 
+                np.array(result_psp))
 
-    def decode(self, f0, ap, psp, file=None):
-        sp = np.exp(psp * 20 - 15)
+    def decode(self, f0, ap, sp=None, psp=None, file=None):
+        if sp is None and psp is None:
+            raise Exception("ValueError: sp or psp is required defines only one")
+        
+        sp = np.exp(psp * 20 - 15) if sp is None else sp
         data = pw.synthesize(f0, sp, ap, self.fs, self.frame_period)
         if file is None:
             return data
 
-        data = (data * (pow(2, self.bit_rate - 1) - 1))
+        d = (data * (pow(2, self.bit_rate - 1) - 1))
         if self.bit_rate == 16:
-            data = data.astype(np.int16)
+            d = d.astype(np.int16)
         elif self.bit_rate == 8:
-            data = data.astype(np.int8)
+            d = d.astype(np.int8)
         else:
-            data = data.astype(np.int)
+            d = d.astype(np.int)
         
         wf = wave.open(file, "wb")
-        wf.writeframes(data)
+        wf.setparams((
+            1, # channel
+            self.bit_rate // 8,
+            self.fs,
+            len(d),
+            "NONE", "not compressed"
+        ))
+        wf.writeframes(d.tobytes())
         wf.close()
+
+        return data
 
     def get_f0_transfer_params(self, f0_a, f0_b):
         a = f0_a[f0_a > 0]

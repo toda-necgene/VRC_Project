@@ -9,12 +9,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import tensorflow as tf
-from model import Model
+from model import Model # pylint: disable=E0401
 
 from voice_to_dataset import VoiceToDataset as V2D
 
 import util
-from console_summary import ConsoleSummary
+from console_summary import ConsoleSummary # pylint: disable=E0401
 
 
 class CycleGAN:
@@ -214,7 +214,7 @@ class CycleGAN:
 
             # IFFT
             f0 = self.f0_transfer(f0)
-            result_wave = util.decode(
+            result_wave = util.decode( # pylint: disable=E1120
                 f0, result[0].copy().reshape(-1, 513).astype(np.float),
                 ap) * 32767
 

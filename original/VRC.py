@@ -1,5 +1,5 @@
 from multiprocessing import Queue,Process,freeze_support
-from model import generator
+from model import generator # pylint: disable=E0401
 import numpy as np
 import os
 import pyaudio as pa
@@ -52,7 +52,7 @@ class Model:
 
         ckpt = tf.train.get_checkpoint_state(checkpoint_dir)
         if ckpt:
-            ckpt_name = os.path.basename(ckpt.model_checkpoint_path)
+            ckpt_name = os.path.basename(ckpt.model_checkpoint_path) # pylint: disable=E1101
             self.saver.restore(self.sess, os.path.join(checkpoint_dir, ckpt_name))
             self.epoch=self.saver
             return True
@@ -66,17 +66,17 @@ class Model:
 def process(queue_in, queue_out):
     net = Model("./setting.json", load=True)
     
-    f0_translater = util.generate_f0_translater("./voice_profile.npy")
+    f0_translater = util.generate_f0_translater("./voice_profile.npy") # pylint: disable=E1101
     queue_out.put("ok")
     while True:
         if not queue_in.empty():
             ins = queue_in.get()
             inputs = np.frombuffer(ins, dtype=np.int16).astype(np.float64) / 32767.0
             inputs = np.clip(inputs, -1.0, 1.0)
-            f0, sp, ap = util.encode(inputs.copy())
+            f0, sp, ap = util.encode(inputs.copy()) # pylint: disable=E1120
             data = sp.reshape(1, -1, 513, 1)
             output = net.convert(data)
-            resb = util.decode(f0_translater(f0),output[0], ap)
+            resb = util.decode(f0_translater(f0),output[0], ap) # pylint: disable=E1120
             res = (np.clip(resb, -1.0, 1.0).reshape(-1) * 32767)
             vs = res.astype(np.int16)
             vs = vs.tobytes()

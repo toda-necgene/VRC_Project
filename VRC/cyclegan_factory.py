@@ -2,7 +2,6 @@ import numpy as np
 import tensorflow as tf
 from cyclegan import CycleGAN
 import os
-import util
 from datetime import datetime
 from console_summary import ConsoleSummary
 import log
