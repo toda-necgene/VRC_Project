@@ -11,8 +11,6 @@ from VRC.model import Model as w2w
 
 import VRC.log as log
 
-
-
 def _get_dataset(a, b):
     data_a = np.load(a)
     data_a = data_a.reshape(list(data_a.shape) + [1])
@@ -30,7 +28,6 @@ def _get_dataset(a, b):
     # dataset = list(map(lambda data: data[:data_size], dataset))
 
 import original.util as util
-from VRC.converter import Converter
 from VRC.waveplot import WavePlot
 from VRC.waver import Waver
 def _generate_test_callback(files, output_dir, f0_transfer):
