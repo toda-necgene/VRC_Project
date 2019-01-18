@@ -50,6 +50,8 @@ class Model:
         self.args["weight_Cycle"] = 100.0
         self.args["train_iteration"] = 600000
         self.args["start_epoch"] = 0
+        self.args["learning_rate"]=8e-7
+        self.args["test_interval"]=1
         # architecture option
         self.args["input_size"] = 4096
 
@@ -81,9 +83,9 @@ class Model:
 
 
         # shapes properties
-        self.input_size_model=[self.args["batch_size"],52,513,1]
-        self.input_size_test = [1, 52,513,1]
-        self.output_size_model = [self.args["batch_size"], 65,513,1]
+        self.input_size_model=[self.args["batch_size"],52,1,513]
+        self.input_size_test = [1, 52,1,513]
+        self.output_size_model = [self.args["batch_size"], 65,1,513]
 
         # initializing harvest directory
         self.args["name_save"] = self.args["model_name"] + self.args["version"]
@@ -125,15 +127,15 @@ class Model:
         with tf.variable_scope("discriminator",reuse=tf.AUTO_REUSE):
             inp=tf.concat([self.input_model_A,self.input_model_B,fake_bA_image,fake_aB_image],axis=0)
             d_judge = discriminator(inp, None)
-            d_judge_to_g = discriminator(inp[2:], reuse=True,train=False)
+            d_judge_to_g = discriminator(inp[self.args["batch_size"]*2:], reuse=True)
 
         #getting individual variables of architectures
         self.g_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"generator_1")+tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"generator_2")
         self.d_vars=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,"discriminator")
         _l=int(d_judge.shape[1])
-        lN=tf.tile(tf.reshape(tf.one_hot(0,3),[1,1,3]),[1,_l,1])
-        lA=tf.tile(tf.reshape(tf.one_hot(1,3),[1,1,3]),[1,_l,1])
-        lB=tf.tile(tf.reshape(tf.one_hot(2,3),[1,1,3]),[1,_l,1])
+        lN=tf.tile(tf.reshape(tf.one_hot(0,3),[1,1,3]),[self.args["batch_size"],_l,1])
+        lA=tf.tile(tf.reshape(tf.one_hot(1,3),[1,1,3]),[self.args["batch_size"],_l,1])
+        lB=tf.tile(tf.reshape(tf.one_hot(2,3),[1,1,3]),[self.args["batch_size"],_l,1])
         label=tf.concat([lA,lB,lN,lN],axis=0)
 
         # crassifer loss(using a Least_Squared_Loss)
@@ -141,12 +143,12 @@ class Model:
         
         # objective-functions of generator
 
-        # Cycle loss (L2 norm is better than L1 norm for keeping phonation)
-        g_loss_cyc_A = tf.squared_difference(self.input_model_A,fake_Ba_image)
-        g_loss_cyc_B = tf.squared_difference(self.input_model_B,fake_Ab_image)
+        # Cycle loss (L1 norm is better than L2 norm)
+        g_loss_cyc_A = tf.losses.absolute_difference(labels=self.input_model_A,predictions=fake_Ba_image)
+        g_loss_cyc_B = tf.losses.absolute_difference(labels=self.input_model_B,predictions=fake_Ab_image)
         
         # Gan loss (using a Least_Squared_Loss)
-        g_loss_gan=tf.squared_difference(label[:2],d_judge_to_g)
+        g_loss_gan=tf.squared_difference(label[:self.args["batch_size"]*2],d_judge_to_g)
         
 
         self.g_loss =tf.losses.compute_weighted_loss( g_loss_cyc_A  + g_loss_cyc_B,self.args["weight_Cycle"]) + g_loss_gan
@@ -224,9 +226,8 @@ class Model:
     def train(self):
 
         # naming output-directory
-        lr=tf.placeholder(tf.float32)
-        g_optimizer = tf.train.AdamOptimizer(lr, 0.5, 0.999).minimize(self.g_loss,var_list=self.g_vars)
-        d_optimizer = tf.train.AdamOptimizer(lr, 0.5, 0.999).minimize(self.d_loss,var_list=self.d_vars)
+        g_optimizer = tf.train.AdamOptimizer(self.args["learning_rate"], 0.5, 0.999).minimize(self.g_loss,var_list=self.g_vars)
+        d_optimizer = tf.train.AdamOptimizer(self.args["learning_rate"], 0.5, 0.999).minimize(self.d_loss,var_list=self.d_vars)
 
         # loading net
         if self.load():
@@ -257,8 +258,8 @@ class Model:
         index_list=[h for h in range(train_data_num)]
         index_list2 = [h for h in range(train_data_num)]
         print(" [I] %d data loaded!!" % train_data_num)
-        self.sounds_r=self.sounds_r.reshape([self.sounds_r.shape[0],self.sounds_r.shape[1],self.sounds_r.shape[2],1])
-        self.sounds_t=self.sounds_t.reshape([self.sounds_t.shape[0],self.sounds_t.shape[1],self.sounds_t.shape[2],1])
+        self.sounds_r=self.sounds_r.reshape([self.sounds_r.shape[0],self.sounds_r.shape[1],1,self.sounds_r.shape[2]])
+        self.sounds_t=self.sounds_t.reshape([self.sounds_t.shape[0],self.sounds_t.shape[1],1,self.sounds_t.shape[2]])
 
         # initializing training information
         start_time_all=time.time()
@@ -271,19 +272,18 @@ class Model:
             np.random.shuffle(index_list)
             np.random.shuffle(index_list2)
 
-            if self.args["test"] :
+            if self.args["test"] and epoch % self.args["test_interval"]==0:
                 self.test_and_save(epoch,iterations,one_itr_num)
             for idx in range(0, self.loop_num):
                 # getting mini-batch
                 st=self.args["batch_size"]*idx
                 batch_sounds_resource = np.asarray([self.sounds_r[ind] for ind in index_list[st:st+self.args["batch_size"]]])
                 batch_sounds_target= np.asarray([self.sounds_t[ind] for ind in index_list2[st:st+self.args["batch_size"]]])
-                opt=8e-7
                 # update D network
-                self.sess.run(d_optimizer, feed_dict={self.input_model_A: batch_sounds_resource,self.input_model_B: batch_sounds_target,lr:opt})
-                self.sess.run(d_optimizer, feed_dict={self.input_model_A: batch_sounds_resource,self.input_model_B: batch_sounds_target,lr:opt})
+                self.sess.run(d_optimizer, feed_dict={self.input_model_A: batch_sounds_resource,self.input_model_B: batch_sounds_target})
+                self.sess.run(d_optimizer, feed_dict={self.input_model_A: batch_sounds_resource,self.input_model_B: batch_sounds_target})
                 # update G network
-                self.sess.run(g_optimizer,feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target,lr:opt})
+                self.sess.run(g_optimizer,feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target})
                 iterations+=1
         self.test_and_save(train_epoch,iterations,one_itr_num)
         taken_time_all=time.time()-start_time_all
@@ -358,7 +358,7 @@ class Model:
         # output console
         if itr!=0:
             # eta
-            self.tt_list.append(taken_time/one_itr_num)
+            self.tt_list.append(taken_time/one_itr_num/self.args["test_interval"])
             if len(self.tt_list) > 5:
                 self.tt_list = self.tt_list[1:-1]
             eta = np.mean(self.tt_list) * (self.args["train_iteration"] - itr)
@@ -395,23 +395,32 @@ class Model:
             return True
         else:
             return False
-def mel_filter_bank():
-    h_h =[300,517.33,781.90,1103.97,1496.04,1973.32,2554.33,3261.62,4122.63,5170.76,6446.70,8000]
-    fs = np.fft.fftfreq(1024,d=1.0/16000)[:512]
-    h=list()
-    for n in range(12):
-        idx = np.abs(fs-h_h[n]).argmin()
-        h.append(idx)
-    f=np.zeros([512,11])
-    f[:,10:]=1.0
-    for i in range(10):
-        st=int(np.floor(h[i]))
-        ft=int(np.floor(h[i+2]))
-        mt = (st+ft)//2
-        f[st:mt,i]=np.linspace(0.0,1.0,mt-st)
-        f[mt:ft,i]=np.linspace(1.0,0.0,ft-mt)
-    return f
+
 def encode(data):
+    """
+    #音声をWorldに変換します
+
+    Parameters
+    ----------
+    data : ndarray 
+        #入力データ
+        SamplingRate: 16000
+        ValueRange  : [-1.0,1.0]
+        dtype       : float64
+    Returns
+    -------
+    World: list(3items)
+        #出力
+        [0] : f0 estimation
+        Shape(N)
+        dtype       : float64
+        [1] : spectram envelobe
+        Shape(N,513)
+        dtype       : float64
+        [2] : aperiodicity
+        Shape(N,513)
+        dtype       : float64
+    """
     fs=16000
     _f0,t=pw.dio(data,fs)
     f0=pw.stonemask(data,_f0,t,fs)
@@ -420,6 +429,31 @@ def encode(data):
     return f0.astype(np.float64),np.clip((np.log(sp)+15)/20,-1.0,1.0).astype(np.float64),ap.astype(np.float64)
 
 def decode(f0,sp,ap):
+    """
+    #Worldを音声に変換します
+
+    Parameters
+    ----------
+    f0 : ndarray 
+        f0 estimation
+        Shape(N)
+        dtype       : float64
+    sp : ndarray
+        spectram envelobe
+        Shape(N,513)
+        dtype       : float64
+    ap : ndarray
+        aperiodicity
+        Shape(N,513)
+        dtype       : float64
+    Returns
+    -------
+    World: list(3items)
+        #出力
+        SamplingRate: 16000
+        ValueRange  : [-1.0,1.0]
+        dtype       : float64
+    """
     ap = ap.reshape(-1, 513).astype(np.float)
     f0 = f0.reshape(-1).astype(np.float)
     sp = np.exp(sp.reshape(-1, 1, 513).astype(np.float) * 20 - 15)
@@ -427,8 +461,22 @@ def decode(f0,sp,ap):
     return pw.synthesize(f0,sp,ap,16000)
 
 
-def wave_read(path_file):
-    wf=wave.open(path_file,"rb")
+def wave_read(path_to_file):
+    """
+    #音声を読み込みます
+     Parameters
+    ----------
+    path_to_file : string
+        #ファイルまでのパス
+    
+    Returns
+    -------
+    ans: ndarray
+        #音声
+        ValueRange  : [-32767,32767]
+        dtype       : int16
+    """
+    wf=wave.open(path_to_file,"rb")
     ans=np.zeros([1],dtype=np.int16)
     dds=wf.readframes(1024)
     while dds != b'':
@@ -436,15 +484,26 @@ def wave_read(path_file):
         dds = wf.readframes(1024)
     wf.close()
     ans=ans[1:]
-    i=160000-ans.shape[0]
-    if i>0:
-        ans=np.pad(ans,(0,i),"constant")
-    else:
-        ans=ans[:160000]
     return ans
 
 def fft(data):
+    """
+    # stftを計算
 
+     Parameters
+    ----------
+    data : ndarray
+        # 音声データ 
+        ValueRange  : [-1.0,1.0]
+        dtype       : float64
+    
+    Returns
+    -------
+    spec: ndarray
+        #パワースペクトラム
+        power-spectram
+        Shape : (n,512)
+    """
     time_ruler = data.shape[0] // 512
     if data.shape[0] % 512 == 0:
         time_ruler -= 1

@@ -7,9 +7,7 @@ import os
 
 def create_dataset():
     term = 4096
-    CHANNELS = 1  #モノラル
-    RATE = 16000  #サンプルレート
-    CHUNK = 1024  #データ点数
+    CHUNK = 1024  
 
     INPUT_NAMES = ["A", "B"]
     WAVE_INPUT_DIR = os.path.join("dataset", "source")
@@ -21,8 +19,8 @@ def create_dataset():
     for name in INPUT_NAMES:
         WAVE_INPUT_FILENAME = os.path.join(WAVE_INPUT_DIR, name)
         files = sorted(glob.glob(os.path.join(WAVE_INPUT_FILENAME, "*.wav")))
-        ff = list()
         m = list()
+        ff=list()
         for file in files:
             print(" [*] パッチデータに変換を開始します。 :", file)
             dms = []
@@ -38,7 +36,6 @@ def create_dataset():
             times = data_realA.shape[0] // term + 1
             if data_realA.shape[0] % term == 0:
                 times -= 1
-            ttm = time.time()
             for i in range(times):
 
                 ind = term
