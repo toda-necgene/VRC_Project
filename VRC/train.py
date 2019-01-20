@@ -47,7 +47,7 @@ class Model:
         self.args["real_sample_compare"]=False
         # learning options
         self.args["batch_size"] = 1
-        self.args["weight_Cycle"] = 100.0
+        self.args["weight_cycle"] = 100.0
         self.args["train_iteration"] = 600000
         self.args["start_epoch"] = 0
         self.args["learning_rate"]=8e-7
@@ -111,6 +111,7 @@ class Model:
         self.input_model_A=tf.placeholder(tf.float32, self.input_size_model, "inputs_g_A")
         self.input_model_B = tf.placeholder(tf.float32, self.input_size_model, "inputs_g_B")
         self.input_model_test = tf.placeholder(tf.float32, self.input_size_test, "inputs_g_test")
+        self.time = tf.placeholder(tf.float32, None, "inputs_time_train")
 
         #creating generator (if you want to view more codes then ./model.py)
         with tf.variable_scope("generator_1"):
@@ -151,7 +152,7 @@ class Model:
         g_loss_gan=tf.squared_difference(label[:self.args["batch_size"]*2],d_judge_to_g)
         
 
-        self.g_loss =tf.losses.compute_weighted_loss( g_loss_cyc_A  + g_loss_cyc_B,self.args["weight_Cycle"]) + g_loss_gan
+        self.g_loss =tf.losses.compute_weighted_loss( g_loss_cyc_A  + g_loss_cyc_B,tf.cos(self.time*np.pi/2)*self.args["weight_cycle"]) + g_loss_gan
 
         #tensorboard functions
         if self.args["tensor-board"]:
@@ -271,28 +272,31 @@ class Model:
             # shuffling train_data_index
             np.random.shuffle(index_list)
             np.random.shuffle(index_list2)
-
+            time_per=iterations/self.args["train_iteration"]    
             if self.args["test"] and epoch % self.args["test_interval"]==0:
-                self.test_and_save(epoch,iterations,one_itr_num)
+                self.test_and_save(epoch,iterations,one_itr_num,time_per)
             for idx in range(0, self.loop_num):
                 # getting mini-batch
+                time_per=iterations/self.args["train_iteration"]
                 st=self.args["batch_size"]*idx
-                batch_sounds_resource = np.asarray([self.sounds_r[ind] for ind in index_list[st:st+self.args["batch_size"]]])
-                batch_sounds_target= np.asarray([self.sounds_t[ind] for ind in index_list2[st:st+self.args["batch_size"]]])
+                batch_sounds_resource = self.sounds_r[index_list[st:st+self.args["batch_size"]]]
+                batch_sounds_target= self.sounds_t[index_list2[st:st+self.args["batch_size"]]]
                 # update D network
-                self.sess.run(d_optimizer, feed_dict={self.input_model_A: batch_sounds_resource,self.input_model_B: batch_sounds_target})
-                self.sess.run(d_optimizer, feed_dict={self.input_model_A: batch_sounds_resource,self.input_model_B: batch_sounds_target})
+                self.sess.run(d_optimizer, feed_dict={self.input_model_A: batch_sounds_resource,self.input_model_B: batch_sounds_target,self.time:time_per})
+                self.sess.run(d_optimizer, feed_dict={self.input_model_A: batch_sounds_resource,self.input_model_B: batch_sounds_target,self.time:time_per})
                 # update G network
-                self.sess.run(g_optimizer,feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target})
+                self.sess.run(g_optimizer,feed_dict={self.input_model_A: batch_sounds_resource, self.input_model_B: batch_sounds_target,self.time:time_per})
                 iterations+=1
-        self.test_and_save(train_epoch,iterations,one_itr_num)
+                if self.args["train_iteration"]==iterations:
+                    break
+        self.test_and_save(train_epoch,iterations,one_itr_num,time_per)
         taken_time_all=time.time()-start_time_all
         hour_display=taken_time_all//3600
         minute_display=taken_time_all//60%60
         second_display=int(taken_time_all%60)
         print(" [I] ALL train process finished successfully!! in %06d : %02d : %02d" % (hour_display, minute_display, second_display))
 
-    def test_and_save(self,epoch,itr,one_itr_num):
+    def test_and_save(self,epoch,itr,one_itr_num,time_per):
 
         # testing
         out_puts, _ = self.convert(self.test)
@@ -314,7 +318,7 @@ class Model:
         if self.args["tensor-board"]:
             tb_result = self.sess.run(self.loss_display,
                                       feed_dict={self.input_model_A: self.sounds_r[0:self.args["batch_size"]],
-                                                 self.input_model_B: self.sounds_t[0:self.args["batch_size"]]})
+                                                 self.input_model_B: self.sounds_t[0:self.args["batch_size"]],self.time:time_per})
             self.writer.add_summary(tb_result, itr)
             if self.args["real_sample_compare"]:
                 rs = self.sess.run(self.g_test_display, feed_dict={self.result_image_display: otp_im,self.result_score:score})
