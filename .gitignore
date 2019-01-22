@@ -6,10 +6,11 @@
 *.pyc
 *.xml
 _windows/*
+.vscode/*
+.idea/*
 VRC/havests/*
 VRC/trained_model/*
 VRC/logs/*
 VRC/datasets/*
 VRC/waves/*
-vrc_chainer/*
 VRC/latest.png
