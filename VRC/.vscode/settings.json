@@ -1,4 +1,0 @@
-{
-    "python.pythonPath": "C:\\Users\\tadop\\AppData\\Local\\Programs\\Python\\Python36\\python.exe"
-    ,"python.linting.pylintArgs": ["--disable=E1101,C0301,I1101"]
-}
