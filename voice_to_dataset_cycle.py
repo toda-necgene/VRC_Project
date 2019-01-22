@@ -1,62 +1,65 @@
-import numpy as np
-import wave
-import time
-import glob
-import pyworld.pyworld as pw
+"""
+    製作者:ixiid
+    改変者:TODA
+    データセットを作成するモジュールです
+"""
 import os
+import wave
+import glob
+import numpy as np
+import pyworld.pyworld as pw
 
-def create_dataset():
-    term = 4096
-    CHUNK = 1024  
+def create_dataset(_term, _chunk=1024):
+    """
+    データセットを作成します
+    """
 
     INPUT_NAMES = ["A", "B"]
     WAVE_INPUT_DIR = os.path.join("dataset", "source")
-
     TRAIN_DIR = os.path.join(".", "dataset", "train")
 
-    pitch = {}
-
+    pitch = dict()
+    dataset_to_return = list()
     for name in INPUT_NAMES:
-        WAVE_INPUT_FILENAME = os.path.join(WAVE_INPUT_DIR, name)
-        files = sorted(glob.glob(os.path.join(WAVE_INPUT_FILENAME, "*.wav")))
-        m = list()
-        ff=list()
+        wave_input_file_names = os.path.join(WAVE_INPUT_DIR, name)
+        files = sorted(glob.glob(os.path.join(wave_input_file_names, "*.wav")))
+        memory_spec_env = list()
+        _ff = list()
         for file in files:
             print(" [*] パッチデータに変換を開始します。 :", file)
             dms = []
-            wf = wave.open(file, 'rb')
-            dds = wf.readframes(CHUNK)
+            _wf = wave.open(file, 'rb')
+            dds = _wf.readframes(_chunk)
             while dds != b'':
                 dms.append(dds)
-                dds = wf.readframes(CHUNK)
+                dds = _wf.readframes(_chunk)
             dms = b''.join(dms)
             data = np.frombuffer(dms, 'int16')
             data_real = (data / 32767).reshape(-1).astype(np.float)
-            data_realA = data_real.copy()
-            times = data_realA.shape[0] // term + 1
-            if data_realA.shape[0] % term == 0:
+            times = data_real.shape[0] // _term + 1
+            if data_real.shape[0] % _term == 0:
                 times -= 1
             for i in range(times):
-
-                ind = term
-                startpos = term * i + data_realA.shape[0] % term
-                data_realAb = data_realA[max(startpos - ind, 0):startpos].copy()
-                r = ind - data_realAb.shape[0]
-                if r > 0:
-                    data_realAb = np.pad(data_realAb, (r, 0), "constant")
-                _f0, t = pw.dio(data_realAb, 16000)
-                f0 = pw.stonemask(data_realAb, _f0, t, 16000)
-                sp = pw.cheaptrick(data_realAb, f0, t, 16000)
-                f0 = f0[f0 > 0.0]
-                if len(f0) != 0:
-                    ff.extend(f0)
-                m.append(np.clip((np.log(sp) + 15.0) / 20, -1.0, 1.0))
-        m = np.asarray(m, dtype=np.float32)
-        np.save(os.path.join(TRAIN_DIR, name + ".npy"), m)
+                startpos = _term * i + data_real.shape[0] % _term
+                data_real_current_use = data_real[max(startpos - _term, 0):startpos].copy()
+                _padiing_size = _term - data_real_current_use.shape[0]
+                if _padiing_size > 0:
+                    data_real_current_use = np.pad(data_real_current_use, (_padiing_size, 0), "constant")
+                _f0, _t = pw.dio(data_real_current_use, 16000)
+                f0_estimation = pw.stonemask(data_real_current_use, _f0, _t, 16000)
+                spec_env = pw.cheaptrick(data_real_current_use, f0_estimation, _t, 16000)
+                f0_estimation = f0_estimation[f0_estimation > 0.0]
+                if f0_estimation.shape[0] != 0:
+                    _ff.extend(f0_estimation)
+                spec_env = np.transpose(spec_env, [1, 0])
+                memory_spec_env.append(np.clip((np.log(spec_env) + 15.0) / 20, -1.0, 1.0))
+        _m = np.asarray(memory_spec_env, dtype=np.float32)
+        dataset_to_return.append(_m)
+        np.save(os.path.join(TRAIN_DIR, name + ".npy"), _m)
         print(" [*] " + name + "データ変換完了")
         pitch[name] = {}
-        pitch[name]["mean"] = np.mean(ff)
-        pitch[name]["var"] = np.std(ff)
+        pitch[name]["mean"] = np.mean(_ff)
+        pitch[name]["var"] = np.std(_ff)
 
     pitch_mean_s = pitch[INPUT_NAMES[0]]["mean"]
     pitch_var_s = pitch[INPUT_NAMES[0]]["var"]
@@ -65,3 +68,4 @@ def create_dataset():
 
     plof = np.asarray([pitch_mean_s, pitch_mean_t, pitch_var_t / pitch_var_s])
     np.save(os.path.join(".", "voice_profile.npy"), plof)
+    return dataset_to_return[0], dataset_to_return[1]

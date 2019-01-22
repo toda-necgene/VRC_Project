@@ -8,9 +8,7 @@
 _windows/*
 .vscode/*
 .idea/*
-VRC/havests/*
-VRC/trained_model/*
-VRC/logs/*
-VRC/datasets/*
-VRC/waves/*
-VRC/latest.png
+trained_model/*
+dataset/*
+waves/*
+latest.png
