@@ -73,7 +73,7 @@ class Model:
                     keys2 = data.keys()
                     for k in keys2:
                         if k in self.args:
-                            if isinstance(self.args[k], data[k]):
+                            if isinstance(self.args[k], type(data[k])):
                                 self.args[k] = data[k]
                             else:
                                 print(" [W] Argumet \"" + k + "\" is incorrect data type. Please change to \"" + str(type(self.args[k])) + "\"")
