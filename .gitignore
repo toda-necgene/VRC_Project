@@ -5,4 +5,5 @@ trained_model/*
 logs/*
 .*
 _*
+voice_profile.npy
 latest.png
