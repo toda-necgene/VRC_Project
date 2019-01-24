@@ -1,20 +1,19 @@
 {
     "saving_config":{
-        "checkpoint_dir":"Z://trained_model/",
+        "checkpoint_dir":"./trained_model/",
         "wave_otp_dir":"Z://waves/",
-        "version":"19.1.22.11"
+        "version":"19.1.24.28"
     },
     "training_config":{
         "train_iteration": 10000,
-        "batch_size": 128,
-        "test_interval":20,
-        "weight_cycle":10.0,
+        "batch_size": 32,
+        "test_interval":1,
         "learning_rate":2e-5
     },
     "plugin_config":{
         "test":true,
-        "tensor-board":true,
         "real_sample_compare": true,
-        "use_old_dataset": true
+        "use_old_dataset": true,
+        "gpu":0
     }
 }

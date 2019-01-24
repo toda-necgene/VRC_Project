@@ -8,16 +8,20 @@
 import os
 import time
 import json
-from datetime import datetime
+import glob
 
 import wave
+import chainer
 import pyaudio
 import pyworld.pyworld as pw
 import numpy as np
 import matplotlib.pyplot as plt
-import tensorflow as tf
-from model import discriminator, generator
+from chainerui import summary
+from model import Discriminator, Generator
+from updater import CycleGANUpdater
 from voice_to_dataset_cycle import create_dataset
+
+
 class Model:
     """
     学習用モデルの定義です。
@@ -49,17 +53,17 @@ class Model:
         self.args["test_data_dir"] = "./dataset/test"
         # learning details output options
         self.args["test"] = True
-        self.args["tensor-board"] = False
         self.args["real_sample_compare"] = False
         # learning options
-        self.args["batch_size"] = 1
-        self.args["weight_cycle"] = 100.0
+        self.args["batch_size"] = 128
+        self.args["weight_cycle"] = 10.0
         self.args["train_iteration"] = 600000
         self.args["start_epoch"] = 0
         self.args["learning_rate"] = 8e-7
         self.args["test_interval"] = 1
         # architecture option
         self.args["input_size"] = 4096
+        self.args["gpu"] = -1
 
 
         # loading json setting file
@@ -85,9 +89,8 @@ class Model:
                 print(" [W] JSONDecodeError: ", er_message)
                 print(" [W] Use default setting")
         # shapes properties
-        self.input_size_model = [self.args["batch_size"], 52, 1, 513]
-        self.input_size_test = [1, 52, 1, 513]
-        self.output_size_model = [self.args["batch_size"], 65, 1, 513]
+        self.input_size_model = [self.args["batch_size"], 52, 513]
+        self.input_size_test = [1, 52, 513]
 
         # initializing harvest directory
         self.args["name_save"] = self.args["model_name"] + self.args["version"]
@@ -96,325 +99,87 @@ class Model:
             if not os.path.exists(self.args["wave_otp_dir"]):
                 os.makedirs(self.args["wave_otp_dir"])
 
-
-        # creating data-set
-
+        sounds_a = None
+        sounds_b = None
+        # create or load data-set
         if not self.args["use_old_dataset"]:
-            create_dataset()
+            sounds_a, sounds_b = create_dataset(self.args["input_size"])
+        else:
+            # preparing training-data
+            batch_files = self.args["train_data_dir"]+'/A.npy'
+            batch_files2 = self.args["train_data_dir"]+'/B.npy'
+            print(" [I] loading data-set ...")
+            sounds_a = np.load(batch_files)
+            sounds_b = np.load(batch_files2)
+            if self.args["gpu"] >= 0:
+                sounds_a = chainer.backends.cuda.to_gpu(sounds_a)
+                sounds_b = chainer.backends.cuda.to_gpu(sounds_b)
+            print(" [I] loaded data-set !")
+        train_iter_a = chainer.iterators.SerialIterator(sounds_a, self.args["batch_size"], shuffle=True)
+        train_iter_b = chainer.iterators.SerialIterator(sounds_b, self.args["batch_size"], shuffle=True)
+        # times on an epoch
+        train_data_num = min(sounds_a.shape[0], sounds_b.shape[0])
+        self.loop_num = train_data_num // self.args["batch_size"]
+        print(" [I] %d data loaded!!" % train_data_num)
 
+        # load test-data
+        if self.args["test"]:
+            self.test = wave_read(self.args["test_data_dir"]+'/test.wav') / 32767.0
+            if self.args["real_sample_compare"]:
+                self.label = wave_read(self.args["test_data_dir"] + '/label.wav')
+                self.label_power_spec = fft(self.label[800:156000]/32767)
+                
         # loading f0 parameters
-        voice_profile = np.load("./voice_profile.npy")
-        self.args["pitch_rate_mean_s"] = voice_profile[0]
-        self.args["pitch_rate_mean_t"] = voice_profile[1]
-        self.args["pitch_rate_var"] = voice_profile[2]
-
-        #inputs place holders
-
-        self.input_model_a = tf.placeholder(tf.float32, self.input_size_model, "inputs_g_a")
-        self.input_model_b = tf.placeholder(tf.float32, self.input_size_model, "inputs_g_b")
-        self.input_model_test = tf.placeholder(tf.float32, self.input_size_test, "inputs_g_test")
-        self.time = tf.placeholder(tf.float32, None, "inputs_time_train")
-
+        self.voice_profile = np.load("./voice_profile.npy")
         #creating generator (if you want to view more codes then ./model.py)
-        with tf.variable_scope("generator_1"):
-            fake_ab_image = generator(self.input_model_a, reuse=None)
-            self.fake_ab_image_test = generator(self.input_model_test, reuse=True)
-        with tf.variable_scope("generator_2"):
-            fake_ba_image = generator(self.input_model_b, reuse=None)
-            fake_bab_image = generator(fake_ab_image, reuse=True)
-        with tf.variable_scope("generator_1", reuse=True):
-            fake_aba_image = generator(fake_ba_image, reuse=True)
-
-
+        self.g_a_to_b = Generator()
+        self.g_b_to_a = Generator()
         #creating discriminator (if you want to view more codes then ./model.py)
-        with tf.variable_scope("discriminator", reuse=tf.AUTO_REUSE):
-            inp = tf.concat([self.input_model_a, self.input_model_b, fake_ba_image, fake_ab_image], axis=0)
-            d_judge = discriminator(inp, None)
-            d_judge_to_g = discriminator(inp[self.args["batch_size"]*2:], reuse=True)
-
-        #getting individual variables of architectures
-        self.g_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, "generator_1")+tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, "generator_2")
-        self.d_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, "discriminator")
-        _l = int(d_judge.shape[1])
-        label_n = tf.tile(tf.reshape(tf.one_hot(0, 3), [1, 1, 3]), [self.args["batch_size"], _l, 1])
-        label_a = tf.tile(tf.reshape(tf.one_hot(1, 3), [1, 1, 3]), [self.args["batch_size"], _l, 1])
-        label_b = tf.tile(tf.reshape(tf.one_hot(2, 3), [1, 1, 3]), [self.args["batch_size"], _l, 1])
-        label = tf.concat([label_a, label_b, label_n, label_n], axis=0)
-
-        # crassifer loss(using a Least_Squared_Loss)
-        self.d_loss = tf.squared_difference(label, d_judge)
-        # objective-functions of generator
-        # Cycle loss (L1 norm is better than L2 norm)
-        g_loss_cyc_a = tf.losses.absolute_difference(labels=self.input_model_a, predictions=fake_bab_image)
-        g_loss_cyc_b = tf.losses.absolute_difference(labels=self.input_model_b, predictions=fake_aba_image)
-        # Gan loss (using a Least_Squared_Loss)
-        g_loss_gan = tf.squared_difference(label[:self.args["batch_size"]*2], d_judge_to_g)
-        self.g_loss = tf.losses.compute_weighted_loss(g_loss_cyc_a + g_loss_cyc_b, tf.cos(self.time*np.pi/2)*(self.args["weight_cycle"]-1.0)+1.0) + g_loss_gan
-        #tensorboard functions
-        if self.args["tensor-board"]:
-            g_loss_cyc_a_display = tf.summary.scalar("g_loss_cycle_aba", tf.reduce_mean(g_loss_cyc_a), family="loss")
-            g_loss_cyc_b_display = tf.summary.scalar("g_loss_cycle_bab", tf.reduce_mean(g_loss_cyc_b), family="loss")
-            g_loss_gan_display = tf.summary.scalar("g_loss_gan", tf.reduce_mean(g_loss_gan), family="loss")
-            g_loss_sum_display = tf.summary.merge([g_loss_cyc_a_display, g_loss_gan_display, g_loss_cyc_b_display])
-            d_loss_sum_display = tf.summary.scalar("d_loss", tf.reduce_mean(self.d_loss), family="loss")
-            self.loss_display = tf.summary.merge([g_loss_sum_display, d_loss_sum_display])
-            self.result_score = tf.placeholder(tf.float32, name="fake_fft_score")
-            self.result_image_display = tf.placeholder(tf.float32, [1, None, 512], name="fake_spectrum")
-            image_pow_display = tf.reshape(tf.transpose(self.result_image_display[:, :, :], [0, 2, 1]), [1, 512, -1, 1])
-            fake_b_image_display = tf.summary.image("fake_spectrum_ab", image_pow_display, 1)
-            fake_b_fft_score_display = tf.summary.scalar("g_error_ab", tf.reduce_mean(self.result_score), family="g_test")
-            self.g_test_display = tf.summary.merge([fake_b_image_display, fake_b_fft_score_display])
-
-        # initializing running object
-        self.saver = tf.train.Saver()
-        self.sess = tf.Session()
-
-        # logging
-        if self.args["tensor-board"]:
-            self.writer = tf.summary.FileWriter("./logs/" + self.args["name_save"], self.sess.graph)
-    def convert(self, in_put):
-        """
-        リアルタイムではない変換を行う。
-        主にテスト用
-        Parameters
-        ----------
-        in_put: np.array
-        入力データ
-        SamplingRate: 16000
-        ValueRange  : [-1.0,1.0]
-        dtype       : float64
-        """
-        #function of test
-        #to convert wave file
-
-        # calculating times to execute network
-        conversion_start_time = time.time()
-        input_size_one_term = self.args["input_size"]
-        executing_times = in_put.shape[0]//(self.args["input_size"])+1
-        if in_put.shape[0]%((self.args["input_size"])*self.args["batch_size"]) == 0:
-            executing_times -= 1
-
-        otp = np.array([], dtype=np.int16)
-
-        for i in range(executing_times):
-            # pre-process
-            # padding
-            start_pos = max(0, self.args["input_size"]*i+(in_put.shape[0]%self.args["input_size"])-input_size_one_term)
-            end_pos = self.args["input_size"]*i+(in_put.shape[0]%self.args["input_size"])
-            resource_wave = in_put[start_pos:end_pos]
-            padding_num = max(0, input_size_one_term-resource_wave.shape[0])
-            if padding_num > 0:
-                resource_wave = np.pad(resource_wave, (padding_num, 0), 'constant')
-            # wave to WORLD
-            f0_estimation, sp_env, aperiodicity = encode((resource_wave/32767).astype(np.float))
-            sp_env = sp_env.reshape(self.input_size_test)
-            #main process
-            # running network
-            result = self.sess.run(self.fake_ab_image_test, feed_dict={self.input_model_test:sp_env})
-
-            # post-process
-            # f0 transforming
-            f0_estimation = (f0_estimation-self.args["pitch_rate_mean_s"])*self.args["pitch_rate_var"]+self.args["pitch_rate_mean_t"]
-            # WORLD to wave
-            result_wave = decode(f0_estimation, result[0].copy().reshape(-1, 513).astype(np.float), aperiodicity)*32767
-            result_wave_fixed = np.clip(result_wave, -32767.0, 32767.0)[:self.args["input_size"]]
-            result_wave_int16 = result_wave_fixed.reshape(-1).astype(np.int16)
-
-            #adding result
-            otp = np.append(otp, result_wave_int16)
-
-        head_cutnum = otp.shape[0]-in_put.shape[0]
-        if head_cutnum > 0:
-            otp = otp[head_cutnum:]
-
-        return otp, time.time()-conversion_start_time
-
-
-
+        self.d_a_and_b = Discriminator()
+        # Optimizers
+        def make_optimizer(model, alpha=0.0002, beta1=0.5):
+            optimizer = chainer.optimizers.Adam(alpha=alpha, beta1=beta1)
+            optimizer.setup(model)
+            return optimizer
+        g_optimizer_ab = make_optimizer(self.g_a_to_b, self.args["learning_rate"])
+        g_optimizer_ba = make_optimizer(self.g_b_to_a, self.args["learning_rate"])
+        d_optimizer = make_optimizer(self.d_a_and_b, self.args["learning_rate"])
+        self.updater = CycleGANUpdater(
+            _models=(self.g_a_to_b, self.g_b_to_a, self.d_a_and_b),
+            max_itr=self.args["train_iteration"],
+            iterator={"main":train_iter_a, "data_b":train_iter_b},
+            optimizer={"gen_ab":g_optimizer_ab, "gen_ba":g_optimizer_ba, "dis":d_optimizer},
+            device=self.args["gpu"])
     def train(self):
         """
         学習を実行する。
 
         """
-        # naming output-directory
-        g_optimizer = tf.train.AdamOptimizer(self.args["learning_rate"], 0.5, 0.999).minimize(self.g_loss, var_list=self.g_vars)
-        d_optimizer = tf.train.AdamOptimizer(self.args["learning_rate"], 0.5, 0.999).minimize(self.d_loss, var_list=self.d_vars)
-
+        model_dir = self.args["name_save"]
+        checkpoint_dir = os.path.join(self.args["checkpoint_dir"], model_dir)
+        trainer = chainer.training.Trainer(self.updater, (self.args["train_iteration"], "iteration"), out=checkpoint_dir)
         # loading net
-        if self.load():
+        if self.load(checkpoint_dir, trainer):
             print(" [I] Load success.")
         else:
             print(" [I] Load failed.")
-
-        # loading training data directory
-        # loading test data
+        snapshot_interval = (self.args["test_interval"], 'epoch')
+        display_interval = (self.args["test_interval"], 'epoch')
         if self.args["test"]:
-            self.test = wave_read(self.args["test_data_dir"]+'/test.wav')
-            if self.args["real_sample_compare"]:
-                self.label = wave_read(self.args["test_data_dir"] + '/label.wav')
-                power_spec = fft(self.label[800:156000]/32767)
-                self.label_spec = np.mean(power_spec, axis=0)
-                self.label_spec_v = np.std(power_spec, axis=0)
-
-        # preparing training-data
-        batch_files = self.args["train_data_dir"]+'/A.npy'
-        batch_files2 = self.args["train_data_dir"]+'/B.npy'
-
-        print(" [I] loading data-set ...")
-        self.sounds_r = np.load(batch_files)
-        self.sounds_t = np.load(batch_files2)
-        # times of one epoch
-        train_data_num = min(self.sounds_r.shape[0], self.sounds_t.shape[0])
-        self.loop_num = train_data_num // self.args["batch_size"]
-        index_list = [h for h in range(train_data_num)]
-        index_list2 = [h for h in range(train_data_num)]
-        print(" [I] %d data loaded!!" % train_data_num)
-        self.sounds_r = self.sounds_r.reshape([self.sounds_r.shape[0], self.sounds_r.shape[1], 1, self.sounds_r.shape[2]])
-        self.sounds_t = self.sounds_t.reshape([self.sounds_t.shape[0], self.sounds_t.shape[1], 1, self.sounds_t.shape[2]])
-
-        # initializing training information
-        start_time_all = time.time()
-        train_epoch = self.args["train_iteration"]//self.loop_num+1
-        one_itr_num = self.loop_num
-        iterations = 0
-        # main-training
-        for epoch in range(train_epoch):
-            # shuffling train_data_index
-            np.random.shuffle(index_list)
-            np.random.shuffle(index_list2)
-            time_per = iterations/self.args["train_iteration"]
-            if self.args["test"] and epoch % self.args["test_interval"] == 0:
-                self.test_and_save(epoch, iterations, one_itr_num, time_per)
-            for idx in range(0, self.loop_num):
-                # getting mini-batch
-                time_per = iterations/self.args["train_iteration"]
-                start_position = self.args["batch_size"]*idx
-                batch_sounds_resource = self.sounds_r[index_list[start_position:start_position+self.args["batch_size"]]]
-                batch_sounds_target = self.sounds_t[index_list2[start_position:start_position+self.args["batch_size"]]]
-                # update D network
-                self.sess.run(d_optimizer, feed_dict={self.input_model_a: batch_sounds_resource, self.input_model_b: batch_sounds_target, self.time:time_per})
-                self.sess.run(d_optimizer, feed_dict={self.input_model_a: batch_sounds_resource, self.input_model_b: batch_sounds_target, self.time:time_per})
-                # update G network
-                self.sess.run(g_optimizer, feed_dict={self.input_model_a: batch_sounds_resource, self.input_model_b: batch_sounds_target, self.time:time_per})
-                iterations += 1
-                if self.args["train_iteration"] == iterations:
-                    break
-        self.test_and_save(train_epoch, iterations, one_itr_num, time_per)
-        taken_time_all = time.time()-start_time_all
-        hour_display = taken_time_all//3600
-        minute_display = taken_time_all//60%60
-        second_display = int(taken_time_all%60)
-        print(" [I] ALL train process finished successfully!! in %06d : %02d : %02d" % (hour_display, minute_display, second_display))
-
-    def test_and_save(self, epoch, itr, one_itr_num, time_per):
-        """
-        テストとセーブを行う。書き込み等も同時に行う。
-        Parameters
-        ----------
-        epoch: int
-            完了エポック数
-        itr: int
-            完了イテレーション数
-        one_itr_num: int
-            1エポック当たりのイテレーション数
-        time_per: float
-            学習の進行度
-            Value_Range(0.0,1.0)
-        """
-        # testing
-        out_puts, _ = self.convert(self.test)
-
-        # fixing harvests types
-        out_put = out_puts.copy().astype(np.float32) / 32767.0
-
-        # calculating power spectrum
-        image_power_spec = fft(out_put[800:156000])
-        if self.args["real_sample_compare"]:
-            spec_m = np.mean(image_power_spec, axis=0)
-            spec_v = np.std(image_power_spec, axis=0)
-            diff = spec_m-self.label_spec
-            diff2 = spec_v-self.label_spec_v
-            score = np.mean(diff*diff+diff2*diff2)
-        otp_im = image_power_spec.copy().reshape(1, -1, 512)
-
-        # writing epoch-result into tensor-board
-        if self.args["tensor-board"]:
-            tb_result = self.sess.run(self.loss_display,
-                                      feed_dict={self.input_model_a: self.sounds_r[0:self.args["batch_size"]],
-                                                 self.input_model_b: self.sounds_t[0:self.args["batch_size"]],
-                                                 self.time:time_per})
-            self.writer.add_summary(tb_result, itr)
-            if self.args["real_sample_compare"]:
-                result_test = self.sess.run(self.g_test_display, feed_dict={self.result_image_display: otp_im, self.result_score:score})
-                self.writer.add_summary(result_test, itr)
-
-        # saving test harvests
-        if os.path.exists(self.args["wave_otp_dir"]):
-
-            # saving fake spectrum
-            plt.clf()
-            plt.subplot(3, 1, 1)
-            insert_image = np.transpose(image_power_spec, (1, 0))
-            plt.imshow(insert_image, vmin=-15, vmax=5, aspect="auto")
-            plt.subplot(3, 1, 2)
-            plt.plot(out_put[800:156000])
-            plt.ylim(-1, 1)
-            if self.args["real_sample_compare"]:
-                plt.subplot(3, 1, 3)
-                plt.plot(diff * diff + diff2 * diff2)
-                plt.ylim(0, 100)
-            name_save = "%s%04d.png" % (self.args["wave_otp_dir"], epoch)
-            plt.savefig(name_save)
-            name_save = "./latest.png"
-            plt.savefig(name_save)
-            #saving fake waves
-            pa_ins = pyaudio.PyAudio()
-            path_save = self.args["wave_otp_dir"] + datetime.now().strftime("%m-%d_%H-%M-%S") + "_" + str(epoch)
-            voiced = out_puts.astype(np.int16)[800:156000]
-            wave_data = wave.open(path_save + ".wav", 'wb')
-            wave_data.setnchannels(1)
-            wave_data.setsampwidth(pa_ins.get_sample_size(pyaudio.paInt16))
-            wave_data.setframerate(16000)
-            wave_data.writeframes(voiced.reshape(-1).tobytes())
-            wave_data.close()
-            pa_ins.terminate()
-        self.save(self.args["checkpoint_dir"], epoch, self.saver)
-        taken_time = time.time() - self.start_time
-        self.start_time = time.time()
-        # output console
-        if itr != 0:
-            # eta
-            self.tt_list.append(taken_time/one_itr_num/self.args["test_interval"])
-            if len(self.tt_list) > 5:
-                self.tt_list = self.tt_list[1:-1]
-            eta = np.mean(self.tt_list) * (self.args["train_iteration"] - itr)
-            print(" [I] Iteration %06d / %06d finished. ETA: %02d:%02d:%02d takes %2.3f secs" % (itr, self.args["train_iteration"], eta // 3600, eta // 60 % 60, int(eta % 60), taken_time))
-        if self.args["real_sample_compare"]:
-            print(" [I] Epoch %04d tested. score=%.5f" % (epoch, float(score)))
-        else:
-            print(" [I] Epoch %04d tested." % epoch)
-
-    def save(self, checkpoint_dir, step, saver):
-        """
-        モデルのセーブ
-        Parameters
-        ----------
-        checkpoint_dir : string
-            ファイルの場所指定
-        step: int
-            学習の完了ステップ数（エポック）
-        saver: tf.Saver
-            保存用のオブジェクト
-        """
-        model_name = "wave2wave.model"
-        model_dir = self.args["name_save"]
-        checkpoint_dir = os.path.join(checkpoint_dir, model_dir)
-
-        if not os.path.exists(checkpoint_dir):
-            os.makedirs(checkpoint_dir)
-
-        saver.save(self.sess, os.path.join(checkpoint_dir, model_name), global_step=step)
-    def load(self):
+            summary.set_out(checkpoint_dir)
+            trainer.extend(
+                TestModel(trainer, self.args["wave_otp_dir"], self.test,
+                          self.label_power_spec, self.args["real_sample_compare"], self.voice_profile),
+                trigger=snapshot_interval)
+        trainer.extend(chainer.training.extensions.snapshot(filename='snapshot_iter_{.updater.iteration}.npz'), trigger=snapshot_interval)
+        trainer.extend(chainer.training.extensions.snapshot_object(self.g_a_to_b, 'gen_iter_{.updater.iteration}.npz'), trigger=snapshot_interval)
+        trainer.extend(chainer.training.extensions.LogReport(trigger=display_interval))
+        trainer.extend(chainer.training.extensions.PrintReport(['epoch', 'iteration', 'gen_ab/loss_GAN', 'gen_ab/loss_cyc', 'gen_ba/loss_GAN', 'gen_ba/loss_cyc', 'dis/loss', 'gen_ab/accuracy']), trigger=display_interval)
+        trainer.extend(chainer.training.extensions.ProgressBar(update_interval=10))
+        # run tarining
+        print(" [I] Train Started")
+        trainer.run()
+    def load(self, _checkpoint_dir, _trainer):
         """
         モデルのロード
         変数の初期化も同時に行う
@@ -424,21 +189,123 @@ class Model:
             うまくいけばTrue
             ファイルがなかったらFalse
         """
-        # initialize variables
-        init_op = tf.global_variables_initializer()
-        self.sess.run(init_op)
         print(" [I] Reading checkpoint...")
-        model_dir = self.args["name_save"]
-        checkpoint_dir = os.path.join(self.args["checkpoint_dir"], model_dir)
-
-        ckpt = tf.train.get_checkpoint_state(checkpoint_dir)
-        if ckpt is not None and ckpt:
-            ckpt_name = os.path.basename(ckpt.model_checkpoint_path)
-            self.saver.restore(self.sess, os.path.join(checkpoint_dir, ckpt_name))
-            return True
+        if os.path.exists(_checkpoint_dir):
+            _files = list(glob.glob(_checkpoint_dir+"/snapshot*.npz"))
+            if len(_files) > 0:
+                _checkpoint_file = _files[0]
+                print(" [I] load file name : %s " % (_checkpoint_file))
+                chainer.serializers.load_npz(_checkpoint_file, _trainer)
+                return True
+            return False
         else:
+            os.makedirs(_checkpoint_dir)
             return False
 
+
+class TestModel(chainer.training.Extension):
+    """
+    テストを行うExtention
+    """
+    def __init__(self, trainer, direc, source, label_spec, real_sample_compare, voice_profile):
+        """
+        変数の初期化と事前処理
+        """
+        self.dir = direc
+        self.model = trainer.updater.gen_ab
+        self.source_f0, self.source_sp, self.source_ap = encode(source.astype(np.float64))
+        self.source_f0 = (self.source_f0-voice_profile[0])*voice_profile[2]+voice_profile[1]
+        padding_size = 52 - self.source_sp.shape[0] % 52
+        self.source_sp = np.pad(self.source_sp, ((padding_size, 0), (0, 0)), "edge").reshape(-1, 52, 513)
+        self.source_sp = np.transpose(self.source_sp, [0, 2, 1]).astype(np.float32)
+        self.source_sp = chainer.backends.cuda.to_gpu(self.source_sp)
+        self.length = self.source_f0.shape[0]
+        self.wave_len = source.shape[0]
+        self.real_sample_compare = real_sample_compare
+        if real_sample_compare:
+            seconds = label_spec.shape[0] // (16000 // 512)
+            self.label_spec = np.zeros([seconds, 512])
+            self.label_spec_v = np.zeros([seconds, 512])
+            for h in range(0, seconds):
+                term = 16000 // 512
+                self.label_spec[h] = np.mean(label_spec[h*term:(h+1)*term], axis=0)
+                self.label_spec_v[h] = np.std(label_spec[h*term:(h+1)*term], axis=0)
+        super(TestModel, self).initialize(trainer)
+    def convert(self):
+        """
+        変換用関数
+        """
+        #function of test
+        #to convert wave file
+        chainer.using_config("train", False)
+        # run netr
+        result = self.model(self.source_sp)
+        result = chainer.backends.cuda.to_cpu(result.data)
+        result = np.transpose(result, [0, 2, 1])
+        result = result.reshape(-1, 513)[-self.length:]
+        # post-process
+        # WORLD to wave
+        result_wave = decode(self.source_f0, result, self.source_ap)
+        result_wave_fixed = np.clip(result_wave, -1.0, 1.0).astype(np.float32)
+        otp = result_wave_fixed.reshape(-1)
+        head_cut_num = otp.shape[0]-self.wave_len
+        if head_cut_num > 0:
+            otp = otp[head_cut_num:]
+        chainer.using_config("train", True)
+        return otp
+
+    def __call__(self, trainer):
+        """
+        評価関数
+        やっていること
+        - パワースペクトラムの比較
+        - 音声/画像の保存
+        """
+        # testing
+        out_put = self.convert()
+        out_puts = (out_put*32767).astype(np.int16)
+        # calculating power spectrum
+        image_power_spec = fft(out_put[800:156000])
+        if self.real_sample_compare:
+            seconds = image_power_spec.shape[0] // (16000 // 512)
+            spec_m = np.zeros([seconds, 512])
+            spec_v = np.zeros([seconds, 512])
+            for h in range(0, seconds):
+                term = 16000 // 512
+                spec_m[h] = np.mean(image_power_spec[h*term:(h+1)*term], axis=0)
+                spec_v[h] = np.std(image_power_spec[h*term:(h+1)*term], axis=0)
+            diff = np.sum(spec_m * self.label_spec) / (np.linalg.norm(spec_m) * np.linalg.norm(self.label_spec) + 1e-8)
+            diff2 = np.sum(spec_v * self.label_spec_v) / (np.linalg.norm(spec_v) * np.linalg.norm(self.label_spec_v) + 1e-8)
+            score = float((diff+diff2)/2)
+            chainer.report({"accuracy": score}, self.model)
+        with summary.reporter() as r:
+            img = np.transpose(image_power_spec.reshape(1, -1, 512)*255, (0, 2, 1)).astype(np.uint8)
+            r.image(img)
+            r.audio(out_put, 16000)
+        plt.clf()
+        plt.subplot(3, 1, 1)
+        insert_image = np.transpose(image_power_spec, (1, 0))
+        plt.imshow(insert_image, vmin=-1, vmax=1, aspect="auto")
+        plt.subplot(3, 1, 2)
+        plt.plot(out_put[800:156000])
+        plt.ylim(-1, 1)
+        if self.real_sample_compare:
+            plt.subplot(3, 1, 3)
+            plt.plot(diff * diff + diff2 * diff2)
+            plt.ylim(0, 100)
+        name_save = "%s%04d.png" % (self.dir, trainer.updater.epoch)
+        plt.savefig(name_save)
+        name_save = "./latest.png"
+        plt.savefig(name_save)
+        #saving fake waves
+        path_save = self.dir + str(trainer.updater.epoch)
+        voiced = out_puts.astype(np.int16)[800:156000]
+        wave_data = wave.open(path_save + ".wav", 'wb')
+        wave_data.setnchannels(1)
+        wave_data.setsampwidth(2)
+        wave_data.setframerate(16000)
+        wave_data.writeframes(voiced.reshape(-1).tobytes())
+        wave_data.close()
 def encode(data):
     """
     #音声をWorldに変換します
@@ -558,6 +425,7 @@ def fft(data):
     spec_re = fft_r.real.reshape(time_ruler, -1)
     spec_im = fft_r.imag.reshape(time_ruler, -1)
     spec_po = np.log(np.power(spec_re, 2) + np.power(spec_im, 2) + 1e-24).reshape(time_ruler, -1)[:, 512:]
+    spec_po = np.clip(spec_po + 15 / 20, -1.0, 1.0)
     return np.clip(spec_po, -15.0, 5.0)
 
 
