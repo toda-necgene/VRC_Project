@@ -1,14 +1,13 @@
 {
     "saving_config":{
         "checkpoint_dir":"./trained_model/",
-        "wave_otp_dir":"./waves/",
-        "version":"19.1.22.13"
+        "wave_otp_dir":"Z://waves/",
+        "version":"19.1.24.28"
     },
     "training_config":{
         "train_iteration": 10000,
-        "batch_size": 128,
-        "test_interval":20,
-        "weight_cycle":10.0,
+        "batch_size": 32,
+        "test_interval":1,
         "learning_rate":2e-5
     },
     "plugin_config":{
