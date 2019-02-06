@@ -12,7 +12,6 @@ import glob
 
 import wave
 import chainer
-import pyaudio
 import pyworld.pyworld as pw
 import numpy as np
 import matplotlib.pyplot as plt
@@ -56,11 +55,11 @@ class Model:
         self.args["real_sample_compare"] = False
         # learning options
         self.args["batch_size"] = 128
-        self.args["weight_cycle"] = 10.0
-        self.args["train_iteration"] = 600000
-        self.args["start_epoch"] = 0
-        self.args["learning_rate"] = 8e-7
+        self.args["train_iteration"] = 1000
+        self.args["learning_rate"] = 2e-4
         self.args["test_interval"] = 1
+        self.args["save_interval"] = 1
+        self.args["log_interval"] = 1
         # architecture option
         self.args["input_size"] = 4096
         self.args["gpu"] = -1
@@ -88,6 +87,9 @@ class Model:
             except json.JSONDecodeError as er_message:
                 print(" [W] JSONDecodeError: ", er_message)
                 print(" [W] Use default setting")
+        # configure dtype
+        chainer.global_config.autotune = True
+        chainer.cuda.set_max_workspace_size(512*1024*1024)
         # shapes properties
         self.input_size_model = [self.args["batch_size"], 52, 513]
         self.input_size_test = [1, 52, 513]
@@ -106,29 +108,34 @@ class Model:
             sounds_a, sounds_b = create_dataset(self.args["input_size"])
         else:
             # preparing training-data
-            batch_files = self.args["train_data_dir"]+'/A.npy'
-            batch_files2 = self.args["train_data_dir"]+'/B.npy'
             print(" [I] loading data-set ...")
-            sounds_a = np.load(batch_files)
-            sounds_b = np.load(batch_files2)
-            if self.args["gpu"] >= 0:
-                sounds_a = chainer.backends.cuda.to_gpu(sounds_a)
-                sounds_b = chainer.backends.cuda.to_gpu(sounds_b)
+            sounds_a = np.load(self.args["train_data_dir"]+'/A.npy')
+            sounds_b = np.load(self.args["train_data_dir"]+'/B.npy')
             print(" [I] loaded data-set !")
-        train_iter_a = chainer.iterators.SerialIterator(sounds_a, self.args["batch_size"], shuffle=True)
-        train_iter_b = chainer.iterators.SerialIterator(sounds_b, self.args["batch_size"], shuffle=True)
+        if self.args["gpu"] >= 0:
+            sounds_a = chainer.backends.cuda.to_gpu(sounds_a)
+            sounds_b = chainer.backends.cuda.to_gpu(sounds_b)
+        train_iter_a = chainer.iterators.MultithreadIterator(sounds_a, self.args["batch_size"], shuffle=True)
+        train_iter_b = chainer.iterators.MultithreadIterator(sounds_b, self.args["batch_size"], shuffle=True)
         # times on an epoch
         train_data_num = min(sounds_a.shape[0], sounds_b.shape[0])
         self.loop_num = train_data_num // self.args["batch_size"]
         print(" [I] %d data loaded!!" % train_data_num)
-
         # load test-data
         if self.args["test"]:
             self.test = wave_read(self.args["test_data_dir"]+'/test.wav') / 32767.0
             if self.args["real_sample_compare"]:
                 self.label = wave_read(self.args["test_data_dir"] + '/label.wav')
                 self.label_power_spec = fft(self.label[800:156000]/32767)
-                
+                plt.clf()
+                plt.subplot(2, 1, 1)
+                insert_image = np.transpose(self.label_power_spec, (1, 0))
+                plt.imshow(insert_image, vmin=-1, vmax=1, aspect="auto")
+                plt.subplot(2, 1, 2)
+                plt.plot(self.label[800:156000] / 32767)
+                plt.ylim(-1, 1)
+                name_save = "%slabel.png" % (self.args["wave_otp_dir"])
+                plt.savefig(name_save)
         # loading f0 parameters
         self.voice_profile = np.load("./voice_profile.npy")
         #creating generator (if you want to view more codes then ./model.py)
@@ -145,7 +152,7 @@ class Model:
         g_optimizer_ba = make_optimizer(self.g_b_to_a, self.args["learning_rate"])
         d_optimizer = make_optimizer(self.d_a_and_b, self.args["learning_rate"])
         self.updater = CycleGANUpdater(
-            _models=(self.g_a_to_b, self.g_b_to_a, self.d_a_and_b),
+            model={"main":self.g_a_to_b, "inverse":self.g_b_to_a, "dis":self.d_a_and_b},
             max_itr=self.args["train_iteration"],
             iterator={"main":train_iter_a, "data_b":train_iter_b},
             optimizer={"gen_ab":g_optimizer_ab, "gen_ba":g_optimizer_ba, "dis":d_optimizer},
@@ -163,19 +170,31 @@ class Model:
             print(" [I] Load success.")
         else:
             print(" [I] Load failed.")
-        snapshot_interval = (self.args["test_interval"], 'epoch')
-        display_interval = (self.args["test_interval"], 'epoch')
+        snapshot_interval = (self.args["save_interval"], 'epoch')
+        test_interval = (self.args["test_interval"], 'epoch')
+        display_interval = (self.args["log_interval"], 'epoch')
+        decay_timming = chainer.training.triggers.ManualScheduleTrigger([self.args["train_iteration"]*0.25], 'iteration')
         if self.args["test"]:
             summary.set_out(checkpoint_dir)
             trainer.extend(
-                TestModel(trainer, self.args["wave_otp_dir"], self.test,
-                          self.label_power_spec, self.args["real_sample_compare"], self.voice_profile),
-                trigger=snapshot_interval)
+                TestModel(trainer, self.args["wave_otp_dir"], self.test, self.label_power_spec, self.args["real_sample_compare"], self.voice_profile),
+                trigger=test_interval)
+        # save snapshot
         trainer.extend(chainer.training.extensions.snapshot(filename='snapshot_iter_{.updater.iteration}.npz'), trigger=snapshot_interval)
-        trainer.extend(chainer.training.extensions.snapshot_object(self.g_a_to_b, 'gen_iter_{.updater.iteration}.npz'), trigger=snapshot_interval)
+        trainer.extend(chainer.training.extensions.snapshot_object(self.g_a_to_b, 'gen_ab_iter_{.updater.iteration}.npz'), trigger=snapshot_interval)
+        trainer.extend(chainer.training.extensions.snapshot_object(self.g_b_to_a, 'gen_ba_iter_{.updater.iteration}.npz'), trigger=snapshot_interval)
+        trainer.extend(chainer.training.extensions.snapshot_object(self.d_a_and_b, 'dis_iter_{.updater.iteration}.npz'), trigger=snapshot_interval)
+        # logging
         trainer.extend(chainer.training.extensions.LogReport(trigger=display_interval))
-        trainer.extend(chainer.training.extensions.PrintReport(['epoch', 'iteration', 'gen_ab/loss_GAN', 'gen_ab/loss_cyc', 'gen_ba/loss_GAN', 'gen_ba/loss_cyc', 'dis/loss', 'gen_ab/accuracy']), trigger=display_interval)
+        # learning rate decay
+        trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.5, optimizer=self.updater.get_optimizer("gen_ab")), trigger=decay_timming)
+        trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.5, optimizer=self.updater.get_optimizer("gen_ba")), trigger=decay_timming)
+        trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.5, optimizer=self.updater.get_optimizer("dis")), trigger=decay_timming)
+        # weight shake
+        trainer.extend(WeightShaker(trainer), trigger=test_interval)
+        # console output
         trainer.extend(chainer.training.extensions.ProgressBar(update_interval=10))
+        trainer.extend(chainer.training.extensions.PrintReport(['epoch', 'iteration', 'gen_ab/loss_GAN', 'gen_ab/loss_cyc', 'gen_ba/loss_GAN', 'gen_ba/loss_cyc', 'dis/loss', 'gen_ab/accuracy']), trigger=display_interval)
         # run tarining
         print(" [I] Train Started")
         trainer.run()
@@ -193,9 +212,14 @@ class Model:
         if os.path.exists(_checkpoint_dir):
             _files = list(glob.glob(_checkpoint_dir+"/snapshot*.npz"))
             if len(_files) > 0:
-                _checkpoint_file = _files[0]
-                print(" [I] load file name : %s " % (_checkpoint_file))
-                chainer.serializers.load_npz(_checkpoint_file, _trainer)
+                print(" [I] load file name : %s " % (_files[0]))
+                chainer.serializers.load_npz(_files[0], _trainer)
+                _ab = list(glob.glob(_checkpoint_dir+"/gen_ab*.npz"))[0]
+                chainer.serializers.load_npz(_ab, _trainer.updater.gen_ab)
+                _ba = list(glob.glob(_checkpoint_dir+"/gen_ba*.npz"))[0]
+                chainer.serializers.load_npz(_ba, _trainer.updater.gen_ba)
+                _di = list(glob.glob(_checkpoint_dir+"/dis*.npz"))[0]
+                chainer.serializers.load_npz(_di, _trainer.updater.dis)
                 return True
             return False
         else:
@@ -283,16 +307,12 @@ class TestModel(chainer.training.Extension):
             r.image(img)
             r.audio(out_put, 16000)
         plt.clf()
-        plt.subplot(3, 1, 1)
+        plt.subplot(2, 1, 1)
         insert_image = np.transpose(image_power_spec, (1, 0))
         plt.imshow(insert_image, vmin=-1, vmax=1, aspect="auto")
-        plt.subplot(3, 1, 2)
+        plt.subplot(2, 1, 2)
         plt.plot(out_put[800:156000])
         plt.ylim(-1, 1)
-        if self.real_sample_compare:
-            plt.subplot(3, 1, 3)
-            plt.plot(diff * diff + diff2 * diff2)
-            plt.ylim(0, 100)
         name_save = "%s%04d.png" % (self.dir, trainer.updater.epoch)
         plt.savefig(name_save)
         name_save = "./latest.png"
@@ -306,6 +326,21 @@ class TestModel(chainer.training.Extension):
         wave_data.setframerate(16000)
         wave_data.writeframes(voiced.reshape(-1).tobytes())
         wave_data.close()
+class WeightShaker(chainer.training.Extension):
+    """
+    WeightShufflerを行う関数呼び出しラッパーExtention
+    """
+    def __init__(self, trainer):
+        """
+        事前処理
+        """
+        super(WeightShaker, self).initialize(trainer)
+    def __call__(self, trainer):
+        """
+        やっていること
+        - disriminatorのweight_shake関数を呼んでいる
+        """
+        trainer.updater.dis.weight_shake()
 def encode(data):
     """
     #音声をWorldに変換します
@@ -336,7 +371,7 @@ def encode(data):
     _f0 = pw.stonemask(data, _f0, _t, sampleing_rate)
     _sp = pw.cheaptrick(data, _f0, _t, sampleing_rate)
     _ap = pw.d4c(data, _f0, _t, sampleing_rate)
-    return _f0.astype(np.float64), np.clip((np.log(_sp)+15)/20, -1.0, 1.0).astype(np.float64), _ap.astype(np.float64)
+    return _f0, np.clip((np.log(_sp) + 20) / 20, -1.0, 1.0).astype(np.float32), _ap
 
 def decode(_f0, _sp, _ap):
     """
@@ -363,7 +398,7 @@ def decode(_f0, _sp, _ap):
         ValueRange  : [-1.0,1.0]
         dtype       : float64
     """
-    _sp = np.exp(_sp * 20 - 15).astype(np.float)
+    _sp = np.exp(_sp * 20 - 20).astype(np.float)
     return pw.synthesize(_f0, _sp, _ap, 16000)
 
 
@@ -425,8 +460,8 @@ def fft(data):
     spec_re = fft_r.real.reshape(time_ruler, -1)
     spec_im = fft_r.imag.reshape(time_ruler, -1)
     spec_po = np.log(np.power(spec_re, 2) + np.power(spec_im, 2) + 1e-24).reshape(time_ruler, -1)[:, 512:]
-    spec_po = np.clip(spec_po + 15 / 20, -1.0, 1.0)
-    return np.clip(spec_po, -15.0, 5.0)
+    spec_po = np.clip((spec_po + 15) / 20, -1.0, 1.0)
+    return spec_po
 
 
 if __name__ == '__main__':

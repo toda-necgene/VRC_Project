@@ -35,7 +35,7 @@ def create_dataset(_term, _chunk=1024):
                 dds = _wf.readframes(_chunk)
             dms = b''.join(dms)
             data = np.frombuffer(dms, 'int16')
-            data_real = (data / 32767).reshape(-1).astype(np.float)
+            data_real = (data / 32767).reshape(-1)
             times = data_real.shape[0] // _term + 1
             if data_real.shape[0] % _term == 0:
                 times -= 1
@@ -52,7 +52,7 @@ def create_dataset(_term, _chunk=1024):
                 if f0_estimation.shape[0] != 0:
                     _ff.extend(f0_estimation)
                 spec_env = np.transpose(spec_env, [1, 0])
-                spec_env = np.clip((np.log(spec_env) + 15.0) / 20, -1.0, 1.0)
+                spec_env = np.clip((np.log(spec_env) + 20.0) / 20, -1.0, 1.0)
                 memory_spec_env.append(spec_env)
         _m = np.asarray(memory_spec_env, dtype=np.float32)
         dataset_to_return.append(_m)
