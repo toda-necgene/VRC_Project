@@ -41,9 +41,9 @@ class CycleGANUpdater(chainer.training.updaters.StandardUpdater):
         loss:損失
         """
         loss_gan = F.mean_squared_error(y_fake, y_label)
-        cyc = F.absolute_error(sepc_fake_fake, sepc_source)
+        cyc = F.squared_error(sepc_fake_fake, sepc_source)
         loss_cyc = F.sum(cyc)/_xp.count_nonzero(cyc.data)
-        loss = loss_gan + loss_cyc
+        loss = loss_gan + loss_cyc * 10
         chainer.report({"loss_GAN": loss_gan, "loss_cyc": loss_cyc}, gen)
         return loss
     def d_loss(self, dis, y_batch, y_label):
@@ -91,11 +91,6 @@ class CycleGANUpdater(chainer.training.updaters.StandardUpdater):
         self.dis.cleargrads()
         self.d_loss(self.dis, y_batch, y_label).backward()
         dis_optimizer.update()
-        # D update
-        # y_batch = self.dis(x_batch)
-        # self.dis.cleargrads()
-        # self.d_loss(self.dis, y_batch, y_label).backward()
-        # dis_optimizer.update()
         # G update
         self.gen_ab.cleargrads()
         self.gen_ba.cleargrads()

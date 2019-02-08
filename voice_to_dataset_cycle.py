@@ -52,7 +52,7 @@ def create_dataset(_term, _chunk=1024):
                 if f0_estimation.shape[0] != 0:
                     _ff.extend(f0_estimation)
                 spec_env = np.transpose(spec_env, [1, 0])
-                spec_env = np.clip((np.log(spec_env) + 20.0) / 20, -1.0, 1.0)
+                spec_env = np.clip((np.log(spec_env) + 20) / 20, -1.0, 1.0)
                 memory_spec_env.append(spec_env)
         _m = np.asarray(memory_spec_env, dtype=np.float32)
         dataset_to_return.append(_m)

@@ -173,7 +173,6 @@ class Model:
         snapshot_interval = (self.args["save_interval"], 'epoch')
         test_interval = (self.args["test_interval"], 'epoch')
         display_interval = (self.args["log_interval"], 'epoch')
-        decay_timming = chainer.training.triggers.ManualScheduleTrigger([self.args["train_iteration"]*0.25], 'iteration')
         if self.args["test"]:
             summary.set_out(checkpoint_dir)
             trainer.extend(
@@ -186,12 +185,8 @@ class Model:
         trainer.extend(chainer.training.extensions.snapshot_object(self.d_a_and_b, 'dis_iter_{.updater.iteration}.npz'), trigger=snapshot_interval)
         # logging
         trainer.extend(chainer.training.extensions.LogReport(trigger=display_interval))
-        # learning rate decay
-        trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.5, optimizer=self.updater.get_optimizer("gen_ab")), trigger=decay_timming)
-        trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.5, optimizer=self.updater.get_optimizer("gen_ba")), trigger=decay_timming)
-        trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.5, optimizer=self.updater.get_optimizer("dis")), trigger=decay_timming)
         # weight shake
-        trainer.extend(WeightShaker(trainer), trigger=test_interval)
+        trainer.extend(WeightShaker(trainer), trigger=(2, 'epoch'))
         # console output
         trainer.extend(chainer.training.extensions.ProgressBar(update_interval=10))
         trainer.extend(chainer.training.extensions.PrintReport(['epoch', 'iteration', 'gen_ab/loss_GAN', 'gen_ab/loss_cyc', 'gen_ba/loss_GAN', 'gen_ba/loss_cyc', 'dis/loss', 'gen_ab/accuracy']), trigger=display_interval)
