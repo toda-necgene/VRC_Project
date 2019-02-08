@@ -25,6 +25,8 @@ class CycleGANUpdater(chainer.training.updaters.StandardUpdater):
         self.gen_ba = model["inverse"]
         self.dis = model["dis"]
         self.max_iteration = max_itr
+        xp = chainer.backends.cuda.cupy
+        self.mel_filter = xp.tanh(xp.linspace(3.14, 1.0, 513)).reshape(1, 513, 1)
         super(CycleGANUpdater, self).__init__(*args, **kwargs)
     def g_loss(self, gen, y_fake, y_label, sepc_fake_fake, sepc_source, _xp):
         """
@@ -41,9 +43,9 @@ class CycleGANUpdater(chainer.training.updaters.StandardUpdater):
         loss:損失
         """
         loss_gan = F.mean_squared_error(y_fake, y_label)
-        cyc = F.squared_error(sepc_fake_fake, sepc_source)
+        cyc = F.absolute_error(sepc_fake_fake, sepc_source) * self.mel_filter
         loss_cyc = F.sum(cyc)/_xp.count_nonzero(cyc.data)
-        loss = loss_gan + loss_cyc * 10
+        loss = loss_gan + loss_cyc
         chainer.report({"loss_GAN": loss_gan, "loss_cyc": loss_cyc}, gen)
         return loss
     def d_loss(self, dis, y_batch, y_label):

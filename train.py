@@ -55,11 +55,9 @@ class Model:
         self.args["real_sample_compare"] = False
         # learning options
         self.args["batch_size"] = 128
-        self.args["train_iteration"] = 1000
+        self.args["train_iteration"] = 10000
         self.args["learning_rate"] = 2e-4
-        self.args["test_interval"] = 1
-        self.args["save_interval"] = 1
-        self.args["log_interval"] = 1
+        self.args["log_interval"] = 5
         # architecture option
         self.args["input_size"] = 4096
         self.args["gpu"] = -1
@@ -104,7 +102,7 @@ class Model:
         sounds_a = None
         sounds_b = None
         # create or load data-set
-        if not self.args["use_old_dataset"]:
+        if not (self.args["use_old_dataset"] and os.path.exists(self.args["train_data_dir"]+'/A.npy') and self.args["train_data_dir"]+'/B.npy'):
             sounds_a, sounds_b = create_dataset(self.args["input_size"])
         else:
             # preparing training-data
@@ -130,7 +128,7 @@ class Model:
                 plt.clf()
                 plt.subplot(2, 1, 1)
                 insert_image = np.transpose(self.label_power_spec, (1, 0))
-                plt.imshow(insert_image, vmin=-1, vmax=1, aspect="auto")
+                plt.imshow(insert_image, vmin=-0.25, vmax=1, aspect="auto")
                 plt.subplot(2, 1, 2)
                 plt.plot(self.label[800:156000] / 32767)
                 plt.ylim(-1, 1)
@@ -170,23 +168,21 @@ class Model:
             print(" [I] Load success.")
         else:
             print(" [I] Load failed.")
-        snapshot_interval = (self.args["save_interval"], 'epoch')
-        test_interval = (self.args["test_interval"], 'epoch')
         display_interval = (self.args["log_interval"], 'epoch')
         if self.args["test"]:
             summary.set_out(checkpoint_dir)
             trainer.extend(
                 TestModel(trainer, self.args["wave_otp_dir"], self.test, self.label_power_spec, self.args["real_sample_compare"], self.voice_profile),
-                trigger=test_interval)
+                trigger=display_interval)
         # save snapshot
-        trainer.extend(chainer.training.extensions.snapshot(filename='snapshot_iter_{.updater.iteration}.npz'), trigger=snapshot_interval)
-        trainer.extend(chainer.training.extensions.snapshot_object(self.g_a_to_b, 'gen_ab_iter_{.updater.iteration}.npz'), trigger=snapshot_interval)
-        trainer.extend(chainer.training.extensions.snapshot_object(self.g_b_to_a, 'gen_ba_iter_{.updater.iteration}.npz'), trigger=snapshot_interval)
-        trainer.extend(chainer.training.extensions.snapshot_object(self.d_a_and_b, 'dis_iter_{.updater.iteration}.npz'), trigger=snapshot_interval)
+        trainer.extend(chainer.training.extensions.snapshot(filename='snapshot_iter_{.updater.iteration}.npz'), trigger=display_interval)
+        trainer.extend(chainer.training.extensions.snapshot_object(self.g_a_to_b, 'gen_ab_iter_{.updater.iteration}.npz'), trigger=display_interval)
+        trainer.extend(chainer.training.extensions.snapshot_object(self.g_b_to_a, 'gen_ba_iter_{.updater.iteration}.npz'), trigger=display_interval)
+        trainer.extend(chainer.training.extensions.snapshot_object(self.d_a_and_b, 'dis_iter_{.updater.iteration}.npz'), trigger=display_interval)
         # logging
         trainer.extend(chainer.training.extensions.LogReport(trigger=display_interval))
-        # weight shake
-        trainer.extend(WeightShaker(trainer), trigger=(2, 'epoch'))
+        # weight resampler
+        trainer.extend(WeightShaker(trainer), trigger=(10, 'epoch'))
         # console output
         trainer.extend(chainer.training.extensions.ProgressBar(update_interval=10))
         trainer.extend(chainer.training.extensions.PrintReport(['epoch', 'iteration', 'gen_ab/loss_GAN', 'gen_ab/loss_cyc', 'gen_ba/loss_GAN', 'gen_ba/loss_cyc', 'dis/loss', 'gen_ab/accuracy']), trigger=display_interval)
@@ -304,7 +300,7 @@ class TestModel(chainer.training.Extension):
         plt.clf()
         plt.subplot(2, 1, 1)
         insert_image = np.transpose(image_power_spec, (1, 0))
-        plt.imshow(insert_image, vmin=-1, vmax=1, aspect="auto")
+        plt.imshow(insert_image, vmin=-0.25, vmax=1, aspect="auto")
         plt.subplot(2, 1, 2)
         plt.plot(out_put[800:156000])
         plt.ylim(-1, 1)
@@ -333,9 +329,9 @@ class WeightShaker(chainer.training.Extension):
     def __call__(self, trainer):
         """
         やっていること
-        - disriminatorのweight_shake関数を呼んでいる
+        - disriminatorのweight_resampler関数を呼んでいる
         """
-        trainer.updater.dis.weight_shake()
+        trainer.updater.dis.weight_resampler()
 def encode(data):
     """
     #音声をWorldに変換します
