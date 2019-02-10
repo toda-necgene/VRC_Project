@@ -17,23 +17,31 @@ class Discriminator(chainer.Chain):
         """
         初期化関数
         重み等の変数の初期化を担う
-        重みの初期化はHe正規乱数
+        重みはHeの初期化
         """
         super(Discriminator, self).__init__()
         with self.init_scope():
             w_init = chainer.initializers.HeNormal()
             self.c_0 = L.Convolution1D(513, 256, 9, initialW=w_init, pad=4).to_gpu()
-            self.c_1 = L.Convolution1D(256, 128, 7, initialW=w_init, pad=3).to_gpu()
+            self.a_1 = L.Convolution1D(256, 64, 7, initialW=w_init, pad=3).to_gpu()
+            self.t_1 = L.Convolution1D(256, 64, 1, initialW=w_init, pad=0).to_gpu()
+            self.c_1 = L.Convolution1D(256, 64, 7, initialW=w_init, pad=3).to_gpu()
             self.b_1 = L.GroupNormalization(1).to_gpu()
-            self.c_2 = L.Convolution1D(128, 64, 7, initialW=w_init, pad=3).to_gpu()
+            self.a_2 = L.Convolution1D(64, 64, 7, initialW=w_init, pad=3).to_gpu()
+            self.t_2 = L.Convolution1D(64, 64, 1, initialW=w_init, pad=0).to_gpu()
+            self.c_2 = L.Convolution1D(64, 64, 7, initialW=w_init, pad=3).to_gpu()
             self.b_2 = L.GroupNormalization(1).to_gpu()
-            self.c_3 = L.Convolution1D(64, 32, 7, initialW=w_init, pad=3).to_gpu()
+            self.a_3 = L.Convolution1D(64, 64, 7, initialW=w_init, pad=3).to_gpu()
+            self.t_3 = L.Convolution1D(64, 64, 1, initialW=w_init, pad=0).to_gpu()
+            self.c_3 = L.Convolution1D(64, 64, 7, initialW=w_init, pad=3).to_gpu()
             self.b_3 = L.GroupNormalization(1).to_gpu()
-            self.c_4 = L.Convolution1D(32, 16, 7, initialW=w_init, pad=3).to_gpu()
+            self.a_4 = L.Convolution1D(64, 64, 7, initialW=w_init, pad=3).to_gpu()
+            self.t_4 = L.Convolution1D(64, 64, 1, initialW=w_init, pad=0).to_gpu()
+            self.c_4 = L.Convolution1D(64, 64, 7, initialW=w_init, pad=3).to_gpu()
             self.b_4 = L.GroupNormalization(1).to_gpu()
-            w_init = chainer.initializers.Normal(0.002)
-            self.c_l = L.Convolution1D(16, 3, 1, initialW=w_init).to_gpu()
-    def weight_shake(self):
+            w_init = chainer.initializers.Normal(0.02)
+            self.c_l = L.Convolution1D(64, 3, 1, initialW=w_init).to_gpu()
+    def weight_resampler(self):
         """
         再初期化関数
         重みの平均と分散は維持する。
@@ -68,25 +76,28 @@ class Discriminator(chainer.Chain):
         # 次元削減
         _y = self.c_0(_x)
         _y = F.leaky_relu(_y)
-        _h = self.b_1(_y)
-        _h = self.c_1(_h)
-        _y = F.leaky_relu(_h+_y[:, :128, :])
-        _h = self.b_2(_y)
-        _h = self.c_2(_h)
-        _y = F.leaky_relu(_h+_y[:, :64, :])
-        _h = self.b_3(_y)
-        _h = self.c_3(_h)
-        _y = F.leaky_relu(_h+_y[:, :32, :])
-        _h = self.b_4(_y)
-        _h = self.c_4(_h)
-        _y = F.leaky_relu(_h+_y[:, :16, :])
+        _y = self.b_1(_y)
+        _f = F.softmax(self.a_1(_y)*F.transpose(self.t_1(_y), (0, 2, 1)).reshape(-1, 64, 52))
+        _h = self.c_1(_y)
+        _y = _h * _f + _y[:, :64, :]
+        _y = self.b_2(_y)
+        _f = F.softmax(self.a_2(_y)*F.transpose(self.t_2(_y), (0, 2, 1)).reshape(-1, 64, 52))
+        _h = self.c_2(_y)
+        _y = _h * _f + _y
+        _y = self.b_3(_y)
+        _f = F.softmax(self.a_3(_y)*F.transpose(self.t_3(_y), (0, 2, 1)).reshape(-1, 64, 52))
+        _h = self.c_3(_y)
+        _y = _h * _f + _y
+        _y = self.b_4(_y)
+        _f = F.softmax(self.a_4(_y)*F.transpose(self.t_4(_y), (0, 2, 1)).reshape(-1, 64, 52))
+        _h = self.c_4(_y)
+        _y = _h * _f + _y
         # 出力変換
         _y = self.c_l(_y)
-        return _y
+        return F.clip(_y, 0.0, 1.0)
 class Generator(chainer.Chain):
     """
         生成側ネットワーク
-        8層ResNet構造
         新たな軸を追加して特徴次元数を保持するようにしている
     """
     def __init__(self):
@@ -112,8 +123,12 @@ class Generator(chainer.Chain):
             self.c_3_1 = L.Convolution2D(64, 32, (9, 1), initialW=w_init, pad=(4, 0)).to_gpu()
             self.b_3_2 = L.BatchNormalization(32).to_gpu()
             self.c_3_2 = L.Convolution2D(32, 64, (9, 1), initialW=w_init, pad=(4, 0)).to_gpu()
+            self.b_4_1 = L.BatchNormalization(64).to_gpu()
+            self.c_4_1 = L.Convolution2D(64, 32, (9, 1), initialW=w_init, pad=(4, 0)).to_gpu()
+            self.b_4_2 = L.BatchNormalization(32).to_gpu()
+            self.c_4_2 = L.Convolution2D(32, 64, (9, 1), initialW=w_init, pad=(4, 0)).to_gpu()
             self.b_n = L.BatchNormalization(64).to_gpu()
-            w_init = chainer.initializers.Normal(0.004)
+            w_init = chainer.initializers.Normal(0.02)
             self.c_n = L.Convolution2D(64, 513, (1, 9), initialW=w_init).to_gpu()
     # @static_graph
     def forward(self, _x):
@@ -155,6 +170,12 @@ class Generator(chainer.Chain):
         _h = F.leaky_relu(_h)
         _h = self.b_3_2(_h)
         _h = self.c_3_2(_h)
+        _y = F.leaky_relu(_y + _h)
+        _h = self.b_4_1(_y)
+        _h = self.c_4_1(_h)
+        _h = F.leaky_relu(_h)
+        _h = self.b_4_2(_h)
+        _h = self.c_4_2(_h)
         _y = F.leaky_relu(_y + _h)
         # Squeeze second-dimention
         _y = self.b_n(_y)
