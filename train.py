@@ -169,6 +169,7 @@ class Model:
         else:
             print(" [I] Load failed.")
         display_interval = (self.args["log_interval"], 'epoch')
+        decay_timming = chainer.training.triggers.ManualScheduleTrigger([self.args["train_iteration"]*0.1, self.args["train_iteration"]*0.25, self.args["train_iteration"]*0.5], 'iteration')
         if self.args["test"]:
             summary.set_out(checkpoint_dir)
             trainer.extend(
@@ -179,10 +180,12 @@ class Model:
         trainer.extend(chainer.training.extensions.snapshot_object(self.g_a_to_b, 'gen_ab_iter_{.updater.iteration}.npz'), trigger=display_interval)
         trainer.extend(chainer.training.extensions.snapshot_object(self.g_b_to_a, 'gen_ba_iter_{.updater.iteration}.npz'), trigger=display_interval)
         trainer.extend(chainer.training.extensions.snapshot_object(self.d_a_and_b, 'dis_iter_{.updater.iteration}.npz'), trigger=display_interval)
+        # learning rate decay
+        trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.25, optimizer=self.updater.get_optimizer("gen_ab")), trigger=decay_timming)
+        trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.25, optimizer=self.updater.get_optimizer("gen_ba")), trigger=decay_timming)
+        trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.25, optimizer=self.updater.get_optimizer("dis")), trigger=decay_timming)
         # logging
         trainer.extend(chainer.training.extensions.LogReport(trigger=display_interval))
-        # weight resampler
-        trainer.extend(WeightShaker(trainer), trigger=(10, 'epoch'))
         # console output
         trainer.extend(chainer.training.extensions.ProgressBar(update_interval=10))
         trainer.extend(chainer.training.extensions.PrintReport(['epoch', 'iteration', 'gen_ab/loss_GAN', 'gen_ab/loss_cyc', 'gen_ba/loss_GAN', 'gen_ba/loss_cyc', 'dis/loss', 'gen_ab/accuracy']), trigger=display_interval)
@@ -317,21 +320,6 @@ class TestModel(chainer.training.Extension):
         wave_data.setframerate(16000)
         wave_data.writeframes(voiced.reshape(-1).tobytes())
         wave_data.close()
-class WeightShaker(chainer.training.Extension):
-    """
-    WeightShufflerを行う関数呼び出しラッパーExtention
-    """
-    def __init__(self, trainer):
-        """
-        事前処理
-        """
-        super(WeightShaker, self).initialize(trainer)
-    def __call__(self, trainer):
-        """
-        やっていること
-        - disriminatorのweight_resampler関数を呼んでいる
-        """
-        trainer.updater.dis.weight_resampler()
 def encode(data):
     """
     #音声をWorldに変換します
