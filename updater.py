@@ -25,29 +25,8 @@ class CycleGANUpdater(chainer.training.updaters.StandardUpdater):
         self.gen_ba = model["inverse"]
         self.dis = model["dis"]
         self.max_iteration = max_itr
-        xp = chainer.backends.cuda.cupy
-        self.mel_filter = xp.tanh(xp.linspace(3.14, 1.5, 513)).reshape(1, 513, 1)
         super(CycleGANUpdater, self).__init__(*args, **kwargs)
-    def g_loss(self, gen, y_fake, y_label, sepc_fake_fake, sepc_source, _xp):
-        """
-        生成側の目的関数
-        Parametars
-        ----------
-        gen:生成モデル
-        y_fake:変換後の識別結果
-        spec_fake_fake:変換結果を変換したもの
-        spec_source:変換元
-        xp:cupy or numpy
-        Returns
-        -------
-        loss:損失
-        """
-        loss_gan = F.mean_squared_error(y_fake, y_label)
-        cyc = F.absolute_error(sepc_fake_fake, sepc_source) * self.mel_filter
-        loss_cyc = F.sum(cyc)/_xp.count_nonzero(cyc.data)
-        loss = loss_gan + loss_cyc * 5
-        chainer.report({"loss_GAN": loss_gan, "loss_cyc": loss_cyc}, gen)
-        return loss
+        
     def d_loss(self, dis, y_batch, y_label):
         """
         識別側の目的関数
@@ -76,17 +55,18 @@ class CycleGANUpdater(chainer.training.updaters.StandardUpdater):
         fake_ba_ = self.gen_ba(batch_b)
         fake_bab = self.gen_ab(fake_ba_)
         x_batch = F.concat((fake_ab_, fake_ba_, batch_a, batch_b), axis=0)
-        label_a = _xp.zeros([batch_size, 3, 52])
+        y_batch = self.dis(x_batch)
+        wave_length = y_batch.shape[2]
+        label_a = _xp.zeros([batch_size, 3, wave_length])
         label_a[:, 0] = 1.0
         label_a = label_a.astype(_xp.float32)
-        label_b = _xp.zeros([batch_size, 3, 52])
+        label_b = _xp.zeros([batch_size, 3, wave_length])
         label_b[:, 1] = 1.0
         label_b = label_b.astype(_xp.float32)
-        label_f = _xp.zeros([batch_size, 3, 52])
+        label_f = _xp.zeros([batch_size, 3, wave_length])
         label_f[:, 2] = 1.0
         label_f = label_f.astype(_xp.float32)
         y_label = F.concat((label_f, label_f, label_a, label_b), axis=0)
-        y_batch = self.dis(x_batch)
         y_fake_ab = y_batch[:batch_size]
         y_fake_ba = y_batch[batch_size:batch_size*2]
         # D update
@@ -96,7 +76,15 @@ class CycleGANUpdater(chainer.training.updaters.StandardUpdater):
         # G update
         self.gen_ab.cleargrads()
         self.gen_ba.cleargrads()
-        gloss = self.g_loss(self.gen_ab, y_fake_ab, label_b, fake_aba, batch_a, _xp)+self.g_loss(self.gen_ba, y_fake_ba, label_a, fake_bab, batch_b, _xp)
+        loss_gana = F.mean_squared_error(y_fake_ab, label_b)
+        loss_ganb = F.mean_squared_error(y_fake_ba, label_a)
+        cyca = F.absolute_error(fake_aba, batch_a)
+        loss_cyca = F.sum(cyca)/_xp.count_nonzero(cyca.data)
+        cycb = F.absolute_error(fake_bab, batch_b)
+        loss_cycb = F.sum(cycb)/_xp.count_nonzero(cycb.data)
+        chainer.report({"loss_GAN": loss_gana, "loss_cyc": loss_cyca}, self.gen_ab)
+        chainer.report({"loss_GAN": loss_ganb, "loss_cyc": loss_cycb}, self.gen_ba)
+        gloss = loss_gana + loss_ganb + (loss_cyca+loss_cycb) * 10
         gloss.backward()
         gen_ab_optimizer.update()
         gen_ba_optimizer.update()

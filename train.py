@@ -142,7 +142,7 @@ class Model:
         #creating discriminator (if you want to view more codes then ./model.py)
         self.d_a_and_b = Discriminator()
         # Optimizers
-        def make_optimizer(model, alpha=0.0002, beta1=0.5):
+        def make_optimizer(model, alpha=0.0002, beta1=0.9):
             optimizer = chainer.optimizers.Adam(alpha=alpha, beta1=beta1)
             optimizer.setup(model)
             return optimizer
@@ -169,7 +169,7 @@ class Model:
         else:
             print(" [I] Load failed.")
         display_interval = (self.args["log_interval"], 'epoch')
-        decay_timming = chainer.training.triggers.ManualScheduleTrigger([self.args["train_iteration"]*0.1, self.args["train_iteration"]*0.25, self.args["train_iteration"]*0.5], 'iteration')
+        decay_timming = chainer.training.triggers.ManualScheduleTrigger([self.args["train_iteration"]*0.1, self.args["train_iteration"]*0.25, self.args["train_iteration"]*0.5, self.args["train_iteration"]*0.75], 'iteration')
         if self.args["test"]:
             summary.set_out(checkpoint_dir)
             trainer.extend(
@@ -181,9 +181,9 @@ class Model:
         trainer.extend(chainer.training.extensions.snapshot_object(self.g_b_to_a, 'gen_ba_iter_{.updater.iteration}.npz'), trigger=display_interval)
         trainer.extend(chainer.training.extensions.snapshot_object(self.d_a_and_b, 'dis_iter_{.updater.iteration}.npz'), trigger=display_interval)
         # learning rate decay
-        trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.25, optimizer=self.updater.get_optimizer("gen_ab")), trigger=decay_timming)
-        trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.25, optimizer=self.updater.get_optimizer("gen_ba")), trigger=decay_timming)
-        trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.25, optimizer=self.updater.get_optimizer("dis")), trigger=decay_timming)
+        trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=self.updater.get_optimizer("gen_ab")), trigger=decay_timming)
+        trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=self.updater.get_optimizer("gen_ba")), trigger=decay_timming)
+        trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=self.updater.get_optimizer("dis")), trigger=decay_timming)
         # logging
         trainer.extend(chainer.training.extensions.LogReport(trigger=display_interval))
         # console output
