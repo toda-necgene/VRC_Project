@@ -7,7 +7,6 @@
 """
 import os
 import time
-import json
 import glob
 
 import wave
@@ -19,7 +18,7 @@ from chainerui import summary
 from model import Discriminator, Generator
 from updater import CycleGANUpdater
 from voice_to_dataset_cycle import create_dataset
-
+from load_setting import load_setting_from_json
 
 class Model:
     """
@@ -36,64 +35,11 @@ class Model:
         self.sounds_t = None
         self.loop_num = 0
 
-        # setting default parameters
-
-        self.args = dict()
-
-        # name options
-        self.args["model_name"] = "VRC"
-        self.args["version"] = "1.0.0"
-        # saving options
-        self.args["checkpoint_dir"] = "./trained_models"
-        self.args["wave_otp_dir"] = "./harvests"
-        #training-data options
-        self.args["use_old_dataset"] = False
-        self.args["train_data_dir"] = "./dataset/train"
-        self.args["test_data_dir"] = "./dataset/test"
-        # learning details output options
-        self.args["test"] = True
-        self.args["real_sample_compare"] = False
-        # learning options
-        self.args["batch_size"] = 128
-        self.args["train_iteration"] = 10000
-        self.args["learning_rate"] = 2e-4
-        self.args["log_interval"] = 5
-        # architecture option
-        self.args["input_size"] = 4096
-        self.args["gpu"] = -1
-
-
-        # loading json setting file
-        # (more codes ./setting.json. manual is exist in ./setting-example.json)
-        with open(path_setting, "r") as setting_raw_txt:
-            try:
-                json_loaded = json.load(setting_raw_txt)
-                keys = json_loaded.keys()
-                for j in keys:
-                    data = json_loaded[j]
-                    keys2 = data.keys()
-                    for k in keys2:
-                        if k in self.args:
-                            if isinstance(self.args[k], type(data[k])):
-                                self.args[k] = data[k]
-                            else:
-                                print(" [W] Argumet \"" + k + "\" is incorrect data type. Please change to \"" + str(type(self.args[k])) + "\"")
-                        elif k[0] == "#":
-                            pass
-                        else:
-                            print(" [W] Argument \"" + k + "\" is not exsits.")
-            except json.JSONDecodeError as er_message:
-                print(" [W] JSONDecodeError: ", er_message)
-                print(" [W] Use default setting")
+        # load parameters
+        self.args = load_setting_from_json(path_setting)
         # configure dtype
         chainer.global_config.autotune = True
         chainer.cuda.set_max_workspace_size(512*1024*1024)
-        # shapes properties
-        self.input_size_model = [self.args["batch_size"], 52, 513]
-        self.input_size_test = [1, 52, 513]
-
-        # initializing harvest directory
-        self.args["name_save"] = self.args["model_name"] + self.args["version"]
         if  self.args["wave_otp_dir"] is not "False":
             self.args["wave_otp_dir"] = self.args["wave_otp_dir"] + self.args["name_save"]+"/"
             if not os.path.exists(self.args["wave_otp_dir"]):
@@ -141,9 +87,13 @@ class Model:
         self.g_b_to_a = Generator()
         #creating discriminator (if you want to view more codes then ./model.py)
         self.d_a_and_b = Discriminator()
+        if self.args["gpu"] >= 0:
+            self.g_a_to_b.to_gpu()
+            self.g_b_to_a.to_gpu()
+            self.d_a_and_b.to_gpu()
         # Optimizers
         def make_optimizer(model, alpha=0.0002, beta1=0.9):
-            optimizer = chainer.optimizers.Adam(alpha=alpha, beta1=beta1)
+            optimizer = chainer.optimizers.Adam(alpha=alpha, beta1=beta1, amsgrad=True)
             optimizer.setup(model)
             return optimizer
         g_optimizer_ab = make_optimizer(self.g_a_to_b, self.args["learning_rate"])
@@ -169,7 +119,7 @@ class Model:
         else:
             print(" [I] Load failed.")
         display_interval = (self.args["log_interval"], 'epoch')
-        decay_timming = chainer.training.triggers.ManualScheduleTrigger([self.args["train_iteration"]*0.1, self.args["train_iteration"]*0.25, self.args["train_iteration"]*0.5, self.args["train_iteration"]*0.75], 'iteration')
+        decay_timming = chainer.training.triggers.ManualScheduleTrigger([self.args["train_iteration"]*0.5, self.args["train_iteration"]*0.75], 'iteration')
         if self.args["test"]:
             summary.set_out(checkpoint_dir)
             trainer.extend(
@@ -444,5 +394,5 @@ def fft(data):
 
 
 if __name__ == '__main__':
-    NET = Model("./setting.json")
-    NET.train()
+    Model("./setting.json").train()
+

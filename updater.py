@@ -26,7 +26,6 @@ class CycleGANUpdater(chainer.training.updaters.StandardUpdater):
         self.dis = model["dis"]
         self.max_iteration = max_itr
         super(CycleGANUpdater, self).__init__(*args, **kwargs)
-        
     def d_loss(self, dis, y_batch, y_label):
         """
         識別側の目的関数
@@ -84,7 +83,7 @@ class CycleGANUpdater(chainer.training.updaters.StandardUpdater):
         loss_cycb = F.sum(cycb)/_xp.count_nonzero(cycb.data)
         chainer.report({"loss_GAN": loss_gana, "loss_cyc": loss_cyca}, self.gen_ab)
         chainer.report({"loss_GAN": loss_ganb, "loss_cyc": loss_cycb}, self.gen_ba)
-        gloss = loss_gana + loss_ganb + (loss_cyca+loss_cycb) * 10
+        gloss = loss_gana + loss_ganb + (loss_cyca + loss_cycb) * 5
         gloss.backward()
         gen_ab_optimizer.update()
         gen_ba_optimizer.update()
