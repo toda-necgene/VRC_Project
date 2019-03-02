@@ -21,18 +21,14 @@ class Discriminator(chainer.Chain):
         super(Discriminator, self).__init__()
         with self.init_scope():
             w_init = chainer.initializers.HeNormal()
-            self.c_0 = L.Convolution1D(513, 256, 3, initialW=w_init, pad=1)
+            self.c_0 = L.Convolution1D(513, 256, 1, initialW=w_init)
             self.a_1 = L.Convolution1D(256, 128, 7, stride=3, initialW=w_init)
             self.c_1 = L.Convolution1D(256, 128, 7, stride=3, initialW=w_init)
-            self.a_2 = L.Convolution1D(128, 64, 5, initialW=w_init, pad=2)
-            self.c_2 = L.Convolution1D(128, 64, 5, initialW=w_init, pad=2)
-            self.a_3 = L.Convolution1D(64, 32, 7, initialW=w_init, pad=3)
-            self.c_3 = L.Convolution1D(64, 32, 7, initialW=w_init, pad=3)
-            self.a_4 = L.Convolution1D(32, 16, 11, initialW=w_init, pad=5)
-            self.c_4 = L.Convolution1D(32, 16, 11, initialW=w_init, pad=5)
-            self.a_5 = L.Convolution1D(16, 8, 11, initialW=w_init, pad=5)
-            self.c_5 = L.Convolution1D(16, 8, 11, initialW=w_init, pad=5)
-            self.c_l = L.Convolution1D(8, 3, 1, initialW=chainer.initializers.Normal(0.002))
+            self.a_2 = L.Convolution1D(128, 64, 5, initialW=w_init)
+            self.c_2 = L.Convolution1D(128, 64, 5, initialW=w_init)
+            self.a_3 = L.Convolution1D(64, 32, 7, initialW=w_init)
+            self.c_3 = L.Convolution1D(64, 32, 7, initialW=w_init)
+            self.c_l = L.Convolution1D(32, 1, 1, initialW=chainer.initializers.Normal(0.002))
     # @static_graph
     def forward(self, _x):
         """
@@ -50,12 +46,6 @@ class Discriminator(chainer.Chain):
         _y = _h * _f
         _f = F.sigmoid(self.a_3(_y))
         _h = self.c_3(_y)
-        _y = _h * _f
-        _f = F.sigmoid(self.a_4(_y))
-        _h = self.c_4(_y)
-        _y = _h * _f
-        _f = F.sigmoid(self.a_5(_y))
-        _h = self.c_5(_y)
         _y = _h * _f
         # 出力変換
         _y = self.c_l(_y)
@@ -75,32 +65,32 @@ class Generator(chainer.Chain):
         super(Generator, self).__init__()
         with self.init_scope():
             w_init = chainer.initializers.HeNormal()
-            self.c_0 = L.Convolution1D(513, 128, 1, initialW=w_init)
+            self.c_0 = L.Convolution1D(513, 32, 1, initialW=w_init)
+            self.c_1_1 = L.Convolution1D(32, 128, 7, stride=3, initialW=w_init, nobias=True)
             self.b_1_1 = L.BatchNormalization(128)
-            self.c_1_1 = L.Convolution2D(32, 128, (7, 4), stride=(3, 2), initialW=w_init, nobias=True)
+            self.c_1_2 = L.Deconvolution1D(128, 32, 7, stride=3, initialW=w_init, nobias=True)
             self.b_1_2 = L.BatchNormalization(32)
-            self.c_1_2 = L.Deconvolution2D(128, 32, (7, 4), stride=(3, 2), initialW=w_init, nobias=True)
+            self.c_2_1 = L.Convolution1D(32, 128, 7, stride=3, initialW=w_init, nobias=True)
             self.b_2_1 = L.BatchNormalization(128)
-            self.c_2_1 = L.Convolution2D(32, 128, (7, 4), stride=(3, 2), initialW=w_init, nobias=True)
+            self.c_2_2 = L.Deconvolution1D(128, 32, 7, stride=3, initialW=w_init, nobias=True)
             self.b_2_2 = L.BatchNormalization(32)
-            self.c_2_2 = L.Deconvolution2D(128, 32, (7, 4), stride=(3, 2), initialW=w_init, nobias=True)
+            self.c_3_1 = L.Convolution1D(32, 128, 7, stride=3, initialW=w_init, nobias=True)
             self.b_3_1 = L.BatchNormalization(128)
-            self.c_3_1 = L.Convolution2D(32, 128, (7, 4), stride=(3, 2), initialW=w_init, nobias=True)
+            self.c_3_2 = L.Deconvolution1D(128, 32, 7, stride=3, initialW=w_init, nobias=True)
             self.b_3_2 = L.BatchNormalization(32)
-            self.c_3_2 = L.Deconvolution2D(128, 32, (7, 4), stride=(3, 2), initialW=w_init, nobias=True)
+            self.c_4_1 = L.Convolution1D(32, 128, 4, stride=3, initialW=w_init, nobias=True)
             self.b_4_1 = L.BatchNormalization(128)
-            self.c_4_1 = L.Convolution2D(32, 128, (7, 4), stride=(3, 2), initialW=w_init, nobias=True)
+            self.c_4_2 = L.Deconvolution1D(128, 32, 4, stride=3, initialW=w_init, nobias=True)
             self.b_4_2 = L.BatchNormalization(32)
-            self.c_4_2 = L.Deconvolution2D(128, 32, (7, 4), stride=(3, 2), initialW=w_init, nobias=True)
+            self.c_5_1 = L.Convolution1D(32, 128, 4, stride=3, initialW=w_init, nobias=True)
             self.b_5_1 = L.BatchNormalization(128)
-            self.c_5_1 = L.Convolution2D(32, 128, (7, 4), stride=(3, 2), initialW=w_init, nobias=True)
+            self.c_5_2 = L.Deconvolution1D(128, 32, 4, stride=3, initialW=w_init, nobias=True)
             self.b_5_2 = L.BatchNormalization(32)
-            self.c_5_2 = L.Deconvolution2D(128, 32, (7, 4), stride=(3, 2), initialW=w_init, nobias=True)
+            self.c_6_1 = L.Convolution1D(32, 128, 4, stride=3, initialW=w_init, nobias=True)
             self.b_6_1 = L.BatchNormalization(128)
-            self.c_6_1 = L.Convolution2D(32, 128, (7, 4), stride=(3, 2), initialW=w_init, nobias=True)
+            self.c_6_2 = L.Deconvolution1D(128, 32, 4, stride=3, initialW=w_init, nobias=True)
             self.b_6_2 = L.BatchNormalization(32)
-            self.c_6_2 = L.Deconvolution2D(128, 32, (7, 4), stride=(3, 2), initialW=w_init, nobias=True)
-            self.c_n = L.Convolution1D(128, 513, 1, initialW=chainer.initializers.Normal(0.002))
+            self.c_n = L.Convolution1D(32, 513, 1, initialW=chainer.initializers.Normal(0.002))
     # @static_graph
     def forward(self, _x):
         """
@@ -121,7 +111,6 @@ class Generator(chainer.Chain):
         """
         # Expand second-dimention
         _y = self.c_0(_x)
-        _y = F.reshape(_y, (-1, 32, _y.shape[2], 4))
         _y = F.leaky_relu(_y)
         # ResModule
         _h = self.c_1_1(_y)
@@ -160,7 +149,6 @@ class Generator(chainer.Chain):
         _h = self.c_6_2(_h)
         _h = self.b_6_2(_h)
         _y = F.leaky_relu(_y + _h)
-        _y = F.reshape(_y, (-1, 128, _y.shape[2]))
         # Squeeze second-dimention
         _y = self.c_n(_y)
         _y = F.tanh(_y)

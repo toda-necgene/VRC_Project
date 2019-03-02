@@ -17,13 +17,15 @@ class CycleGANUpdater(chainer.training.updaters.StandardUpdater):
         初期化関数
         Parameters
         ----------
-        _models: list
-        生成モデルA,生成モデルB,識別モデル
-            len: 3
+        model: dict
+        生成モデルA,生成モデルB,識別モデルA,識別モデルB
+        maxitr: int
+        最大イテレーション回数
         """
         self.gen_ab = model["main"]
         self.gen_ba = model["inverse"]
-        self.dis = model["dis"]
+        self.disa = model["disa"]
+        self.disb = model["disb"]
         self.max_iteration = max_itr
         super(CycleGANUpdater, self).__init__(*args, **kwargs)
     def d_loss(self, dis, y_batch, y_label):
@@ -44,7 +46,8 @@ class CycleGANUpdater(chainer.training.updaters.StandardUpdater):
     def update_core(self):
         gen_ab_optimizer = self.get_optimizer("gen_ab")
         gen_ba_optimizer = self.get_optimizer("gen_ba")
-        dis_optimizer = self.get_optimizer("dis")
+        disa_optimizer = self.get_optimizer("disa")
+        disb_optimizer = self.get_optimizer("disb")
         batch_a = chainer.Variable(self.converter(self.get_iterator("main").next()))
         batch_b = chainer.Variable(self.converter(self.get_iterator("data_b").next()))
         batch_size = len(batch_a)
@@ -53,30 +56,26 @@ class CycleGANUpdater(chainer.training.updaters.StandardUpdater):
         fake_aba = self.gen_ba(fake_ab_)
         fake_ba_ = self.gen_ba(batch_b)
         fake_bab = self.gen_ab(fake_ba_)
-        x_batch = F.concat((fake_ab_, fake_ba_, batch_a, batch_b), axis=0)
-        y_batch = self.dis(x_batch)
-        wave_length = y_batch.shape[2]
-        label_a = _xp.zeros([batch_size, 3, wave_length])
-        label_a[:, 0] = 1.0
-        label_a = label_a.astype(_xp.float32)
-        label_b = _xp.zeros([batch_size, 3, wave_length])
-        label_b[:, 1] = 1.0
-        label_b = label_b.astype(_xp.float32)
-        label_f = _xp.zeros([batch_size, 3, wave_length])
-        label_f[:, 2] = 1.0
-        label_f = label_f.astype(_xp.float32)
-        y_label = F.concat((label_f, label_f, label_a, label_b), axis=0)
-        y_fake_ab = y_batch[:batch_size]
-        y_fake_ba = y_batch[batch_size:batch_size*2]
+        x_batcha = F.concat((fake_ba_, batch_a), axis=0)
+        x_batchb = F.concat((fake_ab_, batch_b), axis=0)
+        y_batcha = self.disa(x_batcha)
+        y_batchb = self.disb(x_batchb)
+        wave_length = y_batcha.shape[2]
+        y_label = F.concat((_xp.zeros([batch_size, 1, wave_length], dtype="float32"), _xp.ones([batch_size, 1, wave_length], dtype="float32")), axis=0)
+        y_fake_ab = y_batchb[:batch_size]
+        y_fake_ba = y_batcha[:batch_size]
         # D update
-        self.dis.cleargrads()
-        self.d_loss(self.dis, y_batch, y_label).backward()
-        dis_optimizer.update()
+        self.disa.cleargrads()
+        self.d_loss(self.disa, y_batcha, y_label).backward()
+        disa_optimizer.update()
+        self.disb.cleargrads()
+        self.d_loss(self.disb, y_batchb, y_label).backward()
+        disb_optimizer.update()
         # G update
         self.gen_ab.cleargrads()
         self.gen_ba.cleargrads()
-        loss_gana = F.mean_squared_error(y_fake_ab, label_b)
-        loss_ganb = F.mean_squared_error(y_fake_ba, label_a)
+        loss_gana = F.mean_squared_error(y_fake_ab, y_label[batch_size:])
+        loss_ganb = F.mean_squared_error(y_fake_ba, y_label[batch_size:])
         cyca = F.absolute_error(fake_aba, batch_a)
         loss_cyca = F.sum(cyca)/_xp.count_nonzero(cyca.data)
         cycb = F.absolute_error(fake_bab, batch_b)

@@ -86,24 +86,28 @@ class Model:
         self.g_a_to_b = Generator()
         self.g_b_to_a = Generator()
         #creating discriminator (if you want to view more codes then ./model.py)
-        self.d_a_and_b = Discriminator()
+        self.d_a = Discriminator()
+        self.d_b = Discriminator()
         if self.args["gpu"] >= 0:
+            chainer.cuda.Device(self.args["gpu"]).use()
             self.g_a_to_b.to_gpu()
             self.g_b_to_a.to_gpu()
-            self.d_a_and_b.to_gpu()
+            self.d_a.to_gpu()
+            self.d_b.to_gpu()
         # Optimizers
-        def make_optimizer(model, alpha=0.0002, beta1=0.9):
+        def make_optimizer(model, alpha=0.0002, beta1=0.5):
             optimizer = chainer.optimizers.Adam(alpha=alpha, beta1=beta1, amsgrad=True)
             optimizer.setup(model)
             return optimizer
         g_optimizer_ab = make_optimizer(self.g_a_to_b, self.args["learning_rate"])
         g_optimizer_ba = make_optimizer(self.g_b_to_a, self.args["learning_rate"])
-        d_optimizer = make_optimizer(self.d_a_and_b, self.args["learning_rate"])
+        d_optimizer_a = make_optimizer(self.d_a, self.args["learning_rate"])
+        d_optimizer_b = make_optimizer(self.d_b, self.args["learning_rate"])
         self.updater = CycleGANUpdater(
-            model={"main":self.g_a_to_b, "inverse":self.g_b_to_a, "dis":self.d_a_and_b},
+            model={"main":self.g_a_to_b, "inverse":self.g_b_to_a, "disa":self.d_a, "disb":self.d_b},
             max_itr=self.args["train_iteration"],
             iterator={"main":train_iter_a, "data_b":train_iter_b},
-            optimizer={"gen_ab":g_optimizer_ab, "gen_ba":g_optimizer_ba, "dis":d_optimizer},
+            optimizer={"gen_ab":g_optimizer_ab, "gen_ba":g_optimizer_ba, "disa":d_optimizer_a, "disb":d_optimizer_b},
             device=self.args["gpu"])
     def train(self):
         """
@@ -129,16 +133,18 @@ class Model:
         trainer.extend(chainer.training.extensions.snapshot(filename='snapshot_iter_{.updater.iteration}.npz'), trigger=display_interval)
         trainer.extend(chainer.training.extensions.snapshot_object(self.g_a_to_b, 'gen_ab_iter_{.updater.iteration}.npz'), trigger=display_interval)
         trainer.extend(chainer.training.extensions.snapshot_object(self.g_b_to_a, 'gen_ba_iter_{.updater.iteration}.npz'), trigger=display_interval)
-        trainer.extend(chainer.training.extensions.snapshot_object(self.d_a_and_b, 'dis_iter_{.updater.iteration}.npz'), trigger=display_interval)
+        trainer.extend(chainer.training.extensions.snapshot_object(self.d_a, 'dis_a_iter_{.updater.iteration}.npz'), trigger=display_interval)
+        trainer.extend(chainer.training.extensions.snapshot_object(self.d_b, 'dis_b_iter_{.updater.iteration}.npz'), trigger=display_interval)
         # learning rate decay
         trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=self.updater.get_optimizer("gen_ab")), trigger=decay_timming)
         trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=self.updater.get_optimizer("gen_ba")), trigger=decay_timming)
-        trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=self.updater.get_optimizer("dis")), trigger=decay_timming)
+        trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=self.updater.get_optimizer("disa")), trigger=decay_timming)
+        trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=self.updater.get_optimizer("disb")), trigger=decay_timming)
         # logging
         trainer.extend(chainer.training.extensions.LogReport(trigger=display_interval))
         # console output
         trainer.extend(chainer.training.extensions.ProgressBar(update_interval=10))
-        trainer.extend(chainer.training.extensions.PrintReport(['epoch', 'iteration', 'gen_ab/loss_GAN', 'gen_ab/loss_cyc', 'gen_ba/loss_GAN', 'gen_ba/loss_cyc', 'dis/loss', 'gen_ab/accuracy']), trigger=display_interval)
+        trainer.extend(chainer.training.extensions.PrintReport(['epoch', 'iteration', 'gen_ab/loss_GAN', 'gen_ab/loss_cyc', 'gen_ba/loss_GAN', 'gen_ba/loss_cyc', 'disa/loss', 'disb/loss', 'gen_ab/accuracy']), trigger=display_interval)
         # run tarining
         print(" [I] Train Started")
         trainer.run()
@@ -162,8 +168,10 @@ class Model:
                 chainer.serializers.load_npz(_ab, _trainer.updater.gen_ab)
                 _ba = list(glob.glob(_checkpoint_dir+"/gen_ba*.npz"))[0]
                 chainer.serializers.load_npz(_ba, _trainer.updater.gen_ba)
-                _di = list(glob.glob(_checkpoint_dir+"/dis*.npz"))[0]
-                chainer.serializers.load_npz(_di, _trainer.updater.dis)
+                _da = list(glob.glob(_checkpoint_dir+"/dis_a*.npz"))[0]
+                chainer.serializers.load_npz(_da, _trainer.updater.disa)
+                _db = list(glob.glob(_checkpoint_dir+"/dis_b*.npz"))[0]
+                chainer.serializers.load_npz(_db, _trainer.updater.disb)
                 return True
             return False
         else:
@@ -395,4 +403,3 @@ def fft(data):
 
 if __name__ == '__main__':
     Model("./setting.json").train()
-
