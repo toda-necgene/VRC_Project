@@ -2,6 +2,7 @@ dataset/source/*
 dataset/test/*
 dataset/train/*
 trained_model/*
+waves/*
 logs/*
 .*
 _*

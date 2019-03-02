@@ -7,7 +7,6 @@
 """
 import os
 import time
-import json
 import glob
 
 import wave
@@ -19,7 +18,7 @@ from chainerui import summary
 from model import Discriminator, Generator
 from updater import CycleGANUpdater
 from voice_to_dataset_cycle import create_dataset
-
+from load_setting import load_setting_from_json
 
 class Model:
     """
@@ -36,64 +35,11 @@ class Model:
         self.sounds_t = None
         self.loop_num = 0
 
-        # setting default parameters
-
-        self.args = dict()
-
-        # name options
-        self.args["model_name"] = "VRC"
-        self.args["version"] = "1.0.0"
-        # saving options
-        self.args["checkpoint_dir"] = "./trained_models"
-        self.args["wave_otp_dir"] = "./harvests"
-        #training-data options
-        self.args["use_old_dataset"] = False
-        self.args["train_data_dir"] = "./dataset/train"
-        self.args["test_data_dir"] = "./dataset/test"
-        # learning details output options
-        self.args["test"] = True
-        self.args["real_sample_compare"] = False
-        # learning options
-        self.args["batch_size"] = 128
-        self.args["train_iteration"] = 10000
-        self.args["learning_rate"] = 2e-4
-        self.args["log_interval"] = 5
-        # architecture option
-        self.args["input_size"] = 4096
-        self.args["gpu"] = -1
-
-
-        # loading json setting file
-        # (more codes ./setting.json. manual is exist in ./setting-example.json)
-        with open(path_setting, "r") as setting_raw_txt:
-            try:
-                json_loaded = json.load(setting_raw_txt)
-                keys = json_loaded.keys()
-                for j in keys:
-                    data = json_loaded[j]
-                    keys2 = data.keys()
-                    for k in keys2:
-                        if k in self.args:
-                            if isinstance(self.args[k], type(data[k])):
-                                self.args[k] = data[k]
-                            else:
-                                print(" [W] Argumet \"" + k + "\" is incorrect data type. Please change to \"" + str(type(self.args[k])) + "\"")
-                        elif k[0] == "#":
-                            pass
-                        else:
-                            print(" [W] Argument \"" + k + "\" is not exsits.")
-            except json.JSONDecodeError as er_message:
-                print(" [W] JSONDecodeError: ", er_message)
-                print(" [W] Use default setting")
+        # load parameters
+        self.args = load_setting_from_json(path_setting)
         # configure dtype
         chainer.global_config.autotune = True
         chainer.cuda.set_max_workspace_size(512*1024*1024)
-        # shapes properties
-        self.input_size_model = [self.args["batch_size"], 52, 513]
-        self.input_size_test = [1, 52, 513]
-
-        # initializing harvest directory
-        self.args["name_save"] = self.args["model_name"] + self.args["version"]
         if  self.args["wave_otp_dir"] is not "False":
             self.args["wave_otp_dir"] = self.args["wave_otp_dir"] + self.args["name_save"]+"/"
             if not os.path.exists(self.args["wave_otp_dir"]):
@@ -140,20 +86,28 @@ class Model:
         self.g_a_to_b = Generator()
         self.g_b_to_a = Generator()
         #creating discriminator (if you want to view more codes then ./model.py)
-        self.d_a_and_b = Discriminator()
+        self.d_a = Discriminator()
+        self.d_b = Discriminator()
+        if self.args["gpu"] >= 0:
+            chainer.cuda.Device(self.args["gpu"]).use()
+            self.g_a_to_b.to_gpu()
+            self.g_b_to_a.to_gpu()
+            self.d_a.to_gpu()
+            self.d_b.to_gpu()
         # Optimizers
         def make_optimizer(model, alpha=0.0002, beta1=0.5):
-            optimizer = chainer.optimizers.Adam(alpha=alpha, beta1=beta1)
+            optimizer = chainer.optimizers.Adam(alpha=alpha, beta1=beta1, amsgrad=True)
             optimizer.setup(model)
             return optimizer
         g_optimizer_ab = make_optimizer(self.g_a_to_b, self.args["learning_rate"])
         g_optimizer_ba = make_optimizer(self.g_b_to_a, self.args["learning_rate"])
-        d_optimizer = make_optimizer(self.d_a_and_b, self.args["learning_rate"])
+        d_optimizer_a = make_optimizer(self.d_a, self.args["learning_rate"])
+        d_optimizer_b = make_optimizer(self.d_b, self.args["learning_rate"])
         self.updater = CycleGANUpdater(
-            model={"main":self.g_a_to_b, "inverse":self.g_b_to_a, "dis":self.d_a_and_b},
+            model={"main":self.g_a_to_b, "inverse":self.g_b_to_a, "disa":self.d_a, "disb":self.d_b},
             max_itr=self.args["train_iteration"],
             iterator={"main":train_iter_a, "data_b":train_iter_b},
-            optimizer={"gen_ab":g_optimizer_ab, "gen_ba":g_optimizer_ba, "dis":d_optimizer},
+            optimizer={"gen_ab":g_optimizer_ab, "gen_ba":g_optimizer_ba, "disa":d_optimizer_a, "disb":d_optimizer_b},
             device=self.args["gpu"])
     def train(self):
         """
@@ -169,6 +123,7 @@ class Model:
         else:
             print(" [I] Load failed.")
         display_interval = (self.args["log_interval"], 'epoch')
+        decay_timming = chainer.training.triggers.ManualScheduleTrigger([self.args["train_iteration"]*0.5, self.args["train_iteration"]*0.75], 'iteration')
         if self.args["test"]:
             summary.set_out(checkpoint_dir)
             trainer.extend(
@@ -178,14 +133,18 @@ class Model:
         trainer.extend(chainer.training.extensions.snapshot(filename='snapshot_iter_{.updater.iteration}.npz'), trigger=display_interval)
         trainer.extend(chainer.training.extensions.snapshot_object(self.g_a_to_b, 'gen_ab_iter_{.updater.iteration}.npz'), trigger=display_interval)
         trainer.extend(chainer.training.extensions.snapshot_object(self.g_b_to_a, 'gen_ba_iter_{.updater.iteration}.npz'), trigger=display_interval)
-        trainer.extend(chainer.training.extensions.snapshot_object(self.d_a_and_b, 'dis_iter_{.updater.iteration}.npz'), trigger=display_interval)
+        trainer.extend(chainer.training.extensions.snapshot_object(self.d_a, 'dis_a_iter_{.updater.iteration}.npz'), trigger=display_interval)
+        trainer.extend(chainer.training.extensions.snapshot_object(self.d_b, 'dis_b_iter_{.updater.iteration}.npz'), trigger=display_interval)
+        # learning rate decay
+        trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=self.updater.get_optimizer("gen_ab")), trigger=decay_timming)
+        trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=self.updater.get_optimizer("gen_ba")), trigger=decay_timming)
+        trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=self.updater.get_optimizer("disa")), trigger=decay_timming)
+        trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=self.updater.get_optimizer("disb")), trigger=decay_timming)
         # logging
         trainer.extend(chainer.training.extensions.LogReport(trigger=display_interval))
-        # weight resampler
-        trainer.extend(WeightShaker(trainer), trigger=(10, 'epoch'))
         # console output
         trainer.extend(chainer.training.extensions.ProgressBar(update_interval=10))
-        trainer.extend(chainer.training.extensions.PrintReport(['epoch', 'iteration', 'gen_ab/loss_GAN', 'gen_ab/loss_cyc', 'gen_ba/loss_GAN', 'gen_ba/loss_cyc', 'dis/loss', 'gen_ab/accuracy']), trigger=display_interval)
+        trainer.extend(chainer.training.extensions.PrintReport(['epoch', 'iteration', 'gen_ab/loss_GAN', 'gen_ab/loss_cyc', 'gen_ba/loss_GAN', 'gen_ba/loss_cyc', 'disa/loss', 'disb/loss', 'gen_ab/accuracy']), trigger=display_interval)
         # run tarining
         print(" [I] Train Started")
         trainer.run()
@@ -209,8 +168,10 @@ class Model:
                 chainer.serializers.load_npz(_ab, _trainer.updater.gen_ab)
                 _ba = list(glob.glob(_checkpoint_dir+"/gen_ba*.npz"))[0]
                 chainer.serializers.load_npz(_ba, _trainer.updater.gen_ba)
-                _di = list(glob.glob(_checkpoint_dir+"/dis*.npz"))[0]
-                chainer.serializers.load_npz(_di, _trainer.updater.dis)
+                _da = list(glob.glob(_checkpoint_dir+"/dis_a*.npz"))[0]
+                chainer.serializers.load_npz(_da, _trainer.updater.disa)
+                _db = list(glob.glob(_checkpoint_dir+"/dis_b*.npz"))[0]
+                chainer.serializers.load_npz(_db, _trainer.updater.disb)
                 return True
             return False
         else:
@@ -317,21 +278,6 @@ class TestModel(chainer.training.Extension):
         wave_data.setframerate(16000)
         wave_data.writeframes(voiced.reshape(-1).tobytes())
         wave_data.close()
-class WeightShaker(chainer.training.Extension):
-    """
-    WeightShufflerを行う関数呼び出しラッパーExtention
-    """
-    def __init__(self, trainer):
-        """
-        事前処理
-        """
-        super(WeightShaker, self).initialize(trainer)
-    def __call__(self, trainer):
-        """
-        やっていること
-        - disriminatorのweight_resampler関数を呼んでいる
-        """
-        trainer.updater.dis.weight_resampler()
 def encode(data):
     """
     #音声をWorldに変換します
@@ -456,5 +402,4 @@ def fft(data):
 
 
 if __name__ == '__main__':
-    NET = Model("./setting.json")
-    NET.train()
+    Model("./setting.json").train()
