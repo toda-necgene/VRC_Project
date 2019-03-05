@@ -14,7 +14,6 @@ import chainer
 import pyworld.pyworld as pw
 import numpy as np
 import matplotlib.pyplot as plt
-from chainerui import summary
 from model import Discriminator, Generator
 from updater import CycleGANUpdater
 from voice_to_dataset_cycle import create_dataset
@@ -56,6 +55,7 @@ class Model:
             sounds_a = np.load(self.args["train_data_dir"]+'/A.npy')
             sounds_b = np.load(self.args["train_data_dir"]+'/B.npy')
             print(" [I] loaded data-set !")
+        self.length_sp = sounds_a.shape[2]
         if self.args["gpu"] >= 0:
             sounds_a = chainer.backends.cuda.to_gpu(sounds_a)
             sounds_b = chainer.backends.cuda.to_gpu(sounds_b)
@@ -95,14 +95,18 @@ class Model:
             self.d_a.to_gpu()
             self.d_b.to_gpu()
         # Optimizers
-        def make_optimizer(model, alpha=0.0002, beta1=0.5):
-            optimizer = chainer.optimizers.Adam(alpha=alpha, beta1=beta1, amsgrad=True)
+        def make_optimizer_g(model, lr):
+            optimizer = chainer.optimizers.Adam(alpha=lr, beta1=0.5)
             optimizer.setup(model)
             return optimizer
-        g_optimizer_ab = make_optimizer(self.g_a_to_b, self.args["learning_rate"])
-        g_optimizer_ba = make_optimizer(self.g_b_to_a, self.args["learning_rate"])
-        d_optimizer_a = make_optimizer(self.d_a, self.args["learning_rate"])
-        d_optimizer_b = make_optimizer(self.d_b, self.args["learning_rate"])
+        def make_optimizer_d(model, lr):
+            optimizer = chainer.optimizers.Adam(alpha=lr, beta1=0.5)
+            optimizer.setup(model)
+            return optimizer
+        g_optimizer_ab = make_optimizer_g(self.g_a_to_b, self.args["learning_rate"])
+        g_optimizer_ba = make_optimizer_g(self.g_b_to_a, self.args["learning_rate"])
+        d_optimizer_a = make_optimizer_d(self.d_a, self.args["learning_rate"])
+        d_optimizer_b = make_optimizer_d(self.d_b, self.args["learning_rate"])
         self.updater = CycleGANUpdater(
             model={"main":self.g_a_to_b, "inverse":self.g_b_to_a, "disa":self.d_a, "disb":self.d_b},
             max_itr=self.args["train_iteration"],
@@ -123,18 +127,16 @@ class Model:
         else:
             print(" [I] Load failed.")
         display_interval = (self.args["log_interval"], 'epoch')
-        decay_timming = chainer.training.triggers.ManualScheduleTrigger([self.args["train_iteration"]*0.5, self.args["train_iteration"]*0.75], 'iteration')
         if self.args["test"]:
-            summary.set_out(checkpoint_dir)
             trainer.extend(
-                TestModel(trainer, self.args["wave_otp_dir"], self.test, self.label_power_spec, self.args["real_sample_compare"], self.voice_profile),
+                TestModel(trainer, self.args["wave_otp_dir"], self.test, self.label_power_spec, self.args["real_sample_compare"], self.voice_profile, self.length_sp),
                 trigger=display_interval)
         # save snapshot
-        trainer.extend(chainer.training.extensions.snapshot(filename='snapshot_iter_{.updater.iteration}.npz'), trigger=display_interval)
-        trainer.extend(chainer.training.extensions.snapshot_object(self.g_a_to_b, 'gen_ab_iter_{.updater.iteration}.npz'), trigger=display_interval)
-        trainer.extend(chainer.training.extensions.snapshot_object(self.g_b_to_a, 'gen_ba_iter_{.updater.iteration}.npz'), trigger=display_interval)
-        trainer.extend(chainer.training.extensions.snapshot_object(self.d_a, 'dis_a_iter_{.updater.iteration}.npz'), trigger=display_interval)
-        trainer.extend(chainer.training.extensions.snapshot_object(self.d_b, 'dis_b_iter_{.updater.iteration}.npz'), trigger=display_interval)
+        trainer.extend(chainer.training.extensions.snapshot(filename='snapshot.npz'), trigger=display_interval)
+        trainer.extend(chainer.training.extensions.snapshot_object(self.g_a_to_b, 'gen_ab.npz'), trigger=display_interval)
+        trainer.extend(chainer.training.extensions.snapshot_object(self.g_b_to_a, 'gen_ba.npz'), trigger=display_interval)
+        trainer.extend(chainer.training.extensions.snapshot_object(self.d_a, 'dis_a.npz'), trigger=display_interval)
+        trainer.extend(chainer.training.extensions.snapshot_object(self.d_b, 'dis_b.npz'), trigger=display_interval)
         # learning rate decay
         trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=self.updater.get_optimizer("gen_ab")), trigger=decay_timming)
         trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=self.updater.get_optimizer("gen_ba")), trigger=decay_timming)
@@ -164,11 +166,11 @@ class Model:
             if len(_files) > 0:
                 print(" [I] load file name : %s " % (_files[0]))
                 chainer.serializers.load_npz(_files[0], _trainer)
-                _ab = list(glob.glob(_checkpoint_dir+"/gen_ab*.npz"))[0]
+                _ab = list(glob.glob(_checkpoint_dir+"/gen_ab.npz"))[0]
                 chainer.serializers.load_npz(_ab, _trainer.updater.gen_ab)
-                _ba = list(glob.glob(_checkpoint_dir+"/gen_ba*.npz"))[0]
+                _ba = list(glob.glob(_checkpoint_dir+"/gen_ba.npz"))[0]
                 chainer.serializers.load_npz(_ba, _trainer.updater.gen_ba)
-                _da = list(glob.glob(_checkpoint_dir+"/dis_a*.npz"))[0]
+                _da = list(glob.glob(_checkpoint_dir+"/dis_a.npz"))[0]
                 chainer.serializers.load_npz(_da, _trainer.updater.disa)
                 _db = list(glob.glob(_checkpoint_dir+"/dis_b*.npz"))[0]
                 chainer.serializers.load_npz(_db, _trainer.updater.disb)
@@ -183,29 +185,32 @@ class TestModel(chainer.training.Extension):
     """
     テストを行うExtention
     """
-    def __init__(self, trainer, direc, source, label_spec, real_sample_compare, voice_profile):
+    def __init__(self, trainer, direc, source, label_spec, real_sample_compare, voice_profile, length_sp):
         """
         変数の初期化と事前処理
         """
         self.dir = direc
         self.model = trainer.updater.gen_ab
-        self.source_f0, self.source_sp, self.source_ap = encode(source.astype(np.float64))
+        self.source_f0, source_sp, source_ap = encode(source.astype(np.float64))
+        # source_ap = source_ap ** 2
         self.source_f0 = (self.source_f0-voice_profile[0])*voice_profile[2]+voice_profile[1]
-        padding_size = 52 - self.source_sp.shape[0] % 52
-        self.source_sp = np.pad(self.source_sp, ((padding_size, 0), (0, 0)), "edge").reshape(-1, 52, 513)
-        self.source_sp = np.transpose(self.source_sp, [0, 2, 1]).astype(np.float32)
-        self.source_sp = chainer.backends.cuda.to_gpu(self.source_sp)
         self.length = self.source_f0.shape[0]
+        padding_size = length_sp - source_sp.shape[0] % length_sp
+        source_sp = np.pad(source_sp, ((padding_size, 0), (0, 0)), "edge").reshape(-1, length_sp, 513)
+        source_sp = np.transpose(source_sp, [0, 2, 1]).astype(np.float32).reshape(-1, 513, length_sp, 1)
+        padding_size = length_sp - source_ap.shape[0] % length_sp
+        source_ap = np.pad(source_ap, ((padding_size, 0), (0, 0)), "edge").reshape(-1, length_sp, 513)
+        source_ap = np.transpose(source_ap, [0, 2, 1]).astype(np.float32).reshape(-1, 513, length_sp, 1)
+        source_sp_ap = np.append(source_sp, source_ap, axis=3).reshape(source_ap.shape[0], source_ap.shape[1], source_ap.shape[2], 2)
+        self.source_sp_ap = chainer.backends.cuda.to_gpu(source_sp_ap)
         self.wave_len = source.shape[0]
         self.real_sample_compare = real_sample_compare
         if real_sample_compare:
-            seconds = label_spec.shape[0] // (16000 // 512)
+            seconds = label_spec.shape[0] // (8192 // 512)
             self.label_spec = np.zeros([seconds, 512])
-            self.label_spec_v = np.zeros([seconds, 512])
             for h in range(0, seconds):
-                term = 16000 // 512
+                term = 8192 // 512
                 self.label_spec[h] = np.mean(label_spec[h*term:(h+1)*term], axis=0)
-                self.label_spec_v[h] = np.std(label_spec[h*term:(h+1)*term], axis=0)
         super(TestModel, self).initialize(trainer)
     def convert(self):
         """
@@ -215,13 +220,13 @@ class TestModel(chainer.training.Extension):
         #to convert wave file
         chainer.using_config("train", False)
         # run netr
-        result = self.model(self.source_sp)
+        result = self.model(self.source_sp_ap)
         result = chainer.backends.cuda.to_cpu(result.data)
-        result = np.transpose(result, [0, 2, 1])
-        result = result.reshape(-1, 513)[-self.length:]
+        result = np.transpose(result, [0, 2, 1, 3])
+        result = result.reshape(-1, 513, 2)[-self.length:]
         # post-process
         # WORLD to wave
-        result_wave = decode(self.source_f0, result, self.source_ap)
+        result_wave = decode(self.source_f0, result[:, :, 0], result[:, :, 1])
         result_wave_fixed = np.clip(result_wave, -1.0, 1.0).astype(np.float32)
         otp = result_wave_fixed.reshape(-1)
         head_cut_num = otp.shape[0]-self.wave_len
@@ -243,21 +248,14 @@ class TestModel(chainer.training.Extension):
         # calculating power spectrum
         image_power_spec = fft(out_put[800:156000])
         if self.real_sample_compare:
-            seconds = image_power_spec.shape[0] // (16000 // 512)
+            term = 8192 // 512
+            seconds = image_power_spec.shape[0] // (8192 // 512)
             spec_m = np.zeros([seconds, 512])
-            spec_v = np.zeros([seconds, 512])
             for h in range(0, seconds):
-                term = 16000 // 512
                 spec_m[h] = np.mean(image_power_spec[h*term:(h+1)*term], axis=0)
-                spec_v[h] = np.std(image_power_spec[h*term:(h+1)*term], axis=0)
             diff = np.sum(spec_m * self.label_spec) / (np.linalg.norm(spec_m) * np.linalg.norm(self.label_spec) + 1e-8)
-            diff2 = np.sum(spec_v * self.label_spec_v) / (np.linalg.norm(spec_v) * np.linalg.norm(self.label_spec_v) + 1e-8)
-            score = float((diff+diff2)/2)
+            score = float(diff)
             chainer.report({"accuracy": score}, self.model)
-        with summary.reporter() as r:
-            img = np.transpose(image_power_spec.reshape(1, -1, 512)*255, (0, 2, 1)).astype(np.uint8)
-            r.image(img)
-            r.audio(out_put, 16000)
         plt.clf()
         plt.subplot(2, 1, 1)
         insert_image = np.transpose(image_power_spec, (1, 0))
@@ -336,6 +334,7 @@ def decode(_f0, _sp, _ap):
         dtype       : float64
     """
     _sp = np.exp(_sp * 20 - 20).astype(np.float)
+    _ap = _ap.astype(np.float)
     return pw.synthesize(_f0, _sp, _ap, 16000)
 
 

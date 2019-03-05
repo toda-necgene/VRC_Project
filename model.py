@@ -20,34 +20,28 @@ class Discriminator(chainer.Chain):
         """
         super(Discriminator, self).__init__()
         with self.init_scope():
-            w_init = chainer.initializers.HeNormal()
-            self.c_0 = L.Convolution1D(513, 256, 1, initialW=w_init)
-            self.a_1 = L.Convolution1D(256, 128, 7, stride=3, initialW=w_init)
-            self.c_1 = L.Convolution1D(256, 128, 7, stride=3, initialW=w_init)
-            self.a_2 = L.Convolution1D(128, 64, 5, initialW=w_init)
-            self.c_2 = L.Convolution1D(128, 64, 5, initialW=w_init)
-            self.a_3 = L.Convolution1D(64, 32, 7, initialW=w_init)
-            self.c_3 = L.Convolution1D(64, 32, 7, initialW=w_init)
-            self.c_l = L.Convolution1D(32, 1, 1, initialW=chainer.initializers.Normal(0.002))
+            self.c_0 = L.Convolution2D(513, 256, (7, 2), stride=(3, 1), initialW=chainer.initializers.Normal(0.02))
+            self.c_1 = L.Convolution1D(256, 128, 5, initialW=chainer.initializers.Normal(0.02))
+            self.c_2 = L.Convolution1D(128, 64, 7, initialW=chainer.initializers.Normal(0.02))
+            self.c_3 = L.Convolution1D(64, 32, 9, initialW=chainer.initializers.Normal(0.02))
+            self.c_4 = L.Convolution1D(32, 16, 11, initialW=chainer.initializers.Normal(0.02))
+            self.c_l = L.Convolution1D(16, 1, 1, initialW=chainer.initializers.Normal(0.02))
     # @static_graph
     def forward(self, _x):
         """
         呼び出し関数
         実際の計算を担う
         """
-        # 次元削減
         _y = self.c_0(_x)
+        _y = F.leaky_relu(_y)[:, :, :, 0]
+        _y = self.c_1(_y)
         _y = F.leaky_relu(_y)
-        _f = F.sigmoid(self.a_1(_y))
-        _h = self.c_1(_y)
-        _y = _h * _f
-        _f = F.sigmoid(self.a_2(_y))
-        _h = self.c_2(_y)
-        _y = _h * _f
-        _f = F.sigmoid(self.a_3(_y))
-        _h = self.c_3(_y)
-        _y = _h * _f
-        # 出力変換
+        _y = self.c_2(_y)
+        _y = F.leaky_relu(_y)
+        _y = self.c_3(_y)
+        _y = F.leaky_relu(_y)
+        _y = self.c_4(_y)
+        _y = F.leaky_relu(_y)
         _y = self.c_l(_y)
         return _y
 class Generator(chainer.Chain):
@@ -64,33 +58,26 @@ class Generator(chainer.Chain):
         """
         super(Generator, self).__init__()
         with self.init_scope():
-            w_init = chainer.initializers.HeNormal()
-            self.c_0 = L.Convolution1D(513, 32, 1, initialW=w_init)
-            self.c_1_1 = L.Convolution1D(32, 128, 7, stride=3, initialW=w_init, nobias=True)
-            self.b_1_1 = L.BatchNormalization(128)
-            self.c_1_2 = L.Deconvolution1D(128, 32, 7, stride=3, initialW=w_init, nobias=True)
-            self.b_1_2 = L.BatchNormalization(32)
-            self.c_2_1 = L.Convolution1D(32, 128, 7, stride=3, initialW=w_init, nobias=True)
-            self.b_2_1 = L.BatchNormalization(128)
-            self.c_2_2 = L.Deconvolution1D(128, 32, 7, stride=3, initialW=w_init, nobias=True)
-            self.b_2_2 = L.BatchNormalization(32)
-            self.c_3_1 = L.Convolution1D(32, 128, 7, stride=3, initialW=w_init, nobias=True)
-            self.b_3_1 = L.BatchNormalization(128)
-            self.c_3_2 = L.Deconvolution1D(128, 32, 7, stride=3, initialW=w_init, nobias=True)
-            self.b_3_2 = L.BatchNormalization(32)
-            self.c_4_1 = L.Convolution1D(32, 128, 4, stride=3, initialW=w_init, nobias=True)
-            self.b_4_1 = L.BatchNormalization(128)
-            self.c_4_2 = L.Deconvolution1D(128, 32, 4, stride=3, initialW=w_init, nobias=True)
-            self.b_4_2 = L.BatchNormalization(32)
-            self.c_5_1 = L.Convolution1D(32, 128, 4, stride=3, initialW=w_init, nobias=True)
-            self.b_5_1 = L.BatchNormalization(128)
-            self.c_5_2 = L.Deconvolution1D(128, 32, 4, stride=3, initialW=w_init, nobias=True)
-            self.b_5_2 = L.BatchNormalization(32)
-            self.c_6_1 = L.Convolution1D(32, 128, 4, stride=3, initialW=w_init, nobias=True)
-            self.b_6_1 = L.BatchNormalization(128)
-            self.c_6_2 = L.Deconvolution1D(128, 32, 4, stride=3, initialW=w_init, nobias=True)
-            self.b_6_2 = L.BatchNormalization(32)
-            self.c_n = L.Convolution1D(32, 513, 1, initialW=chainer.initializers.Normal(0.002))
+            w_init = chainer.initializers.Normal(0.002)
+            self.c_0 = L.Convolution2D(513, 16, (1, 2), initialW=w_init, nobias=True)
+            self.b_0 = L.BatchNormalization(16)
+            self.c_1 = L.Convolution1D(16, 128, 7, stride=3, initialW=w_init, nobias=True)
+            self.b_1 = L.BatchNormalization(128)
+            self.c_2 = L.Deconvolution1D(128, 16, 7, stride=3, initialW=w_init, nobias=True)
+            self.b_2 = L.BatchNormalization(16)
+            self.c_3 = L.Convolution1D(16, 128, 7, stride=3, initialW=w_init, nobias=True)
+            self.b_3 = L.BatchNormalization(128)
+            self.c_4 = L.Deconvolution1D(128, 16, 7, stride=3, initialW=w_init, nobias=True)
+            self.b_4 = L.BatchNormalization(16)
+            self.c_5 = L.Convolution1D(16, 128, 7, stride=3, initialW=w_init, nobias=True)
+            self.b_5 = L.BatchNormalization(128)
+            self.c_6 = L.Deconvolution1D(128, 16, 7, stride=3, initialW=w_init, nobias=True)
+            self.b_6 = L.BatchNormalization(16)
+            self.c_7 = L.Convolution1D(16, 128, 7, stride=3, initialW=w_init, nobias=True)
+            self.b_7 = L.BatchNormalization(128)
+            self.c_8 = L.Deconvolution1D(128, 16, 7, stride=3, initialW=w_init, nobias=True)
+            self.b_8 = L.BatchNormalization(16)
+            self.c_n = L.Deconvolution2D(16, 513, (1, 2), initialW=chainer.initializers.Normal(0.002))
     # @static_graph
     def forward(self, _x):
         """
@@ -100,56 +87,46 @@ class Generator(chainer.Chain):
             ---------
             x: ndarray
                 変換前スペクトラム包絡
-                shape: [N,513,52]
+                shape: [N,513,104]
                 range: [-1.0,1.0]
             Returns
             -------
             _y: ndarray
                 変換後スペクトラム包絡
-                shape: [N,513,52]
+                shape: [N,513,104]
                 range: [-1.0,1.0]
         """
         # Expand second-dimention
-        _y = self.c_0(_x)
+        _y = self.c_0(_x)[:, :, :, 0]
+        _y = self.b_0(_y)
         _y = F.leaky_relu(_y)
         # ResModule
-        _h = self.c_1_1(_y)
-        _h = self.b_1_1(_h)
+        _h = self.c_1(_y)
+        _h = self.b_1(_h)
         _h = F.leaky_relu(_h)
-        _h = self.c_1_2(_h)
-        _h = self.b_1_2(_h)
-        _y = F.leaky_relu(_y + _h)
-        _h = self.c_2_1(_y)
-        _h = self.b_2_1(_h)
+        _h = self.c_2(_h)
+        _h = self.b_2(_h)
+        _y = F.leaky_relu(_h + _y)
+        _h = self.c_3(_y)
+        _h = self.b_3(_h)
         _h = F.leaky_relu(_h)
-        _h = self.c_2_2(_h)
-        _h = self.b_2_2(_h)
-        _y = F.leaky_relu(_y + _h)
-        _h = self.c_3_1(_y)
-        _h = self.b_3_1(_h)
+        _h = self.c_4(_h)
+        _h = self.b_4(_h)
+        _y = F.leaky_relu(_h + _y)
+        _h = self.c_5(_y)
+        _h = self.b_5(_h)
         _h = F.leaky_relu(_h)
-        _h = self.c_3_2(_h)
-        _h = self.b_3_2(_h)
-        _y = F.leaky_relu(_y + _h)
-        _h = self.c_4_1(_y)
-        _h = self.b_4_1(_h)
+        _h = self.c_6(_h)
+        _h = self.b_6(_h)
+        _y = F.leaky_relu(_h + _y)
+        _h = self.c_7(_y)
+        _h = self.b_7(_h)
         _h = F.leaky_relu(_h)
-        _h = self.c_4_2(_h)
-        _h = self.b_4_2(_h)
-        _y = F.leaky_relu(_y + _h)
-        _h = self.c_5_1(_y)
-        _h = self.b_5_1(_h)
-        _h = F.leaky_relu(_h)
-        _h = self.c_5_2(_h)
-        _h = self.b_5_2(_h)
-        _y = F.leaky_relu(_y + _h)
-        _h = self.c_6_1(_y)
-        _h = self.b_6_1(_h)
-        _h = F.leaky_relu(_h)
-        _h = self.c_6_2(_h)
-        _h = self.b_6_2(_h)
-        _y = F.leaky_relu(_y + _h)
+        _h = self.c_8(_h)
+        _h = self.b_8(_h)
+        _y = F.leaky_relu(_h + _y)
         # Squeeze second-dimention
+        _y = F.expand_dims(_y, 3)
         _y = self.c_n(_y)
         _y = F.tanh(_y)
         return _y

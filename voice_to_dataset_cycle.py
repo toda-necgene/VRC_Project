@@ -48,12 +48,15 @@ def create_dataset(_term, _chunk=1024):
                 _f0, _t = pw.dio(data_real_current_use, 16000)
                 f0_estimation = pw.stonemask(data_real_current_use, _f0, _t, 16000)
                 spec_env = pw.cheaptrick(data_real_current_use, f0_estimation, _t, 16000)
+                ap = pw.d4c(data_real_current_use, f0_estimation, _t, 16000)
                 f0_estimation = f0_estimation[f0_estimation > 0.0]
                 if f0_estimation.shape[0] != 0:
                     _ff.extend(f0_estimation)
-                spec_env = np.transpose(spec_env, [1, 0])
+                spec_env = np.transpose(spec_env, [1, 0]).reshape(513, spec_env.shape[0], 1)
                 spec_env = np.clip((np.log(spec_env) + 20) / 20, -1.0, 1.0)
-                memory_spec_env.append(spec_env)
+                ap = np.transpose(ap, [1, 0]).reshape(513, ap.shape[0], 1)
+                spec = np.append(spec_env, ap, axis=2).reshape(ap.shape[0], ap.shape[1], 2)
+                memory_spec_env.append(spec)
         _m = np.asarray(memory_spec_env, dtype=np.float32)
         dataset_to_return.append(_m)
         np.save(os.path.join(TRAIN_DIR, name + ".npy"), _m)
