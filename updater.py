@@ -50,13 +50,12 @@ class CycleGANUpdater(chainer.training.updaters.StandardUpdater):
         y_label_o = _xp.ones([batch_size, 1, wave_length], dtype="float32")
         loss_d_t_a = F.mean_squared_error(y_ta, y_label_o)
         loss_d_t_b = F.mean_squared_error(y_tb, y_label_o)
-        (loss_d_t_a + loss_d_t_b).backward()
         y_label_z = _xp.zeros([batch_size, 1, wave_length], dtype="float32")
         y_fa = self.disa(fake_ba_)
         y_fb = self.disb(fake_ab_)
         loss_d_f_a = F.mean_squared_error(y_fa, y_label_z)
         loss_d_f_b = F.mean_squared_error(y_fb, y_label_z)
-        (loss_d_f_a + loss_d_f_b).backward()
+        (loss_d_t_a + loss_d_t_b + loss_d_f_a + loss_d_f_b).backward()
         chainer.report({"loss": loss_d_f_a+loss_d_t_a}, self.disa)
         chainer.report({"loss": loss_d_f_b+loss_d_t_b}, self.disb)
         disa_optimizer.update()
@@ -72,7 +71,7 @@ class CycleGANUpdater(chainer.training.updaters.StandardUpdater):
         loss_cycb = F.mean_squared_error(fake_bab, batch_b)
         chainer.report({"loss_GAN": loss_ganba, "loss_cyc": loss_cyca}, self.gen_ba)
         chainer.report({"loss_GAN": loss_ganab, "loss_cyc": loss_cycb}, self.gen_ab)
-        gloss = (loss_cyca + loss_cycb) * 20 + loss_ganab + loss_ganba
+        gloss = loss_cyca + loss_cycb + (loss_ganab + loss_ganba)*0.01
         gloss.backward()
         gen_ba_optimizer.update()
         gen_ab_optimizer.update()

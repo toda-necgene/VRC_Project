@@ -137,11 +137,6 @@ class Model:
         trainer.extend(chainer.training.extensions.snapshot_object(self.g_b_to_a, 'gen_ba.npz'), trigger=display_interval)
         trainer.extend(chainer.training.extensions.snapshot_object(self.d_a, 'dis_a.npz'), trigger=display_interval)
         trainer.extend(chainer.training.extensions.snapshot_object(self.d_b, 'dis_b.npz'), trigger=display_interval)
-        # learning rate decay
-        trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=self.updater.get_optimizer("gen_ab")), trigger=decay_timming)
-        trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=self.updater.get_optimizer("gen_ba")), trigger=decay_timming)
-        trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=self.updater.get_optimizer("disa")), trigger=decay_timming)
-        trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=self.updater.get_optimizer("disb")), trigger=decay_timming)
         # logging
         trainer.extend(chainer.training.extensions.LogReport(trigger=display_interval))
         # console output
@@ -191,18 +186,19 @@ class TestModel(chainer.training.Extension):
         """
         self.dir = direc
         self.model = trainer.updater.gen_ab
-        self.source_f0, source_sp, source_ap = encode(source.astype(np.float64))
+        source_f0, source_sp, source_ap = encode(source.astype(np.float64))
         # source_ap = source_ap ** 2
-        self.source_f0 = (self.source_f0-voice_profile[0])*voice_profile[2]+voice_profile[1]
-        self.length = self.source_f0.shape[0]
+        self.length = source_f0.shape[0]
         padding_size = length_sp - source_sp.shape[0] % length_sp
         source_sp = np.pad(source_sp, ((padding_size, 0), (0, 0)), "edge").reshape(-1, length_sp, 513)
         source_sp = np.transpose(source_sp, [0, 2, 1]).astype(np.float32).reshape(-1, 513, length_sp, 1)
         padding_size = length_sp - source_ap.shape[0] % length_sp
         source_ap = np.pad(source_ap, ((padding_size, 0), (0, 0)), "edge").reshape(-1, length_sp, 513)
         source_ap = np.transpose(source_ap, [0, 2, 1]).astype(np.float32).reshape(-1, 513, length_sp, 1)
-        source_sp_ap = np.append(source_sp, source_ap, axis=3).reshape(source_ap.shape[0], source_ap.shape[1], source_ap.shape[2], 2)
+        si = source_sp.shape
+        source_sp_ap = np.concatenate([source_sp, source_ap], axis=3).reshape(si[0], si[1], si[2], 2)
         self.source_sp_ap = chainer.backends.cuda.to_gpu(source_sp_ap)
+        self.source_f0 = (source_f0-voice_profile[0])*voice_profile[2]+voice_profile[1]
         self.wave_len = source.shape[0]
         self.real_sample_compare = real_sample_compare
         if real_sample_compare:

@@ -55,7 +55,7 @@ def create_dataset(_term, _chunk=1024):
                 spec_env = np.transpose(spec_env, [1, 0]).reshape(513, spec_env.shape[0], 1)
                 spec_env = np.clip((np.log(spec_env) + 20) / 20, -1.0, 1.0)
                 ap = np.transpose(ap, [1, 0]).reshape(513, ap.shape[0], 1)
-                spec = np.append(spec_env, ap, axis=2).reshape(ap.shape[0], ap.shape[1], 2)
+                spec = np.concatenate([spec_env, ap], axis=2).reshape(ap.shape[0], ap.shape[1], 2)
                 memory_spec_env.append(spec)
         _m = np.asarray(memory_spec_env, dtype=np.float32)
         dataset_to_return.append(_m)
