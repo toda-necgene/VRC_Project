@@ -67,11 +67,11 @@ class CycleGANUpdater(chainer.training.updaters.StandardUpdater):
         y_fake_ab = self.disb(fake_ab_)
         loss_ganab = F.mean_squared_error(y_fake_ab, y_label_o)
         loss_ganba = F.mean_squared_error(y_fake_ba, y_label_o)
-        loss_cyca = F.mean_squared_error(fake_aba, batch_a)
-        loss_cycb = F.mean_squared_error(fake_bab, batch_b)
+        loss_cyca = F.mean_absolute_error(fake_aba, batch_a)
+        loss_cycb = F.mean_absolute_error(fake_bab, batch_b)
         chainer.report({"loss_GAN": loss_ganba, "loss_cyc": loss_cyca}, self.gen_ba)
         chainer.report({"loss_GAN": loss_ganab, "loss_cyc": loss_cycb}, self.gen_ab)
-        gloss = loss_cyca + loss_cycb + (loss_ganab + loss_ganba)*0.01
+        gloss = (loss_cyca + loss_cycb) + (loss_ganab + loss_ganba)*0.05
         gloss.backward()
         gen_ba_optimizer.update()
         gen_ab_optimizer.update()

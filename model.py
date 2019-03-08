@@ -20,12 +20,14 @@ class Discriminator(chainer.Chain):
         """
         super(Discriminator, self).__init__()
         with self.init_scope():
-            self.c_0 = L.Convolution2D(513, 256, (7, 2), stride=(2, 1), initialW=chainer.initializers.Normal(0.02))
-            self.c_1 = L.Convolution1D(256, 128, 5, initialW=chainer.initializers.Normal(0.02))
-            self.c_2 = L.Convolution1D(128, 64, 7, initialW=chainer.initializers.Normal(0.02))
-            self.c_3 = L.Convolution1D(64, 64, 9, initialW=chainer.initializers.Normal(0.02))
-            self.c_4 = L.Convolution1D(64, 64, 11, initialW=chainer.initializers.Normal(0.02))
-            self.c_l = L.Convolution1D(64, 1, 1, initialW=chainer.initializers.Normal(0.02))
+            self.c_0 = L.Convolution2D(513, 256, (5, 2), stride=(2, 1), initialW=chainer.initializers.Normal(0.02))
+            self.c_1 = L.Convolution1D(256, 64, 5, pad=2, initialW=chainer.initializers.Normal(0.002))
+            self.c_2 = L.Convolution1D(64, 64, 5, pad=2, initialW=chainer.initializers.Normal(0.002))
+            self.c_3 = L.Convolution1D(64, 64, 5, pad=2, initialW=chainer.initializers.Normal(0.002))
+            self.c_4 = L.Convolution1D(64, 64, 5, pad=2, initialW=chainer.initializers.Normal(0.002))
+            self.c_5 = L.Convolution1D(64, 64, 5, pad=2, initialW=chainer.initializers.Normal(0.002))
+            self.c_6 = L.Convolution1D(64, 64, 5, pad=2, initialW=chainer.initializers.Normal(0.002))
+            self.c_l = L.Convolution1D(64, 1, 1, initialW=chainer.initializers.Normal(0.002))
     # @static_graph
     def forward(self, _x):
         """
@@ -36,12 +38,16 @@ class Discriminator(chainer.Chain):
         _y = F.leaky_relu(_y)[:, :, :, 0]
         _y = self.c_1(_y)
         _y = F.leaky_relu(_y)
-        _y = self.c_2(_y)
+        _h = self.c_2(_y)
+        _y = F.leaky_relu(_y + _h)
+        _h = self.c_3(_y)
         _y = F.leaky_relu(_y)
-        _y = self.c_3(_y)
-        _y = F.leaky_relu(_y)
-        _y = self.c_4(_y)
-        _y = F.leaky_relu(_y)
+        _h = self.c_4(_y)
+        _y = F.leaky_relu(_y + _h)
+        _h = self.c_5(_y)
+        _y = F.leaky_relu(_y + _h)
+        _h = self.c_6(_y)
+        _y = F.leaky_relu(_y + _h)
         _y = self.c_l(_y)
         return _y
 class Generator(chainer.Chain):
@@ -58,7 +64,7 @@ class Generator(chainer.Chain):
         """
         super(Generator, self).__init__()
         with self.init_scope():
-            w_init = chainer.initializers.Normal(0.002)
+            w_init = chainer.initializers.Normal(0.02)
             self.c_0 = L.Convolution2D(513, 32, (1, 2), initialW=w_init, nobias=True)
             self.b_0 = L.BatchNormalization(32)
             self.c_1 = L.Convolution1D(32, 128, 7, stride=3, initialW=w_init, nobias=True)

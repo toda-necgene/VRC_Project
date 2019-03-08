@@ -96,17 +96,17 @@ class Model:
             self.d_b.to_gpu()
         # Optimizers
         def make_optimizer_g(model, lr):
-            optimizer = chainer.optimizers.Adam(alpha=lr, beta1=0.5)
+            optimizer = chainer.optimizers.Adam(alpha=lr, beta1=0.5, beta2=0.99)
             optimizer.setup(model)
             return optimizer
         def make_optimizer_d(model, lr):
-            optimizer = chainer.optimizers.Adam(alpha=lr, beta1=0.5)
+            optimizer = chainer.optimizers.Adam(alpha=lr, beta1=0.5, beta2=0.99)
             optimizer.setup(model)
             return optimizer
         g_optimizer_ab = make_optimizer_g(self.g_a_to_b, self.args["learning_rate"])
         g_optimizer_ba = make_optimizer_g(self.g_b_to_a, self.args["learning_rate"])
-        d_optimizer_a = make_optimizer_d(self.d_a, self.args["learning_rate"])
-        d_optimizer_b = make_optimizer_d(self.d_b, self.args["learning_rate"])
+        d_optimizer_a = make_optimizer_d(self.d_a, self.args["learning_rate"]*4)
+        d_optimizer_b = make_optimizer_d(self.d_b, self.args["learning_rate"]*4)
         self.updater = CycleGANUpdater(
             model={"main":self.g_a_to_b, "inverse":self.g_b_to_a, "disa":self.d_a, "disb":self.d_b},
             max_itr=self.args["train_iteration"],
@@ -126,7 +126,7 @@ class Model:
             print(" [I] Load success.")
         else:
             print(" [I] Load failed.")
-        display_interval = (self.args["log_interval"], 'epoch')
+        display_interval = (self.args["log_interval"], 'iteration')
         if self.args["test"]:
             trainer.extend(
                 TestModel(trainer, self.args["wave_otp_dir"], self.test, self.label_power_spec, self.args["real_sample_compare"], self.voice_profile, self.length_sp),
@@ -187,7 +187,6 @@ class TestModel(chainer.training.Extension):
         self.dir = direc
         self.model = trainer.updater.gen_ab
         source_f0, source_sp, source_ap = encode(source.astype(np.float64))
-        # source_ap = source_ap ** 2
         self.length = source_f0.shape[0]
         padding_size = length_sp - source_sp.shape[0] % length_sp
         source_sp = np.pad(source_sp, ((padding_size, 0), (0, 0)), "edge").reshape(-1, length_sp, 513)
@@ -198,7 +197,7 @@ class TestModel(chainer.training.Extension):
         si = source_sp.shape
         source_sp_ap = np.concatenate([source_sp, source_ap], axis=3).reshape(si[0], si[1], si[2], 2)
         self.source_sp_ap = chainer.backends.cuda.to_gpu(source_sp_ap)
-        self.source_f0 = (source_f0-voice_profile[0])*voice_profile[2]+voice_profile[1]
+        self.source_f0 = (source_f0-voice_profile[0])*voice_profile[2] + voice_profile[1]
         self.wave_len = source.shape[0]
         self.real_sample_compare = real_sample_compare
         if real_sample_compare:
