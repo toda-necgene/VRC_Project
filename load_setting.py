@@ -29,7 +29,6 @@ def load_setting_from_json(path_setting):
     # learning options
     _args["batch_size"] = 128
     _args["train_iteration"] = 10000
-    _args["learning_rate"] = 2e-4
     _args["log_interval"] = 5
     # architecture option
     _args["input_size"] = 4096
@@ -58,7 +57,7 @@ def load_setting_from_json(path_setting):
             _args["input_size_test"] = [1, 52, 513]
 
             # initializing harvest directory
-            _args["name_save"] = _args["model_name"] + _args["version"]
+            _args["name_save"] = _args["checkpoint_dir"]+_args["model_name"] + _args["version"]
         except json.JSONDecodeError as er_message:
             print(" [W] JSONDecodeError: ", er_message)
             print(" [W] Use default setting")

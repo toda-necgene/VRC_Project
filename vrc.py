@@ -87,12 +87,11 @@ def load(checkpoint_dir, model):
     """
     print(" [I] Reading checkpoint...")
     if os.path.exists(checkpoint_dir):
-        _files = list(glob.glob(checkpoint_dir+"/snapshot*.npz"))
-        if len(_files) > 0:
-            print(" [I] load file name : %s " % (_files[0]))
-            _ab = list(glob.glob(checkpoint_dir+"/gen_ab*.npz"))[0]
-            chainer.serializers.load_npz(_ab, model)
-            return True
+        print(" [I] file found.")
+        _ab = list(glob.glob(checkpoint_dir+"/gen_ab.npz"))[0]
+        chainer.serializers.load_npz(_ab, model)
+        return True
+    print(" [I] dir not found:"+checkpoint_dir)
     return False
 
 def process(queue_in, queue_out, args_model):
@@ -118,9 +117,11 @@ def process(queue_in, queue_out, args_model):
             _inputs = np.frombuffer(_ins, dtype=np.int16) / 32767.0
             _inputs = np.clip(_inputs, -1.0, 1.0)
             _f0, _sp, _ap = encode(_inputs.copy())
-            _data = _sp.transpose((1, 0)).reshape(1, 513, 52).astype(np.float32)
+            _data = _sp.transpose((1, 0)).reshape(1, 513, -1, 1).astype(np.float32)
             _output = net(_data)
-            _response = decode((_f0 - f0_parameters[0]) * f0_parameters[2] + f0_parameters[1], _output[0], _ap)
+            _output = _output.data[0, :, :, 0]
+            _output = np.transpose(_output, (1, 0))
+            _response = decode((_f0 / f0_parameters[0]) * f0_parameters[1], _output, _ap)
             _response = (np.clip(_response, -1.0, 1.0).reshape(-1) * 32767)
             _response = _response.astype(np.int16)
             _response = _response.tobytes()
@@ -141,24 +142,28 @@ if __name__ == '__main__':
             if _message == "ok":
                 break
     print("Started")
+    stream = p_in.open(format=pa.paInt16,
+                       channels=1,
+                       rate=fs,
+                       frames_per_buffer=args["input_size"],
+                       input=True,
+                       output=True)
+    stream.start_stream()
+    _output_wave_dammy = np.zeros(args["input_size"], dtype=np.int16).tobytes()
     def terminate():
         """
         緊急終了用プロセス
         """
         stream.stop_stream()
         stream.close()
+        q_in.close()
+        q_out.close()
+        p.terminate()
         p_in.terminate()
         print("Stream stops")
         freeze_support()
+        exit(-1)
     atexit.register(terminate)
-    stream = p_in.open(format=pa.paInt16,
-                       channels=1,
-                       rate=fs,
-                       frames_per_buffer=args["inputs_size"],
-                       input=True,
-                       output=True)
-    stream.start_stream()
-    _output_wave_dammy = np.zeros(args["inputs_size"], dtype=np.int16).tobytes()
     while stream.is_active():
         _inputs_source = stream.read(args["input_size"])
         q_in.put(_inputs_source)

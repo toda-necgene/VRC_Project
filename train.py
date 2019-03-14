@@ -14,7 +14,7 @@ import chainer
 import pyworld.pyworld as pw
 import numpy as np
 import matplotlib.pyplot as plt
-from model import Discriminator, Generator
+from model import Discriminator, Generator, Encoder, Decoder
 from updater import CycleGANUpdater
 from voice_to_dataset_cycle import create_dataset
 from load_setting import load_setting_from_json
@@ -40,7 +40,7 @@ class Model:
         chainer.global_config.autotune = True
         chainer.cuda.set_max_workspace_size(512*1024*1024)
         if  self.args["wave_otp_dir"] is not "False":
-            self.args["wave_otp_dir"] = self.args["wave_otp_dir"] + self.args["name_save"]+"/"
+            self.args["wave_otp_dir"] = self.args["wave_otp_dir"] + self.args["model_name"] +  self.args["version"]+"/"
             if not os.path.exists(self.args["wave_otp_dir"]):
                 os.makedirs(self.args["wave_otp_dir"])
 
@@ -83,43 +83,54 @@ class Model:
         # loading f0 parameters
         self.voice_profile = np.load("./voice_profile.npy")
         #creating generator (if you want to view more codes then ./model.py)
-        self.g_a_to_b = Generator()
-        self.g_b_to_a = Generator()
+        self.g_en = Encoder()
+        self.g_de = Decoder()
+        self.g_a_to_b1 = Generator()
+        self.g_b_to_a1 = Generator()
+        self.g_a_to_b2 = Generator()
+        self.g_b_to_a2 = Generator()
         #creating discriminator (if you want to view more codes then ./model.py)
         self.d_a = Discriminator()
         self.d_b = Discriminator()
         if self.args["gpu"] >= 0:
             chainer.cuda.Device(self.args["gpu"]).use()
-            self.g_a_to_b.to_gpu()
-            self.g_b_to_a.to_gpu()
+            self.g_en.to_gpu()
+            self.g_de.to_gpu()
+            self.g_a_to_b1.to_gpu()
+            self.g_b_to_a1.to_gpu()
+            self.g_a_to_b2.to_gpu()
+            self.g_b_to_a2.to_gpu()
             self.d_a.to_gpu()
             self.d_b.to_gpu()
         # Optimizers
-        def make_optimizer_g(model, lr):
-            optimizer = chainer.optimizers.Adam(alpha=lr, beta1=0.5, beta2=0.99)
+        def make_optimizer_g(model):
+            optimizer = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5)
             optimizer.setup(model)
             return optimizer
-        def make_optimizer_d(model, lr):
-            optimizer = chainer.optimizers.Adam(alpha=lr, beta1=0.5, beta2=0.99)
+        def make_optimizer_d(model):
+            optimizer = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5)
             optimizer.setup(model)
             return optimizer
-        g_optimizer_ab = make_optimizer_g(self.g_a_to_b, self.args["learning_rate"])
-        g_optimizer_ba = make_optimizer_g(self.g_b_to_a, self.args["learning_rate"])
-        d_optimizer_a = make_optimizer_d(self.d_a, self.args["learning_rate"]*4)
-        d_optimizer_b = make_optimizer_d(self.d_b, self.args["learning_rate"]*4)
+        g_optimizer_en = make_optimizer_g(self.g_en)
+        g_optimizer_de = make_optimizer_g(self.g_de)
+        g_optimizer_ab1 = make_optimizer_g(self.g_a_to_b1)
+        g_optimizer_ba1 = make_optimizer_g(self.g_b_to_a1)
+        g_optimizer_ab2 = make_optimizer_g(self.g_a_to_b2)
+        g_optimizer_ba2 = make_optimizer_g(self.g_b_to_a2)
+        d_optimizer_a = make_optimizer_d(self.d_a)
+        d_optimizer_b = make_optimizer_d(self.d_b)
         self.updater = CycleGANUpdater(
-            model={"main":self.g_a_to_b, "inverse":self.g_b_to_a, "disa":self.d_a, "disb":self.d_b},
+            model={"main":self.g_a_to_b1, "inverse":self.g_b_to_a1, "main2":self.g_a_to_b2, "inverse2":self.g_b_to_a2, "encoder":self.g_en, "decoder":self.g_de, "disa":self.d_a, "disb":self.d_b},
             max_itr=self.args["train_iteration"],
             iterator={"main":train_iter_a, "data_b":train_iter_b},
-            optimizer={"gen_ab":g_optimizer_ab, "gen_ba":g_optimizer_ba, "disa":d_optimizer_a, "disb":d_optimizer_b},
+            optimizer={"gen_ab1":g_optimizer_ab1, "gen_ba1":g_optimizer_ba1, "gen_ab2":g_optimizer_ab2, "gen_ba2":g_optimizer_ba2, "gen_en":g_optimizer_en, "gen_de":g_optimizer_de, "disa":d_optimizer_a, "disb":d_optimizer_b},
             device=self.args["gpu"])
     def train(self):
         """
         学習を実行する。
 
         """
-        model_dir = self.args["name_save"]
-        checkpoint_dir = os.path.join(self.args["checkpoint_dir"], model_dir)
+        checkpoint_dir = self.args["name_save"]
         trainer = chainer.training.Trainer(self.updater, (self.args["train_iteration"], "iteration"), out=checkpoint_dir)
         # loading net
         if self.load(checkpoint_dir, trainer):
@@ -133,15 +144,23 @@ class Model:
                 trigger=display_interval)
         # save snapshot
         trainer.extend(chainer.training.extensions.snapshot(filename='snapshot.npz'), trigger=display_interval)
-        trainer.extend(chainer.training.extensions.snapshot_object(self.g_a_to_b, 'gen_ab.npz'), trigger=display_interval)
-        trainer.extend(chainer.training.extensions.snapshot_object(self.g_b_to_a, 'gen_ba.npz'), trigger=display_interval)
+        trainer.extend(chainer.training.extensions.snapshot_object(self.g_a_to_b1, 'gen_ab1.npz'), trigger=display_interval)
+        trainer.extend(chainer.training.extensions.snapshot_object(self.g_b_to_a1, 'gen_ba1.npz'), trigger=display_interval)
+        trainer.extend(chainer.training.extensions.snapshot_object(self.g_a_to_b2, 'gen_ab2.npz'), trigger=display_interval)
+        trainer.extend(chainer.training.extensions.snapshot_object(self.g_b_to_a2, 'gen_ba2.npz'), trigger=display_interval)
         trainer.extend(chainer.training.extensions.snapshot_object(self.d_a, 'dis_a.npz'), trigger=display_interval)
         trainer.extend(chainer.training.extensions.snapshot_object(self.d_b, 'dis_b.npz'), trigger=display_interval)
+        # learning rate decay
+        # decay_timming = chainer.training.triggers.ManualScheduleTrigger([self.args["train_iteration"]*0.5, self.args["train_iteration"]*0.75], 'iteration')
+        # trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=self.updater.get_optimizer("gen_ab")), trigger=decay_timming)
+        # trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=self.updater.get_optimizer("gen_ba")), trigger=decay_timming)
+        # trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=self.updater.get_optimizer("disa")), trigger=decay_timming)
+        # trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=self.updater.get_optimizer("disb")), trigger=decay_timming)
         # logging
         trainer.extend(chainer.training.extensions.LogReport(trigger=display_interval))
         # console output
         trainer.extend(chainer.training.extensions.ProgressBar(update_interval=10))
-        trainer.extend(chainer.training.extensions.PrintReport(['epoch', 'iteration', 'gen_ab/loss_GAN', 'gen_ab/loss_cyc', 'gen_ba/loss_GAN', 'gen_ba/loss_cyc', 'disa/loss', 'disb/loss', 'gen_ab/accuracy']), trigger=display_interval)
+        trainer.extend(chainer.training.extensions.PrintReport(['epoch', 'gen_ab1/accuracy']), trigger=display_interval)
         # run tarining
         print(" [I] Train Started")
         trainer.run()
@@ -185,8 +204,12 @@ class TestModel(chainer.training.Extension):
         変数の初期化と事前処理
         """
         self.dir = direc
-        self.model = trainer.updater.gen_ab
+        self.encoder = trainer.updater.gen_en
+        self.decoder = trainer.updater.gen_de
+        self.model = trainer.updater.gen_ab1
+        self.model2 = trainer.updater.gen_ab2
         source_f0, source_sp, source_ap = encode(source.astype(np.float64))
+        self.source_ap = source_ap
         self.length = source_f0.shape[0]
         padding_size = length_sp - source_sp.shape[0] % length_sp
         source_sp = np.pad(source_sp, ((padding_size, 0), (0, 0)), "edge").reshape(-1, length_sp, 513)
@@ -194,18 +217,18 @@ class TestModel(chainer.training.Extension):
         padding_size = length_sp - source_ap.shape[0] % length_sp
         source_ap = np.pad(source_ap, ((padding_size, 0), (0, 0)), "edge").reshape(-1, length_sp, 513)
         source_ap = np.transpose(source_ap, [0, 2, 1]).astype(np.float32).reshape(-1, 513, length_sp, 1)
-        si = source_sp.shape
-        source_sp_ap = np.concatenate([source_sp, source_ap], axis=3).reshape(si[0], si[1], si[2], 2)
-        self.source_sp_ap = chainer.backends.cuda.to_gpu(source_sp_ap)
-        self.source_f0 = (source_f0-voice_profile[0])*voice_profile[2] + voice_profile[1]
+        source_pp = np.concatenate([source_sp, source_ap], axis=3)
+        self.source_pp = chainer.backends.cuda.to_gpu(source_pp)
+        self.source_f0 = (source_f0 - voice_profile[0]) * voice_profile[2] + voice_profile[1]
         self.wave_len = source.shape[0]
         self.real_sample_compare = real_sample_compare
         if real_sample_compare:
             seconds = label_spec.shape[0] // (8192 // 512)
-            self.label_spec = np.zeros([seconds, 512])
+            self.label_spec = np.zeros([seconds, 512, 2])
             for h in range(0, seconds):
                 term = 8192 // 512
-                self.label_spec[h] = np.mean(label_spec[h*term:(h+1)*term], axis=0)
+                self.label_spec[h, :, 0] = np.mean(label_spec[h*term:(h+1)*term], axis=0)
+                self.label_spec[h, :, 1] = np.std(label_spec[h*term:(h+1)*term], axis=0)
         super(TestModel, self).initialize(trainer)
     def convert(self):
         """
@@ -215,20 +238,27 @@ class TestModel(chainer.training.Extension):
         #to convert wave file
         chainer.using_config("train", False)
         # run netr
-        result = self.model(self.source_sp_ap)
-        result = chainer.backends.cuda.to_cpu(result.data)
-        result = np.transpose(result, [0, 2, 1, 3])
-        result = result.reshape(-1, 513, 2)[-self.length:]
+        result = self.encoder(self.source_pp)
+        result1 = self.model(result)
+        result2 = self.model2(result1)
+        result1 = self.decoder(result1)
+        result2 = self.decoder(result2)
+        result1 = chainer.backends.cuda.to_cpu(result1.data)
+        result2 = chainer.backends.cuda.to_cpu(result2.data)
+        result1 = np.transpose(result1, [0, 2, 1, 3]).reshape(-1, 513, 2)[-self.length:]
+        result2 = np.transpose(result2, [0, 2, 1, 3]).reshape(-1, 513, 2)[-self.length:]
         # post-process
         # WORLD to wave
-        result_wave = decode(self.source_f0, result[:, :, 0], result[:, :, 1])
-        result_wave_fixed = np.clip(result_wave, -1.0, 1.0).astype(np.float32)
-        otp = result_wave_fixed.reshape(-1)
+        result_wave = decode(self.source_f0, result1[:, :, 0], self.source_ap)
+        result_wave2 = decode(self.source_f0, result2[:, :, 0], self.source_ap)
+        otp = result_wave.reshape(-1)
+        otp2 = result_wave2.reshape(-1)
         head_cut_num = otp.shape[0]-self.wave_len
         if head_cut_num > 0:
             otp = otp[head_cut_num:]
+            otp2 = otp2[head_cut_num:]
         chainer.using_config("train", True)
-        return otp
+        return otp, otp2
 
     def __call__(self, trainer):
         """
@@ -238,16 +268,18 @@ class TestModel(chainer.training.Extension):
         - 音声/画像の保存
         """
         # testing
-        out_put = self.convert()
-        out_puts = (out_put*32767).astype(np.int16)
+        out_put1, out_put = self.convert()
+        out_put_t = np.append(out_put, out_put1)
+        out_puts = (out_put_t*32767).astype(np.int16)
         # calculating power spectrum
         image_power_spec = fft(out_put[800:156000])
         if self.real_sample_compare:
             term = 8192 // 512
             seconds = image_power_spec.shape[0] // (8192 // 512)
-            spec_m = np.zeros([seconds, 512])
+            spec_m = np.zeros([seconds, 512, 2])
             for h in range(0, seconds):
-                spec_m[h] = np.mean(image_power_spec[h*term:(h+1)*term], axis=0)
+                spec_m[h, :, 0] = np.mean(image_power_spec[h*term:(h+1)*term], axis=0)
+                spec_m[h, :, 1] = np.std(image_power_spec[h*term:(h+1)*term], axis=0)
             diff = np.sum(spec_m * self.label_spec) / (np.linalg.norm(spec_m) * np.linalg.norm(self.label_spec) + 1e-8)
             score = float(diff)
             chainer.report({"accuracy": score}, self.model)
@@ -264,7 +296,7 @@ class TestModel(chainer.training.Extension):
         plt.savefig(name_save)
         #saving fake waves
         path_save = self.dir + str(trainer.updater.epoch)
-        voiced = out_puts.astype(np.int16)[800:156000]
+        voiced = out_puts.astype(np.int16)
         wave_data = wave.open(path_save + ".wav", 'wb')
         wave_data.setnchannels(1)
         wave_data.setsampwidth(2)
