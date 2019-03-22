@@ -1,5 +1,5 @@
 """
-    製作者:ixiid
+    製作者:ixsiid
     改変者:TODA
     データセットを作成するモジュールです
 """
@@ -7,16 +7,15 @@ import os
 import wave
 import glob
 import numpy as np
-import pyworld.pyworld as pw
-
+from vrc_project.world_and_wave import wave2world
 def create_dataset(_term, _chunk=1024):
     """
     データセットを作成します
     """
 
     INPUT_NAMES = ["A", "B"]
-    WAVE_INPUT_DIR = os.path.join("dataset", "source")
-    TRAIN_DIR = os.path.join(".", "dataset", "train")
+    WAVE_INPUT_DIR = os.path.join("dataset", "train")
+    OUTPUT_DIR = os.path.join(".", "dataset", "patch")
 
     pitch = dict()
     dataset_to_return = list()
@@ -45,30 +44,24 @@ def create_dataset(_term, _chunk=1024):
                 _padiing_size = _term - data_real_current_use.shape[0]
                 if _padiing_size > 0:
                     data_real_current_use = np.pad(data_real_current_use, (_padiing_size, 0), "constant")
-                _f0, _t = pw.dio(data_real_current_use, 16000)
-                f0_estimation = pw.stonemask(data_real_current_use, _f0, _t, 16000)
-                spec_env = pw.cheaptrick(data_real_current_use, f0_estimation, _t, 16000)
-                ap = pw.d4c(data_real_current_use, f0_estimation, _t, 16000)
+                f0_estimation, spec_env, ap = wave2world(data_real_current_use)
                 f0_estimation = f0_estimation[f0_estimation > 0.0]
                 if f0_estimation.shape[0] != 0:
                     _ff.extend(f0_estimation)
                 spec_env = np.transpose(spec_env, [1, 0]).reshape(513, spec_env.shape[0], 1)
-                spec_env = np.clip((np.log(spec_env) + 20) / 20, -1.0, 1.0)
                 ap = np.transpose(ap, [1, 0]).reshape(513, ap.shape[0], 1)
                 spec = np.concatenate([spec_env, ap], axis=2).reshape(ap.shape[0], ap.shape[1], 2)
                 memory_spec_env.append(spec)
         _m = np.asarray(memory_spec_env, dtype=np.float32)
         dataset_to_return.append(_m)
-        np.save(os.path.join(TRAIN_DIR, name + ".npy"), _m)
+        np.save(os.path.join(OUTPUT_DIR, name + ".npy"), _m)
         print(" [*] " + name + "データ変換完了")
-        pitch[name] = {}
+        pitch[name] = dict()
         pitch[name]["mean"] = np.mean(_ff)
-        pitch[name]["var"] = np.std(_ff)
+        pitch[name]["var"] = np.var(_ff)
     pitch_mean_s = pitch[INPUT_NAMES[0]]["mean"]
     pitch_var_s = pitch[INPUT_NAMES[0]]["var"]
     pitch_mean_t = pitch[INPUT_NAMES[1]]["mean"]
     pitch_var_t = pitch[INPUT_NAMES[1]]["var"]
-
-    plof = np.asarray([pitch_mean_s, pitch_mean_t, pitch_var_t / pitch_var_s])
-    np.save(os.path.join(".", "voice_profile.npy"), plof)
+    np.savez(os.path.join(".", "voice_profile.npz"), pre_sub=pitch_mean_s, pitch_rate=pitch_var_t/pitch_var_s, post_add=pitch_mean_t)
     return dataset_to_return[0], dataset_to_return[1]

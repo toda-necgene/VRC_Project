@@ -3,79 +3,18 @@
 リアルタイム変換
 """
 import atexit
-import glob
 import os
 from multiprocessing import Queue, Process, freeze_support
 
 import chainer
 import numpy as np
 import pyaudio as pa
-import pyworld as pw
 
-from model import Generator
-from load_setting import load_setting_from_json
+from vrc_project.model import Generator, Encoder, Decoder
+from vrc_project.setting_loader import load_setting_from_json
+from vrc_project.world_and_wave import wave2world, world2wave
 
-def encode(data):
-    """
-    #音声をWorldに変換します
-
-    Parameters
-    ----------
-    data : ndarray
-        入力データ
-        SamplingRate: 16000
-        ValueRange  : [-1.0,1.0]
-        dtype       : float64
-    Returns
-    -------
-    World: list(3items)
-        出力
-        _f0 : f0 estimation
-        Shape(N)
-        dtype       : float64
-        _sp : spectram envelobe
-        Shape(N,513)
-        dtype       : float64
-        _ap : aperiodicity
-        Shape(N,513)
-        dtype       : float64
-    """
-    sampleing_rate = 16000
-    _f0, _t = pw.dio(data, sampleing_rate)
-    _f0 = pw.stonemask(data, _f0, _t, sampleing_rate)
-    _sp = pw.cheaptrick(data, _f0, _t, sampleing_rate)
-    _ap = pw.d4c(data, _f0, _t, sampleing_rate)
-    return _f0, np.clip((np.log(_sp) + 20) / 20, -1.0, 1.0).astype(np.float32), _ap
-
-def decode(_f0, _sp, _ap):
-    """
-    #Worldを音声に変換します
-    Parameters
-    ----------
-    _f0 : np.ndarray
-        _f0 estimation
-        Shape(N)
-        dtype       : float64
-    _sp : np.ndarray
-        spectram envelobe
-        Shape(N,513)
-        dtype       : float64
-    _ap : np.ndarray
-        aperiodicity
-        Shape(N,513)
-        dtype       : float64
-    Returns
-    -------
-    World: list(3items)
-        #出力
-        SamplingRate: 16000
-        ValueRange  : [-1.0,1.0]
-        dtype       : float64
-    """
-    _sp = np.exp(_sp * 20 - 20).astype(np.float)
-    return pw.synthesize(_f0, _sp, _ap, 16000)
-
-def load(checkpoint_dir, model):
+def load(checkpoint_dir, m_e, m_1, m_2, m_d):
     """
     モデルのロード
     変数の初期化も同時に行う
@@ -88,8 +27,10 @@ def load(checkpoint_dir, model):
     print(" [I] Reading checkpoint...")
     if os.path.exists(checkpoint_dir):
         print(" [I] file found.")
-        _ab = list(glob.glob(checkpoint_dir+"/gen_ab.npz"))[0]
-        chainer.serializers.load_npz(_ab, model)
+        chainer.serializers.load_npz(checkpoint_dir+"/gen_en.npz", m_e)
+        chainer.serializers.load_npz(checkpoint_dir+"/gen_ab1.npz", m_1)
+        chainer.serializers.load_npz(checkpoint_dir+"/gen_ab2.npz", m_2)
+        chainer.serializers.load_npz(checkpoint_dir+"/gen_de.npz", m_d)
         return True
     print(" [I] dir not found:"+checkpoint_dir)
     return False
@@ -107,21 +48,27 @@ def process(queue_in, queue_out, args_model):
     args_model: dict
     設定の辞書オブジェクト
     """
-    net = Generator()
-    load(args_model["name_save"], net)
-    f0_parameters = np.load("./voice_profile.npy")
+    net_e = Encoder()
+    net_1 = Generator()
+    net_2 = Generator()
+    net_d = Decoder()
+    load(args_model["name_save"], net_e, net_1, net_2, net_d)
+    f0_parameters = np.load(args_model["name_save"]+"/voice_profile.npy")
     queue_out.put("ok")
     while True:
         if not queue_in.empty():
             _ins = queue_in.get()
             _inputs = np.frombuffer(_ins, dtype=np.int16) / 32767.0
             _inputs = np.clip(_inputs, -1.0, 1.0)
-            _f0, _sp, _ap = encode(_inputs.copy())
-            _data = _sp.transpose((1, 0)).reshape(1, 513, -1, 1).astype(np.float32)
-            _output = net(_data)
+            _f0, _sp, _ap = wave2world(_inputs.copy())
+            _data = np.concatnate([_sp.transpose((1, 0)).reshape(1, 513, -1, 1).astype(np.float32), _ap.transpose((1, 0)).reshape(1, 513, -1, 1).astype(np.float32)], axis=3)
+            _output = net_e(_data)
+            _output = net_1(_output)
+            _output = net_2(_output)
+            _output = net_d(_output)
             _output = _output.data[0, :, :, 0]
             _output = np.transpose(_output, (1, 0))
-            _response = decode((_f0 / f0_parameters[0]) * f0_parameters[1], _output, _ap)
+            _response = world2wave((_f0 - f0_parameters["pre_sub"]) * f0_parameters["pitch_rate"] + f0_parameters["post_add"], _output, _ap)
             _response = (np.clip(_response, -1.0, 1.0).reshape(-1) * 32767)
             _response = _response.astype(np.int16)
             _response = _response.tobytes()

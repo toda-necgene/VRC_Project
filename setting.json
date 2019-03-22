@@ -1,19 +1,10 @@
 {
-    "saving_config":{
-        "checkpoint_dir":"./trained_model/",
-        "wave_otp_dir":"Z:/waves/",
-        "version":"19.3.14.29"
-    },
-    "train_config":{
-        "train_iteration": 5000,
-        "batch_size": 16,
-        "use_old_dataset": true,
-        "input_size": 8192,
-        "gpu": 0
-    },
-    "evaluate_config":{
-        "log_interval": 100,
-        "test":true,
-        "real_sample_compare": true
-    }
+    "checkpoint_dir": "./trained_model/",
+    "wave_otp_dir": "./waves/",
+    "version": "19.3.22.10",
+    "use_old_dataset": true,
+    "input_size": 8192,
+    "gpu": 0,
+    "test": true,
+    "real_sample_compare": false
 }

@@ -1,11 +1,10 @@
-dataset/source/*
-dataset/test/*
-dataset/train/*
+dataset/*
 trained_model/*
 waves/*
 logs/*
 .*
 _*
-voice_profile.npy
-latest.png
-label.png
+*.npz
+*.png
+*.wav
+vrc_project/harvest_viewer.py
