@@ -29,14 +29,10 @@ def load_setting_from_json(path_setting):
     _args["use_old_dataset"] = False
     # テスト音声生成フラグ
     _args["test"] = True
-    # パラレルデータ比較による簡易的な類似度を計算する
-    # 要"dataset/test/label.wav"
-    # パワースペクトラム(対数尺度)を0.5秒ずつ時間軸をつぶす形で平均と分散を取り、生成されたベクトルのコサイン類似度
-    _args["real_sample_compare"] = False
     # ミニバッチで扱うデータの数
-    _args["batch_size"] = 8
+    _args["batch_size"] = 1
     # 学習でパラメータを更新する回数
-    _args["train_iteration"] = 10000
+    _args["train_iteration"] = 5000
     # 出力をする頻度(イテレーション単位)
     _args["log_interval"] = 100
     # 入力で見る受容体データ数(8192なら約0.5秒)

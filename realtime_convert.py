@@ -29,7 +29,6 @@ def load(checkpoint_dir, m_e, m_1, m_2, m_d):
         print(" [I] file found.")
         chainer.serializers.load_npz(checkpoint_dir+"/gen_en.npz", m_e)
         chainer.serializers.load_npz(checkpoint_dir+"/gen_ab1.npz", m_1)
-        chainer.serializers.load_npz(checkpoint_dir+"/gen_ab2.npz", m_2)
         chainer.serializers.load_npz(checkpoint_dir+"/gen_de.npz", m_d)
         return True
     print(" [I] dir not found:"+checkpoint_dir)
@@ -50,9 +49,8 @@ def process(queue_in, queue_out, args_model):
     """
     net_e = Encoder()
     net_1 = Generator()
-    net_2 = Generator()
     net_d = Decoder()
-    load(args_model["name_save"], net_e, net_1, net_2, net_d)
+    load(args_model["name_save"], net_e, net_1, net_d)
     f0_parameters = np.load(args_model["name_save"]+"/voice_profile.npy")
     queue_out.put("ok")
     while True:
@@ -64,7 +62,6 @@ def process(queue_in, queue_out, args_model):
             _data = np.concatnate([_sp.transpose((1, 0)).reshape(1, 513, -1, 1).astype(np.float32), _ap.transpose((1, 0)).reshape(1, 513, -1, 1).astype(np.float32)], axis=3)
             _output = net_e(_data)
             _output = net_1(_output)
-            _output = net_2(_output)
             _output = net_d(_output)
             _output = _output.data[0, :, :, 0]
             _output = np.transpose(_output, (1, 0))
