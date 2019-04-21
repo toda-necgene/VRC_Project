@@ -106,8 +106,8 @@ def dataset_pre_process(_args):
     if args["gpu"] >= 0:
         _sounds_a = chainer.backends.cuda.to_gpu(_sounds_a)
         _sounds_b = chainer.backends.cuda.to_gpu(_sounds_b)
-    _train_iter_a = chainer.iterators.MultithreadIterator(Noisy_dataset(_sounds_a, 0.005), args["batch_size"], shuffle=True)
-    _train_iter_b = chainer.iterators.MultithreadIterator(Noisy_dataset(_sounds_b, 0.005), args["batch_size"], shuffle=True)
+    _train_iter_a = chainer.iterators.MultithreadIterator(Noisy_dataset(_sounds_a, 0.0005), args["batch_size"], shuffle=True)
+    _train_iter_b = chainer.iterators.MultithreadIterator(Noisy_dataset(_sounds_b, 0.0005), args["batch_size"], shuffle=True)
     # loading f0 parameters
     _voice_profile = np.load("./voice_profile.npz")
     if not os.path.exists(args["name_save"]):
@@ -143,10 +143,10 @@ def define_model(_args, _train_data_a, _train_data_b):
         d_a.to_gpu()
         d_b.to_gpu()
     # Optimizers
-    g_optimizer_ab1 = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5).setup(g_a_to_b1)
-    g_optimizer_ba1 = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5).setup(g_b_to_a1)
-    d_optimizer_a = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5).setup(d_a)
-    d_optimizer_b = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5).setup(d_b)
+    g_optimizer_ab1 = chainer.optimizers.Adam(alpha=2e-4, beta1=0.0, beta2=0.9).setup(g_a_to_b1)
+    g_optimizer_ba1 = chainer.optimizers.Adam(alpha=2e-4, beta1=0.0, beta2=0.9).setup(g_b_to_a1)
+    d_optimizer_a = chainer.optimizers.Adam(alpha=2e-4, beta1=0.0, beta2=0.9).setup(d_a)
+    d_optimizer_b = chainer.optimizers.Adam(alpha=2e-4, beta1=0.0, beta2=0.9).setup(d_b)
     updater = CycleGANUpdater(
         model={"main":g_a_to_b1, "inverse":g_b_to_a1, "disa":d_a, "disb":d_b},
         max_itr=_args["train_iteration"],
@@ -160,7 +160,8 @@ def define_model(_args, _train_data_a, _train_data_b):
     display_interval = (_args["log_interval"], 'iteration')
     if _args["test"]:
         test = wave_read("./dataset/test/test.wav") / 32767.0
-        _trainer.extend(TestModel(_trainer, _args["wave_otp_dir"], test, voice_profile, length_sp), trigger=display_interval)
+        _label_sample = wave_read("./dataset/test/label.wav") / 32767.0
+        _trainer.extend(TestModel(_trainer, _args["wave_otp_dir"], test, voice_profile, length_sp, _label_sample), trigger=display_interval)
     # save snapshot
     _trainer.extend(chainer.training.extensions.snapshot(filename='snapshot.npz'), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.snapshot_object(g_a_to_b1, 'gen_ab1.npz'), trigger=display_interval)
@@ -168,7 +169,7 @@ def define_model(_args, _train_data_a, _train_data_b):
     _trainer.extend(chainer.training.extensions.snapshot_object(d_a, 'dis_a.npz'), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.snapshot_object(d_b, 'dis_b.npz'), trigger=display_interval)
     # learning rate decay
-    # decay_timming_seco = (_args["train_iteration"]*0.1, 'iteration')
+    # decay_timming_seco = (_args["train_iteration"]*0.5, 'iteration')
     # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.5, optimizer=updater.get_optimizer("gen_ab1")), trigger=decay_timming_seco)
     # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.5, optimizer=updater.get_optimizer("gen_ba1")), trigger=decay_timming_seco)
     # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.5, optimizer=updater.get_optimizer("disa")), trigger=decay_timming_seco)

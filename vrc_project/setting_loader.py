@@ -32,7 +32,7 @@ def load_setting_from_json(path_setting):
     # ミニバッチで扱うデータの数
     _args["batch_size"] = 1
     # 学習でパラメータを更新する回数
-    _args["train_iteration"] = 5000
+    _args["train_iteration"] = 10000
     # 出力をする頻度(イテレーション単位)
     _args["log_interval"] = 100
     # 入力で見る受容体データ数(8192なら約0.5秒)

@@ -4,6 +4,7 @@ waves/*
 logs/*
 .*
 _*
+考察.md
 *.npz
 *.png
 *.wav

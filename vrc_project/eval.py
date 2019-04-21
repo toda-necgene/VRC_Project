@@ -13,7 +13,7 @@ class TestModel(chainer.training.Extension):
     """
     テストを行うExtention
     """
-    def __init__(self, _trainer, _direc, _source, _voice_profile, _sp_input_length):
+    def __init__(self, _trainer, _direc, _source, _voice_profile, _sp_input_length, _label_sample):
         """
         変数の初期化と事前処理
         Parameters
@@ -37,6 +37,8 @@ class TestModel(chainer.training.Extension):
         self.dir = _direc
         self.model = _trainer.updater.gen_ab1
         source_f0, source_sp, source_ap = wave2world(_source.astype(np.float64))
+        _, self.source_sp_l, _ = wave2world(_label_sample.astype(np.float64))
+        self.image_power_l = fft(_label_sample[800:156000])
         self.source_ap = source_ap
         self.length = source_f0.shape[0]
         padding_size = _sp_input_length - source_sp.shape[0] % _sp_input_length
@@ -62,13 +64,14 @@ class TestModel(chainer.training.Extension):
         result = self.model(self.source_pp)
         result = chainer.backends.cuda.to_cpu(result.data)
         result = np.transpose(result, [0, 2, 1, 3]).reshape(-1, 513, 2)[-self.length:]
+        score = np.mean(np.abs(result[:, :, 0] - self.source_sp_l))
         result_wave = world2wave(self.source_f0, result[:, :, 0], self.source_ap)
         otp = result_wave.reshape(-1)
         head_cut_num = otp.shape[0]-self.wave_len
         if head_cut_num > 0:
             otp = otp[head_cut_num:]
         chainer.using_config("train", True)
-        return otp
+        return otp, score
     def __call__(self, _trainer):
         """
         評価関数
@@ -81,10 +84,12 @@ class TestModel(chainer.training.Extension):
             テストに使用するトレーナー
         """
         # testing
-        out_put = self.convert()
+        out_put, score_raw = self.convert()
         out_puts = (out_put*32767).astype(np.int16)
         # calculating power spectrum
         image_power_spec = fft(out_put[800:156000])
+        score_fft = np.mean(np.abs(image_power_spec-self.image_power_l))
+        chainer.report({"L1_sp_env_loss": score_raw, "L1_sp_loss": score_fft}, self.model)
         #saving fake power-spec image
         plt.clf()
         plt.subplot(2, 1, 1)
