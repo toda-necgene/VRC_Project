@@ -22,10 +22,20 @@ class Discriminator(chainer.Chain):
         with self.init_scope():
             w_init = chainer.initializers.HeNormal()
             self.c_0 = L.Convolution2D(513, 256, (3, 2), stride=(2, 1), initialW=w_init)
-            self.c_1 = L.Convolution2D(256, 128, (3, 1), stride=(2, 1), initialW=w_init)
-            self.c_2 = L.Convolution2D(128, 64, (7, 1), stride=(2, 1), initialW=w_init)
-            self.d_l = L.Convolution1D(64, 1, 1, initialW=chainer.initializers.Normal(0.02))
-    def forward(self, _x):
+            self.c_1 = L.Convolution2D(256, 128, (7, 1), stride=(2, 1), initialW=w_init)
+            self.c_2 = L.Convolution2D(128, 64, (8, 1), stride=(2, 1), initialW=w_init)
+            self.c_3 = L.Convolution2D(64, 64, (7, 1), pad=(3, 0), initialW=w_init)
+            self.c_4 = L.Convolution2D(64, 64, (7, 1), pad=(3, 0), initialW=w_init)
+            self.c_5 = L.Convolution2D(64, 64, (7, 1), pad=(3, 0), initialW=w_init)
+            self.c_6 = L.Convolution2D(64, 64, (7, 1), pad=(3, 0), initialW=w_init)
+            self.c_7 = L.Convolution2D(64, 64, (7, 1), pad=(3, 0), initialW=w_init)
+            self.c_8 = L.Convolution2D(64, 64, (7, 1), pad=(3, 0), initialW=w_init)
+            self.c_9 = L.Convolution2D(64, 64, (7, 1), pad=(3, 0), initialW=w_init)
+            self.c_10 = L.Convolution2D(64, 64, (7, 1), pad=(3, 0), initialW=w_init)
+            self.c_11 = L.Convolution2D(64, 64, (7, 1), pad=(3, 0), initialW=w_init)
+            self.c_12 = L.Convolution2D(64, 64, (7, 1), pad=(3, 0), initialW=w_init)
+            self.d_l = L.Convolution1D(64, 1, 8, initialW=chainer.initializers.Normal(0.01))
+    def __call__(self, _x):
         """
         呼び出し関数
         実際の計算を担う
@@ -36,6 +46,26 @@ class Discriminator(chainer.Chain):
         _y = F.leaky_relu(_h)
         _h = self.c_2(_y)
         _y = F.leaky_relu(_h)
+        _h = self.c_3(_y)
+        _h = F.leaky_relu(_h)
+        _h = self.c_4(_h)
+        _y = _y + _h
+        _h = self.c_5(_y)
+        _h = F.leaky_relu(_h)
+        _h = self.c_6(_h)
+        _y = _y + _h
+        _h = self.c_7(_y)
+        _h = F.leaky_relu(_h)
+        _h = self.c_8(_h)
+        _y = _y + _h
+        _h = self.c_9(_y)
+        _h = F.leaky_relu(_h)
+        _h = self.c_10(_h)
+        _y = _y + _h
+        _h = self.c_11(_y)
+        _h = F.leaky_relu(_h)
+        _h = self.c_12(_h)
+        _y = _y + _h
         _y = self.d_l(_y[:, :, :, 0])
         return _y
 class Generator(chainer.Chain):
@@ -53,9 +83,9 @@ class Generator(chainer.Chain):
         super(Generator, self).__init__()
         with self.init_scope():
             w_init = chainer.initializers.HeNormal()
-            self.c_0 = L.Convolution2D(2, 64, (1, 9), stride=(1, 8), initialW=chainer.initializers.Normal(0.02))
-            self.d_1 = L.Convolution2D(64, 128, (7, 2), stride=(3, 2), initialW=w_init)
-            self.d_2 = L.Convolution2D(128, 256, (5, 4), stride=(2, 2), initialW=w_init)
+            self.c_0 = L.Convolution2D(2, 64, (1, 9), stride=(1, 8), initialW=w_init)
+            self.d_1 = L.Convolution2D(64, 128, (2, 2), stride=(2, 2), initialW=w_init)
+            self.d_2 = L.Convolution2D(128, 256, (5, 4), stride=(5, 2), initialW=w_init)
             self.r_1 = L.Convolution2D(256, 256, (3, 3), pad=(1, 1), initialW=w_init)
             self.r_2 = L.Convolution2D(256, 256, (3, 3), pad=(1, 1), initialW=w_init)
             self.r_3 = L.Convolution2D(256, 256, (3, 3), pad=(1, 1), initialW=w_init)
@@ -68,12 +98,12 @@ class Generator(chainer.Chain):
             self.r_10 = L.Convolution2D(256, 256, (3, 3), pad=(1, 1), initialW=w_init)
             self.r_11 = L.Convolution2D(256, 256, (3, 3), pad=(1, 1), initialW=w_init)
             self.r_12 = L.Convolution2D(256, 256, (3, 3), pad=(1, 1), initialW=w_init)
-            self.u_2 = L.Deconvolution2D(256, 128, (5, 4), stride=(2, 2), initialW=w_init, nobias=True)
+            self.u_2 = L.Deconvolution2D(256, 128, (5, 4), stride=(5, 2), initialW=w_init, nobias=True)
             self.b_9 = L.BatchNormalization(128)
-            self.u_1 = L.Deconvolution2D(128, 64, (7, 2), stride=(3, 2), initialW=w_init, nobias=True)
+            self.u_1 = L.Deconvolution2D(128, 64, (2, 2), stride=(2, 2), initialW=w_init, nobias=True)
             self.b_10 = L.BatchNormalization(64)
             self.d_0_1 = L.Deconvolution2D(64, 2, (1, 9), stride=(1, 8), initialW=chainer.initializers.Normal(0.02))
-    def forward(self, _x):
+    def __call__(self, _x):
         """
             呼び出し関数
             実際の計算を担う
@@ -126,6 +156,6 @@ class Generator(chainer.Chain):
         _y = self.b_10(_y)
         _y = F.leaky_relu(_y)
         _y = self.d_0_1(_y)
-        _y = F.transpose(_y, (0, 3, 2, 1))
         _y = F.tanh(_y)
+        _y = F.transpose(_y, (0, 3, 2, 1))
         return _y

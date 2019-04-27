@@ -40,7 +40,7 @@ class CycleGANUpdater(chainer.training.updaters.StandardUpdater):
         fake_ab_1 = self.gen_ab1(batch_a)
         fake_ba_1 = self.gen_ba1(batch_b)
         # D update
-        for _ in range(2):
+        for _ in range(3):
             self.disa.cleargrads()
             self.disb.cleargrads()
             y_at = self.disa(batch_a)
@@ -52,14 +52,8 @@ class CycleGANUpdater(chainer.training.updaters.StandardUpdater):
             y_label_z = _xp.zeros([batch_size, 1, wave_length], dtype="float32")
             loss_d_a = F.mean_squared_error(y_af, y_label_z)
             loss_d_b = F.mean_squared_error(y_bf, y_label_z)
-            loss_d_a.backward()
-            loss_d_b.backward()
-            disa_optimizer.update()
-            disb_optimizer.update()
-            self.disa.cleargrads()
-            self.disb.cleargrads()
-            loss_d_a = F.mean_squared_error(y_at, y_label_o)
-            loss_d_b = F.mean_squared_error(y_bt, y_label_o)
+            loss_d_a += F.mean_squared_error(y_at, y_label_o)
+            loss_d_b += F.mean_squared_error(y_bt, y_label_o)
             loss_d_a.backward()
             loss_d_b.backward()
             chainer.report({"loss": loss_d_a}, self.disa)
@@ -67,29 +61,25 @@ class CycleGANUpdater(chainer.training.updaters.StandardUpdater):
             disa_optimizer.update()
             disb_optimizer.update()
         # G update
-        _lamda = 50.0
+        _lamda = 75.0
         self.gen_ba1.cleargrads()
         self.gen_ab1.cleargrads()
         fake_ba_1 = self.gen_ba1(batch_b)
         y_fake_ba = self.disa(fake_ba_1)
         loss_ganba = F.mean_squared_error(y_fake_ba, y_label_o)
-        fake_bab1 = self.gen_ab1(fake_ba_1)
-        loss_cycb = F.mean_absolute_error(fake_bab1, batch_b)
-        chainer.report({"GAN": loss_ganba, "CYC": loss_cycb}, self.gen_ba1)
-        gloss = loss_cycb * _lamda + loss_ganba
-        gloss.backward()
-        gen_ab_optimizer1.update()
-        gen_ba_optimizer1.update()
-        self.gen_ba1.cleargrads()
-        self.gen_ab1.cleargrads()
         fake_ab_1 = self.gen_ab1(batch_a)
         y_fake_ab = self.disb(fake_ab_1)
         loss_ganab = F.mean_squared_error(y_fake_ab, y_label_o)
+        chainer.report({"GAN": loss_ganba}, self.gen_ba1)
+        chainer.report({"GAN": loss_ganab}, self.gen_ab1)
         fake_aba1 = self.gen_ba1(fake_ab_1)
+        fake_bab1 = self.gen_ab1(fake_ba_1)
+        loss_cycb = F.mean_absolute_error(fake_bab1, batch_b)
         loss_cyca = F.mean_absolute_error(fake_aba1, batch_a)
-        gloss = loss_cyca * _lamda + loss_ganab
-        chainer.report({"GAN": loss_ganab, "CYC": loss_cyca}, self.gen_ab1)
+        chainer.report({"CYC": loss_cyca}, self.gen_ba1)
+        chainer.report({"CYC": loss_cycb}, self.gen_ab1)
+        gloss = loss_ganba + loss_ganab + (loss_cyca + loss_cycb) * _lamda
         gloss.backward()
         gen_ab_optimizer1.update()
         gen_ba_optimizer1.update()
-        
+            

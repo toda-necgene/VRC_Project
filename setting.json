@@ -1,7 +1,7 @@
 {
     "checkpoint_dir": "./trained_model/",
     "wave_otp_dir": "./waves/",
-    "version": "19.4.22.1",
+    "version": "19.4.27.7",
     "use_old_dataset": true,
     "gpu": 0,
     "test": true

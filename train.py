@@ -106,8 +106,8 @@ def dataset_pre_process(_args):
     if args["gpu"] >= 0:
         _sounds_a = chainer.backends.cuda.to_gpu(_sounds_a)
         _sounds_b = chainer.backends.cuda.to_gpu(_sounds_b)
-    _train_iter_a = chainer.iterators.MultithreadIterator(Noisy_dataset(_sounds_a, 0.0005), args["batch_size"], shuffle=True)
-    _train_iter_b = chainer.iterators.MultithreadIterator(Noisy_dataset(_sounds_b, 0.0005), args["batch_size"], shuffle=True)
+    _train_iter_a = chainer.iterators.MultithreadIterator(Noisy_dataset(_sounds_a, 0.05), args["batch_size"], shuffle=True)
+    _train_iter_b = chainer.iterators.MultithreadIterator(Noisy_dataset(_sounds_b, 0.05), args["batch_size"], shuffle=True)
     # loading f0 parameters
     _voice_profile = np.load("./voice_profile.npz")
     if not os.path.exists(args["name_save"]):
@@ -168,14 +168,14 @@ def define_model(_args, _train_data_a, _train_data_b):
     _trainer.extend(chainer.training.extensions.snapshot_object(g_b_to_a1, 'gen_ba1.npz'), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.snapshot_object(d_a, 'dis_a.npz'), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.snapshot_object(d_b, 'dis_b.npz'), trigger=display_interval)
+    # logging
+    _trainer.extend(chainer.training.extensions.LogReport(trigger=display_interval))
     # learning rate decay
-    # decay_timming_seco = (_args["train_iteration"]*0.5, 'iteration')
+    # decay_timming_seco = (_args["train_iteration"]*0.25, 'iteration')
     # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.5, optimizer=updater.get_optimizer("gen_ab1")), trigger=decay_timming_seco)
     # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.5, optimizer=updater.get_optimizer("gen_ba1")), trigger=decay_timming_seco)
     # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.5, optimizer=updater.get_optimizer("disa")), trigger=decay_timming_seco)
     # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.5, optimizer=updater.get_optimizer("disb")), trigger=decay_timming_seco)
-    # logging
-    _trainer.extend(chainer.training.extensions.LogReport(trigger=display_interval))
     # console output
     _trainer.extend(chainer.training.extensions.ProgressBar(update_interval=10))
     return _trainer
