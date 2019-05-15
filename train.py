@@ -2,9 +2,9 @@
 製作者:TODA
 
 
-実行すれば学習ができる。
+学習するためのスクリプト
 設定はsetting.jsonを利用する。
-設定のパラメーターはsetting_loader.pyを参照
+設定のパラメーターの意味はsetting_loader.pyを参照
 """
 import os
 import shutil
@@ -16,7 +16,6 @@ from vrc_project.updater import CycleGANUpdater
 from vrc_project.voice_to_dataset_cycle import create_dataset
 from vrc_project.setting_loader import load_setting_from_json
 from vrc_project.eval import TestModel
-from vrc_project.noisy_dataset import Noisy_dataset
 
 
 def load_model_from_npz(_checkpoint_dir, _trainer):
@@ -50,7 +49,7 @@ def load_model_from_npz(_checkpoint_dir, _trainer):
 
 def wave_read(_path_to_file):
     """
-    #音声を読み込みます
+    音声を読み込みます
      Parameters
     ----------
     _path_to_file: str
@@ -73,7 +72,7 @@ def wave_read(_path_to_file):
     return ans_data
 
 
-def dataset_pre_process(_args):
+def dataset_pre_process_controler(_args):
     """
     データセットが存在し新規に作らない設定ならば読み込み
     そのほかならば作成する。
@@ -106,9 +105,9 @@ def dataset_pre_process(_args):
     if args["gpu"] >= 0:
         _sounds_a = chainer.backends.cuda.to_gpu(_sounds_a)
         _sounds_b = chainer.backends.cuda.to_gpu(_sounds_b)
-    _train_iter_a = chainer.iterators.MultithreadIterator(Noisy_dataset(_sounds_a, 0.05), args["batch_size"], shuffle=True)
-    _train_iter_b = chainer.iterators.MultithreadIterator(Noisy_dataset(_sounds_b, 0.05), args["batch_size"], shuffle=True)
-    # loading f0 parameters
+    _train_iter_a = chainer.iterators.MultithreadIterator(_sounds_a, args["batch_size"], shuffle=True)
+    _train_iter_b = chainer.iterators.MultithreadIterator(_sounds_b, args["batch_size"], shuffle=True)
+    # f0 parameters(基本周波数F0の変換に使用する定数。詳しくは./vrc_project/voice_to_dataset_cycle.py L63周辺)
     _voice_profile = np.load("./voice_profile.npz")
     if not os.path.exists(args["name_save"]):
         os.mkdir(args["name_save"])
@@ -131,7 +130,7 @@ def define_model(_args, _train_data_a, _train_data_b):
     _trainer: chainer.training.trainer
         trainerオブジェクト
     """
-    #creating models (if you want to view more code then ./model.py)
+    #モデル作成 (より詳しいコードは ./vrc_project/model.py)
     g_a_to_b1 = Generator()
     g_b_to_a1 = Generator()
     d_a = Discriminator()
@@ -142,11 +141,11 @@ def define_model(_args, _train_data_a, _train_data_b):
         g_b_to_a1.to_gpu()
         d_a.to_gpu()
         d_b.to_gpu()
-    # Optimizers
-    g_optimizer_ab1 = chainer.optimizers.Adam(alpha=2e-4, beta1=0.0, beta2=0.9).setup(g_a_to_b1)
-    g_optimizer_ba1 = chainer.optimizers.Adam(alpha=2e-4, beta1=0.0, beta2=0.9).setup(g_b_to_a1)
-    d_optimizer_a = chainer.optimizers.Adam(alpha=2e-4, beta1=0.0, beta2=0.9).setup(d_a)
-    d_optimizer_b = chainer.optimizers.Adam(alpha=2e-4, beta1=0.0, beta2=0.9).setup(d_b)
+    g_optimizer_ab1 = chainer.optimizers.Adam(alpha=1e-4, beta1=0.0, beta2=0.9).setup(g_a_to_b1)
+    g_optimizer_ba1 = chainer.optimizers.Adam(alpha=1e-4, beta1=0.0, beta2=0.9).setup(g_b_to_a1)
+    d_optimizer_a = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5, beta2=0.9).setup(d_a)
+    d_optimizer_b = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5, beta2=0.9).setup(d_b)
+    #updater(アップデータ)　詳しくは./vrc_project/updater.py
     updater = CycleGANUpdater(
         model={"main":g_a_to_b1, "inverse":g_b_to_a1, "disa":d_a, "disb":d_b},
         max_itr=_args["train_iteration"],
@@ -168,14 +167,13 @@ def define_model(_args, _train_data_a, _train_data_b):
     _trainer.extend(chainer.training.extensions.snapshot_object(g_b_to_a1, 'gen_ba1.npz'), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.snapshot_object(d_a, 'dis_a.npz'), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.snapshot_object(d_b, 'dis_b.npz'), trigger=display_interval)
-    # logging
-    _trainer.extend(chainer.training.extensions.LogReport(trigger=display_interval))
-    # learning rate decay
     # decay_timming_seco = (_args["train_iteration"]*0.25, 'iteration')
-    # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.5, optimizer=updater.get_optimizer("gen_ab1")), trigger=decay_timming_seco)
-    # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.5, optimizer=updater.get_optimizer("gen_ba1")), trigger=decay_timming_seco)
-    # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.5, optimizer=updater.get_optimizer("disa")), trigger=decay_timming_seco)
-    # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.5, optimizer=updater.get_optimizer("disb")), trigger=decay_timming_seco)
+    # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=updater.get_optimizer("gen_ab1")), trigger=decay_timming_seco)
+    # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=updater.get_optimizer("gen_ba1")), trigger=decay_timming_seco)
+    # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=updater.get_optimizer("disa")), trigger=decay_timming_seco)
+    # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=updater.get_optimizer("disb")), trigger=decay_timming_seco)
+   # logging
+    _trainer.extend(chainer.training.extensions.LogReport(trigger=display_interval))
     # console output
     _trainer.extend(chainer.training.extensions.ProgressBar(update_interval=10))
     return _trainer
@@ -188,7 +186,7 @@ if __name__ == '__main__':
         args["wave_otp_dir"] = args["wave_otp_dir"] + args["model_name"] +  args["version"]+"/"
         if not os.path.exists(args["wave_otp_dir"]):
             os.makedirs(args["wave_otp_dir"])
-    train_iter_a, train_iter_b, voice_profile, length_sp = dataset_pre_process(args)
+    train_iter_a, train_iter_b, voice_profile, length_sp = dataset_pre_process_controler(args)
     trainer = define_model(args, train_iter_a, train_iter_b)
     print(" [I] Train Started")
     # run tarining

@@ -88,21 +88,21 @@ class TestModel(chainer.training.Extension):
         # calculating power spectrum
         image_power_spec = fft(out_put[800:156000])
         score_fft = np.mean(np.abs(image_power_spec-self.image_power_l))
-        chainer.report({"L1_sp_env_loss": score_raw, "L1_sp_loss": score_fft}, self.model)
+        chainer.report({"env_test_loss": score_raw, "test_loss": score_fft})
         #saving fake power-spec image
         plt.clf()
         plt.subplot(2, 1, 1)
         _insert_image = np.transpose(image_power_spec, (1, 0))
         plt.imshow(_insert_image, vmin=-1, vmax=1, aspect="auto")
         plt.subplot(2, 1, 2)
-        plt.plot(out_put[800:156000])
+        plt.plot(out_put)
         plt.ylim(-1, 1)
-        _name_save = "%s%04d.png" % (self.dir, _trainer.updater.epoch)
+        _name_save = "%s%04d.png" % (self.dir, _trainer.updater.iteration)
         plt.savefig(_name_save)
         _name_save = "./latest.png"
         plt.savefig(_name_save)
         #saving fake waves
-        path_save = self.dir + str(_trainer.updater.epoch)
+        path_save = self.dir + str(_trainer.updater.iteration)
         voiced = out_puts.astype(np.int16)
         wave_data = wave.open(path_save + ".wav", 'wb')
         wave_data.setnchannels(1)
