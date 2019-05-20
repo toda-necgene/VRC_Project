@@ -52,9 +52,9 @@ def create_dataset(_term, _chunk=1024, delta=0):
                 if f0_estimation.shape[0] != 0:
                     _ff.extend(f0_estimation)
                 spec_env = np.transpose(spec_env, [1, 0]).reshape(513, spec_env.shape[0], 1)
-                ap = np.transpose(ap, [1, 0]).reshape(513, ap.shape[0], 1)
-                spec = np.concatenate([spec_env, ap], axis=2).reshape(ap.shape[0], ap.shape[1], 2)
-                memory_spec_env.append(spec)
+                # ap = np.transpose(ap, [1, 0]).reshape(513, ap.shape[0], 1)
+                # spec = np.concatenate([spec_env, ap], axis=2).reshape(ap.shape[0], ap.shape[1], 2)
+                memory_spec_env.append(spec_env)
         _m = np.asarray(memory_spec_env, dtype=np.float32)
         dataset_to_return.append(_m)
         np.save(os.path.join(OUTPUT_DIR, name + ".npy"), _m)

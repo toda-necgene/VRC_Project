@@ -46,8 +46,8 @@ class TestModel(chainer.training.Extension):
         source_sp = np.transpose(source_sp, [0, 2, 1]).astype(np.float32).reshape(-1, 513, _sp_input_length, 1)
         source_ap = np.pad(source_ap, ((padding_size, 0), (0, 0)), "constant", constant_values=-1).reshape(-1, _sp_input_length, 513)
         source_ap = np.transpose(source_ap, [0, 2, 1]).astype(np.float32).reshape(-1, 513, _sp_input_length, 1)
-        source_pp = np.concatenate([source_sp, source_ap], axis=3)
-        self.source_pp = chainer.backends.cuda.to_gpu(source_pp)
+        # source_pp = np.concatenate([source_sp, source_ap], axis=3)
+        self.source_pp = chainer.backends.cuda.to_gpu(source_sp)
         self.source_f0 = (source_f0 - _voice_profile["pre_sub"]) * np.sign(source_f0) * _voice_profile["pitch_rate"] + _voice_profile["post_add"] * np.sign(source_f0)
         self.wave_len = _source.shape[0]
         super(TestModel, self).initialize(_trainer)
@@ -62,7 +62,7 @@ class TestModel(chainer.training.Extension):
         chainer.using_config("train", False)
         result = self.model(self.source_pp)
         result = chainer.backends.cuda.to_cpu(result.data)
-        result = np.transpose(result, [0, 2, 1, 3]).reshape(-1, 513, 2)[-self.length:]
+        result = np.transpose(result, [0, 2, 1, 3]).reshape(-1, 513, 1)[-self.length:]
         score = np.mean(np.abs(result[:, :, 0] - self.source_sp_l))
         result_wave = world2wave(self.source_f0, result[:, :, 0], self.source_ap)
         otp = result_wave.reshape(-1)

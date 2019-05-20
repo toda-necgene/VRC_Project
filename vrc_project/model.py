@@ -22,10 +22,11 @@ class Discriminator(chainer.Chain):
         super(Discriminator, self).__init__()
         with self.init_scope():
             w_init = chainer.initializers.HeNormal()
-            self.c_0 = L.Convolution2D(2, 128, (6, 9), stride=(2, 9), initialW=w_init)
-            self.c_1 = L.Convolution2D(128, 256, (6, 6), stride=(2, 3), initialW=w_init)
-            self.c_2 = L.Convolution2D(256, 512, (8, 4), stride=(2, 2), initialW=w_init)
-            self.d_l = L.Convolution2D(512, 1, (2, 8), initialW=chainer.initializers.Normal(0.005))
+            self.c_0 = L.Convolution2D(1, 64, (6, 9), stride=(2, 9), initialW=w_init)
+            self.c_1 = L.Convolution2D(64, 128, (6, 6), stride=(2, 3), initialW=w_init)
+            self.c_2 = L.Convolution2D(128, 256, (9, 4), stride=(2, 2), initialW=w_init)
+            self.c_3 = L.Convolution2D(256, 512, (7, 8), stride=(2, 1), initialW=w_init)
+            self.d_l = L.Convolution2D(512, 1, (2, 1), stride=(2, 1), initialW=chainer.initializers.Normal(0.005))
     def __call__(self, *_x, **kwargs):
         """
         呼び出し関数
@@ -50,7 +51,9 @@ class Discriminator(chainer.Chain):
         _y = F.leaky_relu(_y)
         _y = self.c_2(_y)
         _y = F.leaky_relu(_y)
-        _y = self.d_l(_y)[:, :, :, 0]
+        _y = self.c_3(_y)
+        _y = F.leaky_relu(_y)
+        _y = self.d_l(_y)[:, 0, :, :]
         return _y
 class Generator(chainer.Chain):
     """
@@ -71,7 +74,7 @@ class Generator(chainer.Chain):
         with self.init_scope():
             w_init = chainer.initializers.HeNormal()
             # (N, 2, 100, 513)
-            self.c_0 = L.Convolution2D(2, 64, (2, 3), stride=(2, 3), initialW=w_init)
+            self.c_0 = L.Convolution2D(1, 64, (2, 3), stride=(2, 3), initialW=w_init)
             # (N, 64, 100, 171)
             self.d_1 = L.Convolution2D(64, 128, (2, 6), stride=(2, 3), initialW=w_init)
             # (N, 128, 50, 56)
@@ -99,7 +102,7 @@ class Generator(chainer.Chain):
             self.b_a1 = L.BatchNormalization(128)
             self.u_1 = L.Deconvolution2D(128, 64, (2, 6), stride=(2, 3), initialW=chainer.initializers.Normal(0.02), nobias=True)
             self.b_a2 = L.BatchNormalization(64)
-            self.d_0_1 = L.Deconvolution2D(64, 2, (2, 3), stride=(2, 3), initialW=chainer.initializers.Normal(0.02))
+            self.d_0_1 = L.Deconvolution2D(64, 1, (2, 3), stride=(2, 3), initialW=chainer.initializers.Normal(0.02))
     def __call__(self, *_x, **kwargs):
         """
             呼び出し関数
