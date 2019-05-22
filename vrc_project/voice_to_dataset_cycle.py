@@ -37,7 +37,7 @@ def create_dataset(_term, _chunk=1024, delta=0):
             data_real = (data / 32767).reshape(-1)
             _step = _term
             if delta > 0:
-                    _step = delta
+                _step = delta
             times = data_real.shape[0] // _step + 1
             if data_real.shape[0] % _step == 0:
                 times -= 1
@@ -47,7 +47,7 @@ def create_dataset(_term, _chunk=1024, delta=0):
                 _padiing_size = _term - data_real_current_use.shape[0]
                 if _padiing_size > 0:
                     data_real_current_use = np.pad(data_real_current_use, (_padiing_size, 0), "constant")
-                f0_estimation, spec_env, ap = wave2world(data_real_current_use)
+                f0_estimation, spec_env, _ = wave2world(data_real_current_use)
                 f0_estimation = f0_estimation[f0_estimation > 0.0]
                 if f0_estimation.shape[0] != 0:
                     _ff.extend(f0_estimation)

@@ -139,8 +139,8 @@ def define_model(_args, _train_data_a, _train_data_b):
         g_b_to_a1.to_gpu()
         d_a.to_gpu()
         d_b.to_gpu()
-    g_optimizer_ab1 = chainer.optimizers.Adam(alpha=1e-4, beta1=0.1, beta2=0.9).setup(g_a_to_b1)
-    g_optimizer_ba1 = chainer.optimizers.Adam(alpha=1e-4, beta1=0.1, beta2=0.9).setup(g_b_to_a1)
+    g_optimizer_ab1 = chainer.optimizers.Adam(alpha=2e-4, beta1=0.1, beta2=0.9).setup(g_a_to_b1)
+    g_optimizer_ba1 = chainer.optimizers.Adam(alpha=2e-4, beta1=0.1, beta2=0.9).setup(g_b_to_a1)
     d_optimizer_a = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5, beta2=0.9).setup(d_a)
     d_optimizer_b = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5, beta2=0.9).setup(d_b)
     updater = CycleGANUpdater(

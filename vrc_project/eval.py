@@ -42,9 +42,9 @@ class TestModel(chainer.training.Extension):
         self.source_ap = source_ap
         self.length = source_f0.shape[0]
         padding_size = abs(_sp_input_length - source_sp.shape[0] % _sp_input_length)
-        source_sp = np.pad(source_sp, ((padding_size, 0), (0, 0)), "constant", constant_values=-1).reshape(-1, _sp_input_length, 513)
+        source_sp = np.pad(source_sp, ((padding_size, 0), (0, 0)), "edge").reshape(-1, _sp_input_length, 513)
         source_sp = np.transpose(source_sp, [0, 2, 1]).astype(np.float32).reshape(-1, 513, _sp_input_length, 1)
-        source_ap = np.pad(source_ap, ((padding_size, 0), (0, 0)), "constant", constant_values=-1).reshape(-1, _sp_input_length, 513)
+        source_ap = np.pad(source_ap, ((padding_size, 0), (0, 0)), "edge").reshape(-1, _sp_input_length, 513)
         source_ap = np.transpose(source_ap, [0, 2, 1]).astype(np.float32).reshape(-1, 513, _sp_input_length, 1)
         # source_pp = np.concatenate([source_sp, source_ap], axis=3)
         self.source_pp = chainer.backends.cuda.to_gpu(source_sp)

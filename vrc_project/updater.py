@@ -35,11 +35,7 @@ class CycleGANUpdater(chainer.training.updaters.StandardUpdater):
         disb_optimizer = self.get_optimizer("disb")
         batch_a = chainer.Variable(self.converter(self.get_iterator("main").next()))
         batch_b = chainer.Variable(self.converter(self.get_iterator("data_b").next()))
-        batch_size = len(batch_a)
         _xp = chainer.backend.get_array_module(batch_a.data)
-        # _cos = _xp.cos(self.iteration / self.max_iteration / 2 * _xp.pi )
-        # batch_a_n = noise_put(_xp, batch_a, 0.01)
-        # batch_b_n = noise_put(_xp, batch_b, 0.01)
         batch_a_n = batch_a
         batch_b_n = batch_b
         fake_ab_1 = self.gen_ab1(batch_a_n)
