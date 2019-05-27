@@ -4,7 +4,6 @@
 """
 import chainer
 import chainer.functions as F
-
 class CycleGANUpdater(chainer.training.updaters.StandardUpdater):
     """
         CycleGANのためのUpdater
@@ -22,8 +21,8 @@ class CycleGANUpdater(chainer.training.updaters.StandardUpdater):
         maxitr: int
         最大イテレーション回数
         """
-        self.gen_ab1 = model["main"]
-        self.gen_ba1 = model["inverse"]
+        self.gen_ab = model["main"]
+        self.gen_ba = model["inverse"]
         self.disa = model["disa"]
         self.disb = model["disb"]
         self.max_iteration = max_itr
@@ -36,48 +35,56 @@ class CycleGANUpdater(chainer.training.updaters.StandardUpdater):
         batch_a = chainer.Variable(self.converter(self.get_iterator("main").next()))
         batch_b = chainer.Variable(self.converter(self.get_iterator("data_b").next()))
         _xp = chainer.backend.get_array_module(batch_a.data)
-        batch_a_n = batch_a
-        batch_b_n = batch_b
-        fake_ab_1 = self.gen_ab1(batch_a_n)
-        fake_ba_1 = self.gen_ba1(batch_b_n)
+        batch_a_n = noise_put(_xp, batch_a, 0.02)
+        batch_b_n = noise_put(_xp, batch_b, 0.02)
+        # batch_a_n = batch_a
+        # batch_b_n = batch_b
+        # melfilter = _xp.tanh(_xp.linspace(3.14, 0.4, 513)).reshape(1, 513, 1, 1)
+        fake_ab = self.gen_ab(batch_a_n)
+        fake_ba = self.gen_ba(batch_b_n)
         # D update
-        for _ in range(1):
-            self.disa.cleargrads()
-            self.disb.cleargrads()
-            y_af = self.disa(fake_ba_1)
-            y_bf = self.disb(fake_ab_1)
-            y_at = self.disa(batch_a_n)
-            y_bt = self.disb(batch_b_n)
-            y_label_o = _xp.ones(y_af.shape, dtype="float32")
-            y_label_z = _xp.zeros(y_af.shape, dtype="float32")
-            loss_d_a = F.mean_squared_error(y_af, -y_label_o) *0.25+F.mean_squared_error(y_at, y_label_o) *0.25
-            loss_d_b = F.mean_squared_error(y_bf, -y_label_o) *0.25+F.mean_squared_error(y_bt, y_label_o) *0.25
-            chainer.report({"D_A": loss_d_a})
-            chainer.report({"D_B": loss_d_b})
-            loss_d_a.backward()
-            loss_d_b.backward()
-            disa_optimizer.update()
-            disb_optimizer.update()
+        self.disa.cleargrads()
+        self.disb.cleargrads()
+        y_af = self.disa(fake_ba)
+        y_bf = self.disb(fake_ab)
+        y_at = self.disa(batch_a_n)
+        y_bt = self.disb(batch_b_n)
+        y_label_o = _xp.ones(y_af.shape, dtype="float32")
+        y_label_z = _xp.zeros(y_af.shape, dtype="float32")
+        loss_d_af = F.mean_squared_error(y_af, y_label_z) * 0.5
+        loss_d_bf = F.mean_squared_error(y_bf, y_label_z) * 0.5
+        loss_d_ar = F.mean_squared_error(y_at, y_label_o) * 0.5
+        loss_d_br = F.mean_squared_error(y_bt, y_label_o) * 0.5
+        chainer.report({"D_AR": loss_d_ar})
+        chainer.report({"D_AF": loss_d_af})
+        chainer.report({"D_BR": loss_d_br})
+        chainer.report({"D_BF": loss_d_bf})
+        loss_d_af.backward()
+        loss_d_ar.backward()
+        loss_d_bf.backward()
+        loss_d_br.backward()
+        disa_optimizer.update()
+        disb_optimizer.update()
         # G update
-        _lamda = 100.0
-        self.gen_ba1.cleargrads()
-        self.gen_ab1.cleargrads()
-        y_fake_ba = self.disa(fake_ba_1)
-        y_fake_ab = self.disb(fake_ab_1)
-        fake_aba1 = self.gen_ba1(fake_ab_1)
-        fake_bab1 = self.gen_ab1(fake_ba_1)
-        loss_ganba = F.mean_squared_error(y_fake_ba, y_label_z)
-        loss_ganab = F.mean_squared_error(y_fake_ab, y_label_z)
-        loss_cycb = F.mean_absolute_error(fake_bab1, batch_b_n)
-        loss_cyca = F.mean_absolute_error(fake_aba1, batch_a_n)
-        chainer.report({"G_G_A": loss_ganba})
-        chainer.report({"G_G_B": loss_ganab})
-        chainer.report({"G_C_A": loss_cyca})
-        chainer.report({"G_C_B": loss_cycb})
-        glossa = loss_ganba + loss_cyca * _lamda
-        glossa.backward()
-        glossb = loss_ganab + loss_cycb * _lamda
-        glossb.backward()
+        _lamda = 10.0
+        self.gen_ba.cleargrads()
+        self.gen_ab.cleargrads()
+        fake_ab = self.gen_ab(batch_a_n)
+        fake_ba = self.gen_ba(batch_b_n)
+        y_fake_ba = self.disa(fake_ba)
+        y_fake_ab = self.disb(fake_ab)
+        fake_aba = self.gen_ba(fake_ab)
+        fake_bab = self.gen_ab(fake_ba)
+        loss_ganba = F.mean_squared_error(y_fake_ba, y_label_o) * 0.5
+        loss_ganab = F.mean_squared_error(y_fake_ab, y_label_o) * 0.5
+        loss_cycb = F.mean_absolute_error(fake_bab, batch_b_n)
+        loss_cyca = F.mean_absolute_error(fake_aba, batch_a_n)
+        chainer.report({"G_AB": loss_ganba})
+        chainer.report({"G_BA": loss_ganab})
+        chainer.report({"G_ABA": loss_cyca})
+        chainer.report({"G_BAB": loss_cycb})
+        gloss = loss_ganba + loss_ganab + (loss_cycb + loss_cyca) * _lamda
+        gloss.backward()
         gen_ab_optimizer1.update()
         gen_ba_optimizer1.update()
 
@@ -91,9 +98,6 @@ def noise_put(_xp, x, stddev):
     stddev: 標準偏差
     """
     noise_shape = [x.shape[0], x.shape[1], x.shape[2], x.shape[3]]
-    v = _xp.var(x.array)
     x_s = x +_xp.random.randn(noise_shape[0], noise_shape[1], noise_shape[2], noise_shape[3]) * stddev
-    x_s = x_s * (v / _xp.var(x_s.array))
-    x_s = F.clip(x_s, -1.0, 1.0)
     return x_s
         

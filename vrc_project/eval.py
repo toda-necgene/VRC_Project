@@ -35,7 +35,8 @@ class TestModel(chainer.training.Extension):
             モデルの入力データ長
         """
         self.dir = _direc
-        self.model = _trainer.updater.gen_ab1
+        self.model = _trainer.updater.gen_ab
+        self.target = _label_sample
         source_f0, source_sp, source_ap = wave2world(_source.astype(np.float64))
         _, self.source_sp_l, _ = wave2world(_label_sample.astype(np.float64))
         self.image_power_l = fft(_label_sample[800:156000])
@@ -70,7 +71,7 @@ class TestModel(chainer.training.Extension):
         if head_cut_num > 0:
             otp = otp[head_cut_num:]
         chainer.using_config("train", True)
-        return otp, score
+        return otp, score, result[:, :, 0]
     def __call__(self, _trainer):
         """
         評価関数
@@ -83,7 +84,7 @@ class TestModel(chainer.training.Extension):
             テストに使用するトレーナー
         """
         # testing
-        out_put, score_raw = self.convert()
+        out_put, score_raw, im_env = self.convert()
         out_puts = (out_put*32767).astype(np.int16)
         # calculating power spectrum
         image_power_spec = fft(out_put[800:156000])
@@ -91,16 +92,31 @@ class TestModel(chainer.training.Extension):
         chainer.report({"env_test_loss": score_raw, "test_loss": score_fft})
         #saving fake power-spec image
         plt.clf()
-        plt.subplot(2, 1, 1)
+        plt.figure(figsize=(8, 5))
+        plt.subplot(2, 3, 1)
         _insert_image = np.transpose(image_power_spec, (1, 0))
         plt.imshow(_insert_image, vmin=-1, vmax=1, aspect="auto")
-        plt.subplot(2, 1, 2)
-        plt.plot(out_put)
+        plt.subplot(2, 3, 2)
+        _insert_image = np.transpose(np.abs(image_power_spec-self.image_power_l), (1, 0))
+        plt.imshow(_insert_image, vmin=0, vmax=2, aspect="auto", cmap='jet')
+        plt.subplot(2, 3, 3)
+        _insert_image = np.transpose(self.image_power_l, (1, 0))
+        plt.imshow(_insert_image, vmin=-1, vmax=1, aspect="auto")
+        plt.subplot(2, 3, 4)
+        _insert_image = np.transpose(im_env, (1, 0))
+        plt.imshow(_insert_image, vmin=-1, vmax=1, aspect="auto")
+        plt.subplot(2, 3, 6)
+        _insert_image = np.transpose(self.source_sp_l, (1, 0))
+        plt.imshow(_insert_image, vmin=-1, vmax=1, aspect="auto")
+        plt.subplot(2, 3, 5)
         plt.ylim(-1, 1)
-        _name_save = "%s%04d.png" % (self.dir, _trainer.updater.iteration)
-        plt.savefig(_name_save)
-        _name_save = "./latest.png"
-        plt.savefig(_name_save)
+        plt.tick_params(labelbottom=False)
+        plt.plot(out_put)
+        table = plt.table(cellText=[["fft_diff", "spenv_diff"], ["%f" % score_fft, "%f" %score_raw]])
+        table.auto_set_font_size(False)
+        table.set_fontsize(8)
+        plt.savefig("%s%04d.png" % (self.dir, _trainer.updater.iteration))
+        plt.savefig("./latest.png")
         #saving fake waves
         path_save = self.dir + str(_trainer.updater.iteration)
         voiced = out_puts.astype(np.int16)

@@ -22,11 +22,17 @@ class Discriminator(chainer.Chain):
         super(Discriminator, self).__init__()
         with self.init_scope():
             w_init = chainer.initializers.HeNormal()
+            # (N, 1, 200, 513)
             self.c_0 = L.Convolution2D(1, 64, (6, 9), stride=(2, 9), initialW=w_init)
+            # (N, 64, 98, 57)
             self.c_1 = L.Convolution2D(64, 128, (6, 6), stride=(2, 3), initialW=w_init)
+            # (N, 128, 47, 18)
             self.c_2 = L.Convolution2D(128, 256, (9, 4), stride=(2, 2), initialW=w_init)
-            self.c_3 = L.Convolution2D(256, 512, (7, 8), stride=(2, 1), initialW=w_init)
-            self.d_l = L.Convolution2D(512, 1, (2, 1), stride=(2, 1), initialW=chainer.initializers.Normal(0.005))
+            # (N, 256, 20, 8)
+            self.c_3 = L.Convolution2D(256, 512, (3, 8), stride=(1, 1), initialW=w_init)
+            # (N, 512, 18, 1)
+            self.d_l = L.Convolution2D(512, 1, (4, 1), stride=(2, 1), initialW=chainer.initializers.Normal(0.0002))
+            # (N, 1, 8, 1)
     def __call__(self, *_x, **kwargs):
         """
         呼び出し関数
@@ -55,6 +61,29 @@ class Discriminator(chainer.Chain):
         _y = F.leaky_relu(_y)
         _y = self.d_l(_y)[:, 0, :, :]
         return _y
+class GeneratorBlock(chainer.Chain):
+    """
+    generatorのブロック部
+    現在はAtention構造に似たもの
+    """
+    def __init__(self):
+        """
+        通常の3x3-128ch畳み込みと周波数方向をチャンネルとして扱い1x1畳み込み
+        """
+        super(GeneratorBlock, self).__init__()
+        with self.init_scope():
+            self.conv_A = L.Convolution2D(128, 128, (3, 3), pad=(1, 1), initialW=chainer.initializers.HeNormal())
+            self.conv_B = L.Convolution2D(56, 56, (3, 1), pad=(1, 0), initialW=chainer.initializers.Normal(0.005))
+    def __call__(self, *_x, **kwargs):
+        """
+        Residualブロック
+        """
+        _h = self.conv_A(_x[0])
+        _h = F.relu(_h)
+        _a = F.transpose(_h, (0, 3, 2, 1))
+        _a = self.conv_B(_a)
+        _a = F.transpose(_a, (0, 3, 2, 1))
+        return F.tanh(_a) * _h + _x[0]
 class Generator(chainer.Chain):
     """
         生成側ネットワーク
@@ -65,7 +94,6 @@ class Generator(chainer.Chain):
     """
     def __init__(self):
         """
-        初期化関数
         重み等の変数の初期化を担う
         重みの初期化はHeNormal
         最終層のみ分散0.02
@@ -74,26 +102,20 @@ class Generator(chainer.Chain):
         with self.init_scope():
             w_init_H = chainer.initializers.HeNormal()
             w_init_N = chainer.initializers.Normal(0.02)
-            # (N, 2, 100, 513)
-            self.e_0 = L.Convolution2D(1, 64, (4, 9), stride=(4, 9), initialW=w_init_H)
-            # (N, 64, 100, 57)
-            self.e_1 = L.Convolution2D(64, 256, (5, 5), stride=(5, 4), initialW=w_init_H)
-            # (N, 256, 10, 14)
-            self.r_1 = L.Convolution2D(256, 256, (3, 3), pad=(1, 1), initialW=w_init_H)
-            self.r_2 = L.Convolution2D(14, 14, (1, 1), initialW=w_init_N)
-            self.r_3 = L.Convolution2D(256, 256, (3, 3), pad=(1, 1), initialW=w_init_H)
-            self.r_4 = L.Convolution2D(14, 14, (1, 1), initialW=w_init_N)
-            self.r_5 = L.Convolution2D(256, 256, (3, 3), pad=(1, 1), initialW=w_init_H)
-            self.r_6 = L.Convolution2D(14, 14, (1, 1), initialW=w_init_N)
-            self.r_7 = L.Convolution2D(256, 256, (3, 3), pad=(1, 1), initialW=w_init_H)
-            self.r_8 = L.Convolution2D(14, 14, (1, 1), initialW=w_init_N)
-            self.r_9 = L.Convolution2D(256, 256, (3, 3), pad=(1, 1), initialW=w_init_H)
-            self.r_10 = L.Convolution2D(14, 14, (1, 1), initialW=w_init_N)
-            self.r_11 = L.Convolution2D(256, 256, (3, 3), pad=(1, 1), initialW=w_init_H)
-            self.r_12 = L.Convolution2D(14, 14, (1, 1), initialW=w_init_N)
-            self.d_1 = L.Deconvolution2D(256, 64, (5, 5), stride=(5, 4), initialW=w_init_N, nobias=True)
+            # (N, 2, 200, 513)
+            self.e_0 = L.Convolution2D(1, 64, (4, 3), stride=(4, 3), initialW=w_init_H)
+            # (N, 64, 100, 171)
+            self.e_1 = L.Convolution2D(64, 128, (10, 6), stride=(5, 3), initialW=w_init_H)
+            # (N, 128, 20, 56)
+            self.layers = list()
+            for _ in range(4):
+                self.layers.append(GeneratorBlock())
+            # (N, 128, 20, 56)
+            self.d_1 = L.Deconvolution2D(128, 64, (10, 6), stride=(5, 3), initialW=w_init_N, nobias=True)
             self.b_1 = L.BatchNormalization(64)
-            self.d_0 = L.Deconvolution2D(64, 1, (4, 9), stride=(4, 9), initialW=w_init_N)
+            # (N, 64, 100, 171)
+            self.d_0 = L.Deconvolution2D(64, 1, (4, 3), stride=(4, 3), initialW=w_init_N)
+            # (N, 2, 200, 513)
     def __call__(self, *_x, **kwargs):
         """
             呼び出し関数
@@ -114,46 +136,15 @@ class Generator(chainer.Chain):
         _y = F.leaky_relu(_y)
         _y = self.e_1(_y)
         _y = F.leaky_relu(_y)
-        _h = self.r_1(_y)
-        _h = F.relu(_h)
-        _a = F.transpose(_h, (0, 3, 2, 1))
-        _a = self.r_2(_a)
-        _a = F.transpose(_a, (0, 3, 2, 1))
-        _y = _h * F.tanh(_a) + _y
-        _h = self.r_3(_y)
-        _h = F.relu(_h)
-        _a = F.transpose(_h, (0, 3, 2, 1))
-        _a = self.r_4(_a)
-        _a = F.transpose(_a, (0, 3, 2, 1))
-        _y = _h * F.tanh(_a) + _y
-        _h = self.r_5(_y)
-        _h = F.relu(_h)
-        _a = F.transpose(_h, (0, 3, 2, 1))
-        _a = self.r_6(_a)
-        _a = F.transpose(_a, (0, 3, 2, 1))
-        _y = _h * F.tanh(_a) + _y
-        _h = self.r_7(_y)
-        _h = F.relu(_h)
-        _a = F.transpose(_h, (0, 3, 2, 1))
-        _a = self.r_8(_a)
-        _a = F.transpose(_a, (0, 3, 2, 1))
-        _y = _h * F.tanh(_a) + _y
-        _h = self.r_9(_y)
-        _h = F.relu(_h)
-        _a = F.transpose(_h, (0, 3, 2, 1))
-        _a = self.r_10(_a)
-        _a = F.transpose(_a, (0, 3, 2, 1))
-        _y = _h * F.tanh(_a) + _y
-        _h = self.r_11(_y)
-        _h = F.relu(_h)
-        _a = F.transpose(_h, (0, 3, 2, 1))
-        _a = self.r_12(_a)
-        _a = F.transpose(_a, (0, 3, 2, 1))
-        _y = _h * F.tanh(_a) + _y
+        for l in self.layers:
+            _y = l(_y)
         _y = self.d_1(_y)
         _y = self.b_1(_y)
         _y = F.leaky_relu(_y)
         _y = self.d_0(_y)
-        _y = F.tanh(_y)
         _y = F.transpose(_y, (0, 3, 2, 1))
-        return _y
+        return F.tanh(_y)
+    def to_gpu(self, device=None):
+        super(Generator, self).to_gpu(device)
+        for l in self.layers:
+            l.to_gpu()
