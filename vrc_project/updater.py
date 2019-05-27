@@ -35,13 +35,14 @@ class CycleGANUpdater(chainer.training.updaters.StandardUpdater):
         batch_a = chainer.Variable(self.converter(self.get_iterator("main").next()))
         batch_b = chainer.Variable(self.converter(self.get_iterator("data_b").next()))
         _xp = chainer.backend.get_array_module(batch_a.data)
-        batch_a_n = noise_put(_xp, batch_a, 0.02)
-        batch_b_n = noise_put(_xp, batch_b, 0.02)
-        # batch_a_n = batch_a
-        # batch_b_n = batch_b
-        # melfilter = _xp.tanh(_xp.linspace(3.14, 0.4, 513)).reshape(1, 513, 1, 1)
+        # batch_a_n = noise_put(_xp, batch_a, 0.02)
+        # batch_b_n = noise_put(_xp, batch_b, 0.02)
+        batch_a_n = batch_a
+        batch_b_n = batch_b
         fake_ab = self.gen_ab(batch_a_n)
         fake_ba = self.gen_ba(batch_b_n)
+        fake_bab = self.gen_ab(fake_ba)
+        fake_aba = self.gen_ba(fake_ab)
         # D update
         self.disa.cleargrads()
         self.disb.cleargrads()
@@ -81,8 +82,8 @@ class CycleGANUpdater(chainer.training.updaters.StandardUpdater):
         loss_cyca = F.mean_absolute_error(fake_aba, batch_a_n)
         chainer.report({"G_AB": loss_ganba})
         chainer.report({"G_BA": loss_ganab})
-        chainer.report({"G_ABA": loss_cyca})
-        chainer.report({"G_BAB": loss_cycb})
+        chainer.report({"G_ABAC": loss_cyca})
+        chainer.report({"G_BABC": loss_cycb})
         gloss = loss_ganba + loss_ganab + (loss_cycb + loss_cyca) * _lamda
         gloss.backward()
         gen_ab_optimizer1.update()

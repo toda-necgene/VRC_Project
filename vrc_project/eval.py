@@ -63,15 +63,15 @@ class TestModel(chainer.training.Extension):
         chainer.using_config("train", False)
         result = self.model(self.source_pp)
         result = chainer.backends.cuda.to_cpu(result.data)
-        result = np.transpose(result, [0, 2, 1, 3]).reshape(-1, 513, 1)[-self.length:]
-        score = np.mean(np.abs(result[:, :, 0] - self.source_sp_l))
-        result_wave = world2wave(self.source_f0, result[:, :, 0], self.source_ap)
+        result = np.transpose(result, [0, 2, 1, 3]).reshape(-1, 513)[-self.length:]
+        score = np.mean(np.abs(result - self.source_sp_l))
+        result_wave = world2wave(self.source_f0, result, self.source_ap)
         otp = result_wave.reshape(-1)
         head_cut_num = otp.shape[0]-self.wave_len
         if head_cut_num > 0:
             otp = otp[head_cut_num:]
         chainer.using_config("train", True)
-        return otp, score, result[:, :, 0]
+        return otp, score, result
     def __call__(self, _trainer):
         """
         評価関数

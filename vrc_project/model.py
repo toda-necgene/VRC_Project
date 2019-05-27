@@ -72,17 +72,20 @@ class GeneratorBlock(chainer.Chain):
         """
         super(GeneratorBlock, self).__init__()
         with self.init_scope():
-            self.conv_A = L.Convolution2D(128, 128, (3, 3), pad=(1, 1), initialW=chainer.initializers.HeNormal())
-            self.conv_B = L.Convolution2D(56, 56, (3, 1), pad=(1, 0), initialW=chainer.initializers.Normal(0.005))
+            self.conv_A = L.Convolution2D(18, 18, (1, 1), initialW=chainer.initializers.HeNormal(), nobias=True)
+            self.bn = L.BatchNormalization(18)
+            self.conv_B = L.Convolution2D(128, 128, (9, 1), pad=(4, 0), initialW=chainer.initializers.Normal(0.02))
+
     def __call__(self, *_x, **kwargs):
         """
         Residualブロック
         """
-        _h = self.conv_A(_x[0])
+        _h = F.transpose(_x[0], (0, 3, 2, 1))
+        _h = self.conv_A(_h)
+        _h = self.bn(_h)
+        _h = F.transpose(_h, (0, 3, 2, 1))
         _h = F.relu(_h)
-        _a = F.transpose(_h, (0, 3, 2, 1))
-        _a = self.conv_B(_a)
-        _a = F.transpose(_a, (0, 3, 2, 1))
+        _a = self.conv_B(_h)
         return F.tanh(_a) * _h + _x[0]
 class Generator(chainer.Chain):
     """
@@ -103,18 +106,23 @@ class Generator(chainer.Chain):
             w_init_H = chainer.initializers.HeNormal()
             w_init_N = chainer.initializers.Normal(0.02)
             # (N, 2, 200, 513)
-            self.e_0 = L.Convolution2D(1, 64, (4, 3), stride=(4, 3), initialW=w_init_H)
+            self.e_0 = L.Convolution2D(1, 64, (2, 3), stride=(2, 3), initialW=w_init_H)
             # (N, 64, 100, 171)
-            self.e_1 = L.Convolution2D(64, 128, (10, 6), stride=(5, 3), initialW=w_init_H)
-            # (N, 128, 20, 56)
+            self.e_1 = L.Convolution2D(64, 128, (2, 3), stride=(2, 3), initialW=w_init_H)
+            # (N, 128, 50, 57)
+            self.e_2 = L.Convolution2D(128, 128, (5, 6), stride=(5, 3), initialW=w_init_H)
+            # (N, 128, 10, 18)
             self.layers = list()
-            for _ in range(4):
+            for _ in range(6):
                 self.layers.append(GeneratorBlock())
-            # (N, 128, 20, 56)
-            self.d_1 = L.Deconvolution2D(128, 64, (10, 6), stride=(5, 3), initialW=w_init_N, nobias=True)
+            # (N, 128, 10, 18)
+            self.d_2 = L.Deconvolution2D(128, 128, (5, 6), stride=(5, 3), initialW=w_init_N, nobias=True)
+            self.b_2 = L.BatchNormalization(128)
+            # (N, 128, 50, 57)
+            self.d_1 = L.Deconvolution2D(128, 64, (2, 3), stride=(2, 3), initialW=w_init_N, nobias=True)
             self.b_1 = L.BatchNormalization(64)
             # (N, 64, 100, 171)
-            self.d_0 = L.Deconvolution2D(64, 1, (4, 3), stride=(4, 3), initialW=w_init_N)
+            self.d_0 = L.Deconvolution2D(64, 1, (2, 3), stride=(2, 3), initialW=w_init_N)
             # (N, 2, 200, 513)
     def __call__(self, *_x, **kwargs):
         """
@@ -136,8 +144,13 @@ class Generator(chainer.Chain):
         _y = F.leaky_relu(_y)
         _y = self.e_1(_y)
         _y = F.leaky_relu(_y)
+        _y = self.e_2(_y)
+        _y = F.leaky_relu(_y)
         for l in self.layers:
             _y = l(_y)
+        _y = self.d_2(_y)
+        _y = self.b_2(_y)
+        _y = F.leaky_relu(_y)
         _y = self.d_1(_y)
         _y = self.b_1(_y)
         _y = F.leaky_relu(_y)
