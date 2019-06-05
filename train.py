@@ -36,10 +36,9 @@ def load_model_from_npz(_checkpoint_dir, _trainer):
     if os.path.exists(_checkpoint_dir) and os.path.exists(_checkpoint_dir+"/snapshot.npz"):
         print(" [I] checkpoint is found. loading file name : %s " % (_checkpoint_dir))
         chainer.serializers.load_npz(_checkpoint_dir+"/snapshot.npz", _trainer)
-        chainer.serializers.load_npz(_checkpoint_dir+"/gen_ab1.npz", _trainer.updater.gen_ab1)
-        chainer.serializers.load_npz(_checkpoint_dir+"/gen_ba1.npz", _trainer.updater.gen_ba1)
+        chainer.serializers.load_npz(_checkpoint_dir+"/gen_ab1.npz", _trainer.updater.gen_ab)
+        chainer.serializers.load_npz(_checkpoint_dir+"/gen_ba1.npz", _trainer.updater.gen_ba)
         chainer.serializers.load_npz(_checkpoint_dir+"/dis_a.npz", _trainer.updater.disa)
-        chainer.serializers.load_npz(_checkpoint_dir+"/dis_b.npz", _trainer.updater.disb)
         print(" [I] loaded checkpoint successfully.")
         return True
     elif not os.path.exists(_checkpoint_dir):
@@ -93,7 +92,7 @@ def dataset_pre_process_controler(_args):
     _sounds_a = None
     _sounds_b = None
     if not (args["use_old_dataset"] and os.path.exists("./dataset/patch/A.npy") and os.path.exists("./dataset/patch/B.npy")):
-        _sounds_a, _sounds_b = create_dataset(args["input_size"], delta=args["input_size"])
+        _sounds_a, _sounds_b = create_dataset(args["input_size"], delta=args["input_size"]//4)
     else:
         # preparing training-data
         print(" [*] loading data-set ...")
@@ -132,22 +131,19 @@ def define_model(_args, _train_data_a, _train_data_b):
     g_a_to_b1 = Generator()
     g_b_to_a1 = Generator()
     d_a = Discriminator()
-    d_b = Discriminator()
     if _args["gpu"] >= 0:
         chainer.cuda.Device(_args["gpu"]).use()
         g_a_to_b1.to_gpu()
         g_b_to_a1.to_gpu()
         d_a.to_gpu()
-        d_b.to_gpu()
-    g_optimizer_ab1 = chainer.optimizers.Adam(alpha=2e-4, beta1=0.1).setup(g_a_to_b1)
-    g_optimizer_ba1 = chainer.optimizers.Adam(alpha=2e-4, beta1=0.1).setup(g_b_to_a1)
-    d_optimizer_a = chainer.optimizers.Adam(alpha=2e-4, beta1=0.1).setup(d_a)
-    d_optimizer_b = chainer.optimizers.Adam(alpha=2e-4, beta1=0.1).setup(d_b)
+    g_optimizer_ab1 = chainer.optimizers.Adam(alpha=1e-4, beta1=0.5).setup(g_a_to_b1)
+    g_optimizer_ba1 = chainer.optimizers.Adam(alpha=1e-4, beta1=0.5).setup(g_b_to_a1)
+    d_optimizer_a = chainer.optimizers.Adam(alpha=2e-4, beta1=0.9).setup(d_a)
     updater = CycleGANUpdater(
-        model={"main":g_a_to_b1, "inverse":g_b_to_a1, "disa":d_a, "disb":d_b},
+        model={"main":g_a_to_b1, "inverse":g_b_to_a1, "disa":d_a},
         max_itr=_args["train_iteration"],
         iterator={"main":_train_data_a, "data_b":_train_data_b},
-        optimizer={"gen_ab1":g_optimizer_ab1, "gen_ba1":g_optimizer_ba1, "disa":d_optimizer_a, "disb":d_optimizer_b},
+        optimizer={"gen_ab1":g_optimizer_ab1, "gen_ba1":g_optimizer_ba1, "disa":d_optimizer_a},
         device=_args["gpu"])
     checkpoint_dir = _args["name_save"]
     _trainer = chainer.training.Trainer(updater, (_args["train_iteration"], "iteration"), out=checkpoint_dir)
@@ -161,7 +157,6 @@ def define_model(_args, _train_data_a, _train_data_b):
     _trainer.extend(chainer.training.extensions.snapshot_object(g_a_to_b1, 'gen_ab1.npz'), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.snapshot_object(g_b_to_a1, 'gen_ba1.npz'), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.snapshot_object(d_a, 'dis_a.npz'), trigger=display_interval)
-    _trainer.extend(chainer.training.extensions.snapshot_object(d_b, 'dis_b.npz'), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.LogReport(trigger=display_interval))
     _trainer.extend(chainer.training.extensions.ProgressBar(update_interval=10))
     return _trainer

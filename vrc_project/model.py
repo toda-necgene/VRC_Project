@@ -22,17 +22,16 @@ class Discriminator(chainer.Chain):
         super(Discriminator, self).__init__()
         with self.init_scope():
             w_init = chainer.initializers.HeNormal()
-            # (N, 1, 200, 513)
-            self.c_0 = L.Convolution2D(1, 64, (6, 9), stride=(2, 9), initialW=w_init)
-            # (N, 64, 98, 57)
-            self.c_1 = L.Convolution2D(64, 128, (6, 6), stride=(2, 3), initialW=w_init)
-            # (N, 128, 47, 18)
-            self.c_2 = L.Convolution2D(128, 256, (9, 4), stride=(2, 2), initialW=w_init)
-            # (N, 256, 20, 8)
-            self.c_3 = L.Convolution2D(256, 512, (3, 8), stride=(1, 1), initialW=w_init)
-            # (N, 512, 18, 1)
-            self.d_l = L.Convolution2D(512, 1, (4, 1), stride=(2, 1), initialW=chainer.initializers.Normal(0.0002))
-            # (N, 1, 8, 1)
+            # self.b_0 = L.BatchNormalization(axis=(2, 3))
+            # (N, 1, 100, 513)
+            self.c_0 = L.Convolution2D(1, 128, (6, 9), stride=(2, 6), initialW=w_init)
+            # (N, 128, 48, 85)
+            self.c_1 = L.Convolution2D(128, 256, (10, 9), stride=(2, 4), initialW=w_init)
+            # (N, 256, 20, 20)
+            self.c_2 = L.Convolution2D(256, 512, (4, 4), stride=(2, 4), initialW=w_init)
+            # (N, 512, 9, 5)
+            self.c_3 = L.Convolution2D(512, 3, (9, 5), initialW=chainer.initializers.Normal(0.0002))
+            # (N, 3, 1)
     def __call__(self, *_x, **kwargs):
         """
         呼び出し関数
@@ -51,42 +50,15 @@ class Discriminator(chainer.Chain):
                 shape: [N, 1, 1]
         """
         _y = F.transpose(_x[0], (0, 3, 2, 1))
+        # _y = self.b_0(_y)
         _y = self.c_0(_y)
         _y = F.leaky_relu(_y)
         _y = self.c_1(_y)
         _y = F.leaky_relu(_y)
         _y = self.c_2(_y)
         _y = F.leaky_relu(_y)
-        _y = self.c_3(_y)
-        _y = F.leaky_relu(_y)
-        _y = self.d_l(_y)[:, 0, :, :]
+        _y = self.c_3(_y)[:, :, :, 0]
         return _y
-class GeneratorBlock(chainer.Chain):
-    """
-    generatorのブロック部
-    現在はAtention構造に似たもの
-    """
-    def __init__(self):
-        """
-        通常の3x3-128ch畳み込みと周波数方向をチャンネルとして扱い1x1畳み込み
-        """
-        super(GeneratorBlock, self).__init__()
-        with self.init_scope():
-            self.conv_A = L.Convolution2D(18, 18, (1, 1), initialW=chainer.initializers.HeNormal(), nobias=True)
-            self.bn = L.BatchNormalization(18)
-            self.conv_B = L.Convolution2D(128, 128, (9, 1), pad=(4, 0), initialW=chainer.initializers.Normal(0.02))
-
-    def __call__(self, *_x, **kwargs):
-        """
-        Residualブロック
-        """
-        _h = F.transpose(_x[0], (0, 3, 2, 1))
-        _h = self.conv_A(_h)
-        _h = self.bn(_h)
-        _h = F.transpose(_h, (0, 3, 2, 1))
-        _h = F.relu(_h)
-        _a = self.conv_B(_h)
-        return F.tanh(_a) * _h + _x[0]
 class Generator(chainer.Chain):
     """
         生成側ネットワーク
@@ -104,26 +76,36 @@ class Generator(chainer.Chain):
         super(Generator, self).__init__()
         with self.init_scope():
             w_init_H = chainer.initializers.HeNormal()
-            w_init_N = chainer.initializers.Normal(0.02)
-            # (N, 2, 200, 513)
-            self.e_0 = L.Convolution2D(1, 64, (2, 3), stride=(2, 3), initialW=w_init_H)
-            # (N, 64, 100, 171)
-            self.e_1 = L.Convolution2D(64, 128, (2, 3), stride=(2, 3), initialW=w_init_H)
-            # (N, 128, 50, 57)
-            self.e_2 = L.Convolution2D(128, 128, (5, 6), stride=(5, 3), initialW=w_init_H)
-            # (N, 128, 10, 18)
-            self.layers = list()
-            for _ in range(6):
-                self.layers.append(GeneratorBlock())
-            # (N, 128, 10, 18)
-            self.d_2 = L.Deconvolution2D(128, 128, (5, 6), stride=(5, 3), initialW=w_init_N, nobias=True)
-            self.b_2 = L.BatchNormalization(128)
-            # (N, 128, 50, 57)
-            self.d_1 = L.Deconvolution2D(128, 64, (2, 3), stride=(2, 3), initialW=w_init_N, nobias=True)
-            self.b_1 = L.BatchNormalization(64)
-            # (N, 64, 100, 171)
-            self.d_0 = L.Deconvolution2D(64, 1, (2, 3), stride=(2, 3), initialW=w_init_N)
-            # (N, 2, 200, 513)
+            w_init_N = chainer.initializers.Normal(0.002)
+            # (N, 513, 200)
+            self.e_0 = L.Convolution1D(513, 64, 2, stride=2, initialW=w_init_H)
+            # (N, 64, 100)
+            self.e_1 = L.Convolution1D(64, 64, 5, stride=5, initialW=w_init_H)
+            # (N, 64, 20)
+            # resnet
+            self.r_1 = L.Convolution1D(64, 64, 7, pad=3, initialW=w_init_N, nobias=True)
+            self.b_r1 = L.BatchNormalization(64)
+            self.r_2 = L.Convolution1D(64, 64, 7, pad=3, initialW=w_init_N, nobias=True)
+            self.b_r2 = L.BatchNormalization(64)
+            self.r_3 = L.Convolution1D(64, 64, 7, pad=3, initialW=w_init_N, nobias=True)
+            self.b_r3 = L.BatchNormalization(64)
+            self.r_4 = L.Convolution1D(64, 64, 7, pad=3, initialW=w_init_N, nobias=True)
+            self.b_r4 = L.BatchNormalization(64)
+            # (N, 64, 10)
+            self.d_1 = L.Deconvolution1D(64, 64, 10, stride=10, initialW=w_init_N)
+            # (N, 64, 100)
+            self.d_2p = L.Convolution1D(64, 128, 1, initialW=w_init_N, nobias=True)
+            self.b_d2 = L.BatchNormalization(128)
+            self.d_2 = L.Deconvolution1D(128, 64, 1, initialW=w_init_N)
+            # (N, 128, 100) --concatnate with y--> (N, 64 + 64, 100)
+            self.d_3p = L.Convolution1D(128, 128, 1, initialW=w_init_N, nobias=True)
+            self.b_d3 = L.BatchNormalization(128)
+            self.d_3 = L.Deconvolution1D(128, 128, 1, initialW=w_init_N)
+            # (N, 128, 100) --concatnate with y--> (N, 128 + 128 = 513, 100)
+            self.d_4p = L.Convolution1D(256, 128, 1, initialW=w_init_N, nobias=True)
+            self.b_d4 = L.BatchNormalization(128)
+            self.d_4 = L.Deconvolution1D(128, 257, 1, initialW=w_init_N)
+            # (N, 129, 100) --concatnate with y--> (N, 256 + 257 = 513, 100)
     def __call__(self, *_x, **kwargs):
         """
             呼び出し関数
@@ -139,25 +121,42 @@ class Generator(chainer.Chain):
                 変換後特徴量
                 shape: [N,513,100,2]
         """
-        _y = F.transpose(_x[0], (0, 3, 2, 1))
+        _y = _x[0][:, :, :, 0]
+        # encoding
         _y = self.e_0(_y)
         _y = F.leaky_relu(_y)
         _y = self.e_1(_y)
         _y = F.leaky_relu(_y)
-        _y = self.e_2(_y)
-        _y = F.leaky_relu(_y)
-        for l in self.layers:
-            _y = l(_y)
-        _y = self.d_2(_y)
-        _y = self.b_2(_y)
-        _y = F.leaky_relu(_y)
-        _y = self.d_1(_y)
-        _y = self.b_1(_y)
-        _y = F.leaky_relu(_y)
-        _y = self.d_0(_y)
-        _y = F.transpose(_y, (0, 3, 2, 1))
+        # conversion (single-conv-4blocks-resnet)
+        _h = self.r_1(_y)
+        _h = self.b_r1(_h)
+        _y = F.leaky_relu(_h) + _y
+        _h = self.r_2(_y)
+        _h = self.b_r2(_h)
+        _y = F.leaky_relu(_h) + _y
+        _h = self.r_3(_y)
+        _h = self.b_r3(_h)
+        _y = F.leaky_relu(_h) + _y
+        _h = self.r_4(_y)
+        _h = self.b_r4(_h)
+        _y = F.leaky_relu(_h) + _y
+        # decoding
+        _h = self.d_1(_y)
+        _y = F.tanh(_h)
+        _h = self.d_2p(_y)
+        _h = self.b_d2(_h)
+        _h = F.leaky_relu(_h)
+        _h = self.d_2(_h)
+        _y = F.concat([_y, F.tanh(_h)], axis=1)
+        _h = self.d_3p(_y)
+        _h = self.b_d3(_h)
+        _h = F.leaky_relu(_h)
+        _h = self.d_3(_h)
+        _y = F.concat([_y, F.tanh(_h)], axis=1)
+        _h = self.d_4p(_y)
+        _h = self.b_d4(_h)
+        _h = F.leaky_relu(_h)
+        _h = self.d_4(_h)
+        _y = F.concat([_y, F.tanh(_h)], axis=1)
+        _y = F.expand_dims(_y, 3)
         return F.tanh(_y)
-    def to_gpu(self, device=None):
-        super(Generator, self).to_gpu(device)
-        for l in self.layers:
-            l.to_gpu()
