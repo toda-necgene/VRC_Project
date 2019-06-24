@@ -43,8 +43,9 @@ class TestModel(chainer.training.Extension):
         self.source_ap = source_ap
         self.length = source_f0.shape[0]
         padding_size = abs(_sp_input_length - source_sp.shape[0] % _sp_input_length)
-        source_sp = np.pad(source_sp, ((padding_size, 0), (0, 0)), "edge").reshape(-1, _sp_input_length, 513)
-        source_sp = np.transpose(source_sp, [0, 2, 1]).astype(np.float32).reshape(-1, 513, _sp_input_length, 1)
+        ch = source_sp.shape[1]
+        source_sp = np.pad(source_sp, ((padding_size, 0), (0, 0)), "edge").reshape(-1, _sp_input_length, ch)
+        source_sp = np.transpose(source_sp, [0, 2, 1]).astype(np.float32).reshape(-1, ch, _sp_input_length, 1)
         source_ap = np.pad(source_ap, ((padding_size, 0), (0, 0)), "edge").reshape(-1, _sp_input_length, 513)
         source_ap = np.transpose(source_ap, [0, 2, 1]).astype(np.float32).reshape(-1, 513, _sp_input_length, 1)
         # source_pp = np.concatenate([source_sp, source_ap], axis=3)
@@ -63,7 +64,8 @@ class TestModel(chainer.training.Extension):
         chainer.using_config("train", False)
         result = self.model(self.source_pp)
         result = chainer.backends.cuda.to_cpu(result.data)
-        result = np.transpose(result, [0, 2, 1, 3]).reshape(-1, 513)[-self.length:]
+        ch = result.shape[1]
+        result = np.transpose(result, [0, 2, 1, 3]).reshape(-1, ch)[-self.length:]
         score = np.mean(np.abs(result - self.source_sp_l))
         result_wave = world2wave(self.source_f0, result, self.source_ap)
         otp = result_wave.reshape(-1)
@@ -91,7 +93,6 @@ class TestModel(chainer.training.Extension):
         score_fft = np.mean(np.abs(image_power_spec-self.image_power_l))
         chainer.report({"env_test_loss": score_raw, "test_loss": score_fft})
         #saving fake power-spec image
-        plt.clf()
         plt.figure(figsize=(8, 5))
         plt.subplot(2, 2, 1)
         _insert_image = np.transpose(image_power_spec, (1, 0))
@@ -126,6 +127,7 @@ class TestModel(chainer.training.Extension):
         wave_data.setframerate(16000)
         wave_data.writeframes(voiced.reshape(-1).tobytes())
         wave_data.close()
+        plt.close()
 def fft(_data):
     """
     stftを計算
@@ -159,6 +161,6 @@ def fft(_data):
     fft_r = np.fft.fft(wined, n=1024, axis=1)
     spec_re = fft_r.real.reshape(time_ruler, -1)
     spec_im = fft_r.imag.reshape(time_ruler, -1)
-    spec_po = np.log(np.power(spec_re, 2) + np.power(spec_im, 2) + 1e-24).reshape(time_ruler, -1)[:, 512:]
+    spec_po = np.log(np.power(spec_re, 2) + np.power(spec_im, 2) + 1e-8).reshape(time_ruler, -1)[:, 512:]
     spec_po = np.clip((spec_po + 5) / 10, -1.0, 1.0)
     return spec_po

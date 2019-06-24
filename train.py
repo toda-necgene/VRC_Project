@@ -70,7 +70,7 @@ def wave_read(_path_to_file):
     return ans_data
 
 
-def dataset_pre_process_controler(_args):
+def dataset_pre_process_controler(args):
     """
     データセットが存在し新規に作らない設定ならば読み込み
     そのほかならば作成する。
@@ -92,7 +92,7 @@ def dataset_pre_process_controler(_args):
     _sounds_a = None
     _sounds_b = None
     if not (args["use_old_dataset"] and os.path.exists("./dataset/patch/A.npy") and os.path.exists("./dataset/patch/B.npy")):
-        _sounds_a, _sounds_b = create_dataset(args["input_size"], delta=args["input_size"]//4)
+        _sounds_a, _sounds_b = create_dataset(args["input_size"], delta=args["input_size"])
     else:
         # preparing training-data
         print(" [*] loading data-set ...")
@@ -111,23 +111,16 @@ def dataset_pre_process_controler(_args):
         os.mkdir(args["name_save"])
     shutil.copy("./voice_profile.npz", args["name_save"]+"/voice_profile.npz")
     return _train_iter_a, _train_iter_b, _voice_profile, _length_sp
-def define_model(_args, _train_data_a, _train_data_b):
-    """
-    学習モデルの定義
 
-    Parameters
-    ----------
-    _args: dict
-        設定パラメーター
-    _train_data_a: chainer.iterators.Iterator
-        話者Aのイテレーター
-    _train_data_b: chainer.iterators.Iterator
-        話者Bのイテレーター
-    Returns
-    -------
-    _trainer: chainer.training.trainer
-        trainerオブジェクト
-    """
+if __name__ == '__main__':
+    chainer.global_config.autotune = True
+    chainer.cuda.set_max_workspace_size(512*1024*1024)
+    _args = load_setting_from_json("setting.json")
+    if  _args["wave_otp_dir"] is not "False":
+        _args["wave_otp_dir"] = _args["wave_otp_dir"] + _args["model_name"] +  _args["version"]+"/"
+        if not os.path.exists(_args["wave_otp_dir"]):
+            os.makedirs(_args["wave_otp_dir"])
+    train_iter_a, train_iter_b, voice_profile, length_sp = dataset_pre_process_controler(_args)
     g_a_to_b1 = Generator()
     g_b_to_a1 = Generator()
     d_a = Discriminator()
@@ -136,18 +129,18 @@ def define_model(_args, _train_data_a, _train_data_b):
         g_a_to_b1.to_gpu()
         g_b_to_a1.to_gpu()
         d_a.to_gpu()
-    g_optimizer_ab1 = chainer.optimizers.Adam(alpha=1e-4, beta1=0.5).setup(g_a_to_b1)
-    g_optimizer_ba1 = chainer.optimizers.Adam(alpha=1e-4, beta1=0.5).setup(g_b_to_a1)
-    d_optimizer_a = chainer.optimizers.Adam(alpha=2e-4, beta1=0.9).setup(d_a)
+    g_optimizer_ab1 = chainer.optimizers.Adam(alpha=1e-3, beta1=0.5).setup(g_a_to_b1)
+    g_optimizer_ba1 = chainer.optimizers.Adam(alpha=1e-3, beta1=0.5).setup(g_b_to_a1)
+    d_optimizer_a = chainer.optimizers.Adam(alpha=1e-3, beta1=0.5).setup(d_a)
+    # main training
     updater = CycleGANUpdater(
         model={"main":g_a_to_b1, "inverse":g_b_to_a1, "disa":d_a},
         max_itr=_args["train_iteration"],
-        iterator={"main":_train_data_a, "data_b":_train_data_b},
+        iterator={"main":train_iter_a, "data_b":train_iter_b},
         optimizer={"gen_ab1":g_optimizer_ab1, "gen_ba1":g_optimizer_ba1, "disa":d_optimizer_a},
         device=_args["gpu"])
-    checkpoint_dir = _args["name_save"]
-    _trainer = chainer.training.Trainer(updater, (_args["train_iteration"], "iteration"), out=checkpoint_dir)
-    load_model_from_npz(checkpoint_dir, _trainer)
+    _trainer = chainer.training.Trainer(updater, (_args["train_iteration"], "iteration"), out=_args["name_save"])
+    load_model_from_npz(_args["name_save"], _trainer)
     display_interval = (_args["log_interval"], 'iteration')
     if _args["test"]:
         test = wave_read("./dataset/test/test.wav") / 32767.0
@@ -159,17 +152,11 @@ def define_model(_args, _train_data_a, _train_data_b):
     _trainer.extend(chainer.training.extensions.snapshot_object(d_a, 'dis_a.npz'), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.LogReport(trigger=display_interval))
     _trainer.extend(chainer.training.extensions.ProgressBar(update_interval=10))
-    return _trainer
-
-if __name__ == '__main__':
-    chainer.global_config.autotune = True
-    chainer.cuda.set_max_workspace_size(512*1024*1024)
-    args = load_setting_from_json("setting.json")
-    if  args["wave_otp_dir"] is not "False":
-        args["wave_otp_dir"] = args["wave_otp_dir"] + args["model_name"] +  args["version"]+"/"
-        if not os.path.exists(args["wave_otp_dir"]):
-            os.makedirs(args["wave_otp_dir"])
-    train_iter_a, train_iter_b, voice_profile, length_sp = dataset_pre_process_controler(args)
-    trainer = define_model(args, train_iter_a, train_iter_b)
+    # decay_timming = chainer.training.triggers.ManualScheduleTrigger([_args["train_iteration"]*0.75], 'iteration')
+    # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=updater.get_optimizer("gen_ab1")), trigger=decay_timming)
+    # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=updater.get_optimizer("gen_ba1")), trigger=decay_timming)
+    # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=updater.get_optimizer("disa")), trigger=decay_timming)
     print(" [*] Train Started")
-    trainer.run()
+    _trainer.run()
+    print(" [*] All over.")
+    
