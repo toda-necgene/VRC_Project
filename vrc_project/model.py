@@ -110,21 +110,21 @@ class Generator(chainer.Chain):
         _y = F.leaky_relu(_y)
         # conversion (single-conv-4blocks-resnet)
         _h = self.r_1(_y)
-        _y = F.sigmoid(_h[:,:128]) * _h[:,128:] + _y
+        _y = F.sigmoid(_h[:, :128]) * _h[:, 128:] + _y
         _h = self.r_2(_y)
-        _y = F.sigmoid(_h[:,:128]) * _h[:,128:] + _y
+        _y = F.sigmoid(_h[:, :128]) * _h[:, 128:] + _y
         _h = self.r_3(_y)
-        _y = F.sigmoid(_h[:,:128]) * _h[:,128:] + _y
+        _y = F.sigmoid(_h[:, :128]) * _h[:, 128:] + _y
         _h = self.r_4(_y)
-        _y = F.sigmoid(_h[:,:128]) * _h[:,128:] + _y
+        _y = F.sigmoid(_h[:, :128]) * _h[:, 128:] + _y
         _h = self.r_5(_y)
-        _y = F.sigmoid(_h[:,:128]) * _h[:,128:] + _y
+        _y = F.sigmoid(_h[:, :128]) * _h[:, 128:] + _y
         _h = self.r_6(_y)
-        _y = F.sigmoid(_h[:,:128]) * _h[:,128:] + _y
+        _y = F.sigmoid(_h[:, :128]) * _h[:, 128:] + _y
         _h = self.r_7(_y)
-        _y = F.sigmoid(_h[:,:128]) * _h[:,128:] + _y
+        _y = F.sigmoid(_h[:, :128]) * _h[:, 128:] + _y
         _h = self.r_8(_y)
-        _y = F.sigmoid(_h[:,:128]) * _h[:,128:] + _y
+        _y = F.sigmoid(_h[:, :128]) * _h[:, 128:] + _y
         # decoding
         _y = self.d_1(_y)
         _y = F.expand_dims(_y, 3)
