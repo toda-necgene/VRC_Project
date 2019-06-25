@@ -35,19 +35,21 @@ class TestModel(chainer.training.Extension):
             モデルの入力データ長
         """
         self.dir = _direc
-        self.model = _trainer.updater.gen_ab1
+        self.model = _trainer.updater.gen_ab
+        self.target = _label_sample
         source_f0, source_sp, source_ap = wave2world(_source.astype(np.float64))
         _, self.source_sp_l, _ = wave2world(_label_sample.astype(np.float64))
         self.image_power_l = fft(_label_sample[800:156000])
         self.source_ap = source_ap
         self.length = source_f0.shape[0]
         padding_size = abs(_sp_input_length - source_sp.shape[0] % _sp_input_length)
-        source_sp = np.pad(source_sp, ((padding_size, 0), (0, 0)), "constant", constant_values=-1).reshape(-1, _sp_input_length, 513)
-        source_sp = np.transpose(source_sp, [0, 2, 1]).astype(np.float32).reshape(-1, 513, _sp_input_length, 1)
-        source_ap = np.pad(source_ap, ((padding_size, 0), (0, 0)), "constant", constant_values=-1).reshape(-1, _sp_input_length, 513)
+        ch = source_sp.shape[1]
+        source_sp = np.pad(source_sp, ((padding_size, 0), (0, 0)), "edge").reshape(-1, _sp_input_length, ch)
+        source_sp = np.transpose(source_sp, [0, 2, 1]).astype(np.float32).reshape(-1, ch, _sp_input_length, 1)
+        source_ap = np.pad(source_ap, ((padding_size, 0), (0, 0)), "edge").reshape(-1, _sp_input_length, 513)
         source_ap = np.transpose(source_ap, [0, 2, 1]).astype(np.float32).reshape(-1, 513, _sp_input_length, 1)
-        source_pp = np.concatenate([source_sp, source_ap], axis=3)
-        self.source_pp = chainer.backends.cuda.to_gpu(source_pp)
+        # source_pp = np.concatenate([source_sp, source_ap], axis=3)
+        self.source_pp = chainer.backends.cuda.to_gpu(source_sp)
         self.source_f0 = (source_f0 - _voice_profile["pre_sub"]) * np.sign(source_f0) * _voice_profile["pitch_rate"] + _voice_profile["post_add"] * np.sign(source_f0)
         self.wave_len = _source.shape[0]
         super(TestModel, self).initialize(_trainer)
@@ -62,15 +64,16 @@ class TestModel(chainer.training.Extension):
         chainer.using_config("train", False)
         result = self.model(self.source_pp)
         result = chainer.backends.cuda.to_cpu(result.data)
-        result = np.transpose(result, [0, 2, 1, 3]).reshape(-1, 513, 2)[-self.length:]
-        score = np.mean(np.abs(result[:, :, 0] - self.source_sp_l))
-        result_wave = world2wave(self.source_f0, result[:, :, 0], self.source_ap)
+        ch = result.shape[1]
+        result = np.transpose(result, [0, 2, 1, 3]).reshape(-1, ch)[-self.length:]
+        score = np.mean(np.abs(result - self.source_sp_l))
+        result_wave = world2wave(self.source_f0, result, self.source_ap)
         otp = result_wave.reshape(-1)
         head_cut_num = otp.shape[0]-self.wave_len
         if head_cut_num > 0:
             otp = otp[head_cut_num:]
         chainer.using_config("train", True)
-        return otp, score
+        return otp, score, result
     def __call__(self, _trainer):
         """
         評価関数
@@ -83,26 +86,34 @@ class TestModel(chainer.training.Extension):
             テストに使用するトレーナー
         """
         # testing
-        out_put, score_raw = self.convert()
+        out_put, score_raw, im_env = self.convert()
         out_puts = (out_put*32767).astype(np.int16)
         # calculating power spectrum
         image_power_spec = fft(out_put[800:156000])
         score_fft = np.mean(np.abs(image_power_spec-self.image_power_l))
-        chainer.report({"L1_sp_env_loss": score_raw, "L1_sp_loss": score_fft}, self.model)
+        chainer.report({"env_test_loss": score_raw, "test_loss": score_fft})
         #saving fake power-spec image
-        plt.clf()
-        plt.subplot(2, 1, 1)
+        plt.figure(figsize=(8, 5))
+        plt.subplot(2, 2, 1)
         _insert_image = np.transpose(image_power_spec, (1, 0))
         plt.imshow(_insert_image, vmin=-1, vmax=1, aspect="auto")
-        plt.subplot(2, 1, 2)
-        plt.plot(out_put[800:156000])
+        plt.subplot(2, 2, 2)
+        _insert_image = np.transpose(self.image_power_l, (1, 0))
+        plt.imshow(_insert_image, vmin=-1, vmax=1, aspect="auto")
+        plt.subplot(2, 2, 3)
+        _insert_image = np.transpose(np.abs(im_env-self.source_sp_l), (1, 0))
+        plt.imshow(_insert_image, vmin=0, vmax=1, aspect="auto", cmap="jet")
+        plt.subplot(2, 2, 4)
         plt.ylim(-1, 1)
-        _name_save = "%s%04d.png" % (self.dir, _trainer.updater.epoch)
-        plt.savefig(_name_save)
-        _name_save = "./latest.png"
-        plt.savefig(_name_save)
+        plt.tick_params(labelbottom=False)
+        plt.plot(out_put)
+        table = plt.table(cellText=[["iteraiton", "fft_diff", "spenv_diff"], ["%d" % _trainer.updater.iteration, "%f" % score_fft, "%f" %score_raw]])
+        table.auto_set_font_size(False)
+        table.set_fontsize(8)
+        plt.savefig("%s%04d.png" % (self.dir, _trainer.updater.iteration))
+        plt.savefig("./latest.png")
         #saving fake waves
-        path_save = self.dir + str(_trainer.updater.epoch)
+        path_save = self.dir + str(_trainer.updater.iteration)
         voiced = out_puts.astype(np.int16)
         wave_data = wave.open(path_save + ".wav", 'wb')
         wave_data.setnchannels(1)
@@ -110,6 +121,13 @@ class TestModel(chainer.training.Extension):
         wave_data.setframerate(16000)
         wave_data.writeframes(voiced.reshape(-1).tobytes())
         wave_data.close()
+        wave_data = wave.open("latest.wav", 'wb')
+        wave_data.setnchannels(1)
+        wave_data.setsampwidth(2)
+        wave_data.setframerate(16000)
+        wave_data.writeframes(voiced.reshape(-1).tobytes())
+        wave_data.close()
+        plt.close()
 def fft(_data):
     """
     stftを計算
@@ -143,6 +161,6 @@ def fft(_data):
     fft_r = np.fft.fft(wined, n=1024, axis=1)
     spec_re = fft_r.real.reshape(time_ruler, -1)
     spec_im = fft_r.imag.reshape(time_ruler, -1)
-    spec_po = np.log(np.power(spec_re, 2) + np.power(spec_im, 2) + 1e-24).reshape(time_ruler, -1)[:, 512:]
+    spec_po = np.log(np.power(spec_re, 2) + np.power(spec_im, 2) + 1e-8).reshape(time_ruler, -1)[:, 512:]
     spec_po = np.clip((spec_po + 5) / 10, -1.0, 1.0)
     return spec_po
