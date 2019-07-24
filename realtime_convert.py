@@ -4,17 +4,18 @@
 """
 import atexit
 import os
+import time
 from multiprocessing import Queue, Process, freeze_support
 
 import chainer
 import numpy as np
 import pyaudio as pa
 
-from vrc_project.model import Generator, Encoder, Decoder
+from vrc_project.model import Generator
 from vrc_project.setting_loader import load_setting_from_json
 from vrc_project.world_and_wave import wave2world, world2wave
 
-def load(checkpoint_dir, m_e, m_1, m_2, m_d):
+def load(checkpoint_dir, m_1):
     """
     モデルのロード
     変数の初期化も同時に行う
@@ -27,9 +28,7 @@ def load(checkpoint_dir, m_e, m_1, m_2, m_d):
     print(" [I] Reading checkpoint...")
     if os.path.exists(checkpoint_dir):
         print(" [I] file found.")
-        chainer.serializers.load_npz(checkpoint_dir+"/gen_en.npz", m_e)
         chainer.serializers.load_npz(checkpoint_dir+"/gen_ab1.npz", m_1)
-        chainer.serializers.load_npz(checkpoint_dir+"/gen_de.npz", m_d)
         return True
     print(" [I] dir not found:"+checkpoint_dir)
     return False
@@ -47,28 +46,23 @@ def process(queue_in, queue_out, args_model):
     args_model: dict
     設定の辞書オブジェクト
     """
-    net_e = Encoder()
     net_1 = Generator()
-    net_d = Decoder()
-    load(args_model["name_save"], net_e, net_1, net_d)
-    f0_parameters = np.load(args_model["name_save"]+"/voice_profile.npy")
+    load(args_model["name_save"], net_1)
+    f0_parameters = np.load(args_model["name_save"]+"/voice_profile.npz")
     queue_out.put("ok")
     while True:
         if not queue_in.empty():
             _ins = queue_in.get()
-            _inputs = np.frombuffer(_ins, dtype=np.int16) / 32767.0
-            _inputs = np.clip(_inputs, -1.0, 1.0)
+            _inputs = np.clip(_ins, -1.0, 1.0)
             _f0, _sp, _ap = wave2world(_inputs.copy())
-            _data = np.concatnate([_sp.transpose((1, 0)).reshape(1, 513, -1, 1).astype(np.float32), _ap.transpose((1, 0)).reshape(1, 513, -1, 1).astype(np.float32)], axis=3)
-            _output = net_e(_data)
-            _output = net_1(_output)
-            _output = net_d(_output)
-            _output = _output.data[0, :, :, 0]
-            _output = np.transpose(_output, (1, 0))
+            _data = np.transpose(_sp, (1, 0))
+            _data = _data.reshape([1, 64, 200, 1])
+            _output = net_1(_data)
+            _output = _output[0].data[0, :, :, 0]
+            _output = np.clip(np.transpose(_output, (1, 0)), -20.0, 1.0)
             _response = world2wave((_f0 - f0_parameters["pre_sub"]) * f0_parameters["pitch_rate"] + f0_parameters["post_add"], _output, _ap)
             _response = (np.clip(_response, -1.0, 1.0).reshape(-1) * 32767)
             _response = _response.astype(np.int16)
-            _response = _response.tobytes()
             queue_out.put(_response)
 if __name__ == '__main__':
     args = load_setting_from_json("setting.json")
@@ -89,7 +83,7 @@ if __name__ == '__main__':
     stream = p_in.open(format=pa.paInt16,
                        channels=1,
                        rate=fs,
-                       frames_per_buffer=args["input_size"],
+                       frames_per_buffer=args["input_size"]//4,
                        input=True,
                        output=True)
     stream.start_stream()
@@ -108,10 +102,15 @@ if __name__ == '__main__':
         freeze_support()
         exit(-1)
     atexit.register(terminate)
+    _input_holder = np.zeros(args["input_size"])
     while stream.is_active():
-        _inputs_source = stream.read(args["input_size"])
-        q_in.put(_inputs_source)
+        tts = time.time()
+        _inputs_source = stream.read(args["input_size"]//4)
+        _inputs = np.frombuffer(_inputs_source, dtype=np.int16) / 32767.0
+        _input_holder = np.concatenate([_input_holder, _inputs])[-args["input_size"]:]
+        q_in.put(_input_holder)
         _output_wave = _output_wave_dammy
         if not q_out.empty():
-            _output_wave = q_out.get()
+            _output_wave = q_out.get()[-args["input_size"]//4:].tobytes()
         stream.write(_output_wave)
+        print("wave_process_time:", time.time()-tts, "buffer", q_in.qsize())

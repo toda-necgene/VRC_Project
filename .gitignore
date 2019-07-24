@@ -8,5 +8,6 @@ _*
 *.npz
 *.png
 *.wav
+*.html
 vrc_project/harvest_viewer.py
 test.py
