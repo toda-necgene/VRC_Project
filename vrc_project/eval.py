@@ -106,7 +106,7 @@ class TestModel(chainer.training.Extension):
         plt.colorbar()
         plt.subplot(2, 2, 3)
         _insert_image = np.transpose((im_env-self.source_sp_l) ** 2, (1, 0))
-        pcm = plt.pcolor(_insert_image, norm=mpl.colors.LogNorm(), cmap="jet")
+        pcm = plt.pcolor(_insert_image, vmax=1e+2, vmin=1e-10, norm=mpl.colors.LogNorm(), cmap="jet")
         plt.colorbar(pcm, extend="both")
         plt.subplot(2, 2, 4)
         plt.ylim(-1, 1)

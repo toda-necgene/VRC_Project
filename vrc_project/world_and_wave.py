@@ -48,6 +48,6 @@ def world2wave(_f0, _cepstrum, _aperiodicity):
         SamplingRate: 16000
         ValueRange  : [-1.0,1.0]
     """
-    _cepstrum = pw.decode_spectral_envelope(_cepstrum.astype(np.float), 16000, 1024)
+    _cepstrum = pw.decode_spectral_envelope(_cepstrum.astype(np.float).copy("C"), 16000, 1024)
     _aperiodicity = _aperiodicity.astype(np.float)
     return pw.synthesize(_f0, _cepstrum, _aperiodicity, 16000, frame_period=10)

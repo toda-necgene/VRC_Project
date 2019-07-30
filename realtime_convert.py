@@ -55,12 +55,16 @@ def process(queue_in, queue_out, args_model):
             _ins = queue_in.get()
             _inputs = np.clip(_ins, -1.0, 1.0)
             _f0, _sp, _ap = wave2world(_inputs.copy())
+            # _mask = np.sign(_f0).reshape(-1, 1) *5 -5
+            # _sp += _mask
             _data = np.transpose(_sp, (1, 0))
             _data = _data.reshape([1, 64, 200, 1])
             _output = net_1(_data)
             _output = _output[0].data[0, :, :, 0]
             _output = np.clip(np.transpose(_output, (1, 0)), -20.0, 1.0)
-            _response = world2wave((_f0 - f0_parameters["pre_sub"]) * f0_parameters["pitch_rate"] + f0_parameters["post_add"], _output, _ap)
+            _f0 = ((_f0 - f0_parameters["pre_sub"]) * f0_parameters["pitch_rate"] + f0_parameters["post_add"]) * np.sign(_f0)
+            _f0 = _f0.reshape(-1)
+            _response = world2wave(_f0, _output, _ap)
             _response = (np.clip(_response, -1.0, 1.0).reshape(-1) * 32767)
             _response = _response.astype(np.int16)
             queue_out.put(_response)
@@ -111,6 +115,6 @@ if __name__ == '__main__':
         q_in.put(_input_holder)
         _output_wave = _output_wave_dammy
         if not q_out.empty():
-            _output_wave = q_out.get()[-args["input_size"]//4:].tobytes()
+            _output_wave = q_out.get()[args["input_size"]//2:-args["input_size"]//4].tobytes()
         stream.write(_output_wave)
         print("wave_process_time:", time.time()-tts, "buffer", q_in.qsize())

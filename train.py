@@ -139,14 +139,14 @@ if __name__ == '__main__':
     _trainer.extend(chainer.training.extensions.snapshot_object(d_a, 'dis_a.npz'), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.LogReport(trigger=display_interval))
     _trainer.extend(chainer.training.extensions.ProgressBar(update_interval=10))
-    rep_list = ['iteration', "D_A_REAL", "D_B_REAL", 'G_AB__GAN', 'G_BA__GAN', 'G_ABA_L1N', "G_BAB_L1N", "env_test_loss"]
+    rep_list = ['iteration', "D_B_REAL", 'G_AB__GAN', 'G_ABA_L1N', "env_test_loss", "GAN_grad", "CYC_grad"]
     _trainer.extend(chainer.training.extensions.PrintReport(rep_list), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.PlotReport(["env_test_loss"], filename="env.png"), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.PlotReport(["env_test_loss"], filename="../../env_graph.png"), trigger=display_interval)
-    # decay_timming = (500, 'iteration')
+    # decay_timming = (1000, 'iteration')
     # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.9, optimizer=updater.get_optimizer("gen_ab1")), trigger=decay_timming)
     # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.9, optimizer=updater.get_optimizer("gen_ba1")), trigger=decay_timming)
-    # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.9, optimizer=updater.get_optimizer("disa")), trigger=decay_timming)
+    # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.75, optimizer=updater.get_optimizer("disa")), trigger=decay_timming)
     print(" [*] Train Started")
     _trainer.run()
     print(" [*] All over.")
