@@ -7,6 +7,7 @@ import wave
 import chainer
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 from vrc_project.world_and_wave import wave2world, world2wave
 
 class TestModel(chainer.training.Extension):
@@ -34,6 +35,7 @@ class TestModel(chainer.training.Extension):
         _sp_input_length: int
             モデルの入力データ長
         """
+        mpl.rcParams["agg.path.chunksize"] = 100000
         self.dir = _direc
         self.model = _trainer.updater.gen_ab
         self.target = _label_sample
@@ -62,11 +64,11 @@ class TestModel(chainer.training.Extension):
             変換後の音声波形データ
         """
         chainer.using_config("train", False)
-        result = self.model(self.source_pp)
+        result, _ = self.model(self.source_pp)
         result = chainer.backends.cuda.to_cpu(result.data)
         ch = result.shape[1]
         result = np.transpose(result, [0, 2, 1, 3]).reshape(-1, ch)[-self.length:]
-        score = np.mean(np.abs(result - self.source_sp_l))
+        score = np.mean((result - self.source_sp_l)**2)
         result_wave = world2wave(self.source_f0, result, self.source_ap)
         otp = result_wave.reshape(-1)
         head_cut_num = otp.shape[0]-self.wave_len
@@ -90,19 +92,22 @@ class TestModel(chainer.training.Extension):
         out_puts = (out_put*32767).astype(np.int16)
         # calculating power spectrum
         image_power_spec = fft(out_put[800:156000])
-        score_fft = np.mean(np.abs(image_power_spec-self.image_power_l))
+        score_fft = np.mean((image_power_spec-self.image_power_l) ** 2)
         chainer.report({"env_test_loss": score_raw, "test_loss": score_fft})
         #saving fake power-spec image
         plt.figure(figsize=(8, 5))
         plt.subplot(2, 2, 1)
         _insert_image = np.transpose(image_power_spec, (1, 0))
-        plt.imshow(_insert_image, vmin=-1, vmax=1, aspect="auto")
+        plt.imshow(_insert_image, aspect="auto")
+        plt.colorbar()
         plt.subplot(2, 2, 2)
         _insert_image = np.transpose(self.image_power_l, (1, 0))
         plt.imshow(_insert_image, vmin=-1, vmax=1, aspect="auto")
+        plt.colorbar()
         plt.subplot(2, 2, 3)
-        _insert_image = np.transpose(np.abs(im_env-self.source_sp_l), (1, 0))
-        plt.imshow(_insert_image, vmin=0, vmax=1, aspect="auto", cmap="jet")
+        _insert_image = np.transpose((im_env-self.source_sp_l) ** 2, (1, 0))
+        pcm = plt.pcolor(_insert_image, vmax=1e+2, vmin=1e-10, norm=mpl.colors.LogNorm(), cmap="jet")
+        plt.colorbar(pcm, extend="both")
         plt.subplot(2, 2, 4)
         plt.ylim(-1, 1)
         plt.tick_params(labelbottom=False)
@@ -127,7 +132,7 @@ class TestModel(chainer.training.Extension):
         wave_data.setframerate(16000)
         wave_data.writeframes(voiced.reshape(-1).tobytes())
         wave_data.close()
-        plt.close()
+        plt.clf()
 def fft(_data):
     """
     stftを計算
