@@ -85,7 +85,6 @@ class Generator(chainer.Chain):
             self.r_6 = L.Convolution1D(256, 256, 11, pad=5, initialW=w_init).add_hook(spn())
             self.r_7 = L.Convolution1D(256, 256, 11, pad=5, initialW=w_init).add_hook(spn())
             self.r_8 = L.Convolution1D(256, 256, 11, pad=5, initialW=w_init).add_hook(spn())
-            self.f_0 = L.Linear(100, 100, initialW=w_init)
             # (N, 256, 50)
             self.d_3 = L.Deconvolution1D(256, 128, 2, stride=2, initialW=w_init).add_hook(spn())
             self.d_2 = L.Convolution1D(128, 128, 11, pad=5, initialW=w_init).add_hook(spn())
@@ -111,55 +110,50 @@ class Generator(chainer.Chain):
         _y = _x[0][:, :, :, 0]
         # encoding
         _y = self.e_0(_y)
-        _y = F.relu(_y)
+        _y = F.leaky_relu(_y)
         _h = self.e_1(_y)
-        _y = F.relu(_h) +_y
+        _y = F.leaky_relu(_h) +_y
         _h = self.e_2(_y)
-        _y = F.relu(_h) +_y
+        _y = F.leaky_relu(_h) +_y
         _y = self.e_3(_y)
-        _y = F.relu(_y)
+        _y = F.leaky_relu(_y)
         _ya = _y
         # conversion (single-conv-4blocks-resnet)
         _h = self.r_1(_y)
-        _y = F.relu(_h) + _y
+        _y = F.leaky_relu(_h) + _y
         _h = self.r_2(_y)
-        _y = F.relu(_h) + _y
+        _y = F.leaky_relu(_h) + _y
         _h = self.r_3(_y)
-        _h = F.dropout(_h, 0.1)
-        _y = F.relu(_h) + _y
+        _y = F.leaky_relu(_h) + _y
         _h = self.r_4(_y)
-        _h = F.dropout(_h, 0.15)
-        _y = F.relu(_h) + _y
+        _y = F.leaky_relu(_h) + _y
         _h = self.r_5(_y)
-        _h = F.dropout(_h, 0.2)
-        _y = F.relu(_h) + _y
+        _y = F.leaky_relu(_h) + _y
         _h = self.r_6(_y)
-        _h = F.dropout(_h, 0.25)
-        _y = F.relu(_h) + _y
+        _y = F.leaky_relu(_h) + _y
         _h = self.r_7(_y)
-        _h = F.dropout(_h, 0.3)
-        _y = F.relu(_h) + _y
+        _y = F.leaky_relu(_h) + _y
         _h = self.r_8(_y)
-        _h = F.dropout(_h, 0.4)
-        _y = F.relu(_h) + _y
-        _h = self.f_0(F.reshape(_y, (-1, 100)))
-        _h = F.dropout(_h, 0.5)
-        _y = F.relu(F.reshape(_h, _y.shape)) + _y
+        _y = F.leaky_relu(_h) + _y
         # decoding
         _y = self.d_3(_y)
-        _y = F.relu(_y)
+        _y = F.leaky_relu(_y)
         _h = self.d_2(_y)
-        _y = F.relu(_h) + _y
+        _h = F.dropout(_h, 0.4)
+        _y = F.leaky_relu(_h) + _y
         _h = self.d_1(_y)
-        _y = F.relu(_h) + _y
+        _h = F.dropout(_h, 0.45)
+        _y = F.leaky_relu(_h) +_y
         _y = self.d_0(_y) + self.b
         _y = F.expand_dims(_y, 3)
         _ya = self.d_3(_ya)
-        _ya = F.relu(_ya)
+        _ya = F.leaky_relu(_ya)
         _ha = self.d_2(_ya)
-        _ya = F.relu(_ha) + _ya
+        _ha = F.dropout(_ha, 0.4)
+        _ya = F.leaky_relu(_ha) + _ya
         _ha = self.d_1(_ya)
-        _ya = F.relu(_ha) + _ya
+        _ha = F.dropout(_ha, 0.45)
+        _ya = F.leaky_relu(_ha) +_ya
         _ya = self.d_0(_ya) + self.b
         _ya = F.expand_dims(_ya, 3)
         return _y, _ya

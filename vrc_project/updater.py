@@ -38,8 +38,8 @@ class CycleGANUpdater(chainer.training.updaters.StandardUpdater):
         batch_b = chainer.Variable(self.converter(self.get_iterator("data_b").next()))
         _xp = chainer.backend.get_array_module(batch_a.data)
         noise_rate = 0.01
-        batch_a_n = noise_put(_xp, batch_a, noise_rate * _xp.exp(-self.iteration / self.max_iteration*5).astype(_xp.float32))
-        batch_b_n = noise_put(_xp, batch_b, noise_rate * _xp.exp(-self.iteration / self.max_iteration*5).astype(_xp.float32))
+        batch_a_n = noise_put(_xp, batch_a, noise_rate * _xp.exp(-self.iteration / self.max_iteration*8).astype(_xp.float32))
+        batch_b_n = noise_put(_xp, batch_b, noise_rate * _xp.exp(-self.iteration / self.max_iteration*8).astype(_xp.float32))
         # D update
         self.disa.cleargrads()
         # self.disb.cleargrads()
@@ -77,32 +77,27 @@ class CycleGANUpdater(chainer.training.updaters.StandardUpdater):
         fake_bab, _ = self.gen_ab(fake_ba)
         y_fake_ba = self.disa(fake_ba)
         y_fake_ab = self.disa(fake_ab)
-        loss_ganab = F.mean_squared_error(y_fake_ab, y_label_TB)
-        loss_ganba = F.mean_squared_error(y_fake_ba, y_label_TA)
         bf_low = F.average_pooling_2d(F.transpose(fake_ba, (0, 3, 2, 1)), (50, 64), stride=(10, 1))
         br_low = F.average_pooling_2d(F.transpose(batch_b_n, (0, 3, 2, 1)), (50, 64), stride=(10, 1))
         af_low = F.average_pooling_2d(F.transpose(fake_ab, (0, 3, 2, 1)), (50, 64), stride=(10, 1))
         ar_low = F.average_pooling_2d(F.transpose(batch_a_n, (0, 3, 2, 1)), (50, 64), stride=(10, 1))
         loss_po_a = F.mean_absolute_error(bf_low, br_low)
         loss_po_b = F.mean_absolute_error(af_low, ar_low)
+        loss_ganab = F.mean_squared_error(y_fake_ab, y_label_TB)
+        loss_ganba = F.mean_squared_error(y_fake_ba, y_label_TA)
         loss_th_a = F.mean_absolute_error(through_out_ab, batch_a_n)
         loss_th_b = F.mean_absolute_error(through_out_ba, batch_b_n)
         loss_cycb = F.mean_absolute_error(fake_bab, batch_b_n)
         loss_cyca = F.mean_absolute_error(fake_aba, batch_a_n)
         gloss = (loss_ganba + loss_ganab) * 1 +\
-                (loss_po_a + loss_po_b) * 1 +\
-                (loss_cyca + loss_cycb) * 2.5 +\
-                (loss_th_a + loss_th_b) * 2.5
+                (loss_po_a + loss_po_b) * 2 +\
+                (loss_cyca + loss_cycb) * 5 +\
+                (loss_th_a + loss_th_b) * 2
         gloss.backward()
         chainer.report({"G_AB__GAN": loss_ganab,
                         "G_BA__GAN": loss_ganba,
                         "G_ABA_L1N": loss_cyca,
                         "G_BAB_L1N": loss_cycb})
-        gg = (chainer.grad([loss_ganab, loss_ganba], [fake_ab, fake_ba]))
-        gg = F.mean(F.absolute(gg[0])+ F.absolute(gg[1]))
-        gg2 = (chainer.grad([loss_cyca, loss_cycb], [fake_ab, fake_ba]))
-        gg2 = F.mean(F.absolute(gg2[0])+ F.absolute(gg2[1]))
-        chainer.report({"GAN_grad": gg, "CYC_grad": gg2})
         gen_ba_optimizer.update()
         gen_ab_optimizer.update()
 
@@ -119,7 +114,7 @@ def noise_put(_xp, x, stddev):
         noise_shape = [x.shape[0], 1, x.shape[2], 1]
         noise = _xp.ones(noise_shape)
         for n in noise:
-            m = random.randint(0, 10)
+            m = random.randint(0, 50)
             s = random.randint(0, x.shape[2]-m-1)
             n[:, s:s+m, :] += _xp.random.randn(1, m, 1).astype(_xp.float32) * stddev
         x_s = x * noise

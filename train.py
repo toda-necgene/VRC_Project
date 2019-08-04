@@ -88,8 +88,8 @@ def dataset_pre_process_controler(args):
     if args["gpu"] >= 0:
         _sounds_a = chainer.backends.cuda.to_gpu(_sounds_a)
         _sounds_b = chainer.backends.cuda.to_gpu(_sounds_b)
-    _train_iter_a = chainer.iterators.MultithreadIterator(_sounds_a, args["batch_size"], shuffle=True, n_threads=4)
-    _train_iter_b = chainer.iterators.MultithreadIterator(_sounds_b, args["batch_size"], shuffle=True, n_threads=4)
+    _train_iter_a = chainer.iterators.MultiprocessIterator(_sounds_a, args["batch_size"], shuffle=True, n_processes=4)
+    _train_iter_b = chainer.iterators.MultiprocessIterator(_sounds_b, args["batch_size"], shuffle=True, n_processes=4)
     # f0 parameters(基本周波数F0の変換に使用する定数。詳しくは./vrc_project/voice_to_dataset_cycle.py L65周辺)
     _voice_profile = np.load("./voice_profile.npz")
     if not os.path.exists(args["name_save"]):
@@ -139,14 +139,14 @@ if __name__ == '__main__':
     _trainer.extend(chainer.training.extensions.snapshot_object(d_a, 'dis_a.npz'), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.LogReport(trigger=display_interval))
     _trainer.extend(chainer.training.extensions.ProgressBar(update_interval=10))
-    rep_list = ['iteration', "D_B_REAL", 'G_AB__GAN', 'G_ABA_L1N', "env_test_loss", "GAN_grad", "CYC_grad"]
+    rep_list = ['iteration', "D_B_REAL", 'G_AB__GAN', 'G_ABA_L1N', "env_test_loss"]
     _trainer.extend(chainer.training.extensions.PrintReport(rep_list), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.PlotReport(["env_test_loss"], filename="env.png"), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.PlotReport(["env_test_loss"], filename="../../env_graph.png"), trigger=display_interval)
-    # decay_timming = (1000, 'iteration')
-    # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.9, optimizer=updater.get_optimizer("gen_ab1")), trigger=decay_timming)
-    # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.9, optimizer=updater.get_optimizer("gen_ba1")), trigger=decay_timming)
-    # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.75, optimizer=updater.get_optimizer("disa")), trigger=decay_timming)
+    # decay_timming = (10000, 'iteration')
+    # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=updater.get_optimizer("gen_ab1")), trigger=decay_timming)
+    # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=updater.get_optimizer("gen_ba1")), trigger=decay_timming)
+    # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=updater.get_optimizer("disa")), trigger=decay_timming)
     print(" [*] Train Started")
     _trainer.run()
     print(" [*] All over.")
