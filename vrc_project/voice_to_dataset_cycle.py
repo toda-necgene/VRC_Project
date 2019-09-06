@@ -56,23 +56,13 @@ def create_dataset(_term, _chunk=1024, delta=0):
         _m = np.asarray(memory_spec_env, dtype=np.float32)
         dataset_to_return.append(_m)
         np.save(os.path.join(OUTPUT_DIR, name + ".npy"), _m)
-        print(" [I] " + name + " directory has been finished successfully.")
+        print(" [I] voice in " + name + " directory has been finished successfully.")
         pitch[name] = dict()
         pitch[name]["mean"] = np.mean(_ff)
-        pitch[name]["var"] = np.var(_ff)
-    '''
-    基本周波数F0の変換に使用するパラメータの割り出し
-    ちなみに計算式は
-    $$$
-    F_(0t) = (F_(0s) - mean(F_(0s))) / var(F_(0s)) * var(F_(0t)) + mean(F_(0t))
-    $$$
-    意味:平均と分散の振り直し
-    F0の分布はおおよそ標準分布であるため
-    スケールについても議論の余地あり
-    '''
+        pitch[name]["std"] = np.std(_ff)
     pitch_mean_s = pitch[INPUT_NAMES[0]]["mean"]
-    pitch_var_s = pitch[INPUT_NAMES[0]]["var"]
+    pitch_std_s = pitch[INPUT_NAMES[0]]["std"]
     pitch_mean_t = pitch[INPUT_NAMES[1]]["mean"]
-    pitch_var_t = pitch[INPUT_NAMES[1]]["var"]
-    np.savez(os.path.join(".", "voice_profile.npz"), pre_sub=pitch_mean_s, pitch_rate=pitch_var_t/pitch_var_s, post_add=pitch_mean_t)
+    pitch_std_t = pitch[INPUT_NAMES[1]]["std"]
+    np.savez(os.path.join(".", "voice_profile.npz"), pre_sub=pitch_mean_s, pitch_rate=pitch_std_t/pitch_std_s, post_add=pitch_mean_t)
     return dataset_to_return[0], dataset_to_return[1]

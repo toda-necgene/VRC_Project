@@ -15,6 +15,7 @@ from vrc_project.updater import CycleGANUpdater
 from vrc_project.voice_to_dataset_cycle import create_dataset
 from vrc_project.setting_loader import load_setting_from_json
 from vrc_project.eval import TestModel
+from vrc_project.notify import LineNotify
 
 
 def load_model_from_npz(_checkpoint_dir, _trainer):
@@ -31,9 +32,6 @@ def load_model_from_npz(_checkpoint_dir, _trainer):
     if os.path.exists(_checkpoint_dir) and os.path.exists(_checkpoint_dir+"/snapshot.npz"):
         print(" [I] checkpoint is found. loading file name : %s " % (_checkpoint_dir))
         chainer.serializers.load_npz(_checkpoint_dir+"/snapshot.npz", _trainer)
-        chainer.serializers.load_npz(_checkpoint_dir+"/gen_ab1.npz", _trainer.updater.gen_ab)
-        chainer.serializers.load_npz(_checkpoint_dir+"/gen_ba1.npz", _trainer.updater.gen_ba)
-        chainer.serializers.load_npz(_checkpoint_dir+"/dis_a.npz", _trainer.updater.disa)
         print(" [I] loaded checkpoint successfully.")
         return True
     elif not os.path.exists(_checkpoint_dir):
@@ -88,8 +86,8 @@ def dataset_pre_process_controler(args):
     if args["gpu"] >= 0:
         _sounds_a = chainer.backends.cuda.to_gpu(_sounds_a)
         _sounds_b = chainer.backends.cuda.to_gpu(_sounds_b)
-    _train_iter_a = chainer.iterators.MultiprocessIterator(_sounds_a, args["batch_size"], shuffle=True, n_processes=4)
-    _train_iter_b = chainer.iterators.MultiprocessIterator(_sounds_b, args["batch_size"], shuffle=True, n_processes=4)
+    _train_iter_a = chainer.iterators.MultithreadIterator(_sounds_a, args["batch_size"], shuffle=True, n_threads=6)
+    _train_iter_b = chainer.iterators.MultithreadIterator(_sounds_b, args["batch_size"], shuffle=True, n_threads=6)
     # f0 parameters(基本周波数F0の変換に使用する定数。詳しくは./vrc_project/voice_to_dataset_cycle.py L65周辺)
     _voice_profile = np.load("./voice_profile.npz")
     if not os.path.exists(args["name_save"]):
@@ -109,7 +107,7 @@ if __name__ == '__main__':
     g_a_to_b1 = Generator()
     g_b_to_a1 = Generator()
     d_a = Discriminator()
-    # d_b = Discriminator()
+    # d_b = DiscriminatorW()
     if _args["gpu"] >= 0:
         chainer.cuda.Device(_args["gpu"]).use()
         g_a_to_b1.to_gpu()
@@ -132,21 +130,24 @@ if __name__ == '__main__':
     if _args["test"]:
         test = load_wave_file("./dataset/test/test.wav") / 32767.0
         _label_sample = load_wave_file("./dataset/test/label.wav") / 32767.0
-        _trainer.extend(TestModel(_trainer, _args["wave_otp_dir"], test, voice_profile, length_sp, _label_sample), trigger=display_interval)
+        _trainer.extend(TestModel(_trainer, _args["wave_otp_dir"], test, voice_profile, length_sp, _label_sample, _args["version"]), trigger=display_interval)
+        if _args["line_notify"]:
+            with open("line_api_token.txt", "rb") as s:
+                key = s.readline().decode("utf8")
+                tri = chainer.training.triggers.ManualScheduleTrigger([100, 500, 1000, 2000, 5000, 10000, 15000], "iteration")
+                _trainer.extend(LineNotify(_trainer, key), trigger=tri)
     _trainer.extend(chainer.training.extensions.snapshot(filename='snapshot.npz'), trigger=display_interval)
-    _trainer.extend(chainer.training.extensions.snapshot_object(g_a_to_b1, 'gen_ab1.npz'), trigger=display_interval)
-    _trainer.extend(chainer.training.extensions.snapshot_object(g_b_to_a1, 'gen_ba1.npz'), trigger=display_interval)
-    _trainer.extend(chainer.training.extensions.snapshot_object(d_a, 'dis_a.npz'), trigger=display_interval)
+    _trainer.extend(chainer.training.extensions.snapshot_object(g_a_to_b1, 'gen_ab.npz'), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.LogReport(trigger=display_interval))
     _trainer.extend(chainer.training.extensions.ProgressBar(update_interval=10))
-    rep_list = ['iteration', "D_B_REAL", 'G_AB__GAN', 'G_ABA_L1N', "env_test_loss"]
+    rep_list = ['iteration', 'D_B_FAKE', 'G_AB__GAN', "G_ABA_GAN", 'G_ABA_L1N', "test_loss"]
     _trainer.extend(chainer.training.extensions.PrintReport(rep_list), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.PlotReport(["env_test_loss"], filename="env.png"), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.PlotReport(["env_test_loss"], filename="../../env_graph.png"), trigger=display_interval)
-    # decay_timming = (10000, 'iteration')
-    # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=updater.get_optimizer("gen_ab1")), trigger=decay_timming)
-    # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=updater.get_optimizer("gen_ba1")), trigger=decay_timming)
-    # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=updater.get_optimizer("disa")), trigger=decay_timming)
+    decay_timming = (500, "iteration")
+    _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.9, optimizer=updater.get_optimizer("gen_ab1")), trigger=decay_timming)
+    _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.9, optimizer=updater.get_optimizer("gen_ba1")), trigger=decay_timming)
+    _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.9, optimizer=updater.get_optimizer("disa")), trigger=decay_timming)
     print(" [*] Train Started")
     _trainer.run()
     print(" [*] All over.")

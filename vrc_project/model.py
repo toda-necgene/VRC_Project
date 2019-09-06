@@ -2,50 +2,52 @@
 """
 製作者:TODA
 モデルの定義
-Spectral normを追加した事により、学習の安定性と品質が向上
 """
 import chainer
 import chainer.links as L
 import chainer.functions as F
 from chainer.link_hooks.spectral_normalization import SpectralNormalization as spn
+
+
+
 class Discriminator(chainer.Chain):
     """
         識別側ネットワーク
-        周波数軸はチャンネル軸として扱います。（全結合される）
+        CNN構造
+        4層構造
+        活性化関数はleaky_relu（最後のみ無し）
     """
     def __init__(self):
         """
-        初期化関数
-        重み等の変数の初期化を担う
+        モデル定義
         重みはHeの初期化
         最終層は0.0002の分散
         """
         super(Discriminator, self).__init__()
         with self.init_scope():
             w_init = chainer.initializers.HeNormal()
-            # (N, 1, 200, 64)
-            self.c_0 = L.Convolution2D(1, 128, (2, 2), stride=(2, 2), initialW=w_init).add_hook(spn())
-            # (N, 128, 100, 32)
-            self.c_1 = L.Convolution2D(128, 256, (2, 2), stride=(2, 2), initialW=w_init).add_hook(spn())
-            # (N, 256, 50, 16)
-            self.c_2 = L.Convolution2D(256, 512, (10, 8), stride=(5, 2), initialW=w_init).add_hook(spn())
-            # (N, 512, 9, 5)
-            self.c_3 = L.Convolution2D(512, 4, (3, 5), initialW=chainer.initializers.Normal(2e-4)).add_hook(spn())
+            # (N, 1, 200, 1025)
+            self.c_0 = L.Convolution2D(1, 128, (6, 5), stride=(2, 4), pad=(2, 0), initialW=w_init).add_hook(spn())
+            # (N, 128, 100, 256)
+            self.c_1 = L.Convolution2D(128, 256, (2, 4), stride=(2, 4), initialW=w_init).add_hook(spn())
+            # (N, 256, 50, 64)
+            self.c_2 = L.Convolution2D(256, 1024, (10, 8), stride=(5, 8), initialW=w_init).add_hook(spn())
+            # (N, 1024, 9, 8)
+            self.c_3 = L.Convolution2D(1024, 4, (3, 8), initialW=chainer.initializers.Normal(2e-4)).add_hook(spn())
             # (N, 4, 7)
     def __call__(self, *_x, **kwargs):
         """
-        呼び出し関数
-        実際の計算を担う
+        モデルのグラフ実装
         Parameter
             ---------
             x: ndarray(tuple)
                 特徴量
-                shape: [N, 64, 200, 1] => [N, 1, 200, 64]
+                shape: [N, 1024, 200, 1]
             Returns
             -------
             _y: ndarray
                 評価
-                shape: [N, 3, 7]
+                shape: [N, 4, 3]
         """
         _y = F.transpose(_x[0], (0, 3, 2, 1))
         _y = self.c_0(_y)
@@ -59,101 +61,81 @@ class Discriminator(chainer.Chain):
 class Generator(chainer.Chain):
     """
         生成側ネットワーク
+        DilatedConvを用いた6ブロックResnet（内4ブロックがDilated）
+        各ブロック
+        Conv(use_bias)-Leaky_relu-add
     """
     def __init__(self):
         """
-        重み等の変数の初期化を担う
-        重みの初期化はHeNormal
+        モデル定義
+        重みの初期化はHeの初期化,最終層のみ0.0001分散で固定
         """
         super(Generator, self).__init__()
         with self.init_scope():
             w_init = chainer.initializers.HeNormal()
-            # (N, 64, 200)
-            self.e_0 = L.Convolution1D(64, 128, 2, stride=2, initialW=w_init).add_hook(spn())
-            # (N, 128, 100)
-            self.e_1 = L.Convolution1D(128, 128, 11, pad=5, initialW=w_init).add_hook(spn())
-            self.e_2 = L.Convolution1D(128, 128, 11, pad=5, initialW=w_init).add_hook(spn())
-            # (N, 128, 100)
-            self.e_3 = L.Convolution1D(128, 256, 2, stride=2, initialW=w_init).add_hook(spn())
+            # (N, 1025, 200)
+            self.e_0 = L.Convolution2D(1025, 256, (4, 1), stride=(4, 1), initialW=w_init).add_hook(spn())
             # (N, 256, 50)
-            # resnet
-            self.r_1 = L.Convolution1D(256, 256, 11, pad=5, initialW=w_init).add_hook(spn())
-            self.r_2 = L.Convolution1D(256, 256, 11, pad=5, initialW=w_init).add_hook(spn())
-            self.r_3 = L.Convolution1D(256, 256, 11, pad=5, initialW=w_init).add_hook(spn())
-            self.r_4 = L.Convolution1D(256, 256, 11, pad=5, initialW=w_init).add_hook(spn())
-            self.r_5 = L.Convolution1D(256, 256, 11, pad=5, initialW=w_init).add_hook(spn())
-            self.r_6 = L.Convolution1D(256, 256, 11, pad=5, initialW=w_init).add_hook(spn())
-            self.r_7 = L.Convolution1D(256, 256, 11, pad=5, initialW=w_init).add_hook(spn())
-            self.r_8 = L.Convolution1D(256, 256, 11, pad=5, initialW=w_init).add_hook(spn())
+            self.r_01 = L.Convolution2D(256, 256, (11, 1), pad=(5, 0), initialW=w_init).add_hook(spn())
+            self.r_02 = L.Convolution2D(256, 256, (11, 1), pad=(5, 0), initialW=w_init).add_hook(spn())
+            self.r_03 = L.Convolution2D(256, 256, (11, 1), pad=(5, 0), initialW=w_init).add_hook(spn())
+            self.r_04 = L.Convolution2D(256, 256, (11, 1), pad=(5, 0), initialW=w_init).add_hook(spn())
+            self.r_05 = L.Convolution2D(256, 256, (11, 1), pad=(5, 0), initialW=w_init).add_hook(spn())
+            self.r_06 = L.Convolution2D(256, 256, (11, 1), pad=(5, 0), initialW=w_init).add_hook(spn())
+            self.r_07 = L.Convolution2D(256, 256, (11, 1), pad=(5, 0), initialW=w_init).add_hook(spn())
+            self.r_08 = L.Convolution2D(256, 256, (11, 1), pad=(5, 0), initialW=w_init).add_hook(spn())
+            self.r_09 = L.Convolution2D(256, 256, (11, 1), pad=(5, 0), initialW=w_init).add_hook(spn())
+            self.r_10 = L.Convolution2D(256, 256, (11, 1), pad=(5, 0), initialW=w_init).add_hook(spn())
+            self.r_11 = L.Convolution2D(256, 256, (11, 1), pad=(5, 0), initialW=w_init).add_hook(spn())
+            self.r_12 = L.Convolution2D(256, 256, (11, 1), pad=(5, 0), initialW=w_init).add_hook(spn())
             # (N, 256, 50)
-            self.d_3 = L.Deconvolution1D(256, 128, 2, stride=2, initialW=w_init).add_hook(spn())
-            self.d_2 = L.Convolution1D(128, 128, 11, pad=5, initialW=w_init).add_hook(spn())
-            self.d_1 = L.Convolution1D(128, 128, 11, pad=5, initialW=w_init).add_hook(spn())
-            self.d_0 = L.Deconvolution1D(128, 64, 2, stride=2, initialW=w_init, nobias=True).add_hook(spn())
-            self.b = chainer.Parameter(chainer.initializers.Zero(), (1, 64, 1))
-            # (N, 64, 200)
+            # NOTE: 出力を256chにすると学習が崩壊する。
+            self.d_1 = L.Deconvolution2D(256, 128, (4, 1), stride=(4, 1), initialW=w_init).add_hook(spn())
+            # (N, 128, 200)
+            self.d_0 = L.Convolution2D(128, 1025, (7, 1), pad=(3, 0), initialW=w_init).add_hook(spn())
+            # (N, 1025, 200)
     def __call__(self, *_x, **kwargs):
         """
-            呼び出し関数
-            実際の計算を担う
+            モデルのグラフ実装
             Parameter
             ---------
             x: ndarray(tuple)
                 変換前特徴量
-                shape: [N,64,200,1]
+                shape: [N,1025,200,1]
             Returns
             -------
             _y: ndarray
                 変換後特徴量
-                shape: [N,64,200,1]
+                shape: [N,1025,200,1]
         """
-        _y = _x[0][:, :, :, 0]
-        # encoding
+        _y = _x[0]
         _y = self.e_0(_y)
         _y = F.leaky_relu(_y)
-        _h = self.e_1(_y)
-        _y = F.leaky_relu(_h) +_y
-        _h = self.e_2(_y)
-        _y = F.leaky_relu(_h) +_y
-        _y = self.e_3(_y)
+        _h = self.r_01(_y)
+        _y = F.leaky_relu(_h) + _y
+        _h = self.r_02(_y)
+        _y = F.leaky_relu(_h) + _y
+        _h = self.r_03(_y)
+        _y = F.leaky_relu(_h) + _y
+        _h = self.r_04(_y)
+        _y = F.leaky_relu(_h) + _y
+        _h = self.r_05(_y)
+        _y = F.leaky_relu(_h) + _y
+        _h = self.r_06(_y)
+        _y = F.leaky_relu(_h) + _y
+        _h = self.r_07(_y)
+        _y = F.leaky_relu(_h) + _y
+        _h = self.r_08(_y)
+        _y = F.leaky_relu(_h) + _y
+        _h = self.r_09(_y)
+        _y = F.leaky_relu(_h) + _y
+        _h = self.r_10(_y)
+        _y = F.leaky_relu(_h) + _y
+        _h = self.r_11(_y)
+        _y = F.leaky_relu(_h) + _y
+        _h = self.r_12(_y)
+        _y = F.leaky_relu(_h) + _y
+        _y = self.d_1(_y)
         _y = F.leaky_relu(_y)
-        _ya = _y
-        # conversion (single-conv-4blocks-resnet)
-        _h = self.r_1(_y)
-        _y = F.leaky_relu(_h) + _y
-        _h = self.r_2(_y)
-        _y = F.leaky_relu(_h) + _y
-        _h = self.r_3(_y)
-        _y = F.leaky_relu(_h) + _y
-        _h = self.r_4(_y)
-        _y = F.leaky_relu(_h) + _y
-        _h = self.r_5(_y)
-        _y = F.leaky_relu(_h) + _y
-        _h = self.r_6(_y)
-        _y = F.leaky_relu(_h) + _y
-        _h = self.r_7(_y)
-        _y = F.leaky_relu(_h) + _y
-        _h = self.r_8(_y)
-        _y = F.leaky_relu(_h) + _y
-        # decoding
-        _y = self.d_3(_y)
-        _y = F.leaky_relu(_y)
-        _h = self.d_2(_y)
-        _h = F.dropout(_h, 0.4)
-        _y = F.leaky_relu(_h) + _y
-        _h = self.d_1(_y)
-        _h = F.dropout(_h, 0.45)
-        _y = F.leaky_relu(_h) +_y
-        _y = self.d_0(_y) + self.b
-        _y = F.expand_dims(_y, 3)
-        _ya = self.d_3(_ya)
-        _ya = F.leaky_relu(_ya)
-        _ha = self.d_2(_ya)
-        _ha = F.dropout(_ha, 0.4)
-        _ya = F.leaky_relu(_ha) + _ya
-        _ha = self.d_1(_ya)
-        _ha = F.dropout(_ha, 0.45)
-        _ya = F.leaky_relu(_ha) +_ya
-        _ya = self.d_0(_ya) + self.b
-        _ya = F.expand_dims(_ya, 3)
-        return _y, _ya
+        _y = self.d_0(_y)
+        return _y
