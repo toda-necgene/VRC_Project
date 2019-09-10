@@ -125,6 +125,8 @@ if __name__ == '__main__':
         optimizer={"gen_ab1":g_optimizer_ab1, "gen_ba1":g_optimizer_ba1, "disa":d_optimizer_a},
         device=_args["gpu"])
     _trainer = chainer.training.Trainer(updater, (_args["train_iteration"], "iteration"), out=_args["name_save"])
+    if os.path.exists(_args["use_predata"]):
+        load_model_from_npz(_args["use_predata"], _trainer)
     load_model_from_npz(_args["name_save"], _trainer)
     display_interval = (_args["log_interval"], 'iteration')
     if _args["test"]:
@@ -140,7 +142,7 @@ if __name__ == '__main__':
     _trainer.extend(chainer.training.extensions.snapshot_object(g_a_to_b1, 'gen_ab.npz'), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.LogReport(trigger=display_interval))
     _trainer.extend(chainer.training.extensions.ProgressBar(update_interval=10))
-    rep_list = ['iteration', 'D_B_FAKE', 'G_AB__GAN', "G_ABA_GAN", 'G_ABA_L1N', "test_loss"]
+    rep_list = ['iteration', 'D_B_FAKE', 'G_AB__GAN', 'G_ABA_L1N', "test_loss"]
     _trainer.extend(chainer.training.extensions.PrintReport(rep_list), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.PlotReport(["env_test_loss"], filename="env.png"), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.PlotReport(["env_test_loss"], filename="../../env_graph.png"), trigger=display_interval)

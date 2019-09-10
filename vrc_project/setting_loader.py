@@ -27,6 +27,7 @@ def load_setting_from_json(path):
     # 生成済み学習ファイルの使用フラグ
     # ファイルはデフォルトで"dataset/patch"に存在します。
     _args["use_old_dataset"] = False
+    _args["use_predata"] = "no"
     # テスト音声生成フラグ
     _args["test"] = True
     # ミニバッチで扱うデータの数
