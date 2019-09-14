@@ -81,7 +81,7 @@ class CycleGANUpdater(chainer.training.updaters.StandardUpdater):
         gloss.backward()
         chainer.report({"G_AB__GAN": loss_ganab,
                         "G_BA__GAN": loss_ganba,
-                        "G_ABA_L1N": loss_cyca,
-                        "G_BAB_L1N": loss_cycb})
+                        "G_ABA_CYC": loss_cyca,
+                        "G_BAB_CYC": loss_cycb})
         gen_ba_optimizer.update()
         gen_ab_optimizer.update()

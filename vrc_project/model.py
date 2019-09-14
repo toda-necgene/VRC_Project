@@ -27,13 +27,13 @@ class Discriminator(chainer.Chain):
         with self.init_scope():
             w_init = chainer.initializers.HeNormal()
             # (N, 1, 200, 1025)
-            self.c_0 = L.Convolution2D(1, 128, (6, 5), stride=(2, 4), pad=(2, 0), initialW=w_init).add_hook(spn())
+            self.c_0 = L.Convolution2D(1, 128, (2, 5), stride=(2, 4), initialW=w_init).add_hook(spn())
             # (N, 128, 100, 256)
             self.c_1 = L.Convolution2D(128, 256, (2, 4), stride=(2, 4), initialW=w_init).add_hook(spn())
             # (N, 256, 50, 64)
-            self.c_2 = L.Convolution2D(256, 1024, (10, 8), stride=(5, 8), initialW=w_init).add_hook(spn())
-            # (N, 1024, 9, 8)
-            self.c_3 = L.Convolution2D(1024, 4, (3, 8), initialW=chainer.initializers.Normal(1e-3)).add_hook(spn())
+            self.c_2 = L.Convolution2D(256, 512, (10, 8), stride=(5, 8), initialW=w_init).add_hook(spn())
+            # (N, 512, 9, 8)
+            self.c_3 = L.Convolution2D(512, 4, (9, 8), pad=(3, 0), initialW=chainer.initializers.Normal(1e-3)).add_hook(spn())
             # (N, 4, 7)
     def __call__(self, *_x, **kwargs):
         """
@@ -58,6 +58,28 @@ class Discriminator(chainer.Chain):
         _y = F.leaky_relu(_y)
         _y = self.c_3(_y)[:, :, :, 0]
         return _y
+class MidBlock(chainer.Chain):
+    """
+    中間ブロック
+    """
+    def __init__(self, depth):
+        super(MidBlock, self).__init__()
+        with self.init_scope():
+            w_init = chainer.initializers.HeNormal()
+            self.l = L.Convolution2D(256, 128, 1, initialW=w_init).add_hook(spn())
+            self.a = L.Convolution2D(256, 64, (11, 1), pad=(5, 0), initialW=w_init).add_hook(spn())
+            self.o = L.Convolution2D(128, 256, (3, 1), pad=(1, 0), initialW=w_init).add_hook(spn())
+            n = 2 ** (depth+1)
+            self.c = L.DilatedConvolution2D(128, 256, (2, 1), dilate=(n, 1), pad=(n//2, 0), initialW=w_init).add_hook(spn())
+    def __call__(self, _x):
+        _a = F.repeat(self.a(_x), 4, axis=1)
+        _y = F.sigmoid(_a) * _x
+        _y = self.l(_y)
+        _y = F.leaky_relu(_y)
+        _otp_for_sum = F.tanh(self.o(_y))
+        _otp_to_next = self.c(_y)
+        _otp_to_next = F.leaky_relu(_otp_to_next) + _x
+        return _otp_to_next, _otp_for_sum
 class Generator(chainer.Chain):
     """
         生成側ネットワーク
@@ -74,23 +96,17 @@ class Generator(chainer.Chain):
         with self.init_scope():
             w_init = chainer.initializers.HeNormal()
             # (N, 1025, 200)
-            self.e_0 = L.Convolution2D(1025, 256, (4, 1), stride=(4, 1), initialW=w_init).add_hook(spn())
+            self.e_0 = L.Convolution2D(1025, 256, (2, 1), stride=(2, 1), initialW=w_init).add_hook(spn())
             # (N, 256, 50)
-            self.r_01 = L.Convolution2D(256, 256, (9, 1), pad=(4, 0), initialW=w_init).add_hook(spn())
-            self.r_02 = L.Convolution2D(256, 256, (3, 1), pad=(1, 0), initialW=w_init).add_hook(spn())
-            self.r_03 = L.Convolution2D(256, 256, (9, 1), pad=(4, 0), initialW=w_init).add_hook(spn())
-            self.r_04 = L.Convolution2D(256, 256, (3, 1), pad=(1, 0), initialW=w_init).add_hook(spn())
-            self.r_05 = L.Convolution2D(256, 256, (9, 1), pad=(4, 0), initialW=w_init).add_hook(spn())
-            self.r_06 = L.Convolution2D(256, 256, (3, 1), pad=(1, 0), initialW=w_init).add_hook(spn())
-            self.r_07 = L.Convolution2D(256, 256, (9, 1), pad=(4, 0), initialW=w_init).add_hook(spn())
-            self.r_08 = L.Convolution2D(256, 256, (3, 1), pad=(1, 0), initialW=w_init).add_hook(spn())
-            self.r_09 = L.Convolution2D(256, 256, (9, 1), pad=(4, 0), initialW=w_init).add_hook(spn())
-            self.r_10 = L.Convolution2D(256, 256, (3, 1), pad=(1, 0), initialW=w_init).add_hook(spn())
-            self.r_11 = L.Convolution2D(256, 256, (9, 1), pad=(4, 0), initialW=w_init).add_hook(spn())
-            self.r_12 = L.Convolution2D(256, 256, (3, 1), pad=(1, 0), initialW=w_init).add_hook(spn())
+            self.r_0 = MidBlock(0)
+            self.r_1 = MidBlock(1)
+            self.r_2 = MidBlock(2)
+            self.r_3 = MidBlock(3)
+            self.r_4 = MidBlock(4)
+            self.r_5 = MidBlock(5)
             # (N, 256, 50)
             # NOTE: 出力を256chにすると学習が崩壊する。
-            self.d_1 = L.Deconvolution2D(256, 128, (4, 1), stride=(4, 1), initialW=w_init).add_hook(spn())
+            self.d_1 = L.Deconvolution2D(256, 128, (2, 1), stride=(2, 1), initialW=w_init).add_hook(spn())
             # (N, 128, 200)
             self.d_0 = L.Convolution2D(128, 1025, (7, 1), pad=(3, 0), initialW=w_init).add_hook(spn())
             # (N, 1025, 200)
@@ -111,30 +127,18 @@ class Generator(chainer.Chain):
         _y = _x[0]
         _y = self.e_0(_y)
         _y = F.leaky_relu(_y)
-        _h = self.r_01(_y)
-        _h = F.sigmoid(_h) * _y
-        _h = self.r_02(_h)
-        _y = F.leaky_relu(_h) + _y
-        _h = self.r_03(_y)
-        _h = F.sigmoid(_h) * _y
-        _h = self.r_04(_h)
-        _y = F.leaky_relu(_h) + _y
-        _h = self.r_05(_y)
-        _h = F.sigmoid(_h) * _y
-        _h = self.r_06(_h)
-        _y = F.leaky_relu(_h) + _y
-        _h = self.r_07(_y)
-        _h = F.sigmoid(_h) * _y
-        _h = self.r_08(_h)
-        _y = F.leaky_relu(_h) + _y
-        _h = self.r_09(_y)
-        _h = F.sigmoid(_h) * _y
-        _h = self.r_10(_h)
-        _y = F.leaky_relu(_h) + _y
-        _h = self.r_11(_y)
-        _h = F.sigmoid(_h) * _y
-        _h = self.r_12(_h)
-        _y = F.leaky_relu(_h) + _y
+        _h, _n = self.r_0(_y)
+        _y = _n
+        _h, _n = self.r_1(_h)
+        _y += _n
+        _h, _n = self.r_2(_h)
+        _y += _n
+        _h, _n = self.r_3(_h)
+        _y += _n
+        _h, _n = self.r_4(_h)
+        _y += _n
+        _m = self.r_5(_h)
+        _y += _m[0] + _m[1]
         _y = self.d_1(_y)
         _y = F.leaky_relu(_y)
         _y = self.d_0(_y)
