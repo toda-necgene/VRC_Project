@@ -42,24 +42,21 @@ class TestModel(chainer.training.Extension):
         self.inmodel = _trainer.updater.gen_ba
         self.target = _label_sample
         source_f0, source_sp, source_ap = wave2world(_source.astype(np.float64))
+        padding_size = abs(_sp_input_length - source_sp.shape[0] % (_sp_input_length)) + _sp_input_length
+        ch = source_sp.shape[1]
+        source_sp = np.pad(source_sp, ((padding_size, 0), (0, 0)), "edge").reshape(-1, _sp_input_length, ch, 1)
         _, self.source_sp_l, _ = wave2world(_label_sample.astype(np.float64))
         self.image_power_l = fft(_label_sample)
         self.source_ap = source_ap
         self.length = source_f0.shape[0]
-        padding_size = abs(_sp_input_length - source_sp.shape[0] % _sp_input_length)
-        ch = source_sp.shape[1]
-        source_sp = np.pad(source_sp, ((padding_size, 0), (0, 0)), "edge").reshape(-1, _sp_input_length, ch)
-        source_sp = np.transpose(source_sp, [0, 2, 1]).astype(np.float32).reshape(-1, ch, _sp_input_length, 1)
+        padding_size = abs(_sp_input_length - self.source_ap.shape[0] % _sp_input_length)
         source_ap = np.pad(source_ap, ((padding_size, 0), (0, 0)), "edge").reshape(-1, _sp_input_length, 1025)
         source_ap = np.transpose(source_ap, [0, 2, 1]).astype(np.float32).reshape(-1, 1025, _sp_input_length, 1)
         padding_size = abs(_sp_input_length - self.source_sp_l.shape[0] % _sp_input_length)
-        self.source_sp_l = np.pad(self.source_sp_l, ((padding_size, 0), (0, 0)), "edge").reshape(-1, _sp_input_length, ch)
-        self.source_sp_l = np.transpose(self.source_sp_l, [0, 2, 1]).astype(np.float32).reshape(-1, ch, _sp_input_length, 1)
+        self.source_sp_l = np.pad(self.source_sp_l, ((padding_size, 0), (0, 0)), "edge").reshape(-1, ch)
         self.source_pp = chainer.backends.cuda.to_gpu(source_sp)
         self.source_f0 = (source_f0 - _voice_profile["pre_sub"]) * np.sign(source_f0) * _voice_profile["pitch_rate"] + _voice_profile["post_add"] * np.sign(source_f0)
         self.wave_len = _source.shape[0]
-        self.ab_vec = source_sp - self.source_sp_l
-        self.ab_nor = np.sqrt(np.sum(self.ab_vec**2))
         super(TestModel, self).initialize(_trainer)
     def convert(self):
         """
@@ -72,16 +69,17 @@ class TestModel(chainer.training.Extension):
         chainer.using_config("train", False)
         result = self.model(self.source_pp)
         result = chainer.backends.cuda.to_cpu(result.data)
-        ch = result.shape[1]
-        score = np.mean((result - self.source_sp_l)**2)
-        result_t = np.transpose(result, [0, 2, 1, 3]).reshape(-1, ch)[-self.length:]
+        ch = result.shape[2]
+        result_t = result.reshape(-1, ch)
+        result_t = result_t[-self.length:]
+        score = np.mean((result_t - self.source_sp_l[-self.length:])**2)
         result_wave = world2wave(self.source_f0, result_t, self.source_ap)
         otp = result_wave.reshape(-1)
         head_cut_num = otp.shape[0]-self.wave_len
         if head_cut_num > 0:
             otp = otp[head_cut_num:]
         chainer.using_config("train", True)
-        return otp, score, result
+        return otp, score, result_t
     def __call__(self, _trainer):
         """
         評価関数
@@ -94,7 +92,7 @@ class TestModel(chainer.training.Extension):
             テストに使用するトレーナー
         """
         # testing
-        out_put, score_raw, im_env = self.convert()
+        out_put, score_raw, _ = self.convert()
         out_puts = (out_put*32767).astype(np.int16)
         # calculating power spectrum
         image_power_spec = fft(out_put)
@@ -103,39 +101,18 @@ class TestModel(chainer.training.Extension):
         chainer.report({"env_test_loss": score_raw, "test_loss": score_fft})
         #saving fake power-spec image
         plt.figure(figsize=(8, 5))
-        plt.subplot(3, 2, 1)
+        gs = mpl.gridspec.GridSpec(5, 1)
+        plt.subplot(gs[:3, 0])
         plt.title(self.model_name)
         _insert_image = np.transpose(image_power_spec, (1, 0))
-        plt.imshow(_insert_image, aspect="auto")
-        plt.colorbar()
-        plt.subplot(3, 2, 2)
-        plt.title(self.model_name)
-        _insert_image = np.transpose(self.image_power_l, (1, 0))
-        plt.imshow(_insert_image, aspect="auto")
-        plt.colorbar()
-        plt.subplot(3, 2, 3)
-        plt.plot(np.mean(image_power_spec, axis=0))
-        plt.plot(np.mean(self.image_power_l, axis=0))
-        plt.subplot(3, 2, 4)
-        plt.plot(np.var(image_power_spec, axis=0))
-        plt.plot(np.var(self.image_power_l, axis=0))
-        plt.subplot(3, 2, 5)
-        x, y = np.mgrid[-17:17, -17:17] / 8
-        z = np.sqrt(x**2 + y**2)
-        plt.contourf(x, y, z, levels=16, cmap="gray")
-        ac_vec = im_env[:n] - self.source_sp_l[:n]
-        ac_nor = np.sqrt(np.sum(ac_vec**2))
-        ac_ang = np.sum(self.ab_vec * ac_vec) / (self.ab_nor + ac_nor)
-        c_x = np.cos(ac_ang) * ac_nor / self.ab_nor
-        c_y = np.sin(ac_ang) * ac_nor / self.ab_nor
-        x = [1, c_x]
-        y = [0, c_y]
-        u = [-1, -c_x]
-        v = [0, -c_y]
-        plt.xlim(-2, 2)
-        plt.ylim(-1, 1)
-        plt.quiver(x, y, u, v, [1.0, -1.0], angles='xy', scale_units='xy', scale=1)
-        plt.subplot(3, 2, 6)
+        plt.imshow(_insert_image, vmax=1.0, vmin=-1.0, aspect="auto")
+        plt.subplot(gs[3, 0])
+        a = np.abs(np.mean(image_power_spec, axis=0) - np.mean(self.image_power_l, axis=0))
+        b = np.abs(np.std(image_power_spec, axis=0)  - np.std(self.image_power_l, axis=0))
+        plt.plot(a, label="mean")
+        plt.plot(b, label="std")
+        plt.legend(loc='upper left')
+        plt.subplot(gs[4, 0])
         plt.ylim(-1, 1)
         plt.tick_params(labelbottom=False)
         plt.plot(out_put)
