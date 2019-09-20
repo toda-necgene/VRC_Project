@@ -1,9 +1,9 @@
 """
 script to learn
 _args is determined by "setting.json".
-# 学習するためのスクリプト
-# 設定はsetting.jsonを利用する。
-# 設定のパラメーターの意味はsetting_loader.pyを参照
+# 学習するため�スクリプト
+# 設定�setting.jsonを利用する�
+# 設定�パラメーターの意味はsetting_loader.pyを参照
 """
 import os
 import shutil
@@ -11,6 +11,7 @@ import wave
 import chainer
 import numpy as np
 from vrc_project.model import Discriminator, Generator_EN, Generator_DE, Generator_SP
+from vrc_project.seq_dataset import SeqData
 from vrc_project.updater import CycleGANUpdater
 from vrc_project.voice_to_dataset_cycle import create_dataset
 from vrc_project.setting_loader import load_setting_from_json
@@ -82,12 +83,12 @@ def dataset_pre_process_controler(args):
         _sounds_a = np.load("./dataset/patch/A.npy")
         _sounds_b = np.load("./dataset/patch/B.npy")
         print(" [I] loaded data-set successfully.")
-    _length_sp = _sounds_a.shape[2]
+    _length_sp = 200
     if args["gpu"] >= 0:
         _sounds_a = chainer.backends.cuda.to_gpu(_sounds_a)
         _sounds_b = chainer.backends.cuda.to_gpu(_sounds_b)
-    _train_iter_a = chainer.iterators.MultithreadIterator(_sounds_a, args["batch_size"], shuffle=True, n_threads=6)
-    _train_iter_b = chainer.iterators.MultithreadIterator(_sounds_b, args["batch_size"], shuffle=True, n_threads=6)
+    _train_iter_a = chainer.iterators.MultithreadIterator(SeqData(_sounds_a, 200), args["batch_size"], shuffle=True, n_threads=2)
+    _train_iter_b = chainer.iterators.MultithreadIterator(SeqData(_sounds_b, 200), args["batch_size"], shuffle=True, n_threads=2)
     # f0 parameters(基本周波数F0の変換に使用する定数。詳しくは./vrc_project/voice_to_dataset_cycle.py L65周辺)
     _voice_profile = np.load("./voice_profile.npz")
     if not os.path.exists(args["name_save"]):
@@ -120,12 +121,11 @@ if __name__ == '__main__':
         g_b_to_a2.to_gpu()
         d_a.to_gpu()
         # d_b.to_gpu()
-    g_optimizer_ab1 = chainer.optimizers.Adam(alpha=1e-3, beta1=0.5).setup(g_a_to_b1)
-    g_optimizer_ba1 = chainer.optimizers.Adam(alpha=1e-3, beta1=0.5).setup(g_b_to_a1)
-    g_optimizer_ab2 = chainer.optimizers.Adam(alpha=1e-3, beta1=0.5).setup(g_a_to_b2)
+    g_optimizer_ab1 = chainer.optimizers.Adam(alpha=1e-3, beta1=0.9).setup(g_a_to_b1)
+    g_optimizer_ba1 = chainer.optimizers.Adam(alpha=1e-3, beta1=0.9).setup(g_b_to_a1)
+    d_optimizer_a = chainer.optimizers.Adam(alpha=1e-3, beta1=0.9).setup(d_a)
     g_optimizer_ba2 = chainer.optimizers.Adam(alpha=1e-3, beta1=0.5).setup(g_b_to_a2)
     g_optimizer_sp = chainer.optimizers.Adam(alpha=1e-3, beta1=0.5).setup(g_speak)
-    d_optimizer_a = chainer.optimizers.Adam(alpha=1e-3, beta1=0.5).setup(d_a)
     # main training
     updater = CycleGANUpdater(
         model={"main":g_a_to_b1, "main2":g_a_to_b2, "inverse":g_b_to_a1, "inverse2":g_b_to_a2, "sp":g_speak, "disa":d_a},
@@ -145,13 +145,13 @@ if __name__ == '__main__':
         if _args["line_notify"]:
             with open("line_api_token.txt", "rb") as s:
                 key = s.readline().decode("utf8")
-                tri = chainer.training.triggers.ManualScheduleTrigger([100, 500, 1000, 2000, 5000, 10000, 15000, 20000], "iteration")
+                tri = chainer.training.triggers.ManualScheduleTrigger([100, 500, 1000, 5000, 10000, 15000], "iteration")
                 _trainer.extend(LineNotify(_trainer, key), trigger=tri)
-    _trainer.extend(chainer.training.extensions.snapshot(filename='snapshot.npz'), trigger=display_interval)
+    _trainer.extend(chainer.training.extensions.snapshot(filename='snapshot.npz', num_retain=2), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.snapshot_object(g_a_to_b1, 'gen_ab.npz'), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.LogReport(trigger=display_interval))
     _trainer.extend(chainer.training.extensions.ProgressBar(update_interval=10))
-    rep_list = ['iteration', 'D_B_FAKE', 'G_AB__GAN', 'G_AA__CYC', 'G_ABA_CYC', "test_loss"]
+    rep_list = ['iteration', 'D_B_FAKE', 'G_AB__GAN', 'G_ABA_CYC', "test_loss"]
     _trainer.extend(chainer.training.extensions.PrintReport(rep_list), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.PlotReport(["env_test_loss"], filename="env.png"), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.PlotReport(["env_test_loss"], filename="../../env_graph.png"), trigger=display_interval)

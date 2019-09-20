@@ -7,6 +7,7 @@ import os
 import wave
 import glob
 import numpy as np
+import matplotlib.pyplot as plt
 from vrc_project.world_and_wave import wave2world
 def create_dataset(_term, _chunk=1024, delta=0):
     """
@@ -36,24 +37,15 @@ def create_dataset(_term, _chunk=1024, delta=0):
             data = np.frombuffer(dms, 'int16')
             data_real = (data / 32767).reshape(-1)
             _step = _term
-            if delta > 0:
-                _step = delta
-            times = data_real.shape[0] // _step + 1
-            if data_real.shape[0] % _step == 0:
-                times -= 1
-            for i in range(times):
-                startpos = _step * i + data_real.shape[0] % _step
-                data_real_current_use = data_real[max(startpos - _term, 0):startpos].copy()
-                _padiing_size = _term - data_real_current_use.shape[0]
-                if _padiing_size > 0:
-                    data_real_current_use = np.pad(data_real_current_use, (_padiing_size, 0), "constant")
-                f0_estimation, spec_env, _ = wave2world(data_real_current_use)
-                f0_estimation = f0_estimation[f0_estimation > 0.0]
-                if f0_estimation.shape[0] != 0:
-                    _ff.extend(f0_estimation)
-                spec_env = np.transpose(spec_env, [1, 0]).reshape(spec_env.shape[1], spec_env.shape[0], 1)
-                memory_spec_env.append(spec_env)
-        _m = np.asarray(memory_spec_env, dtype=np.float32)
+            _padiing_size = _term - (data_real.shape[0] % _term)
+            if _padiing_size > 0:
+                data_real = np.pad(data_real, (_padiing_size, 0), "constant")
+            f0_estimation, spec_env, _ = wave2world(data_real)
+            f0_estimation = f0_estimation[f0_estimation > 0.0]
+            _ff.extend(f0_estimation)
+            spec_env = spec_env.reshape(spec_env.shape[0], spec_env.shape[1], 1)
+            memory_spec_env.append(spec_env)
+        _m = np.asarray(memory_spec_env, dtype=np.float32).reshape(-1, spec_env.shape[1], 1)
         dataset_to_return.append(_m)
         np.save(os.path.join(OUTPUT_DIR, name + ".npy"), _m)
         print(" [I] voice in " + name + " directory has been finished successfully.")
