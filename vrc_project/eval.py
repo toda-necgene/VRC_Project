@@ -38,8 +38,8 @@ class TestModel(chainer.training.Extension):
         self.model_name = name
         mpl.rcParams["agg.path.chunksize"] = 100000
         self.dir = _direc
-        self.model = _trainer.updater.gen_ab
-        self.inmodel = _trainer.updater.gen_ba
+        self.model_en = _trainer.updater.gen_am
+        self.model_de = _trainer.updater.gen_mb
         self.target = _label_sample
         source_f0, source_sp, source_ap = wave2world(_source.astype(np.float64))
         _, self.source_sp_l, _ = wave2world(_label_sample.astype(np.float64))
@@ -70,7 +70,8 @@ class TestModel(chainer.training.Extension):
             変換後の音声波形データ
         """
         chainer.using_config("train", False)
-        result = self.model(self.source_pp)
+        result = self.model_en(self.source_pp)
+        result = self.model_de(result)
         result = chainer.backends.cuda.to_cpu(result.data)
         ch = result.shape[1]
         score = np.mean((result - self.source_sp_l)**2)
