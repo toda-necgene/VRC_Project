@@ -39,7 +39,6 @@ class TestModel(chainer.training.Extension):
         mpl.rcParams["agg.path.chunksize"] = 100000
         self.dir = _direc
         self.model = _trainer.updater.gen_ab
-        self.inmodel = _trainer.updater.gen_ba
         self.target = _label_sample
         source_f0, source_sp, source_ap = wave2world(_source.astype(np.float64))
         padding_size = abs(_sp_input_length - source_sp.shape[0] % (_sp_input_length)) + _sp_input_length

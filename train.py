@@ -115,9 +115,9 @@ if __name__ == '__main__':
         g_b_to_a1.to_gpu()
         d_a.to_gpu()
         # d_b.to_gpu()
-    g_optimizer_ab1 = chainer.optimizers.Adam(alpha=1e-3, beta1=0.5).setup(g_a_to_b1)
-    g_optimizer_ba1 = chainer.optimizers.Adam(alpha=1e-3, beta1=0.5).setup(g_b_to_a1)
-    d_optimizer_a = chainer.optimizers.Adam(alpha=1e-3, beta1=0.5).setup(d_a)
+    g_optimizer_ab1 = chainer.optimizers.Adam(alpha=1e-3, beta1=0.9).setup(g_a_to_b1)
+    g_optimizer_ba1 = chainer.optimizers.Adam(alpha=1e-3, beta1=0.9).setup(g_b_to_a1)
+    d_optimizer_a = chainer.optimizers.Adam(alpha=1e-3, beta1=0.9).setup(d_a)
     # main training
     updater = CycleGANUpdater(
         model={"main":g_a_to_b1, "inverse":g_b_to_a1, "disa":d_a},
@@ -147,7 +147,7 @@ if __name__ == '__main__':
     _trainer.extend(chainer.training.extensions.PrintReport(rep_list), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.PlotReport(["env_test_loss"], filename="env.png"), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.PlotReport(["env_test_loss"], filename="../../env_graph.png"), trigger=display_interval)
-    decay_timming = (500, "iteration")
+    decay_timming = (1000, "iteration")
     _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.9, optimizer=updater.get_optimizer("gen_ab1")), trigger=decay_timming)
     _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.9, optimizer=updater.get_optimizer("gen_ba1")), trigger=decay_timming)
     _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.9, optimizer=updater.get_optimizer("disa")), trigger=decay_timming)

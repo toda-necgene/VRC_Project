@@ -38,8 +38,8 @@ class CycleGANUpdater(chainer.training.updaters.StandardUpdater):
         # D update
         self.disa.cleargrads()
         # self.disb.cleargrads()
-        batch_an = batch_a + _xp.random.randn(*(batch_a.shape))*0.002*max(1-self.iteration / self.max_iteration-0.5, 0)
-        batch_bn = batch_b + _xp.random.randn(*(batch_b.shape))*0.002*max(1-self.iteration / self.max_iteration-0.5, 0)
+        batch_an = batch_a + _xp.random.randn(*(batch_a.shape))*0.002*max(0.5-self.iteration / self.max_iteration, 0)
+        batch_bn = batch_b + _xp.random.randn(*(batch_b.shape))*0.002*max(0.5-self.iteration / self.max_iteration, 0)
         fake_ab = self.gen_ab(batch_an)
         fake_ba = self.gen_ba(batch_bn)
         y_af = self.disa(fake_ba)
@@ -77,7 +77,7 @@ class CycleGANUpdater(chainer.training.updaters.StandardUpdater):
         loss_ganba = F.mean_squared_error(y_fake_ba, y_label_TA) *0.5
         loss_cycb = F.sqrt(F.mean_squared_error(fake_bab, batch_b))
         loss_cyca = F.sqrt(F.mean_squared_error(fake_aba, batch_a))
-        gloss = loss_ganba + loss_ganab + (loss_cyca + loss_cycb) *10
+        gloss = loss_ganba + loss_ganab + (loss_cyca + loss_cycb) * 10
         gloss.backward()
         chainer.report({"G_AB__GAN": loss_ganab,
                         "G_BA__GAN": loss_ganba,
