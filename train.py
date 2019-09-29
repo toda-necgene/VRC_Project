@@ -1,16 +1,13 @@
 """
-script to learn
-_args is determined by "setting.json".
-# 学習するため�スクリプト
-# 設定�setting.jsonを利用する�
-# 設定�パラメーターの意味はsetting_loader.pyを参照
+学習スクリプト
+設定パラメーターの意味はsetting_loader.pyを参照
 """
 import os
 import shutil
 import wave
 import chainer
 import numpy as np
-from vrc_project.model import Discriminator, Generator_EN, Generator_DE, Generator_SP
+from vrc_project.model import Discriminator, Generator
 from vrc_project.seq_dataset import SeqData
 from vrc_project.updater import CycleGANUpdater
 from vrc_project.voice_to_dataset_cycle import create_dataset
@@ -105,33 +102,25 @@ if __name__ == '__main__':
         if not os.path.exists(_args["wave_otp_dir"]):
             os.makedirs(_args["wave_otp_dir"])
     train_iter_a, train_iter_b, voice_profile, length_sp = dataset_pre_process_controler(_args)
-    g_speak = Generator_SP()
-    g_a_to_b1 = Generator_EN()
-    g_a_to_b2 = Generator_DE()
-    g_b_to_a1 = Generator_EN()
-    g_b_to_a2 = Generator_DE()
+    g_a_to_b = Generator()
+    g_b_to_a = Generator()
     d_a = Discriminator()
     # d_b = DiscriminatorW()
     if _args["gpu"] >= 0:
         chainer.cuda.Device(_args["gpu"]).use()
-        g_speak.to_gpu()
-        g_a_to_b1.to_gpu()
-        g_b_to_a1.to_gpu()
-        g_a_to_b2.to_gpu()
-        g_b_to_a2.to_gpu()
+        g_a_to_b.to_gpu()
+        g_b_to_a.to_gpu()
         d_a.to_gpu()
         # d_b.to_gpu()
-    g_optimizer_ab1 = chainer.optimizers.Adam(alpha=1e-3, beta1=0.9).setup(g_a_to_b1)
-    g_optimizer_ba1 = chainer.optimizers.Adam(alpha=1e-3, beta1=0.9).setup(g_b_to_a1)
-    d_optimizer_a = chainer.optimizers.Adam(alpha=1e-3, beta1=0.9).setup(d_a)
-    g_optimizer_ba2 = chainer.optimizers.Adam(alpha=1e-3, beta1=0.5).setup(g_b_to_a2)
-    g_optimizer_sp = chainer.optimizers.Adam(alpha=1e-3, beta1=0.5).setup(g_speak)
+    g_optimizer_ab = chainer.optimizers.Adam(alpha=1e-3, beta1=0.5).setup(g_a_to_b)
+    g_optimizer_ba = chainer.optimizers.Adam(alpha=1e-3, beta1=0.5).setup(g_b_to_a)
+    d_optimizer_a = chainer.optimizers.Adam(alpha=1e-3, beta1=0.5).setup(d_a)
     # main training
     updater = CycleGANUpdater(
-        model={"main":g_a_to_b1, "main2":g_a_to_b2, "inverse":g_b_to_a1, "inverse2":g_b_to_a2, "sp":g_speak, "disa":d_a},
+        model={"main":g_a_to_b, "inverse":g_b_to_a, "disa":d_a},
         max_itr=_args["train_iteration"],
         iterator={"main":train_iter_a, "data_b":train_iter_b},
-        optimizer={"gen_ab1":g_optimizer_ab1, "gen_ba1":g_optimizer_ba1, "gen_ab2":g_optimizer_ab2, "gen_ba2":g_optimizer_ba2, "gen_sp":g_optimizer_sp, "disa":d_optimizer_a},
+        optimizer={"gen_ab":g_optimizer_ab, "gen_ba":g_optimizer_ba, "disa":d_optimizer_a},
         device=_args["gpu"])
     _trainer = chainer.training.Trainer(updater, (_args["train_iteration"], "iteration"), out=_args["name_save"])
     if os.path.exists(_args["use_predata"]):
@@ -148,7 +137,7 @@ if __name__ == '__main__':
                 tri = chainer.training.triggers.ManualScheduleTrigger([100, 500, 1000, 5000, 10000, 15000], "iteration")
                 _trainer.extend(LineNotify(_trainer, key), trigger=tri)
     _trainer.extend(chainer.training.extensions.snapshot(filename='snapshot.npz', num_retain=2), trigger=display_interval)
-    _trainer.extend(chainer.training.extensions.snapshot_object(g_a_to_b1, 'gen_ab.npz'), trigger=display_interval)
+    _trainer.extend(chainer.training.extensions.snapshot_object(g_a_to_b, 'gen_ab.npz'), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.LogReport(trigger=display_interval))
     _trainer.extend(chainer.training.extensions.ProgressBar(update_interval=10))
     rep_list = ['iteration', 'D_B_FAKE', 'G_AB__GAN', 'G_ABA_CYC', "test_loss"]
@@ -156,11 +145,8 @@ if __name__ == '__main__':
     _trainer.extend(chainer.training.extensions.PlotReport(["env_test_loss"], filename="env.png"), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.PlotReport(["env_test_loss"], filename="../../env_graph.png"), trigger=display_interval)
     decay_timming = (1000, "iteration")
-    _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.9, optimizer=updater.get_optimizer("gen_sp")), trigger=decay_timming)
-    _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.9, optimizer=updater.get_optimizer("gen_ab1")), trigger=decay_timming)
-    _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.9, optimizer=updater.get_optimizer("gen_ba1")), trigger=decay_timming)
-    _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.9, optimizer=updater.get_optimizer("gen_ab2")), trigger=decay_timming)
-    _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.9, optimizer=updater.get_optimizer("gen_ba2")), trigger=decay_timming)
+    _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.9, optimizer=updater.get_optimizer("gen_ab")), trigger=decay_timming)
+    _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.9, optimizer=updater.get_optimizer("gen_ba")), trigger=decay_timming)
     _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.9, optimizer=updater.get_optimizer("disa")), trigger=decay_timming)
     print(" [*] Train Started")
     _trainer.run()
