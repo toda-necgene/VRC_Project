@@ -1,12 +1,11 @@
 {
     "checkpoint_dir": "./trained_model/",
-    "_wave_otp_dir": "../../share/",
-    "wave_otp_dir": "./waves/",
-    "version": "19.8.4.6",
-    "input_size":31999,
+    "version": "19.09.29.15",
+    "input_size":88199,
     "train_iteration": 10000,
-    "batch_size":16,
+    "batch_size":1,
     "use_old_dataset": true,
     "gpu": 0,
+    "line_notify": true,
     "test": true
 }

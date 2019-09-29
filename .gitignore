@@ -7,6 +7,7 @@ _*
 考察.md
 *.npz
 *.png
+line_api_token.txt
 *.wav
 *.html
 vrc_project/harvest_viewer.py

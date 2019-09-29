@@ -27,6 +27,7 @@ def load_setting_from_json(path):
     # 生成済み学習ファイルの使用フラグ
     # ファイルはデフォルトで"dataset/patch"に存在します。
     _args["use_old_dataset"] = False
+    _args["use_predata"] = "no"
     # テスト音声生成フラグ
     _args["test"] = True
     # ミニバッチで扱うデータの数
@@ -39,6 +40,9 @@ def load_setting_from_json(path):
     _args["input_size"] = 15999
     # GPU使用デバイス設定(負の値ならCPUを使う)
     _args["gpu"] = -1
+    # Lineの通知を使う
+    # APIキーは”line_api_token.txt”に格納（文字列素置き）
+    _args["line_notify"] = False
     # loading json setting file
     # (more codes ./setting.json. manual is exist in ./setting-example.json)
     with open(path, "r") as setting_raw_txt:

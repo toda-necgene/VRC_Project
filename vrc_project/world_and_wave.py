@@ -9,7 +9,7 @@ def wave2world(data):
     Parameters
     ----------
     data : float64
-        SamplingRate: 16000
+        SamplingRate: 44100
         ValueRange  : [-1.0,1.0]
         Shape: (input_size)
     Returns
@@ -23,12 +23,14 @@ def wave2world(data):
     NOTE: input_size is defined in config file.
           N is determined by input_size.
     """
-    sampling_rate = 16000
+    sampling_rate = 44100
     _f0, _t = pw.dio(data, sampling_rate, frame_period=10)
     _f0 = pw.stonemask(data, _f0, _t, sampling_rate)
     _cepstrum = pw.cheaptrick(data, _f0, _t, sampling_rate)
-    _cepstrum = pw.code_spectral_envelope(_cepstrum, sampling_rate, 64)
-    # _cepstrum = np.clip(_cepstrum, -1.0, 1.0)
+
+    # _cepstrum = pw.code_spectral_envelope(_cepstrum, sampling_rate, 64)
+    _cepstrum = (np.log(_cepstrum) + 10) / 10
+    _cepstrum = np.clip(_cepstrum, -1.0, 1.0)
     _aperiodicity = pw.d4c(data, _f0, _t, sampling_rate)
     return _f0, _cepstrum.astype(np.float32), _aperiodicity
 
@@ -45,9 +47,11 @@ def world2wave(_f0, _cepstrum, _aperiodicity):
     Returns
     -------
     wave: float64
-        SamplingRate: 16000
+        SamplingRate: 44100
         ValueRange  : [-1.0,1.0]
     """
-    _cepstrum = pw.decode_spectral_envelope(_cepstrum.astype(np.float).copy("C"), 16000, 1024)
+
+    _cepstrum = np.exp(_cepstrum * 10 - 10)
+    _cepstrum = _cepstrum.astype(np.float).copy("C")
     _aperiodicity = _aperiodicity.astype(np.float)
-    return pw.synthesize(_f0, _cepstrum, _aperiodicity, 16000, frame_period=10)
+    return pw.synthesize(_f0, _cepstrum, _aperiodicity, 44100, frame_period=10)
