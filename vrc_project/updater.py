@@ -38,8 +38,8 @@ class CycleGANUpdater(chainer.training.updaters.StandardUpdater):
         # D update
         self.disa.cleargrads()
         # self.disb.cleargrads()
-        batch_an = batch_a + _xp.random.randn(*(batch_a.shape))*0.001*max(0.5-self.iteration / self.max_iteration, 0)
-        batch_bn = batch_b + _xp.random.randn(*(batch_b.shape))*0.001*max(0.5-self.iteration / self.max_iteration, 0)
+        batch_an = batch_a + _xp.random.randn(*(batch_a.shape)).astype(_xp.float32)*_xp.linspace(0.005, 0.0002, batch_a.shape[2]).reshape(1, 1, -1, 1)
+        batch_bn = batch_b + _xp.random.randn(*(batch_b.shape)).astype(_xp.float32)*_xp.linspace(0.005, 0.0002, batch_b.shape[2]).reshape(1, 1, -1, 1)
         fake_ab = self.gen_ab(batch_an)
         fake_ba = self.gen_ba(batch_bn)
         y_af = self.disa(fake_ba)
@@ -48,12 +48,12 @@ class CycleGANUpdater(chainer.training.updaters.StandardUpdater):
         y_bt = self.disa(batch_bn)
         y_label_TA = _xp.zeros(y_af.shape, dtype="float32")
         y_label_TA[:, 0] = 1.0
-        y_label_TB = _xp.zeros(y_af.shape, dtype="float32")
+        y_label_TB = _xp.zeros(y_bf.shape, dtype="float32")
         y_label_TB[:, 1] = 1.0
         y_label_FA = _xp.zeros(y_af.shape, dtype="float32")
         y_label_FA[:, 2] = 1.0
-        y_label_FB = _xp.zeros(y_af.shape, dtype="float32")
-        y_label_FB[:, 2] = 1.0
+        y_label_FB = _xp.zeros(y_bf.shape, dtype="float32")
+        y_label_FB[:, 3] = 1.0
         loss_d_af = F.mean_squared_error(y_af, y_label_FA) *0.5
         loss_d_bf = F.mean_squared_error(y_bf, y_label_FB) *0.5
         loss_d_ar = F.mean_squared_error(y_at, y_label_TA) *0.5
@@ -64,6 +64,7 @@ class CycleGANUpdater(chainer.training.updaters.StandardUpdater):
                         "D_B_FAKE": loss_d_bf})
         (loss_d_af + loss_d_ar + loss_d_bf + loss_d_br).backward()
         disa_optimizer.update()
+        # disb_optimizer.update()
         # G update
         self.gen_ab.cleargrads()
         self.gen_ba.cleargrads()
@@ -77,7 +78,7 @@ class CycleGANUpdater(chainer.training.updaters.StandardUpdater):
         loss_ganba = F.mean_squared_error(y_fake_ba, y_label_TA) *0.5
         loss_cycb = F.sqrt(F.mean_squared_error(fake_bab, batch_b))
         loss_cyca = F.sqrt(F.mean_squared_error(fake_aba, batch_a))
-        gloss = loss_ganba + loss_ganab + (loss_cyca + loss_cycb) * 5
+        gloss = loss_ganba + loss_ganab + (loss_cyca + loss_cycb) * 10
         gloss.backward()
         chainer.report({"G_AB__GAN": loss_ganab,
                         "G_BA__GAN": loss_ganba,

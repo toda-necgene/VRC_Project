@@ -49,6 +49,9 @@ class TestModel(chainer.training.Extension):
         ch = source_sp.shape[1]
         source_sp = np.pad(source_sp, ((padding_size, 0), (0, 0)), "edge").reshape(-1, _sp_input_length, ch)
         source_sp = source_sp.astype(np.float32).reshape(-1, _sp_input_length, ch, 1)
+        self.bs_sp = source_sp.shape[0]
+        r = int(2 ** np.ceil(np.log2(source_sp.shape[0]))) - source_sp.shape[0]
+        source_sp = np.pad(source_sp, ((0, r), (0, 0), (0, 0), (0, 0)), "constant")
         source_ap = np.pad(source_ap, ((padding_size, 0), (0, 0)), "edge").reshape(-1, _sp_input_length, 1025)
         source_ap = np.transpose(source_ap, [0, 2, 1]).astype(np.float32).reshape(-1, 1025, _sp_input_length, 1)
         padding_size = abs(_sp_input_length - self.source_sp_l.shape[0] % _sp_input_length)
@@ -69,6 +72,7 @@ class TestModel(chainer.training.Extension):
         chainer.using_config("train", False)
         result = self.model_en(self.source_pp)
         result = chainer.backends.cuda.to_cpu(result.data)
+        result = result[:self.bs_sp]
         ch = result.shape[2]
         result = result.reshape(-1, ch)
         score = np.mean((result - self.source_sp_l)**2)

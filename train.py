@@ -105,7 +105,7 @@ if __name__ == '__main__':
     g_a_to_b = Generator()
     g_b_to_a = Generator()
     d_a = Discriminator()
-    # d_b = DiscriminatorW()
+    # d_b = Discriminator()
     if _args["gpu"] >= 0:
         chainer.cuda.Device(_args["gpu"]).use()
         g_a_to_b.to_gpu()
@@ -115,6 +115,7 @@ if __name__ == '__main__':
     g_optimizer_ab = chainer.optimizers.Adam(alpha=1e-3, beta1=0.5).setup(g_a_to_b)
     g_optimizer_ba = chainer.optimizers.Adam(alpha=1e-3, beta1=0.5).setup(g_b_to_a)
     d_optimizer_a = chainer.optimizers.Adam(alpha=1e-3, beta1=0.5).setup(d_a)
+    # d_optimizer_b = chainer.optimizers.Adam(alpha=1e-3, beta1=0.5).setup(d_b)
     # main training
     updater = CycleGANUpdater(
         model={"main":g_a_to_b, "inverse":g_b_to_a, "disa":d_a},
@@ -144,10 +145,10 @@ if __name__ == '__main__':
     _trainer.extend(chainer.training.extensions.PrintReport(rep_list), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.PlotReport(["env_test_loss"], filename="env.png"), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.PlotReport(["env_test_loss"], filename="../../env_graph.png"), trigger=display_interval)
-    decay_timming = (1000, "iteration")
-    _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.9, optimizer=updater.get_optimizer("gen_ab")), trigger=decay_timming)
-    _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.9, optimizer=updater.get_optimizer("gen_ba")), trigger=decay_timming)
-    _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.9, optimizer=updater.get_optimizer("disa")), trigger=decay_timming)
+    # decay_timming = (400, "iteration")
+    # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.9, optimizer=updater.get_optimizer("gen_ab")), trigger=decay_timming)
+    # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.9, optimizer=updater.get_optimizer("gen_ba")), trigger=decay_timming)
+    # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.9, optimizer=updater.get_optimizer("disa")), trigger=decay_timming)
     print(" [*] Train Started")
     _trainer.run()
     print(" [*] All over.")

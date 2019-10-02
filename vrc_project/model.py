@@ -27,14 +27,16 @@ class Discriminator(chainer.Chain):
         with self.init_scope():
             w_init = chainer.initializers.HeNormal()
             # (N, 1, 200, 1025)
-            self.c_0 = L.Convolution2D(1, 128, (6, 5), stride=(2, 4), pad=(2, 0), initialW=w_init).add_hook(spn())
-            # (N, 128, 100, 256)
-            self.c_1 = L.Convolution2D(128, 256, (6, 4), stride=(2, 4), pad=(2, 0), initialW=w_init).add_hook(spn())
-            # (N, 256, 50, 64)
-            self.c_2 = L.Convolution2D(256, 1024, (10, 8), stride=(5, 8), initialW=w_init).add_hook(spn())
-            # (N, 1024, 9, 8)
-            self.c_3 = L.Convolution2D(1024, 3, (9, 8), pad=(5, 0), initialW=chainer.initializers.Normal(1e-3)).add_hook(spn())
-            # (N, 4, 7)
+            self.c_0 = L.Convolution2D(1, 64, (6, 5), stride=(2, 4), pad=(2, 0), initialW=w_init).add_hook(spn())
+            # (N, 64, 100, 256)
+            self.c_1 = L.Convolution2D(64, 128, (6, 8), stride=(2, 4), pad=(2, 2), initialW=w_init).add_hook(spn())
+            # (N, 128, 50, 64)
+            self.c_2 = L.Convolution2D(128, 256, (10, 8), stride=(5, 8), initialW=w_init).add_hook(spn())
+            # (N, 256, 9, 8)
+            self.c_3 = L.Convolution2D(256, 1024, (9, 5), pad=(4, 2), initialW=w_init).add_hook(spn())
+            # (N, 256, 9, 8)
+            self.c_4 = L.Convolution2D(1024, 4, (3, 8), initialW=chainer.initializers.Normal(0.002)).add_hook(spn())
+            # (N, 4, 1)
     def __call__(self, *_x, **kwargs):
         """
         モデルのグラフ実装
@@ -56,7 +58,9 @@ class Discriminator(chainer.Chain):
         _y = F.leaky_relu(_y)
         _y = self.c_2(_y)
         _y = F.leaky_relu(_y)
-        _y = self.c_3(_y)[:, :, :, 0]
+        _y = self.c_3(_y)
+        _y = F.leaky_relu(_y)
+        _y = self.c_4(_y)[:, :, :, 0]
         return _y
 class Generator(chainer.Chain):
     """
@@ -76,12 +80,12 @@ class Generator(chainer.Chain):
             # (N, 1025, 200)
             self.e_0 = L.Convolution2D(1025, 256, (4, 1), stride=(4, 1), initialW=w_init).add_hook(spn())
             # (N, 256, 50)
-            self.r_01 = L.Convolution2D(256, 256, (21, 1), pad=(10, 0), initialW=w_init).add_hook(spn())
-            self.r_02 = L.Convolution2D(256, 256, (21, 1), pad=(10, 0), initialW=w_init).add_hook(spn())
-            self.r_03 = L.Convolution2D(256, 256, (21, 1), pad=(10, 0), initialW=w_init).add_hook(spn())
-            self.r_04 = L.Convolution2D(256, 256, (21, 1), pad=(10, 0), initialW=w_init).add_hook(spn())
-            self.r_05 = L.Convolution2D(256, 256, (21, 1), pad=(10, 0), initialW=w_init).add_hook(spn())
-            self.r_06 = L.Convolution2D(256, 256, (21, 1), pad=(10, 0), initialW=w_init).add_hook(spn())
+            self.r_01 = L.Convolution2D(256, 256, (11, 1), pad=(5, 0), initialW=w_init).add_hook(spn())
+            self.r_02 = L.Convolution2D(256, 256, (11, 1), pad=(5, 0), initialW=w_init).add_hook(spn())
+            self.r_03 = L.Convolution2D(256, 256, (11, 1), pad=(5, 0), initialW=w_init).add_hook(spn())
+            self.r_04 = L.Convolution2D(256, 256, (11, 1), pad=(5, 0), initialW=w_init).add_hook(spn())
+            self.r_05 = L.Convolution2D(256, 256, (11, 1), pad=(5, 0), initialW=w_init).add_hook(spn())
+            self.r_06 = L.Convolution2D(256, 256, (11, 1), pad=(5, 0), initialW=w_init).add_hook(spn())
             self.d_0 = L.Deconvolution2D(256, 1025, (4, 1), stride=(4, 1), initialW=w_init).add_hook(spn())
     def __call__(self, *_x, **kwargs):
         """
