@@ -37,7 +37,7 @@ def load_setting_from_json(path):
     # 出力をする頻度(イテレーション単位)
     _args["log_interval"] = 100
     # 入力で見る受容体データ数(15999なら約1秒)
-    _args["input_size"] = 15999
+    _args["input_size"] = 88199
     # GPU使用デバイス設定(負の値ならCPUを使う)
     _args["gpu"] = -1
     # Lineの通知を使う
