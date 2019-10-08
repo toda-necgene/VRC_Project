@@ -1,4 +1,5 @@
 """
+製作者:TODA
 学習スクリプト
 設定パラメーターの意味はsetting_loader.pyを参照
 """
@@ -112,10 +113,9 @@ if __name__ == '__main__':
         g_b_to_a.to_gpu()
         d_a.to_gpu()
         # d_b.to_gpu()
-    g_optimizer_ab = chainer.optimizers.Adam(alpha=1e-3, beta1=0.5).setup(g_a_to_b)
-    g_optimizer_ba = chainer.optimizers.Adam(alpha=1e-3, beta1=0.5).setup(g_b_to_a)
-    d_optimizer_a = chainer.optimizers.Adam(alpha=1e-3, beta1=0.5).setup(d_a)
-    # d_optimizer_b = chainer.optimizers.Adam(alpha=1e-3, beta1=0.5).setup(d_b)
+    g_optimizer_ab = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5).setup(g_a_to_b)
+    g_optimizer_ba = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5).setup(g_b_to_a)
+    d_optimizer_a = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5).setup(d_a)
     # main training
     updater = CycleGANUpdater(
         model={"main":g_a_to_b, "inverse":g_b_to_a, "disa":d_a},
@@ -131,7 +131,7 @@ if __name__ == '__main__':
     if _args["test"]:
         test = load_wave_file("./dataset/test/test.wav") / 32767.0
         _label_sample = load_wave_file("./dataset/test/label.wav") / 32767.0
-        _trainer.extend(TestModel(_trainer, _args["wave_otp_dir"], test, voice_profile, length_sp, _label_sample, _args["version"]), trigger=display_interval)
+        _trainer.extend(TestModel(_trainer, _args, [test, _label_sample, voice_profile], length_sp, False), trigger=display_interval)
         if _args["line_notify"]:
             with open("line_api_token.txt", "rb") as s:
                 key = s.readline().decode("utf8")
@@ -145,10 +145,6 @@ if __name__ == '__main__':
     _trainer.extend(chainer.training.extensions.PrintReport(rep_list), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.PlotReport(["env_test_loss"], filename="env.png"), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.PlotReport(["env_test_loss"], filename="../../env_graph.png"), trigger=display_interval)
-    # decay_timming = (400, "iteration")
-    # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.9, optimizer=updater.get_optimizer("gen_ab")), trigger=decay_timming)
-    # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.9, optimizer=updater.get_optimizer("gen_ba")), trigger=decay_timming)
-    # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.9, optimizer=updater.get_optimizer("disa")), trigger=decay_timming)
     print(" [*] Train Started")
     _trainer.run()
     print(" [*] All over.")

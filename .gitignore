@@ -7,6 +7,8 @@ _*
 考察.md
 *.npz
 *.png
+t.txt
+oauth.json
 line_api_token.txt
 *.wav
 *.html
