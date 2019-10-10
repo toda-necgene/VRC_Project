@@ -6,7 +6,6 @@ csv出力対応
 import os
 import shutil
 import wave
-import csv
 import chainer
 import numpy as np
 from tqdm import trange
@@ -19,10 +18,10 @@ from vrc_project.eval import TestModel
 from vrc_project.notify  import send_msg
 
 test_size = 50
-g_la = 9
+g_la = 6
 g_al_decay = 1.0
 d_al_decay = 1.0
-g_ch = 256
+g_ch = 128
 d_ch = [64, 128, 256, 512]
 g_alpha = 2e-4
 d_alpha = 2e-4
@@ -83,7 +82,7 @@ def dataset_pre_process_controler(args):
         os.mkdir(args["name_save"])
     shutil.copy("./voice_profile.npz", args["name_save"]+"/voice_profile.npz")
     return _train_iter_a, _train_iter_b, _voice_profile, _length_sp
-MAX_ITER = 1000
+MAX_ITER = 800
 _args = dict()
 def test_train():
     """
@@ -142,14 +141,16 @@ if __name__ == '__main__':
     scores = list()
     for _ in trange(test_size, desc="test stage"):
         best_score, _, _ = test_train()
-        scores.append(best_score)
+        scores.append(float(best_score))
     s = np.asarray(scores)
     print('+'+'-'*10+'+')
+    print(scores)
     print("!result_profile!")
     print("score details mean:%f std:%f"%(np.mean(s), np.std(s)))
-    with open(_args["name_save"]+"/test_result.csv", "wb") as f:
-        w = csv.writer(f)
-        w.writerows(scores)
+    with open(_args["name_save"]+"/test_result.csv", "a") as f:
+        for ss in scores[:-1]:
+            f.write(str(ss)+",")
+        f.write(str(scores[-1])+"\n")
     with open("line_api_token.txt", "rb") as s:
         key = s.readline().decode("utf8")
     send_msg(key, "Finished. mean:%f std:%f"%(np.mean(s), np.std(s)))

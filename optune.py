@@ -85,8 +85,13 @@ def objective(trials):
     d_al_decay = trials.suggest_categorical("d_al_decay", [1.0, 0.9, 0.5])
     g_ch = 256
     d_ch = [64, 128, 256, 512]
-    g_a_to_b = Generator(chs=g_ch, layers=g_la)
-    g_b_to_a = Generator(chs=g_ch, layers=g_la)
+    generator_type = "normal"
+    if generator_type == "depthwise":
+        g_a_to_b = Depthwise_Generator(chs=g_ch, layers=g_la)
+        g_b_to_a = Depthwise_Generator(chs=g_ch, layers=g_la)
+    else:
+        g_a_to_b = Generator(chs=g_ch, layers=g_la)
+        g_b_to_a = Generator(chs=g_ch, layers=g_la)
     d_a = Discriminator(chs=d_ch)
     if _args["gpu"] >= 0:
         chainer.cuda.Device(_args["gpu"]).use()
@@ -120,7 +125,7 @@ def objective(trials):
         _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', g_al_decay, optimizer=updater.get_optimizer("gen_ba")), trigger=decay_timming)
     if d_al_decay != 1.0:
         _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', d_al_decay, optimizer=updater.get_optimizer("disa")), trigger=decay_timming)
-    # _trainer.extend(ChainerPruningExtension(trials, 'env_test_loss', term_interval))
+    _trainer.extend(ChainerPruningExtension(trials, 'env_test_loss', term_interval))
     _trainer.run()
     score_list = list()
     for i in _log.log:
@@ -133,7 +138,7 @@ def objective(trials):
     return score
 if __name__ == '__main__':
     _args = load_setting_from_json("setting.json")
-    study = optuna.create_study(direction="minimize")
+    study = optuna.create_study(direction="minimize", pruner=optuna.pruners.SuccessiveHalvingPruner(min_resource=5))
     study.optimize(objective, n_trials=20)
     trial = study.best_trial
     print('+'+'-'*10+'+')

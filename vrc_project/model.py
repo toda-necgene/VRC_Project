@@ -67,7 +67,7 @@ class Discriminator(chainer.Chain):
 class Generator(chainer.Chain):
     """
         生成側ネットワーク
-        DilatedConvを用いた6ブロックResnet（内4ブロックがDilated）
+        nブロックResnet
         各ブロック
         Conv(use_bias)-Leaky_relu-add
     """
@@ -112,9 +112,9 @@ class Generator(chainer.Chain):
 class Depthwise_Generator(chainer.Chain):
     """
         生成側ネットワーク
-        DilatedConvを用いた6ブロックResnet（内4ブロックがDilated）
+        DepthwiseConvを用いたnブロックResnet（内4ブロックがDilated）
         各ブロック
-        Conv(use_bias)-Leaky_relu-add
+        Conv(use_bias)-Leaky_relu-add-Conv(use_bias)-Leaky_relu-add
     """
     def __init__(self, chs=256, layers=9):
         """
@@ -150,7 +150,7 @@ class Depthwise_Generator(chainer.Chain):
         _y = F.leaky_relu(_y)
         for _ in range(self.l_num):
             _h = next(links)(_y)
-            _y = F.leaky_relu(_h) + _y
+            _y = F.leaky_relu(_h) +_y
             _h = next(links)(_y)
             _y = F.leaky_relu(_h) + _y
         _y = next(links)(_y)
