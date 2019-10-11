@@ -17,12 +17,12 @@ from vrc_project.setting_loader import load_setting_from_json
 from vrc_project.eval import TestModel
 from vrc_project.notify  import send_msg
 
-test_size = 50
-g_la = 6
+test_size = 2
+g_la = 9
 g_al_decay = 1.0
 d_al_decay = 1.0
-g_ch = 128
-d_ch = [64, 128, 256, 512]
+g_ch = 256
+d_ch = [128, 256, 512, 1024]
 g_alpha = 2e-4
 d_alpha = 2e-4
 g_beta1 = 0.5
@@ -82,7 +82,7 @@ def dataset_pre_process_controler(args):
         os.mkdir(args["name_save"])
     shutil.copy("./voice_profile.npz", args["name_save"]+"/voice_profile.npz")
     return _train_iter_a, _train_iter_b, _voice_profile, _length_sp
-MAX_ITER = 800
+MAX_ITER = 2000
 _args = dict()
 def test_train():
     """
@@ -139,20 +139,25 @@ def test_train():
 if __name__ == '__main__':
     _args = load_setting_from_json("setting.json")
     scores = list()
+    simple = list()
     for _ in trange(test_size, desc="test stage"):
-        best_score, _, _ = test_train()
-        scores.append(float(best_score))
-    s = np.asarray(scores)
+        best_score, best_index, score_ls = test_train()
+        scores.append([float(best_score), int(best_index), *score_ls])
+        simple.append(float(best_score))
+    s = np.asarray(simple)
     print('+'+'-'*10+'+')
-    print(scores)
+    print(simple)
     print("!result_profile!")
-    print("score details mean:%f std:%f"%(np.mean(s), np.std(s)))
+    _me=float(np.mean(s))
+    _st=float(np.std(s))
+    print("score details mean:%f std:%f"%(_me, _st))
     with open(_args["name_save"]+"/test_result.csv", "a") as f:
-        for ss in scores[:-1]:
-            f.write(str(ss)+",")
-        f.write(str(scores[-1])+"\n")
+        for ss in scores:
+            for sss in ss[:-1]:
+                f.write(str(sss)+",")
+            f.write(str(sss[-1])+"\n")
     with open("line_api_token.txt", "rb") as s:
         key = s.readline().decode("utf8")
-    send_msg(key, "Finished. mean:%f std:%f"%(np.mean(s), np.std(s)))
+    send_msg(key, "Finished. mean:%f std:%f"%(_me, _st))
     print("[*] all_finish")
     

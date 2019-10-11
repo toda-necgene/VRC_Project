@@ -106,13 +106,11 @@ if __name__ == '__main__':
     g_a_to_b = Generator()
     g_b_to_a = Generator()
     d_a = Discriminator()
-    # d_b = Discriminator()
     if _args["gpu"] >= 0:
         chainer.cuda.Device(_args["gpu"]).use()
         g_a_to_b.to_gpu()
         g_b_to_a.to_gpu()
         d_a.to_gpu()
-        # d_b.to_gpu()
     g_optimizer_ab = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5).setup(g_a_to_b)
     g_optimizer_ba = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5).setup(g_b_to_a)
     d_optimizer_a = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5).setup(d_a)
