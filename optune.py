@@ -9,7 +9,7 @@ import chainer
 import numpy as np
 import optuna
 from optuna.integration.chainer import ChainerPruningExtension
-from vrc_project.model import Discriminator, Generator, Depthwise_Generator
+from vrc_project.model import Discriminator, Generator
 from vrc_project.seq_dataset import SeqData
 from vrc_project.updater import CycleGANUpdater
 from vrc_project.voice_to_dataset_cycle import create_dataset
@@ -70,7 +70,7 @@ def dataset_pre_process_controler(args):
         os.mkdir(args["name_save"])
     shutil.copy("./voice_profile.npz", args["name_save"]+"/voice_profile.npz")
     return _train_iter_a, _train_iter_b, _voice_profile, _length_sp
-MAX_ITER = 10000
+MAX_ITER = 2000
 _args = dict()
 def objective(trials):
     """
@@ -81,23 +81,24 @@ def objective(trials):
     chainer.cuda.set_max_workspace_size(512*1024*1024)
     train_iter_a, train_iter_b, voice_profile, length_sp = dataset_pre_process_controler(_args)
     g_la = 9
-    g_al_decay = trials.suggest_categorical("g_al_decay", [1.0, 0.9, 0.5])
-    d_al_decay = trials.suggest_categorical("d_al_decay", [1.0, 0.9, 0.5])
+    g_al_decay = 1.0
+    d_al_decay = 1.0
+    cyc_lambda = trials.suggest_int("cyc_lambda", 10, 500)
     g_ch = 256
     d_ch = [64, 128, 256, 512]
-    generator_type = "normal"
-    if generator_type == "depthwise":
-        g_a_to_b = Depthwise_Generator(chs=g_ch, layers=g_la)
-        g_b_to_a = Depthwise_Generator(chs=g_ch, layers=g_la)
-    else:
-        g_a_to_b = Generator(chs=g_ch, layers=g_la)
-        g_b_to_a = Generator(chs=g_ch, layers=g_la)
+    g_a_to_b = Generator(chs=g_ch, layers=g_la)
+    g_b_to_a = Generator(chs=g_ch, layers=g_la)
     d_a = Discriminator(chs=d_ch)
     if _args["gpu"] >= 0:
+        import cupy as cp
+        cp.seed = (100)
+        chainer.using_config('cudnn_deterministic', True)
         chainer.cuda.Device(_args["gpu"]).use()
         g_a_to_b.to_gpu()
         g_b_to_a.to_gpu()
         d_a.to_gpu()
+    else:
+        np.seed(100)
     g_optimizer_ab = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5).setup(g_a_to_b)
     g_optimizer_ba = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5).setup(g_b_to_a)
     d_optimizer_a = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5).setup(d_a)
@@ -105,7 +106,7 @@ def objective(trials):
     updater = CycleGANUpdater(
         model={"main":g_a_to_b, "inverse":g_b_to_a, "disa":d_a},
         max_itr=MAX_ITER,
-        cyc_lambda=5,
+        cyc_lambda=cyc_lambda,
         iterator={"main":train_iter_a, "data_b":train_iter_b},
         optimizer={"gen_ab":g_optimizer_ab, "gen_ba":g_optimizer_ba, "disa":d_optimizer_a},
         device=_args["gpu"])
@@ -139,7 +140,7 @@ def objective(trials):
 if __name__ == '__main__':
     _args = load_setting_from_json("setting.json")
     study = optuna.create_study(direction="minimize", pruner=optuna.pruners.SuccessiveHalvingPruner(min_resource=5))
-    study.optimize(objective, n_trials=20)
+    study.optimize(objective, n_trials=100)
     trial = study.best_trial
     print('+'+'-'*10+'+')
     print("!result_profile!")

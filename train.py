@@ -74,7 +74,7 @@ def dataset_pre_process_controler(args):
     _sounds_a = None
     _sounds_b = None
     if not (args["use_old_dataset"] and os.path.exists("./dataset/patch/A.npy") and os.path.exists("./dataset/patch/B.npy")):
-        _sounds_a, _sounds_b = create_dataset(args["input_size"], delta=args["input_size"])
+        _sounds_a, _sounds_b = create_dataset(args["input_size"])
     else:
         # preparing training-data
         print(" [*] loading data-set ...")
@@ -111,9 +111,9 @@ if __name__ == '__main__':
         g_a_to_b.to_gpu()
         g_b_to_a.to_gpu()
         d_a.to_gpu()
-    g_optimizer_ab = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5).setup(g_a_to_b)
-    g_optimizer_ba = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5).setup(g_b_to_a)
-    d_optimizer_a = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5).setup(d_a)
+    g_optimizer_ab = chainer.optimizers.MomentumSGD(lr=2e-4, momentum=0.9).setup(g_a_to_b)
+    g_optimizer_ba = chainer.optimizers.MomentumSGD(lr=2e-4, momentum=0.9).setup(g_b_to_a)
+    d_optimizer_a = chainer.optimizers.MomentumSGD(lr=2e-4, momentum=0.9).setup(d_a)
     # main training
     updater = CycleGANUpdater(
         model={"main":g_a_to_b, "inverse":g_b_to_a, "disa":d_a},
@@ -135,6 +135,14 @@ if __name__ == '__main__':
                 key = s.readline().decode("utf8")
                 tri = chainer.training.triggers.ManualScheduleTrigger([100, 500, 1000, 5000, 10000, 15000], "iteration")
                 _trainer.extend(LineNotify(_trainer, key), trigger=tri)
+    @chainer.training.make_extension(trigger=(10, 'epoch'))
+    def grow(trainer):
+        if trainer.updater.grow < 4:
+            trainer.updater.grow += 1
+            trainer.updater.gen_ab.grow += 1
+            trainer.updater.gen_ba.grow += 1
+            trainer.updater.disa.grow += 1
+    _trainer.extend(grow, trigger=chainer.training.triggers.ManualScheduleTrigger([500, 1000, 2000, 4000], "iteration"))
     _trainer.extend(chainer.training.extensions.snapshot(filename='snapshot.npz', num_retain=2), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.snapshot_object(g_a_to_b, 'gen_ab.npz'), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.LogReport(trigger=display_interval))
@@ -142,8 +150,9 @@ if __name__ == '__main__':
     rep_list = ['iteration', 'D_B_FAKE', 'G_AB__GAN', 'G_ABA_CYC', "test_loss"]
     _trainer.extend(chainer.training.extensions.PrintReport(rep_list), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.PlotReport(["env_test_loss"], filename="env.png"), trigger=display_interval)
-    _trainer.extend(chainer.training.extensions.PlotReport(["env_test_loss"], filename="../../env_graph.png"), trigger=display_interval)
-    print(" [*] Train Started")
+    # _trainer.extend(chainer.training.extensions.LinearShift('alpha', (1e-4, 2e-6), (0, _args["train_iteration"]), optimizer=updater.get_optimizer("gen_ab")), trigger=(1, "iteration"))
+    # _trainer.extend(chainer.training.extensions.LinearShift('alpha', (1e-4, 2e-6), (0, _args["train_iteration"]), optimizer=updater.get_optimizer("gen_ba")), trigger=(1, "iteration"))
+    # _trainer.extend(chainer.training.extensions.LinearShift('alpha', (1e-4, 2e-6), (0, _args["train_iteration"]), optimizer=updater.get_optimizer("disa")), trigger=(1, "iteration"))
     _trainer.run()
     print(" [*] All over.")
     

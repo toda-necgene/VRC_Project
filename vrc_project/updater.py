@@ -27,6 +27,8 @@ class CycleGANUpdater(chainer.training.updaters.StandardUpdater):
         self.cyc_lambda = cyc_lambda
         # self.disb = model["disb"]
         self.max_iteration = max_itr
+        self.size = [64, 128, 256, 512, 1025]
+        self.grow = 0
         super(CycleGANUpdater, self).__init__(*args, **kwargs)
     def update_core(self):
         gen_ab_optimizer = self.get_optimizer("gen_ab")
@@ -37,8 +39,10 @@ class CycleGANUpdater(chainer.training.updaters.StandardUpdater):
         _xp = chainer.backend.get_array_module(batch_a.data)
         # D update
         self.disa.cleargrads()
-        batch_an = batch_a + (_xp.random.randn(*(batch_a.shape)).astype(_xp.float32)*0.002)
-        batch_bn = batch_b + (_xp.random.randn(*(batch_b.shape)).astype(_xp.float32)*0.002)
+        batch_an = batch_a * (_xp.random.randn(*(batch_a.shape)).astype(_xp.float32)*0.002 + _xp.ones(batch_a.shape, dtype="float32"))
+        batch_bn = batch_b * (_xp.random.randn(*(batch_b.shape)).astype(_xp.float32)*0.002 + _xp.ones(batch_b.shape, dtype="float32"))
+        batch_an = batch_an[:, :, :self.size[self.grow]]
+        batch_bn = batch_bn[:, :, :self.size[self.grow]]
         fake_ab = self.gen_ab(batch_an)
         fake_ba = self.gen_ba(batch_bn)
         y_af = self.disa(fake_ba)
@@ -53,10 +57,10 @@ class CycleGANUpdater(chainer.training.updaters.StandardUpdater):
         y_label_FA[:, 2] = 1.0
         y_label_FB = _xp.zeros(y_bf.shape, dtype="float32")
         y_label_FB[:, 3] = 1.0
-        loss_d_af = F.mean_squared_error(y_af, y_label_FA) *0.5
-        loss_d_bf = F.mean_squared_error(y_bf, y_label_FB) *0.5
-        loss_d_ar = F.mean_squared_error(y_at, y_label_TA) *0.5
-        loss_d_br = F.mean_squared_error(y_bt, y_label_TB) *0.5
+        loss_d_af = F.mean_squared_error(y_af, y_label_FA)
+        loss_d_bf = F.mean_squared_error(y_bf, y_label_FB)
+        loss_d_ar = F.mean_squared_error(y_at, y_label_TA)
+        loss_d_br = F.mean_squared_error(y_bt, y_label_TB)
         chainer.report({"D_A_REAL": loss_d_ar,
                         "D_A_FAKE": loss_d_af,
                         "D_B_REAL": loss_d_br,
@@ -75,8 +79,8 @@ class CycleGANUpdater(chainer.training.updaters.StandardUpdater):
         fake_bab = self.gen_ab(fake_ba)
         loss_ganab = F.mean_squared_error(y_fake_ab, y_label_TB)
         loss_ganba = F.mean_squared_error(y_fake_ba, y_label_TA)
-        loss_cycb = F.sqrt(F.mean_squared_error(fake_bab, batch_b))
-        loss_cyca = F.sqrt(F.mean_squared_error(fake_aba, batch_a))
+        loss_cycb = F.mean_absolute_error(fake_bab, batch_bn)
+        loss_cyca = F.mean_absolute_error(fake_aba, batch_an)
         gloss = loss_ganba + loss_ganab + (loss_cyca + loss_cycb) * self.cyc_lambda
         gloss.backward()
         chainer.report({"G_AB__GAN": loss_ganab,

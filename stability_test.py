@@ -17,12 +17,9 @@ from vrc_project.setting_loader import load_setting_from_json
 from vrc_project.eval import TestModel
 from vrc_project.notify  import send_msg
 
-test_size = 2
-g_la = 9
-g_al_decay = 1.0
-d_al_decay = 1.0
-g_ch = 256
-d_ch = [128, 256, 512, 1024]
+test_size = 50
+g_al_decay = "normal"
+d_al_decay = "normal"
 g_alpha = 2e-4
 d_alpha = 2e-4
 g_beta1 = 0.5
@@ -82,9 +79,9 @@ def dataset_pre_process_controler(args):
         os.mkdir(args["name_save"])
     shutil.copy("./voice_profile.npz", args["name_save"]+"/voice_profile.npz")
     return _train_iter_a, _train_iter_b, _voice_profile, _length_sp
-MAX_ITER = 2000
+MAX_ITER = 800
 _args = dict()
-def test_train():
+def test_train(step, name):
     """
       短期学習を行う
       Returns
@@ -95,9 +92,9 @@ def test_train():
     chainer.global_config.autotune = True
     chainer.cuda.set_max_workspace_size(512*1024*1024)
     train_iter_a, train_iter_b, voice_profile, length_sp = dataset_pre_process_controler(_args)
-    g_a_to_b = Generator(chs=g_ch, layers=g_la)
-    g_b_to_a = Generator(chs=g_ch, layers=g_la)
-    d_a = Discriminator(chs=d_ch)
+    g_a_to_b = Generator()
+    g_b_to_a = Generator()
+    d_a = Discriminator()
     if _args["gpu"] >= 0:
         chainer.cuda.Device(_args["gpu"]).use()
         g_a_to_b.to_gpu()
@@ -110,25 +107,19 @@ def test_train():
     updater = CycleGANUpdater(
         model={"main":g_a_to_b, "inverse":g_b_to_a, "disa":d_a},
         max_itr=MAX_ITER,
-        cyc_lambda=5,
         iterator={"main":train_iter_a, "data_b":train_iter_b},
         optimizer={"gen_ab":g_optimizer_ab, "gen_ba":g_optimizer_ba, "disa":d_optimizer_a},
         device=_args["gpu"])
     term_interval = (100, 'iteration')
-    _trainer = chainer.training.Trainer(updater, (MAX_ITER, "iteration"), out=_args["name_save"])
+    tr = chainer.training.triggers.EarlyStoppingTrigger(monitor="env_test_loss", patients=5, check_trigger=term_interval, max_trigger=(MAX_ITER, "iteration"), mode="min")
+    _trainer = chainer.training.Trainer(updater, tr, out=_args["name_save"])
     test = load_wave_file("./dataset/test/test.wav") / 32767.0
     _label_sample = load_wave_file("./dataset/test/label.wav") / 32767.0
     tm = TestModel(_trainer, _args, [test, _label_sample, voice_profile], length_sp, True)
     _trainer.extend(tm, trigger=term_interval)
     _trainer.extend(chainer.training.extensions.ProgressBar(update_interval=10), trigger=(10, "iteration"))
-    _log = chainer.training.extensions.LogReport(trigger=term_interval)
+    _log = chainer.training.extensions.LogReport(filename=name+"_test_"+str(step), trigger=term_interval)
     _trainer.extend(_log)
-    decay_timming = (400, "iteration")
-    if g_al_decay != 1.0:
-        _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', g_al_decay, optimizer=updater.get_optimizer("gen_ab")), trigger=decay_timming)
-        _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', g_al_decay, optimizer=updater.get_optimizer("gen_ba")), trigger=decay_timming)
-    if d_al_decay != 1.0:
-        _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', d_al_decay, optimizer=updater.get_optimizer("disa")), trigger=decay_timming)
     _trainer.run()
     score_list = list()
     for i in _log.log:
@@ -138,26 +129,35 @@ def test_train():
     return best, index, score_list
 if __name__ == '__main__':
     _args = load_setting_from_json("setting.json")
-    scores = list()
-    simple = list()
-    for _ in trange(test_size, desc="test stage"):
-        best_score, best_index, score_ls = test_train()
-        scores.append([float(best_score), int(best_index), *score_ls])
-        simple.append(float(best_score))
-    s = np.asarray(simple)
-    print('+'+'-'*10+'+')
-    print(simple)
-    print("!result_profile!")
-    _me=float(np.mean(s))
-    _st=float(np.std(s))
-    print("score details mean:%f std:%f"%(_me, _st))
-    with open(_args["name_save"]+"/test_result.csv", "a") as f:
-        for ss in scores:
-            for sss in ss[:-1]:
-                f.write(str(sss)+",")
-            f.write(str(sss[-1])+"\n")
-    with open("line_api_token.txt", "rb") as s:
-        key = s.readline().decode("utf8")
-    send_msg(key, "Finished. mean:%f std:%f"%(_me, _st))
+    select = ["1_Gscale"]
+    for k in select:
+        g_al_decay = "normal"
+        d_al_decay = "normal"
+        scores = list()
+        simple = list()
+        for i in trange(test_size, desc="test stage"):
+            best_score, best_index, score_ls = test_train(i, str(k))
+            scores.append([float(best_score), int(best_index), *score_ls])
+            simple.append(float(best_score))
+        s = np.asarray(simple)
+        print('+'+'-'*10+'+')
+        print(simple)
+        print("!result_profile!")
+        _me = float(np.mean(s))
+        _st = float(np.std(s))
+        print("score details mean:%f std:%f"%(_me, _st))
+        with open(_args["name_save"]+"/test_processs"+str(k)+".csv", "a") as f:
+            for ss in scores:
+                for sss in ss[:-1]:
+                    f.write(str(sss)+",")
+                f.write(str(ss[-1])+"\n")
+        with open(_args["name_save"]+"/test_result"+str(k)+".csv", "a") as f:
+            for i, ss in enumerate(scores):
+                f.write(str(ss[0]))
+                if i != len(scores)-1:
+                    f.write(",")
+        with open("line_api_token.txt", "rb") as s:
+            key = s.readline().decode("utf8")
+        send_msg(key, "%s Finished. mean:%f std:%f"%(str(k), _me, _st))
     print("[*] all_finish")
     

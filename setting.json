@@ -1,11 +1,11 @@
 {
     "checkpoint_dir": "./trained_model/",
-    "version": "19.10.11.07",
+    "version": "19.10.21.05",
     "input_size":88199,
     "train_iteration": 10000,
     "batch_size":1,
     "use_old_dataset": true,
     "gpu": 0,
-    "line_notify": false,
+    "line_notify": true,
     "test": true
 }

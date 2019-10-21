@@ -117,7 +117,7 @@ class TestModel(chainer.training.Extension):
             _x = np.linspace(0, _t, out_put.shape[0])
             ax.grid(which="major", axis="x", color="blue", alpha=0.8, linestyle="--", linewidth=1)
             plt.tick_params(labeltop=True, labelbottom=False)
-            plt.title(self.model_name, pad=0.1)
+            plt.title(self.model_name, pad=-0.1)
             plt.plot(_x, out_put)
             figure.add_subplot(gs[1:4, :])
             plt.subplots_adjust(top=0.95)
