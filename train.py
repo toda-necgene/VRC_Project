@@ -30,7 +30,8 @@ def load_model_from_npz(_checkpoint_dir, _trainer):
     print(" [*] Reading checkpoint...")
     if os.path.exists(_checkpoint_dir) and os.path.exists(_checkpoint_dir+"/snapshot.npz"):
         print(" [I] checkpoint is found. loading file name : %s " % (_checkpoint_dir))
-        chainer.serializers.load_npz(_checkpoint_dir+"/snapshot.npz", _trainer)
+        # chainer.serializers.load_npz(_checkpoint_dir+"/snapshot.npz", _trainer)
+        chainer.serializers.load_npz(_checkpoint_dir+"/dis.npz", _trainer.updater.disa)
         print(" [I] loaded checkpoint successfully.")
         return True
     elif not os.path.exists(_checkpoint_dir):
@@ -111,9 +112,9 @@ if __name__ == '__main__':
         g_a_to_b.to_gpu()
         g_b_to_a.to_gpu()
         d_a.to_gpu()
-    g_optimizer_ab = chainer.optimizers.MomentumSGD(lr=2e-4, momentum=0.9).setup(g_a_to_b)
-    g_optimizer_ba = chainer.optimizers.MomentumSGD(lr=2e-4, momentum=0.9).setup(g_b_to_a)
-    d_optimizer_a = chainer.optimizers.MomentumSGD(lr=2e-4, momentum=0.9).setup(d_a)
+    g_optimizer_ab = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5).setup(g_a_to_b)
+    g_optimizer_ba = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5).setup(g_b_to_a)
+    d_optimizer_a = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5).setup(d_a)
     # main training
     updater = CycleGANUpdater(
         model={"main":g_a_to_b, "inverse":g_b_to_a, "disa":d_a},
@@ -135,24 +136,17 @@ if __name__ == '__main__':
                 key = s.readline().decode("utf8")
                 tri = chainer.training.triggers.ManualScheduleTrigger([100, 500, 1000, 5000, 10000, 15000], "iteration")
                 _trainer.extend(LineNotify(_trainer, key), trigger=tri)
-    @chainer.training.make_extension(trigger=(10, 'epoch'))
-    def grow(trainer):
-        if trainer.updater.grow < 4:
-            trainer.updater.grow += 1
-            trainer.updater.gen_ab.grow += 1
-            trainer.updater.gen_ba.grow += 1
-            trainer.updater.disa.grow += 1
-    _trainer.extend(grow, trigger=chainer.training.triggers.ManualScheduleTrigger([500, 1000, 2000, 4000], "iteration"))
     _trainer.extend(chainer.training.extensions.snapshot(filename='snapshot.npz', num_retain=2), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.snapshot_object(g_a_to_b, 'gen_ab.npz'), trigger=display_interval)
+    _trainer.extend(chainer.training.extensions.snapshot_object(d_a, 'dis.npz'), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.LogReport(trigger=display_interval))
     _trainer.extend(chainer.training.extensions.ProgressBar(update_interval=10))
     rep_list = ['iteration', 'D_B_FAKE', 'G_AB__GAN', 'G_ABA_CYC', "test_loss"]
     _trainer.extend(chainer.training.extensions.PrintReport(rep_list), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.PlotReport(["env_test_loss"], filename="env.png"), trigger=display_interval)
-    # _trainer.extend(chainer.training.extensions.LinearShift('alpha', (1e-4, 2e-6), (0, _args["train_iteration"]), optimizer=updater.get_optimizer("gen_ab")), trigger=(1, "iteration"))
-    # _trainer.extend(chainer.training.extensions.LinearShift('alpha', (1e-4, 2e-6), (0, _args["train_iteration"]), optimizer=updater.get_optimizer("gen_ba")), trigger=(1, "iteration"))
-    # _trainer.extend(chainer.training.extensions.LinearShift('alpha', (1e-4, 2e-6), (0, _args["train_iteration"]), optimizer=updater.get_optimizer("disa")), trigger=(1, "iteration"))
+    # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.5, optimizer=updater.get_optimizer("gen_ab")), trigger=(2000, "iteration"))
+    # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.5, optimizer=updater.get_optimizer("gen_ba")), trigger=(2000, "iteration"))
+    # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.5, optimizer=updater.get_optimizer("disa")), trigger=(2000, "iteration"))
     _trainer.run()
     print(" [*] All over.")
     

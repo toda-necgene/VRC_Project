@@ -62,7 +62,7 @@ def dataset_pre_process_controler(args):
     _sounds_a = None
     _sounds_b = None
     if not (args["use_old_dataset"] and os.path.exists("./dataset/patch/A.npy") and os.path.exists("./dataset/patch/B.npy")):
-        _sounds_a, _sounds_b = create_dataset(args["input_size"], delta=args["input_size"])
+        _sounds_a, _sounds_b = create_dataset(args["input_size"])
     else:
         # preparing training-data
         _sounds_a = np.load("./dataset/patch/A.npy")
