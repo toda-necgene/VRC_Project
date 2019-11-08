@@ -30,8 +30,7 @@ def load_model_from_npz(_checkpoint_dir, _trainer):
     print(" [*] Reading checkpoint...")
     if os.path.exists(_checkpoint_dir) and os.path.exists(_checkpoint_dir+"/snapshot.npz"):
         print(" [I] checkpoint is found. loading file name : %s " % (_checkpoint_dir))
-        # chainer.serializers.load_npz(_checkpoint_dir+"/snapshot.npz", _trainer)
-        chainer.serializers.load_npz(_checkpoint_dir+"/dis.npz", _trainer.updater.disa)
+        chainer.serializers.load_npz(_checkpoint_dir+"/snapshot.npz", _trainer)
         print(" [I] loaded checkpoint successfully.")
         return True
     elif not os.path.exists(_checkpoint_dir):
@@ -86,8 +85,8 @@ def dataset_pre_process_controler(args):
     if args["gpu"] >= 0:
         _sounds_a = chainer.backends.cuda.to_gpu(_sounds_a)
         _sounds_b = chainer.backends.cuda.to_gpu(_sounds_b)
-    _train_iter_a = chainer.iterators.MultithreadIterator(SeqData(_sounds_a, 200), args["batch_size"], shuffle=True, n_threads=2)
-    _train_iter_b = chainer.iterators.MultithreadIterator(SeqData(_sounds_b, 200), args["batch_size"], shuffle=True, n_threads=2)
+    _train_iter_a = chainer.iterators.MultithreadIterator(SeqData(_sounds_a, 200), args["batch_size"], shuffle=True, n_threads=4)
+    _train_iter_b = chainer.iterators.MultithreadIterator(SeqData(_sounds_b, 200), args["batch_size"], shuffle=True, n_threads=4)
     # f0 parameters(基本周波数F0の変換に使用する定数。詳しくは./vrc_project/voice_to_dataset_cycle.py L65周辺)
     _voice_profile = np.load("./voice_profile.npz")
     if not os.path.exists(args["name_save"]):
@@ -112,9 +111,9 @@ if __name__ == '__main__':
         g_a_to_b.to_gpu()
         g_b_to_a.to_gpu()
         d_a.to_gpu()
-    g_optimizer_ab = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5).setup(g_a_to_b)
-    g_optimizer_ba = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5).setup(g_b_to_a)
-    d_optimizer_a = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5).setup(d_a)
+    g_optimizer_ab = chainer.optimizers.Adam(alpha=1e-4, beta1=0.5).setup(g_a_to_b)
+    g_optimizer_ba = chainer.optimizers.Adam(alpha=1e-4, beta1=0.5).setup(g_b_to_a)
+    d_optimizer_a = chainer.optimizers.Adam(alpha=1e-4, beta1=0.5).setup(d_a)
     # main training
     updater = CycleGANUpdater(
         model={"main":g_a_to_b, "inverse":g_b_to_a, "disa":d_a},
@@ -130,7 +129,7 @@ if __name__ == '__main__':
     if _args["test"]:
         test = load_wave_file("./dataset/test/test.wav") / 32767.0
         _label_sample = load_wave_file("./dataset/test/label.wav") / 32767.0
-        _trainer.extend(TestModel(_trainer, _args, [test, _label_sample, voice_profile], length_sp, False), trigger=display_interval)
+        _trainer.extend(TestModel(_trainer, _args, [test, _label_sample, voice_profile], length_sp, "itrs"), trigger=display_interval)
         if _args["line_notify"]:
             with open("line_api_token.txt", "rb") as s:
                 key = s.readline().decode("utf8")
@@ -144,9 +143,10 @@ if __name__ == '__main__':
     rep_list = ['iteration', 'D_B_FAKE', 'G_AB__GAN', 'G_ABA_CYC', "test_loss"]
     _trainer.extend(chainer.training.extensions.PrintReport(rep_list), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.PlotReport(["env_test_loss"], filename="env.png"), trigger=display_interval)
-    # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.5, optimizer=updater.get_optimizer("gen_ab")), trigger=(2000, "iteration"))
-    # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.5, optimizer=updater.get_optimizer("gen_ba")), trigger=(2000, "iteration"))
-    # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.5, optimizer=updater.get_optimizer("disa")), trigger=(2000, "iteration"))
+    # tri = chainer.training.triggers.ManualScheduleTrigger([5000, 15000], "iteration")
+    # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=updater.get_optimizer("gen_ab")), trigger=tri)
+    # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=updater.get_optimizer("gen_ba")), trigger=tri)
+    # _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=updater.get_optimizer("disa")), trigger=tri)
     _trainer.run()
     print(" [*] All over.")
     

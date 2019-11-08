@@ -3,10 +3,13 @@ trained_model/*
 waves/*
 __pycache__/*
 .vscode/*
+chainer/*
 *.npz
 *.wav
 *.html
 *.pyc
+start.bat
+analyze_params.py
 latest.png
 env_graph.png
 line_api_token.txt

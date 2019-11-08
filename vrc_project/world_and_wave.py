@@ -27,8 +27,6 @@ def wave2world(data):
     _f0, _t = pw.dio(data, sampling_rate, frame_period=10)
     _f0 = pw.stonemask(data, _f0, _t, sampling_rate)
     _cepstrum = pw.cheaptrick(data, _f0, _t, sampling_rate)
-
-    # _cepstrum = pw.code_spectral_envelope(_cepstrum, sampling_rate, 64)
     _cepstrum = (np.log(_cepstrum) + 10) / 10
     _cepstrum = np.clip(_cepstrum, -1.0, 1.0)
     _aperiodicity = pw.d4c(data, _f0, _t, sampling_rate)
