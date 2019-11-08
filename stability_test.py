@@ -115,7 +115,7 @@ def test_train(step, name):
     _trainer = chainer.training.Trainer(updater, tr, out=_args["name_save"])
     test = load_wave_file("./dataset/test/test.wav") / 32767.0
     _label_sample = load_wave_file("./dataset/test/label.wav") / 32767.0
-    tm = TestModel(_trainer, _args, [test, _label_sample, voice_profile], length_sp, None)
+    tm = TestModel(_trainer, _args, [test, _label_sample, voice_profile], length_sp, True)
     _trainer.extend(tm, trigger=term_interval)
     _trainer.extend(chainer.training.extensions.ProgressBar(update_interval=10), trigger=(10, "iteration"))
     _log = chainer.training.extensions.LogReport(filename=name+"_test_"+str(step), trigger=term_interval)

@@ -34,8 +34,6 @@ class TestModel(chainer.training.Extension):
             f0に関するデータ
         _sp_input_length: int
             モデルの入力データ長
-        only_score: str
-            画像・音声を出力するか否か
         """
         self.model_name = _args["version"]
         mpl.rcParams["agg.path.chunksize"] = 100000
@@ -100,7 +98,7 @@ class TestModel(chainer.training.Extension):
         # testing
         out_put, score_raw, _ = self.convert()
         chainer.report({"env_test_loss": score_raw})
-        if self.only_score is not None:
+        if not self.only_score:
             out_puts = (out_put*32767).astype(np.int16)
             image_power_spec = fft(out_put)
             # calculating power spectrum
@@ -130,7 +128,7 @@ class TestModel(chainer.training.Extension):
             plt.plot(np.abs(np.mean(image_power_spec, axis=0)-np.mean(self.image_power_l, axis=0)))
             plt.plot(np.abs(np.std(image_power_spec, axis=0)-np.std(self.image_power_l, axis=0)))
             plt.tick_params(labelbottom=False)
-            table = plt.table(cellText=[["iteraiton", "fft_diff", "spenv_diff"], ["%d (%s)" % (_trainer.updater.iteration, self.only_score), "%f" % score_fft, "%f" % score_raw]])
+            table = plt.table(cellText=[["iteraiton", "fft_diff", "spenv_diff"], ["%d(%d epochs)" % (_trainer.updater.iteration, _trainer.updater.epoch), "%f" % score_fft, "%f" % score_raw]])
             table.auto_set_font_size(False)
             table.set_fontsize(8)
             plt.savefig("%s%05d.png" % (self.dir, _trainer.updater.iteration))
