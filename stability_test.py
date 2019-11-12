@@ -79,7 +79,7 @@ def dataset_pre_process_controler(args):
         os.mkdir(args["name_save"])
     shutil.copy("./voice_profile.npz", args["name_save"]+"/voice_profile.npz")
     return _train_iter_a, _train_iter_b, _voice_profile, _length_sp
-MAX_ITER = 800
+MAX_ITER = 2000
 _args = dict()
 def test_train(step, name):
     """
@@ -91,35 +91,52 @@ def test_train(step, name):
     """
     chainer.global_config.autotune = True
     chainer.cuda.set_max_workspace_size(512*1024*1024)
+    _args = load_setting_from_json("setting.json")
+    if  _args["wave_otp_dir"] is not "False":
+        _args["wave_otp_dir"] = _args["wave_otp_dir"] + _args["model_name"] +  _args["version"]+"/"
+        if not os.path.exists(_args["wave_otp_dir"]):
+            os.makedirs(_args["wave_otp_dir"])
     train_iter_a, train_iter_b, voice_profile, length_sp = dataset_pre_process_controler(_args)
     g_a_to_b = Generator()
     g_b_to_a = Generator()
     d_a = Discriminator()
+    d_b = Discriminator()
     if _args["gpu"] >= 0:
         chainer.cuda.Device(_args["gpu"]).use()
         g_a_to_b.to_gpu()
         g_b_to_a.to_gpu()
         d_a.to_gpu()
-    g_optimizer_ab = chainer.optimizers.Adam(alpha=g_alpha, beta1=g_beta1).setup(g_a_to_b)
-    g_optimizer_ba = chainer.optimizers.Adam(alpha=g_alpha, beta1=g_beta1).setup(g_b_to_a)
-    d_optimizer_a = chainer.optimizers.Adam(alpha=d_alpha, beta1=d_beta1).setup(d_a)
+        d_b.to_gpu()
+    g_optimizer_ab = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5).setup(g_a_to_b)
+    g_optimizer_ba = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5).setup(g_b_to_a)
+    d_optimizer_a = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5).setup(d_a)
+    d_optimizer_b = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5).setup(d_b)
     # main training
     updater = CycleGANUpdater(
-        model={"main":g_a_to_b, "inverse":g_b_to_a, "disa":d_a},
-        max_itr=MAX_ITER,
+        model={"main":g_a_to_b, "inverse":g_b_to_a, "disa":d_a, "disb":d_b},
+        max_itr=_args["train_iteration"],
         iterator={"main":train_iter_a, "data_b":train_iter_b},
-        optimizer={"gen_ab":g_optimizer_ab, "gen_ba":g_optimizer_ba, "disa":d_optimizer_a},
+        optimizer={"gen_ab":g_optimizer_ab, "gen_ba":g_optimizer_ba, "disa":d_optimizer_a, "disb":d_optimizer_b},
         device=_args["gpu"])
-    term_interval = (100, 'iteration')
-    tr = chainer.training.triggers.EarlyStoppingTrigger(monitor="env_test_loss", patients=5, check_trigger=term_interval, max_trigger=(MAX_ITER, "iteration"), mode="min")
-    _trainer = chainer.training.Trainer(updater, tr, out=_args["name_save"])
-    test = load_wave_file("./dataset/test/test.wav") / 32767.0
-    _label_sample = load_wave_file("./dataset/test/label.wav") / 32767.0
-    tm = TestModel(_trainer, _args, [test, _label_sample, voice_profile], length_sp, None)
-    _trainer.extend(tm, trigger=term_interval)
-    _trainer.extend(chainer.training.extensions.ProgressBar(update_interval=10), trigger=(10, "iteration"))
-    _log = chainer.training.extensions.LogReport(filename=name+"_test_"+str(step), trigger=term_interval)
+    _trainer = chainer.training.Trainer(updater, (MAX_ITER, "iteration"), out=_args["name_save"])
+    display_interval = (_args["log_interval"], 'iteration')
+    if _args["test"]:
+        test = load_wave_file("./dataset/test/test.wav") / 32767.0
+        _label_sample = load_wave_file("./dataset/test/label.wav") / 32767.0
+        _trainer.extend(TestModel(_trainer, _args, [test, _label_sample, voice_profile], length_sp, None), trigger=display_interval)
+        if _args["line_notify"]:
+            with open("line_api_token.txt", "rb") as s:
+                key = s.readline().decode("utf8")
+                tri = chainer.training.triggers.ManualScheduleTrigger([100, 500, 1000, 5000, 10000, 15000], "iteration")
+                _trainer.extend(LineNotify(_trainer, key), trigger=tri)
+    _trainer.extend(chainer.training.extensions.snapshot(filename='snapshot.npz', num_retain=2), trigger=display_interval)
+    _trainer.extend(chainer.training.extensions.snapshot_object(g_a_to_b, 'gen_ab.npz'), trigger=display_interval)
+    _log = chainer.training.extensions.LogReport(trigger=display_interval)
     _trainer.extend(_log)
+    _trainer.extend(chainer.training.extensions.ProgressBar(update_interval=10))
+    rep_list = ['iteration', 'D_B_FAKE', 'G_AB__GAN', 'G_ABA_CYC', "test_loss"]
+    _trainer.extend(chainer.training.extensions.PrintReport(rep_list), trigger=display_interval)
+    _trainer.extend(chainer.training.extensions.PlotReport(["env_test_loss"], filename="env.png"), trigger=display_interval)
     _trainer.run()
     score_list = list()
     for i in _log.log:

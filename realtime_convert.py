@@ -15,7 +15,8 @@ from vrc_project.model import Generator
 from vrc_project.setting_loader import load_setting_from_json
 from vrc_project.world_and_wave import wave2world, world2wave
 
-noise_gate_rate = 0.5
+noise_gate_rate = 0.1
+gain = 1.8
 
 def load(checkpoint_dir, m_1):
     """
@@ -121,16 +122,16 @@ if __name__ == '__main__':
         _inputs_source = stream.read(term_sec)
         _inputs = np.frombuffer(_inputs_source, dtype=np.int16) / 32767.0
         wave_holder = np.append(wave_holder, _inputs)[-args["input_size"]:]
-        _inputs_wave = np.clip(wave_holder, -1.0, 1.0)
+        _inputs_wave = np.clip(wave_holder* gain, -1.0, 1.0)
         _f0, _sp, _ap = wave2world(_inputs_wave)
-        if np.sum(_f0) != 0:
+        if np.max(_inputs_wave) >= 0.2:
             q_in.put([_f0, _sp, _ap])
         _output_wave = _output_wave_dammy
         if not q_out.empty():
             _output_wave = q_out.get()[-term_sec:]
         _output = _output_wave.tobytes()
         stream.write(_output)
-        pow_in = np.mean(np.abs(_inputs))
+        pow_in = np.max(np.abs(_inputs_wave))
         pow_out = np.mean(np.abs(_output_wave/32767))
         print("\r audio-power input:{:<6.4f}, output:{:<6.4f} wave_process_time:{:<6.4f} queue_length{:0>3}".format(pow_in, pow_out, time.time()-tts, q_in.qsize()), end="")
         

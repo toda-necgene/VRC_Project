@@ -59,10 +59,6 @@ def load_setting_from_json(path):
                     pass
                 else:
                     print(" [W] Argument \"" + k + "\" is not exsits.")
-        # shapes properties
-            _args["input_size_model"] = [_args["batch_size"], 52, 513]
-            _args["input_size_test"] = [1, 52, 513]
-
             # initializing harvest directory
             _args["name_save"] = _args["checkpoint_dir"]+_args["model_name"] + _args["version"]
         except json.JSONDecodeError as er_message:
