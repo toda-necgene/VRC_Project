@@ -106,23 +106,20 @@ if __name__ == '__main__':
     g_a_to_b = Generator()
     g_b_to_a = Generator()
     d_a = Discriminator()
-    d_b = Discriminator()
     if _args["gpu"] >= 0:
         chainer.cuda.Device(_args["gpu"]).use()
         g_a_to_b.to_gpu()
         g_b_to_a.to_gpu()
         d_a.to_gpu()
-        d_b.to_gpu()
     g_optimizer_ab = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5).setup(g_a_to_b)
     g_optimizer_ba = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5).setup(g_b_to_a)
     d_optimizer_a = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5).setup(d_a)
-    d_optimizer_b = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5).setup(d_b)
     # main training
     updater = CycleGANUpdater(
-        model={"main":g_a_to_b, "inverse":g_b_to_a, "disa":d_a, "disb":d_b},
+        model={"main":g_a_to_b, "inverse":g_b_to_a, "disa":d_a},
         max_itr=_args["train_iteration"],
         iterator={"main":train_iter_a, "data_b":train_iter_b},
-        optimizer={"gen_ab":g_optimizer_ab, "gen_ba":g_optimizer_ba, "disa":d_optimizer_a, "disb":d_optimizer_b},
+        optimizer={"gen_ab":g_optimizer_ab, "gen_ba":g_optimizer_ba, "disa":d_optimizer_a},
         device=_args["gpu"])
     _trainer = chainer.training.Trainer(updater, (_args["train_iteration"], "iteration"), out=_args["name_save"])
     load_model_from_npz(_args["name_save"], _trainer)
@@ -140,7 +137,7 @@ if __name__ == '__main__':
     _trainer.extend(chainer.training.extensions.snapshot_object(g_a_to_b, 'gen_ab.npz'), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.LogReport(trigger=display_interval))
     _trainer.extend(chainer.training.extensions.ProgressBar(update_interval=10))
-    rep_list = ['iteration', 'D_B_FAKE', 'G_AB__GAN', 'G_ABA_CYC', "test_loss"]
+    rep_list = ['iteration', 'D_B_FAKE', 'G_AB__GAN', 'G_ABA_CYC', "env_test_loss", "test_loss"]
     _trainer.extend(chainer.training.extensions.PrintReport(rep_list), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.PlotReport(["env_test_loss"], filename="env.png"), trigger=display_interval)
     _trainer.run()

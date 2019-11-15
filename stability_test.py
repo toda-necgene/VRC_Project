@@ -18,8 +18,6 @@ from vrc_project.eval import TestModel
 from vrc_project.notify  import send_msg
 
 test_size = 50
-g_al_decay = "normal"
-d_al_decay = "normal"
 g_alpha = 2e-4
 d_alpha = 2e-4
 g_beta1 = 0.5
@@ -134,7 +132,7 @@ def test_train(step, name):
     _log = chainer.training.extensions.LogReport(trigger=display_interval)
     _trainer.extend(_log)
     _trainer.extend(chainer.training.extensions.ProgressBar(update_interval=10))
-    rep_list = ['iteration', 'D_B_FAKE', 'G_AB__GAN', 'G_ABA_CYC', "test_loss"]
+    rep_list = ['iteration', 'D_B_FAKE', 'G_AB__GAN', 'G_ABA_CYC', "env_test_loss", "test_loss"]
     _trainer.extend(chainer.training.extensions.PrintReport(rep_list), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.PlotReport(["env_test_loss"], filename="env.png"), trigger=display_interval)
     _trainer.run()
@@ -146,7 +144,7 @@ def test_train(step, name):
     return best, index, score_list
 if __name__ == '__main__':
     _args = load_setting_from_json("setting.json")
-    select = ["1_Gscale"]
+    select = ["MAX_POOL"]
     for k in select:
         g_al_decay = "normal"
         d_al_decay = "normal"

@@ -53,20 +53,20 @@ class Discriminator(chainer.Chain):
                 shape: [N, 4, 3]
         """
         _y = F.transpose(_x[0][:, :, :, 0], (0, 2, 1))
-        _h = self.c_0(_y)
-        _y = F.leaky_relu(_h)
-        _h = self.c_1(_y)
-        _y = F.leaky_relu(_h)
-        _h = self.c_2(_y)
-        _y = F.leaky_relu(_h)
+        _y = self.c_0(_y)
+        _y = F.leaky_relu(_y)
+        _y = self.c_1(_y)
+        _y = F.leaky_relu(_y)
+        _y = self.c_2(_y)
+        _y = F.leaky_relu(_y)
         _y = self.c_3(_y)
-        _y = F.max(_y, axis=1)
+        _y = F.max(F.reshape(_y, (-1 ,32, 4, 9)), axis=1)
         return _y
 class Generator(chainer.Chain):
     """
         学習用生成側ネットワーク
     """
-    def __init__(self, chs=256, layers=6):
+    def __init__(self, chs=256, layers=5):
         """
         レイヤー定義
         Parameter
@@ -81,9 +81,8 @@ class Generator(chainer.Chain):
         he_init = chainer.initializers.HeNormal()
         self.add_link("00_e", L.Convolution1D(1025, chs, 4, stride=4, initialW=he_init).add_hook(spn()))
         for i in range(self.l_num):
-            self.add_link("0"+str(i+1)+"_c", L.Convolution1D(chs, chs, 11, pad=5, initialW=he_init).add_hook(spn()))
-        self.add_link("98_d", L.Deconvolution1D(chs, 1025, 4, stride=4, initialW=he_init).add_hook(spn()))
-        # self.add_link("99_d", L.Deconvolution1D(chs, 1, 4, stride=4, initialW=he_init).add_hook(spn()))
+            self.add_link("0"+str(i+1)+"_c", L.Convolution1D(chs, chs, 21, initialW=he_init).add_hook(spn()))
+        self.add_link("99_d", L.Deconvolution1D(chs, 1025, 4, stride=4, initialW=he_init).add_hook(spn()))
 
     def __call__(self, *_x, **kwargs):
         """
@@ -103,11 +102,11 @@ class Generator(chainer.Chain):
         _y = F.transpose(_x[0][:, :, :, 0], (0, 2, 1))
         _y = next(links)(_y)
         _y = F.leaky_relu(_y)
-        for _ in range(self.l_num):
-            _h = next(links)(_y)
+        for l in range(self.l_num):
+            _h = F.pad(_y, pad_width=((0, 0), (0, 0), (20, 0)), mode="constant") 
+            _h = next(links)(_h)
             _y = F.leaky_relu(_h) + _y 
         _y = next(links)(_y)
-        # _y = F.sigmoid(next(links)(_y)) * 2 * _h
         _y = F.transpose(_y, (0, 2, 1))
         _y = F.expand_dims(_y, 3)
         return _y
@@ -125,8 +124,7 @@ class GeneratorSimple(chainer.Chain):
         self.add_link("00_e_0", L.Convolution1D(1025, chs, 4, stride=4))
         for i in range(self.l_num):
             self.add_link("0"+str(i+1)+"_h_0", L.Convolution1D(chs, chs, 11, pad=5))
-        self.add_link("98_d", L.Deconvolution1D(chs, 1025, 4, stride=4, initialW=he_init))
-        # self.add_link("99_d", L.Deconvolution1D(chs, 1, 4, stride=4, initialW=he_init))
+        self.add_link("99_d", L.Deconvolution1D(chs, 1025, 4, stride=4, initialW=he_init))
     def __call__(self, *_x, **kwargs):
         """
             モデルのグラフ実装
@@ -149,7 +147,6 @@ class GeneratorSimple(chainer.Chain):
             _h = next(links)(_y)
             _y = F.leaky_relu(_h) + _y
         _y = next(links)(_y)
-        # _y = F.sigmoid(next(links)(_y)) * 2 * _h
         _y = F.transpose(_y, (0, 2, 1))
         _y = F.expand_dims(_y, 3)
         return _y
