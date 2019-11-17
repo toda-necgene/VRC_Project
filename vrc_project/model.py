@@ -34,9 +34,10 @@ class Discriminator(chainer.Chain):
             # (N, 512, 100)
             self.c_1 = L.Convolution1D(chs[0], chs[1], 6, stride=2, pad=2, initialW=he_init).add_hook(spn())
             # (N, 256, 50)
-            self.c_2 = L.Convolution1D(chs[1], chs[2], 10, stride=5, pad=0, initialW=he_init).add_hook(spn())
-            # (N, 128, 9)
-            self.c_3 = L.Convolution1D(chs[2], 128, 9, pad=4, initialW=he_init)
+            self.c_2 = L.Convolution1D(chs[1], chs[2], 5, stride=5, pad=0, initialW=he_init).add_hook(spn())
+            # (N, 128, 10)
+            self.c_3 = L.Convolution1D(chs[2], 128, 10, pad=4, initialW=he_init)
+            self.c_4 = L.Convolution1D(chs[2], 20, 1, initialW=he_init)
             # (N, 4, 7)
     def __call__(self, *_x, **kwargs):
         """
@@ -59,9 +60,11 @@ class Discriminator(chainer.Chain):
         _y = F.leaky_relu(_y)
         _y = self.c_2(_y)
         _y = F.leaky_relu(_y)
-        _y = self.c_3(_y)
-        _y = F.max(F.reshape(_y, (-1 ,32, 4, 9)), axis=1)
-        return _y
+        _p = self.c_3(_y)
+        _p = F.max(F.reshape(_p, (-1 ,32, 4, 1)), axis=1)
+        _f = self.c_4(_y)
+        _f = F.relu(F.reshape(F.transpose(_f, (0, 2, 1)), (-1, 1, 200)))
+        return _p, _f
 class Generator(chainer.Chain):
     """
         学習用生成側ネットワーク

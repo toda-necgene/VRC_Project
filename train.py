@@ -118,6 +118,7 @@ if __name__ == '__main__':
     updater = CycleGANUpdater(
         model={"main":g_a_to_b, "inverse":g_b_to_a, "disa":d_a},
         max_itr=_args["train_iteration"],
+        f0_param=voice_profile,
         iterator={"main":train_iter_a, "data_b":train_iter_b},
         optimizer={"gen_ab":g_optimizer_ab, "gen_ba":g_optimizer_ba, "disa":d_optimizer_a},
         device=_args["gpu"])

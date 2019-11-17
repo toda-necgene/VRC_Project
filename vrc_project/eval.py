@@ -41,9 +41,10 @@ class TestModel(chainer.training.Extension):
         mpl.rcParams["agg.path.chunksize"] = 100000
         self.dir = _args["wave_otp_dir"]
         self.model_en = _trainer.updater.gen_ab
+        self.model_f0 = _trainer.updater.disa
         self.target = data[1]
         source_f0, source_sp, source_ap = wave2world(data[0].astype(np.float64))
-        _, self.source_sp_l, _ = wave2world(data[1].astype(np.float64))
+        self.l_f0, self.source_sp_l, _ = wave2world(data[1].astype(np.float64))
         self.image_power_l = fft(data[1])
         self.source_ap = source_ap
         self.length = source_f0.shape[0]
@@ -51,16 +52,13 @@ class TestModel(chainer.training.Extension):
         ch = source_sp.shape[1]
         source_sp = np.pad(source_sp, ((padding_size, 0), (0, 0)), "edge").reshape(-1, _sp_input_length, ch)
         source_sp = source_sp.astype(np.float32).reshape(-1, _sp_input_length, ch, 1)
-        self.bs_sp = source_sp.shape[0]
-        r = int(2 ** np.ceil(np.log2(source_sp.shape[0]))) - source_sp.shape[0]
-        source_sp = np.pad(source_sp, ((0, r), (0, 0), (0, 0), (0, 0)), "constant")
         source_ap = np.pad(source_ap, ((padding_size, 0), (0, 0)), "edge").reshape(-1, _sp_input_length, 1025)
         source_ap = np.transpose(source_ap, [0, 2, 1]).astype(np.float32).reshape(-1, 1025, _sp_input_length, 1)
         padding_size = abs(_sp_input_length - self.source_sp_l.shape[0] % _sp_input_length)
         self.source_sp_l = np.pad(self.source_sp_l, ((padding_size, 0), (0, 0)), "edge").reshape(-1, _sp_input_length, ch)
         self.source_sp_l = self.source_sp_l.astype(np.float32).reshape(-1, ch)
         self.source_pp = chainer.backends.cuda.to_gpu(source_sp)
-        self.source_f0 = (source_f0 - data[2]["pre_sub"]) * np.sign(source_f0) * data[2]["pitch_rate"] + data[2]["post_add"] * np.sign(source_f0)
+        self.source_f0 = np.exp(np.log(source_f0 + 1.0) * data[2]["log_rate"]) - 1.0
         self.wave_len = data[0].shape[0]
         self.only_score = only_score
         super(TestModel, self).initialize(_trainer)
@@ -74,18 +72,23 @@ class TestModel(chainer.training.Extension):
         """
         chainer.using_config("train", False)
         result = self.model_en(self.source_pp)
+        _, pr = self.model_f0(self.source_pp)
+        _, po = self.model_f0(result)
         result = chainer.backends.cuda.to_cpu(result.data)
-        result = result[:self.bs_sp]
+        pr = chainer.backends.cuda.to_cpu(pr.data)
+        pr = np.exp(pr.reshape(-1)[-self.length:]) - 1
+        po = chainer.backends.cuda.to_cpu(po.data)
+        po = np.exp(po.reshape(-1)[-self.length:]) - 1
         ch = result.shape[2]
         result = result.reshape(-1, ch)
-        score_m = np.mean((result - self.source_sp_l)**2)
+        score_m = np.mean((result[-self.length:] - self.source_sp_l[-self.length:])**2)
         result_wave = world2wave(self.source_f0, result[-self.length:], self.source_ap)
         otp = result_wave.reshape(-1)
         head_cut_num = otp.shape[0]-self.wave_len
         if head_cut_num > 0:
             otp = otp[head_cut_num:]
         chainer.using_config("train", True)
-        return otp, score_m, result
+        return otp, score_m, pr, po
     def __call__(self, _trainer):
         """
         評価関数
@@ -98,7 +101,7 @@ class TestModel(chainer.training.Extension):
             テストに使用するトレーナー
         """
         # testing
-        out_put, score_raw, _ = self.convert()
+        out_put, score_raw, pre_f0, post_f0 = self.convert()
         chainer.report({"env_test_loss": score_raw})
         if self.only_score is not None:
             out_puts = (out_put*32767).astype(np.int16)
@@ -110,7 +113,7 @@ class TestModel(chainer.training.Extension):
             chainer.report({"test_loss": score_fft})
             #saving fake power-spec image
             figure = plt.figure(figsize=(8, 5))
-            gs = mpl.gridspec.GridSpec(nrows=5, ncols=2)
+            gs = mpl.gridspec.GridSpec(nrows=6, ncols=2)
             plt.subplots_adjust(hspace=0)
             figure.add_subplot(gs[:3, :])
             plt.subplots_adjust(top=0.95)
@@ -119,16 +122,22 @@ class TestModel(chainer.training.Extension):
             plt.tick_params(labelbottom=False)
             plt.imshow(_insert_image, vmin=-1.0, vmax=1.0, aspect="auto")
             ax = figure.add_subplot(gs[3:4, :])
-            plt.tick_params(labeltop=False, labelbottom=False)
+            plt.tick_params(labeltop=False, labelbottom=False, labelleft=False)
             plt.margins(x=0)
             plt.ylim(-1, 1)
             ax.grid(which="major", axis="x", color="blue", alpha=0.8, linestyle="--", linewidth=1)
             _t = out_put.shape[0] / 44100
             _x = np.linspace(0, _t, out_put.shape[0])
             plt.plot(_x, out_put)
-            figure.add_subplot(gs[4:, :])
+            figure.add_subplot(gs[4:5, :])
             plt.plot(np.abs(np.mean(image_power_spec, axis=0)-np.mean(self.image_power_l, axis=0)))
             plt.plot(np.abs(np.std(image_power_spec, axis=0)-np.std(self.image_power_l, axis=0)))
+            plt.tick_params(labelbottom=False)
+            figure.add_subplot(gs[5:6, :])
+            plt.margins(x=0)
+            plt.plot(self.l_f0)
+            plt.plot(pre_f0)
+            plt.plot(post_f0)
             plt.tick_params(labelbottom=False)
             table = plt.table(cellText=[["iteraiton", "fft_diff", "spenv_diff"], ["%d (%s)" % (_trainer.updater.iteration, self.only_score), "%f" % score_fft, "%f" % score_raw]])
             table.auto_set_font_size(False)
