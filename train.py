@@ -85,14 +85,16 @@ def dataset_pre_process_controler(args):
     if args["gpu"] >= 0:
         _sounds_a = chainer.backends.cuda.to_gpu(_sounds_a)
         _sounds_b = chainer.backends.cuda.to_gpu(_sounds_b)
-    _train_iter_a = chainer.iterators.MultithreadIterator(SeqData(_sounds_a, 200), args["batch_size"], shuffle=True, n_threads=4)
-    _train_iter_b = chainer.iterators.MultithreadIterator(SeqData(_sounds_b, 200), args["batch_size"], shuffle=True, n_threads=4)
+    _train_iter_a1 = chainer.iterators.MultithreadIterator(SeqData(_sounds_a, 200), args["batch_size"], shuffle=True, n_threads=4)
+    _train_iter_a2 = chainer.iterators.MultithreadIterator(SeqData(_sounds_a, 200), args["batch_size"], shuffle=True, n_threads=4)
+    _train_iter_b1 = chainer.iterators.MultithreadIterator(SeqData(_sounds_b, 200), args["batch_size"], shuffle=True, n_threads=4)
+    _train_iter_b2 = chainer.iterators.MultithreadIterator(SeqData(_sounds_b, 200), args["batch_size"], shuffle=True, n_threads=4)
     # f0 parameters(基本周波数F0の変換に使用する定数。詳しくは./vrc_project/voice_to_dataset_cycle.py L65周辺)
     _voice_profile = np.load("./voice_profile.npz")
     if not os.path.exists(args["name_save"]):
         os.mkdir(args["name_save"])
     shutil.copy("./voice_profile.npz", args["name_save"]+"/voice_profile.npz")
-    return _train_iter_a, _train_iter_b, _voice_profile, _length_sp
+    return _train_iter_a1, _train_iter_b1, _train_iter_a2, _train_iter_b2, _voice_profile, _length_sp
 
 if __name__ == '__main__':
     chainer.global_config.autotune = True
@@ -102,7 +104,7 @@ if __name__ == '__main__':
         _args["wave_otp_dir"] = _args["wave_otp_dir"] + _args["model_name"] +  _args["version"]+"/"
         if not os.path.exists(_args["wave_otp_dir"]):
             os.makedirs(_args["wave_otp_dir"])
-    train_iter_a, train_iter_b, voice_profile, length_sp = dataset_pre_process_controler(_args)
+    train_iter_a1, train_iter_b1, train_iter_a2, train_iter_b2, voice_profile, length_sp = dataset_pre_process_controler(_args)
     g_a_to_b = Generator()
     g_b_to_a = Generator()
     d_a = Discriminator()
@@ -119,7 +121,7 @@ if __name__ == '__main__':
         model={"main":g_a_to_b, "inverse":g_b_to_a, "disa":d_a},
         max_itr=_args["train_iteration"],
         f0_param=voice_profile,
-        iterator={"main":train_iter_a, "data_b":train_iter_b},
+        iterator={"main":train_iter_a1, "data_b":train_iter_b1,"sub":train_iter_a2, "sub_b":train_iter_b2},
         optimizer={"gen_ab":g_optimizer_ab, "gen_ba":g_optimizer_ba, "disa":d_optimizer_a},
         device=_args["gpu"])
     _trainer = chainer.training.Trainer(updater, (_args["train_iteration"], "iteration"), out=_args["name_save"])

@@ -8,8 +8,6 @@ import chainer.links as L
 import chainer.functions as F
 from chainer.link_hooks.spectral_normalization import SpectralNormalization as spn
 
-
-
 class Discriminator(chainer.Chain):
     """
         識別側ネットワーク
@@ -42,7 +40,7 @@ class Discriminator(chainer.Chain):
     def __call__(self, *_x, **kwargs):
         """
         モデルのグラフ実装
-        Parameter
+            Parameter
             ---------
             x: ndarray(tuple)
                 特徴量
@@ -61,7 +59,7 @@ class Discriminator(chainer.Chain):
         _y = self.c_2(_y)
         _y = F.leaky_relu(_y)
         _p = self.c_3(_y)
-        _p = F.max(F.reshape(_p, (-1 ,32, 4, 1)), axis=1)
+        _p = F.max(F.reshape(_p, (-1 ,64, 2, 1)), axis=1)
         _f = self.c_4(_y)
         _f = F.relu(F.reshape(F.transpose(_f, (0, 2, 1)), (-1, 1, 200)))
         return _p, _f
