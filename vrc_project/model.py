@@ -66,7 +66,7 @@ class Generator(chainer.Chain):
     """
         学習用生成側ネットワーク
     """
-    def __init__(self, chs=256, layers=5):
+    def __init__(self):
         """
         レイヤー定義
         Parameter
@@ -77,12 +77,18 @@ class Generator(chainer.Chain):
         residualblockの数
         """
         super(Generator, self).__init__()
-        self.l_num = layers
         he_init = chainer.initializers.HeNormal()
-        self.add_link("00_e", L.Convolution1D(1025, chs, 4, stride=4, initialW=he_init).add_hook(spn()))
-        for i in range(self.l_num):
-            self.add_link("0"+str(i+1)+"_c", L.Convolution1D(chs, chs, 21, initialW=he_init).add_hook(spn()))
-        self.add_link("99_d", L.Deconvolution1D(chs, 1025, 4, stride=4, initialW=he_init).add_hook(spn()))
+        with self.init_scope():
+            self.e = L.Convolution2D(1025, chs, (4, 1), stride=(4, 1), initialW=he_init).add_hook(spn())
+            self.c11 = L.Convolution2D(chs, chs, (5, 1), initialW=he_init).add_hook(spn())
+            self.c12 = L.Convolution2D(chs, chs, (5, 1), initialW=he_init).add_hook(spn())
+            self.c21 = L.Convolution2D(chs, chs, (5, 1), initialW=he_init).add_hook(spn())
+            self.c22 = L.Convolution2D(chs, chs, (5, 1), initialW=he_init).add_hook(spn())
+            self.c31 = L.Convolution2D(chs, chs, (5, 1), initialW=he_init).add_hook(spn())
+            self.c32 = L.Convolution2D(chs, chs, (5, 1), initialW=he_init).add_hook(spn())
+            self.c41 = L.Convolution2D(chs, chs, (5, 1), initialW=he_init).add_hook(spn())
+            self.c42 = L.Convolution2D(chs, chs, (5, 1), initialW=he_init).add_hook(spn())
+            self.d = L.Deconvolution2D(chs, 1025, (4, 1), stride=(4, 1), initialW=he_init).add_hook(spn())
 
     def __call__(self, *_x, **kwargs):
         """
@@ -99,54 +105,99 @@ class Generator(chainer.Chain):
                 shape: [N,1025,200,1]
         """
         links = self.children()
-        _y = F.transpose(_x[0][:, :, :, 0], (0, 2, 1))
-        _y = next(links)(_y)
+        _y = F.transpose(_x[0], (0, 2, 1, 3))
+        _y = self.e(_y)
         _y = F.leaky_relu(_y)
-        for l in range(self.l_num):
-            _h = F.pad(_y, pad_width=((0, 0), (0, 0), (20, 0)), mode="constant") 
-            _h = next(links)(_h)
-            _y = F.leaky_relu(_h) + _y 
-        _y = next(links)(_y)
-        _y = F.transpose(_y, (0, 2, 1))
-        _y = F.expand_dims(_y, 3)
+        _y = F.reshape(_y, (_y.shape[0], _y.shape[1], 5, 10))
+        # 1
+        _h = F.pad(_y, pad_width=((0, 0), (0, 0), (4, 0), (0, 0)), mode="constant") 
+        _h = self.c11(_h)
+        _h = F.leaky_relu(_h)
+        _h = F.pad(_h, pad_width=((0, 0), (0, 0), (4, 0), (0, 0)), mode="constant") 
+        _h = self.c12(_h)
+        _y = F.leaky_relu(_h) + _y
+        _y = F.reshape(_y, (_y.shape[0], _y.shape[1], 10, 5))
+        # 2
+        _h = F.pad(_y, pad_width=((0, 0), (0, 0), (4, 0), (0, 0)), mode="constant") 
+        _h = self.c21(_h)
+        _h = F.leaky_relu(_h)
+        _h = F.pad(_h, pad_width=((0, 0), (0, 0), (4, 0), (0, 0)), mode="constant") 
+        _h = self.c22(_h)
+        _y = F.leaky_relu(_h) + _y
+        _y = F.reshape(_y, (_y.shape[0], _y.shape[1], 25, 2))
+        # 3
+        _h = F.pad(_y, pad_width=((0, 0), (0, 0), (4, 0), (0, 0)), mode="constant") 
+        _h = self.c31(_h)
+        _h = F.leaky_relu(_h)
+        _h = F.pad(_h, pad_width=((0, 0), (0, 0), (4, 0), (0, 0)), mode="constant") 
+        _h = self.c32(_h)
+        _y = F.leaky_relu(_h) + _y
+        _y = F.reshape(_y, (_y.shape[0], _y.shape[1], 50, 1))
+        # 4 
+        _h = F.pad(_y, pad_width=((0, 0), (0, 0), (4, 0), (0, 0)), mode="constant") 
+        _h = self.c41(_h)
+        _h = F.leaky_relu(_h)
+        _h = F.pad(_h, pad_width=((0, 0), (0, 0), (4, 0), (0, 0)), mode="constant") 
+        _h = self.c42(_h)
+        _y = F.leaky_relu(_h) + _y
+
+        _y = self.d(_y)
+        _y = F.transpose(_y, (0, 2, 1, 3))
         return _y
 
 class GeneratorSimple(chainer.Chain):
     """
         実行用生成側ネットワーク
+        要 model_convert.py
     """
     def __init__(self, chs=256, layers=6):
         """
         レイヤー定義
         """
         super(GeneratorSimple, self).__init__()
-        self.l_num = layers
-        self.add_link("00_e_0", L.Convolution1D(1025, chs, 4, stride=4))
-        for i in range(self.l_num):
-            self.add_link("0"+str(i+1)+"_h_0", L.Convolution1D(chs, chs, 11, pad=5))
-        self.add_link("99_d", L.Deconvolution1D(chs, 1025, 4, stride=4, initialW=he_init))
+        with self.init_scope():
+            self.e = L.Convolution2D(1025, chs, (4, 1), stride=(4, 1))
+            self.c11 = L.Convolution2D(chs, chs, (5, 1))
+            self.c12 = L.Convolution2D(chs, chs, (5, 1))
+            self.c21 = L.Convolution2D(chs, chs, (5, 1))
+            self.c22 = L.Convolution2D(chs, chs, (5, 1))
+            self.c31 = L.Convolution2D(chs, chs, (5, 1))
+            self.c32 = L.Convolution2D(chs, chs, (5, 1))
+            self.c41 = L.Convolution2D(chs, chs, (5, 1))
+            self.c42 = L.Convolution2D(chs, chs, (5, 1))
+            self.d = L.Deconvolution2D(chs, 1025, (4, 1), stride=(4, 1))
+
     def __call__(self, *_x, **kwargs):
         """
-            モデルのグラフ実装
-            Parameter
-            ---------
-            x: ndarray(tuple)
-                変換前特徴量
-                shape: [N,1025,200,1]
-            Returns
-            -------
-            _y: ndarray
-                変換後特徴量
-                shape: [N,1025,200,1]
+            実行
         """
         links = self.children()
-        _y = F.transpose(_x[0][:, :, :, 0], (0, 2, 1))
-        _y = next(links)(_y)
-        _y = F.leaky_relu(_y)
-        for _ in range(self.l_num):
-            _h = next(links)(_y)
-            _y = F.leaky_relu(_h) + _y
-        _y = next(links)(_y)
-        _y = F.transpose(_y, (0, 2, 1))
-        _y = F.expand_dims(_y, 3)
+        _y = F.transpose(_x[0], (0, 2, 1, 3))
+        _y = F.leaky_relu(self.e(_y))
+        _y = F.reshape(_y, (_y.shape[0], _y.shape[1], 5, 10))
+        # 1
+        _h = F.pad(_y, pad_width=((0, 0), (0, 0), (4, 0), (0, 0)), mode="constant") 
+        _h = F.leaky_relu(self.c11(_h))
+        _h = F.pad(_h, pad_width=((0, 0), (0, 0), (4, 0), (0, 0)), mode="constant") 
+        _h = F.leaky_relu(self.c12(_h)) + _y
+        _y = F.reshape(_y, (_y.shape[0], _y.shape[1], 10, 5))
+        # 2
+        _h = F.pad(_y, pad_width=((0, 0), (0, 0), (4, 0), (0, 0)), mode="constant") 
+        _h = F.leaky_relu(self.c21(_h))
+        _h = F.pad(_h, pad_width=((0, 0), (0, 0), (4, 0), (0, 0)), mode="constant") 
+        _h = F.leaky_relu(self.c22(_h)) + _y
+        _y = F.reshape(_y, (_y.shape[0], _y.shape[1], 25, 2))
+        # 3
+        _h = F.pad(_y, pad_width=((0, 0), (0, 0), (4, 0), (0, 0)), mode="constant") 
+        _h = F.leaky_relu(self.c31(_h))
+        _h = F.pad(_h, pad_width=((0, 0), (0, 0), (4, 0), (0, 0)), mode="constant") 
+        _h = F.leaky_relu(self.c32(_h)) + _y
+        _y = F.reshape(_y, (_y.shape[0], _y.shape[1], 50, 1))
+        # 4 
+        _h = F.pad(_y, pad_width=((0, 0), (0, 0), (4, 0), (0, 0)), mode="constant") 
+        _h = F.leaky_relu(self.c41(_h))
+        _h = F.pad(_h, pad_width=((0, 0), (0, 0), (4, 0), (0, 0)), mode="constant") 
+        _h = F.leaky_relu(self.c42(_h)) + _y
+        _y = self.d(_y)
+        _y = F.transpose(_y, (0, 2, 1, 3))
         return _y

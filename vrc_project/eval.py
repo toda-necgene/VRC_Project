@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from vrc_project.world_and_wave import wave2world, world2wave
-
+from world_and_wave import fft
 class TestModel(chainer.training.Extension):
     """
     テストを行うExtention
@@ -151,40 +151,3 @@ class TestModel(chainer.training.Extension):
             wave_data.writeframes(voiced.reshape(-1).tobytes())
             wave_data.close()
             plt.clf()
-def fft(_data, nfft=2048):
-    """
-    stftを計算
-
-     Parameters
-    ----------
-    _data: np.ndarray
-        音声データ
-        range  : [-1.0,1.0]
-        dtype  : float64
-    Returns
-    -------
-    spec_po: np.ndarray
-        パワースペクトラム
-        power-spectram
-        Shape : (n,512)
-    """
-    shift = nfft //2
-    time_ruler = _data.shape[0] // shift
-    if _data.shape[0] % shift == 0:
-        time_ruler -= 1
-    window = np.hamming(nfft)
-    pos = 0
-    wined = np.zeros([time_ruler, nfft])
-    for fft_index in range(time_ruler):
-        frame = _data[pos:pos + nfft]
-        padding_size = nfft-frame.shape[0]
-        if padding_size > 0:
-            frame = np.pad(frame, (0, padding_size), "constant")
-        wined[fft_index] = frame * window
-        pos += shift
-    fft_r = np.fft.fft(wined, n=nfft, axis=1)
-    spec_re = fft_r.real.reshape(time_ruler, -1)
-    spec_im = fft_r.imag.reshape(time_ruler, -1)
-    spec_po = np.log(np.power(spec_re, 2) + np.power(spec_im, 2) + 1e-8).reshape(time_ruler, -1)[:, -512:]
-    spec_po = np.clip((spec_po + 5) / 10, -1.0, 1.0)
-    return spec_po

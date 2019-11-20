@@ -1,12 +1,10 @@
 __pycache__/*
 .vscode/*
-test.py
+others/*
 
 chainer/*
 start.bat
-analyze_params.py
 latest.html
-audio_plot.py
 
 dataset/*
 trained_model/*

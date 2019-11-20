@@ -140,6 +140,11 @@ if __name__ == '__main__':
     rep_list = ['iteration', 'D_B_FAKE', 'G_AB__GAN', 'G_ABA_CYC', "env_test_loss", "test_loss"]
     _trainer.extend(chainer.training.extensions.PrintReport(rep_list), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.PlotReport(["env_test_loss"], filename="env.png"), trigger=display_interval)
+    decay_timming = (10000, "iteration")
+    _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=updater.get_optimizer("gen_ab")), trigger=decay_timming)
+    _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=updater.get_optimizer("gen_ba")), trigger=decay_timming)
+    _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=updater.get_optimizer("disa")), trigger=decay_timming)
+    
     _trainer.run()
     print(" [*] All over.")
     
