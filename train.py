@@ -1,4 +1,5 @@
 """
+製作者:TODA
 学習スクリプト
 設定パラメーターの意味はsetting_loader.pyを参照
 """
@@ -73,7 +74,7 @@ def dataset_pre_process_controler(args):
     _sounds_a = None
     _sounds_b = None
     if not (args["use_old_dataset"] and os.path.exists("./dataset/patch/A.npy") and os.path.exists("./dataset/patch/B.npy")):
-        _sounds_a, _sounds_b = create_dataset(args["input_size"], delta=args["input_size"])
+        _sounds_a, _sounds_b = create_dataset(args["input_size"])
     else:
         # preparing training-data
         print(" [*] loading data-set ...")
@@ -84,8 +85,8 @@ def dataset_pre_process_controler(args):
     if args["gpu"] >= 0:
         _sounds_a = chainer.backends.cuda.to_gpu(_sounds_a)
         _sounds_b = chainer.backends.cuda.to_gpu(_sounds_b)
-    _train_iter_a = chainer.iterators.MultithreadIterator(SeqData(_sounds_a, 200), args["batch_size"], shuffle=True, n_threads=2)
-    _train_iter_b = chainer.iterators.MultithreadIterator(SeqData(_sounds_b, 200), args["batch_size"], shuffle=True, n_threads=2)
+    _train_iter_a = chainer.iterators.MultithreadIterator(SeqData(_sounds_a, 200), args["batch_size"], shuffle=True, n_threads=4)
+    _train_iter_b = chainer.iterators.MultithreadIterator(SeqData(_sounds_b, 200), args["batch_size"], shuffle=True, n_threads=4)
     # f0 parameters(基本周波数F0の変換に使用する定数。詳しくは./vrc_project/voice_to_dataset_cycle.py L65周辺)
     _voice_profile = np.load("./voice_profile.npz")
     if not os.path.exists(args["name_save"]):
@@ -105,16 +106,14 @@ if __name__ == '__main__':
     g_a_to_b = Generator()
     g_b_to_a = Generator()
     d_a = Discriminator()
-    # d_b = DiscriminatorW()
     if _args["gpu"] >= 0:
         chainer.cuda.Device(_args["gpu"]).use()
         g_a_to_b.to_gpu()
         g_b_to_a.to_gpu()
         d_a.to_gpu()
-        # d_b.to_gpu()
-    g_optimizer_ab = chainer.optimizers.Adam(alpha=1e-3, beta1=0.5).setup(g_a_to_b)
-    g_optimizer_ba = chainer.optimizers.Adam(alpha=1e-3, beta1=0.5).setup(g_b_to_a)
-    d_optimizer_a = chainer.optimizers.Adam(alpha=1e-3, beta1=0.5).setup(d_a)
+    g_optimizer_ab = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5).setup(g_a_to_b)
+    g_optimizer_ba = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5).setup(g_b_to_a)
+    d_optimizer_a = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5).setup(d_a)
     # main training
     updater = CycleGANUpdater(
         model={"main":g_a_to_b, "inverse":g_b_to_a, "disa":d_a},
@@ -123,14 +122,12 @@ if __name__ == '__main__':
         optimizer={"gen_ab":g_optimizer_ab, "gen_ba":g_optimizer_ba, "disa":d_optimizer_a},
         device=_args["gpu"])
     _trainer = chainer.training.Trainer(updater, (_args["train_iteration"], "iteration"), out=_args["name_save"])
-    if os.path.exists(_args["use_predata"]):
-        load_model_from_npz(_args["use_predata"], _trainer)
     load_model_from_npz(_args["name_save"], _trainer)
     display_interval = (_args["log_interval"], 'iteration')
     if _args["test"]:
         test = load_wave_file("./dataset/test/test.wav") / 32767.0
         _label_sample = load_wave_file("./dataset/test/label.wav") / 32767.0
-        _trainer.extend(TestModel(_trainer, _args["wave_otp_dir"], test, voice_profile, length_sp, _label_sample, _args["version"]), trigger=display_interval)
+        _trainer.extend(TestModel(_trainer, _args, [test, _label_sample, voice_profile], length_sp, "itrs"), trigger=display_interval)
         if _args["line_notify"]:
             with open("line_api_token.txt", "rb") as s:
                 key = s.readline().decode("utf8")
@@ -140,15 +137,14 @@ if __name__ == '__main__':
     _trainer.extend(chainer.training.extensions.snapshot_object(g_a_to_b, 'gen_ab.npz'), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.LogReport(trigger=display_interval))
     _trainer.extend(chainer.training.extensions.ProgressBar(update_interval=10))
-    rep_list = ['iteration', 'D_B_FAKE', 'G_AB__GAN', 'G_ABA_CYC', "test_loss"]
+    rep_list = ['iteration', 'D_B_FAKE', 'G_AB__GAN', 'G_ABA_CYC', "env_test_loss", "test_loss"]
     _trainer.extend(chainer.training.extensions.PrintReport(rep_list), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.PlotReport(["env_test_loss"], filename="env.png"), trigger=display_interval)
-    _trainer.extend(chainer.training.extensions.PlotReport(["env_test_loss"], filename="../../env_graph.png"), trigger=display_interval)
-    decay_timming = (1000, "iteration")
-    _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.9, optimizer=updater.get_optimizer("gen_ab")), trigger=decay_timming)
-    _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.9, optimizer=updater.get_optimizer("gen_ba")), trigger=decay_timming)
-    _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.9, optimizer=updater.get_optimizer("disa")), trigger=decay_timming)
-    print(" [*] Train Started")
+    decay_timming = (10000, "iteration")
+    _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=updater.get_optimizer("gen_ab")), trigger=decay_timming)
+    _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=updater.get_optimizer("gen_ba")), trigger=decay_timming)
+    _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=updater.get_optimizer("disa")), trigger=decay_timming)
+    
     _trainer.run()
     print(" [*] All over.")
     

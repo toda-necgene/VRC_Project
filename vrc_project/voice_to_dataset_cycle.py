@@ -7,9 +7,8 @@ import os
 import wave
 import glob
 import numpy as np
-import matplotlib.pyplot as plt
 from vrc_project.world_and_wave import wave2world
-def create_dataset(_term, _chunk=1024, delta=0):
+def create_dataset(_term, _chunk=1024):
     """
     データセットを作成します
     """
