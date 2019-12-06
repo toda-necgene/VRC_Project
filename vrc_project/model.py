@@ -130,7 +130,6 @@ class GeneratorSimple(chainer.Chain):
 
         実行用生成側ネットワーク
         spectral_norm を事前計算することによって高速化を図っている
-        TODO: simplifyでない読み込みのエラーを投げるようにする
     """
     def __init__(self):
         """

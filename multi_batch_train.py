@@ -1,6 +1,5 @@
 """
 製作者:TODA
-TODO: 公開できるようにする
 """
 import os
 import shutil
