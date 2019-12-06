@@ -12,20 +12,26 @@ from vrc_project.model import Discriminator, Generator
 from vrc_project.seq_dataset import SeqData
 from vrc_project.updater import CycleGANUpdater
 from vrc_project.voice_to_dataset_cycle import create_dataset
+from vrc_project.world_and_wave import load_wave_file
 from vrc_project.setting_loader import load_setting_from_json
 from vrc_project.eval import TestModel
 from vrc_project.notify import LineNotify
 
 
-def load_model_from_npz(_checkpoint_dir, _trainer):
+def load_model_from_npz(_checkpoint_dir: str,
+                        _trainer: chainer.training.Trainer) -> bool:
     """
+    モデルのロード
     Parameters
     ----------
     _checkpoint_dir: str
+    保存済みモデルの格納ディレクトリ
     _trainer: chainer.training.trainer
+    読み込み先のトレーナー
     Returns
     -------
     flag: bool
+    読み込み完了フラグ
     """
     print(" [*] Reading checkpoint...")
     if os.path.exists(_checkpoint_dir) and os.path.exists(_checkpoint_dir+"/snapshot.npz"):
@@ -37,31 +43,17 @@ def load_model_from_npz(_checkpoint_dir, _trainer):
         os.makedirs(_checkpoint_dir)
     print(" [I] checkpoint is not found.")
     return False
-def load_wave_file(_path_to_file):
-    """
-    Parameters
-    ----------
-    _path_to_file: str
-    Returns
-    -------
-    _data: int16
-    """
-    wave_data = wave.open(_path_to_file, "rb")
-    _data = np.zeros([1], dtype=np.int16)
-    dds = wave_data.readframes(1024)
-    while dds != b'':
-        _data = np.append(_data, np.frombuffer(dds, "int16"))
-        dds = wave_data.readframes(1024)
-    wave_data.close()
-    _data = _data[1:]
-    return _data
 
 
-def dataset_pre_process_controler(args):
+
+def dataset_pre_process_controler(args: dict) -> tuple:
     """
+    学習データの読み込み、または 学習データの作成(前処理)
+    
     Parameters
     ----------
-    _args: dict
+    args: dict
+    
     Returns
     -------
     _train_iter_a: chainer.iterators.Iterator
@@ -98,10 +90,6 @@ if __name__ == '__main__':
     chainer.global_config.autotune = True
     chainer.cuda.set_max_workspace_size(512*1024*1024)
     _args = load_setting_from_json("setting.json")
-    if  _args["wave_otp_dir"] is not "False":
-        _args["wave_otp_dir"] = _args["wave_otp_dir"] + _args["model_name"] +  _args["version"]+"/"
-        if not os.path.exists(_args["wave_otp_dir"]):
-            os.makedirs(_args["wave_otp_dir"])
     train_iter_a, train_iter_b, voice_profile, length_sp = dataset_pre_process_controler(_args)
     g_a_to_b = Generator()
     g_b_to_a = Generator()
@@ -114,7 +102,6 @@ if __name__ == '__main__':
     g_optimizer_ab = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5).setup(g_a_to_b)
     g_optimizer_ba = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5).setup(g_b_to_a)
     d_optimizer_a = chainer.optimizers.Adam(alpha=2e-4, beta1=0.5).setup(d_a)
-    # main training
     updater = CycleGANUpdater(
         model={"main":g_a_to_b, "inverse":g_b_to_a, "disa":d_a},
         max_itr=_args["train_iteration"],
@@ -127,11 +114,13 @@ if __name__ == '__main__':
     if _args["test"]:
         test = load_wave_file("./dataset/test/test.wav") / 32767.0
         _label_sample = load_wave_file("./dataset/test/label.wav") / 32767.0
-        _trainer.extend(TestModel(_trainer, _args, [test, _label_sample, voice_profile], length_sp, "itrs"), trigger=display_interval)
+        _args["length_sp"] = length_sp
+        _trainer.extend(TestModel(_trainer, _args, [test, _label_sample, voice_profile]), trigger=display_interval)
         if _args["line_notify"]:
             with open("line_api_token.txt", "rb") as s:
                 key = s.readline().decode("utf8")
-                tri = chainer.training.triggers.ManualScheduleTrigger([100, 500, 1000, 5000, 10000, 15000], "iteration")
+                tri = chainer.training.triggers.ManualScheduleTrigger(
+                    [100, _args["train_iteration"]*0.1, _args["train_iteration"]*0.6, _args["train_iteration"]*0.8, _args["train_iteration"]], "iteration")
                 _trainer.extend(LineNotify(_trainer, key), trigger=tri)
     _trainer.extend(chainer.training.extensions.snapshot(filename='snapshot.npz', num_retain=2), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.snapshot_object(g_a_to_b, 'gen_ab.npz'), trigger=display_interval)
@@ -140,11 +129,11 @@ if __name__ == '__main__':
     rep_list = ['iteration', 'D_B_FAKE', 'G_AB__GAN', 'G_ABA_CYC', "env_test_loss", "test_loss"]
     _trainer.extend(chainer.training.extensions.PrintReport(rep_list), trigger=display_interval)
     _trainer.extend(chainer.training.extensions.PlotReport(["env_test_loss"], filename="env.png"), trigger=display_interval)
-    decay_timming = (10000, "iteration")
-    _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=updater.get_optimizer("gen_ab")), trigger=decay_timming)
-    _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=updater.get_optimizer("gen_ba")), trigger=decay_timming)
-    _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.1, optimizer=updater.get_optimizer("disa")), trigger=decay_timming)
-    
+    decay_timming = chainer.training.triggers.ManualScheduleTrigger(
+                    [_args["train_iteration"]*0.5, _args["train_iteration"]*0.75, _args["train_iteration"]*0.9, _args["train_iteration"]*0.95], "iteration")
+    _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.2, optimizer=updater.get_optimizer("gen_ab")), trigger=decay_timming)
+    _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.2, optimizer=updater.get_optimizer("gen_ba")), trigger=decay_timming)
+    _trainer.extend(chainer.training.extensions.ExponentialShift('alpha', 0.2, optimizer=updater.get_optimizer("disa")), trigger=decay_timming)
     _trainer.run()
     print(" [*] All over.")
     

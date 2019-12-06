@@ -4,6 +4,31 @@ wave and acaustic-feature functions.
 """
 import pyworld as pw
 import numpy as np
+import wave
+SAMPLEING_RATE = 44100
+OUT_DIMENTION = 64
+FRAME_PERIOD = 10
+ENVELOPE_FFT_SIZE = 2048
+
+def load_wave_file(_path_to_file):
+    """
+    Parameters
+    ----------
+    _path_to_file: str
+    Returns
+    -------
+    _data: int16
+    """
+    wave_data = wave.open(_path_to_file, "rb")
+    _data = np.zeros([1], dtype=np.int16)
+    dds = wave_data.readframes(1024)
+    while dds != b'':
+        _data = np.append(_data, np.frombuffer(dds, "int16"))
+        dds = wave_data.readframes(1024)
+    wave_data.close()
+    _data = _data[1:]
+    return _data
+
 def wave2world(data):
     """
     Parameters
@@ -23,13 +48,12 @@ def wave2world(data):
     NOTE: input_size is defined in config file.
           N is determined by input_size.
     """
-    sampling_rate = 44100
-    _f0, _t = pw.dio(data, sampling_rate, frame_period=10)
-    _f0 = pw.stonemask(data, _f0, _t, sampling_rate)
-    _cepstrum = pw.cheaptrick(data, _f0, _t, sampling_rate)
+    _f0, _t = pw.dio(data, SAMPLEING_RATE, frame_period=FRAME_PERIOD)
+    _f0 = pw.stonemask(data, _f0, _t, SAMPLEING_RATE)
+    _cepstrum = pw.cheaptrick(data, _f0, _t, SAMPLEING_RATE)
     _cepstrum = (np.log(_cepstrum) + 7) / 9
     _cepstrum = np.clip(_cepstrum, -1.0, 1.0)
-    _aperiodicity = pw.d4c(data, _f0, _t, sampling_rate)
+    _aperiodicity = pw.d4c(data, _f0, _t, SAMPLEING_RATE)
     return _f0, _cepstrum.astype(np.float32), _aperiodicity
 
 def world2wave(_f0, _cepstrum, _aperiodicity):
@@ -48,12 +72,10 @@ def world2wave(_f0, _cepstrum, _aperiodicity):
         SamplingRate: 44100
         ValueRange  : [-1.0,1.0]
     """
-
-    _cepstrum = np.exp(_cepstrum * 9 - 7)
-    _cepstrum = _cepstrum.astype(np.float).copy("C")
+    _cepstrum = _cepstrum = np.exp(_cepstrum * 9 - 7).astype(np.float).copy("C")
     _aperiodicity = _aperiodicity.astype(np.float)
-    return pw.synthesize(_f0, _cepstrum, _aperiodicity, 44100, frame_period=10)
-def fft(_data, nfft=2048):
+    return pw.synthesize(_f0, _cepstrum, _aperiodicity, SAMPLEING_RATE, frame_period=FRAME_PERIOD)
+def fft(_data, nfft=2048, out_dimention=512):
     """
     stftを計算
 
@@ -87,6 +109,6 @@ def fft(_data, nfft=2048):
     fft_r = np.fft.fft(wined, n=nfft, axis=1)
     spec_re = fft_r.real.reshape(time_ruler, -1)
     spec_im = fft_r.imag.reshape(time_ruler, -1)
-    spec_po = np.log(np.power(spec_re, 2) + np.power(spec_im, 2) + 1e-8).reshape(time_ruler, -1)[:, -512:]
+    spec_po = np.log(np.power(spec_re, 2) + np.power(spec_im, 2) + 1e-8).reshape(time_ruler, -1)[:, -out_dimention:]
     spec_po = np.clip((spec_po + 5) / 10, -1.0, 1.0)
     return spec_po

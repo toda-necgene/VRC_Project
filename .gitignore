@@ -1,11 +1,7 @@
-__pycache__/*
-.vscode/*
-others/*
+_*
+.*
 
 chainer/*
-start.bat
-latest.html
-
 dataset/*
 trained_model/*
 waves/*
