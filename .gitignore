@@ -1,7 +1,7 @@
 _*
 .*
 
-chainer/*
+pytorch/*
 dataset/*
 trained_model/*
 waves/*
