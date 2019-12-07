@@ -1,5 +1,7 @@
 # VRC(Voice Realtime Conversion)
 
+**chainerブランチはtorchブランチに移行します**
+
 ## 概要
 それぞれ10分ぐらいの同一内容ではないない音声を学習し、
 
