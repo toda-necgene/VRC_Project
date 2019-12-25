@@ -29,8 +29,9 @@ def load_wave_file(_path_to_file):
     _data = _data[1:]
     return _data
 
-def wave2world(data):
+def wave2world_lofi(data):
     """
+    f0-estimation : dio + stonemask
     Parameters
     ----------
     data : float64
@@ -50,6 +51,32 @@ def wave2world(data):
     """
     _f0, _t = pw.dio(data, SAMPLEING_RATE, frame_period=FRAME_PERIOD)
     _f0 = pw.stonemask(data, _f0, _t, SAMPLEING_RATE)
+    _cepstrum = pw.cheaptrick(data, _f0, _t, SAMPLEING_RATE)
+    _cepstrum = (np.log(_cepstrum) + 7) / 9
+    _cepstrum = np.clip(_cepstrum, -1.0, 1.0)
+    _aperiodicity = pw.d4c(data, _f0, _t, SAMPLEING_RATE)
+    return _f0, _cepstrum.astype(np.float32), _aperiodicity
+def wave2world_hifi(data):
+    """
+    f0-estimation : harvest
+    Parameters
+    ----------
+    data : float64
+        SamplingRate: 44100
+        ValueRange  : [-1.0,1.0]
+        Shape: (input_size)
+    Returns
+    -------
+    _f0 : float64
+        Shape: (N)
+    _cepstrum : float64
+        Shape: (N, 64)
+    _aperiodicity : float64
+        Shape: (N,513)
+    NOTE: input_size is defined in config file.
+          N is determined by input_size.
+    """
+    _f0, _t = pw.harvest(data, SAMPLEING_RATE, frame_period=FRAME_PERIOD)
     _cepstrum = pw.cheaptrick(data, _f0, _t, SAMPLEING_RATE)
     _cepstrum = (np.log(_cepstrum) + 7) / 9
     _cepstrum = np.clip(_cepstrum, -1.0, 1.0)

@@ -7,16 +7,17 @@ import os
 import time
 from multiprocessing import Queue, Process, freeze_support
 
-import chainer
+import torch
 import numpy as np
 import pyaudio as pa
 
-from vrc_project.model import Generator
-from vrc_project.setting_loader import load_setting_from_json
-from vrc_project.world_and_wave import wave2world, world2wave
+from setting_loader import load_setting_from_json
+from core.model import Generator
+from core.world_and_wave import world2wave, wave2world_lofi
 
-noise_gate_rate = 0.1
-gain = 1.8
+# experimental
+noise_gate_rate = 0.0
+gain = 1.0
 
 def load(checkpoint_dir, m_1):
     """
@@ -31,7 +32,7 @@ def load(checkpoint_dir, m_1):
     print(" [I] Reading checkpoint...")
     if os.path.exists(checkpoint_dir):
         print(" [I] file found.")
-        chainer.serializers.load_npz(checkpoint_dir+"/gen_ab.npz", m_1)
+        m_1.load_state_dict(torch.load(checkpoint_dir+"/gen_ab.pth"))
         return True
     print(" [I] dir not found:"+checkpoint_dir)
     return False
@@ -50,18 +51,18 @@ def process(queue_in, queue_out, args_model, noise_gate, noise_defact, noise_gat
     設定の辞書オブジェクト
     """
     net_1 = Generator()
+    net_1.eval()
     load(args_model["name_save"], net_1)
     f0_parameters = np.load(args_model["name_save"]+"/voice_profile.npz")
-    chainer.using_config("train", False)
-    chainer.config.autotune = True
     queue_out.put("ok")
     while True:
         if not queue_in.empty():
             _ins = queue_in.get()
             _sp = _ins[1]
-            _data = (_sp - noise_gate * noise_gate_rate + noise_defact * noise_gate_rate).reshape([1, 200, 1025, 1])    
+            _data = (_sp - noise_gate * noise_gate_rate + noise_defact * noise_gate_rate).reshape([1, 200, 1025, 1])
+            _data = torch.Tensor(_data.transpose([0, 2, 1, 3]))
             _output = net_1(_data)
-            _output = _output[0].data[:, :, 0]
+            _output = _output[0].detach().numpy()[:, :, 0].transpose([1, 0])
             _f0 = _ins[0]
             _f0 = ((_f0 - f0_parameters["pre_sub"]) * f0_parameters["pitch_rate"] + f0_parameters["post_add"]) * np.sign(_f0)
             _f0 = _f0.reshape(-1)
@@ -72,15 +73,14 @@ def process(queue_in, queue_out, args_model, noise_gate, noise_defact, noise_gat
 if __name__ == '__main__':
     args = load_setting_from_json("setting.json")
     fs = 44100
-    channels = 1
-    term_sec = 8192
+    term_sec = 22050
     q_in = Queue()
     q_out = Queue()
     p_in = pa.PyAudio()
     stream = p_in.open(format=pa.paInt16,
                        channels=1,
                        rate=fs,
-                       frames_per_buffer=term_sec*2,
+                       frames_per_buffer=term_sec,
                        input=True,
                        output=True)
     stream.start_stream()
@@ -89,7 +89,7 @@ if __name__ == '__main__':
         _inputs_source = stream.read(term_sec)
         _inputs = np.frombuffer(_inputs_source, dtype=np.int16) / 32767.0
         let[n*term_sec:term_sec+n*term_sec] = _inputs
-    _f0, _sp, _ap = wave2world(let.astype(np.float))
+    _f0, _sp, _ap = wave2world_lofi(let.astype(np.float))
     noise_gate = np.mean(_sp, axis=0, keepdims=True)
     noise_defact = np.mean(noise_gate)
     p = Process(target=process, args=(q_in, q_out, args, noise_gate, noise_defact, noise_gate_rate))
@@ -122,9 +122,9 @@ if __name__ == '__main__':
         _inputs_source = stream.read(term_sec)
         _inputs = np.frombuffer(_inputs_source, dtype=np.int16) / 32767.0
         wave_holder = np.append(wave_holder, _inputs)[-args["input_size"]:]
-        _inputs_wave = np.clip(wave_holder* gain, -1.0, 1.0)
-        _f0, _sp, _ap = wave2world(_inputs_wave)
-        if np.max(_inputs_wave) >= 0.2:
+        _inputs_wave = wave_holder* gain
+        _f0, _sp, _ap = wave2world_lofi(_inputs_wave)
+        if np.max(_inputs_wave) >= 0.0:
             q_in.put([_f0, _sp, _ap])
         _output_wave = _output_wave_dammy
         if not q_out.empty():
@@ -134,4 +134,4 @@ if __name__ == '__main__':
         pow_in = np.max(np.abs(_inputs_wave))
         pow_out = np.mean(np.abs(_output_wave/32767))
         print("\r audio-power input:{:<6.4f}, output:{:<6.4f} wave_process_time:{:<6.4f} queue_length{:0>3}".format(pow_in, pow_out, time.time()-tts, q_in.qsize()), end="")
-        
+

@@ -10,17 +10,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from datetime import datetime as dt
-from vrc_project.world_and_wave import wave2world, world2wave, fft
+from core.world_and_wave import wave2world_lofi, world2wave, fft
 class TestModel():
     """
     テストを行うExtention
     """
-    def __init__(self, model, args, data, name_ad=""):
+    def __init__(self, args, data, name_ad=""):
         """
         変数の初期化と事前処理
         Parameters
         ----------
-        model: Generator
+        : Generator
             評価用トレーナ
         args: str
             ファイル出力ディレクトリパス
@@ -41,9 +41,8 @@ class TestModel():
     
         self.model_name = args["version"]
         self.name_ad = name_ad
-        self.model = model
         
-        source_f0, source_sp, self.source_ap = wave2world(data[0].astype(np.float64))
+        source_f0, source_sp, self.source_ap = wave2world_lofi(data[0].astype(np.float64))
         self.target = data[1]
         ch = source_sp.shape[1]
         padding_size = abs(args["length_sp"] - source_sp.shape[0] % args["length_sp"])
@@ -53,13 +52,13 @@ class TestModel():
         self.source_pp = Tensor(source_sp)
         self.source_f0 = (source_f0 - data[2]["pre_sub"]) * np.sign(source_f0) * data[2]["pitch_rate"] + data[2]["post_add"] * np.sign(source_f0)
         self.wave_len = data[0].shape[0]
-        _, self.target_sp, _ = wave2world(data[1].astype(np.float64))
+        _, self.target_sp, _ = wave2world_lofi(data[1].astype(np.float64))
         self.target_sp = np.pad(self.target_sp, ((padding_size, 0), (0, 0)), "edge").reshape(-1, ch)
         padding_size = abs(args["length_sp"] - self.target_sp.shape[0] % args["length_sp"])
         self.target_sp = self.target_sp.astype(np.float32)
         self.length = source_f0.shape[0]
         self.image_power_l = fft(data[1])
-    def __call__(self, iteration):
+    def __call__(self, iteration, writer, model):
         """
         評価関数
         やっていること
@@ -71,7 +70,7 @@ class TestModel():
             イテレーション数
         """
         # test convert
-        result = self.model(self.source_pp)
+        result = model(self.source_pp)
         result = result.cpu().detach().numpy()
         ch = result.shape[1]
         result = result.transpose([0, 2, 1, 3]).reshape(-1, ch)
@@ -138,5 +137,8 @@ class TestModel():
         wave_data.setframerate(44100)
         wave_data.writeframes(voiced.reshape(-1).tobytes())
         wave_data.close()
+        writer.add_audio("fake", out_put, iteration)   
+        writer.add_figure("result", figure, iteration)
         plt.clf()
-        return score_fft
+        plt.close()
+        return score_fft, score_env

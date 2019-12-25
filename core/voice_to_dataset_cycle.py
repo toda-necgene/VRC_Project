@@ -7,7 +7,7 @@ import os
 import wave
 import glob
 import numpy as np
-from vrc_project.world_and_wave import wave2world, load_wave_file
+from core.world_and_wave import wave2world_lofi, load_wave_file
 def create_dataset(_term):
     """
     データセットを作成します
@@ -30,7 +30,7 @@ def create_dataset(_term):
             _padiing_size = _term - (data_real.shape[0] % _term)
             if _padiing_size > 0:
                 data_real = np.pad(data_real, (_padiing_size, 0), "constant")
-            f0_estimation, spec_env, _ = wave2world(data_real)
+            f0_estimation, spec_env, _ = wave2world_lofi(data_real)
             f0_estimation = f0_estimation[f0_estimation > 0.0]
             _ff.extend(f0_estimation)
             spec_env = spec_env.reshape(spec_env.shape[0], spec_env.shape[1], 1)
