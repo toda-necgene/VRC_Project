@@ -19,14 +19,9 @@ def load_wave_file(_path_to_file):
     -------
     _data: int16
     """
-    wave_data = wave.open(_path_to_file, "rb")
-    _data = np.zeros([1], dtype=np.int16)
-    dds = wave_data.readframes(1024)
-    while dds != b'':
-        _data = np.append(_data, np.frombuffer(dds, "int16"))
-        dds = wave_data.readframes(1024)
-    wave_data.close()
-    _data = _data[1:]
+    with wave.open(_path_to_file, "rb") as wave_raw_data:
+        n = wave_raw_data.getnframes()
+        _data = np.frombuffer(wave_raw_data.readframes(n), "int16")
     return _data
 
 def wave2world_lofi(data):
