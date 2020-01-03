@@ -7,10 +7,10 @@ import os
 import wave
 import glob
 import numpy as np
-from core.world_and_wave import wave2world_lofi, load_wave_file
-def create_dataset(_term):
+from core.world_and_wave import load_wave_file
+def create_dataset(wave2world_function):
     """
-    データセットを作成します
+    create patch files
     """
 
     INPUT_NAMES = ["A", "B"]
@@ -26,11 +26,8 @@ def create_dataset(_term):
         _ff = list()
         for file in files:
             print(" [*] converting wave to patchdata :", file)
-            data_real = (load_wave_file(file)/ 32767).reshape(-1)
-            _padiing_size = _term - (data_real.shape[0] % _term)
-            if _padiing_size > 0:
-                data_real = np.pad(data_real, (_padiing_size, 0), "constant")
-            f0_estimation, spec_env, _ = wave2world_lofi(data_real)
+            data_real = load_wave_file(file) / 32767
+            f0_estimation, spec_env, _ = wave2world_function(data_real)
             f0_estimation = f0_estimation[f0_estimation > 0.0]
             _ff.extend(f0_estimation)
             spec_env = spec_env.reshape(spec_env.shape[0], spec_env.shape[1], 1)

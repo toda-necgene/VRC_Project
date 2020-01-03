@@ -10,18 +10,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from datetime import datetime as dt
-from core.world_and_wave import wave2world_lofi, world2wave, fft
+from core.world_and_wave import wave2world_lofi, wave2world_hifi, world2wave, fft
 class TestModel():
     """
     テストを行うExtention
     """
-    def __init__(self, args, data, name_ad=""):
+    def __init__(self, args, data):
         """
         変数の初期化と事前処理
         Parameters
         ----------
-        : Generator
-            評価用トレーナ
         args: str
             ファイル出力ディレクトリパス
         data : tuple or list
@@ -40,9 +38,10 @@ class TestModel():
             os.makedirs(args["wave_otp_dir"])
     
         self.model_name = args["version"]
-        self.name_ad = name_ad
-        
-        source_f0, source_sp, self.source_ap = wave2world_lofi(data[0].astype(np.float64))
+        wave2world_function = wave2world_lofi
+        if args["f0_estimation_plan"] is "harvest":
+            wave2world_function = wave2world_hifi
+        source_f0, source_sp, self.source_ap = wave2world_function(data[0].astype(np.float64))
         self.target = data[1]
         ch = source_sp.shape[1]
         padding_size = abs(args["length_sp"] - source_sp.shape[0] % args["length_sp"])
@@ -52,7 +51,7 @@ class TestModel():
         self.source_pp = Tensor(source_sp)
         self.source_f0 = (source_f0 - data[2]["pre_sub"]) * np.sign(source_f0) * data[2]["pitch_rate"] + data[2]["post_add"] * np.sign(source_f0)
         self.wave_len = data[0].shape[0]
-        _, self.target_sp, _ = wave2world_lofi(data[1].astype(np.float64))
+        _, self.target_sp, _ = wave2world_function(data[1].astype(np.float64))
         self.target_sp = np.pad(self.target_sp, ((padding_size, 0), (0, 0)), "edge").reshape(-1, ch)
         padding_size = abs(args["length_sp"] - self.target_sp.shape[0] % args["length_sp"])
         self.target_sp = self.target_sp.astype(np.float32)
@@ -120,10 +119,10 @@ class TestModel():
                                     "{:.4f}".format(score_env)]])
         table.auto_set_font_size(False)
         table.set_fontsize(8)
-        plt.savefig("%s%s%05d.png" % (self.dir, self.name_ad, iteration))
+        plt.savefig("%s%05d.png" % (self.dir, iteration))
         plt.savefig("./latest.png")
         #saving fake waves
-        path_save = self.dir + str(self.model_name)+"_"+self.name_ad+"_"+ str(iteration).zfill(5)
+        path_save = self.dir + str(self.model_name)+"_"+ str(iteration).zfill(5)
         voiced = out_puts.astype(np.int16)
         wave_data = wave.open(path_save + ".wav", 'wb')
         wave_data.setnchannels(1)

@@ -1,9 +1,0 @@
-{
-    "checkpoint_dir": "./trained_model/",
-    "version": "19.12.26.01",
-    "input_size":88199,
-    "use_old_dataset": false,
-    "gpu": 0,
-    "line_notify": true,
-    "test": true
-}

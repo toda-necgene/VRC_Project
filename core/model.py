@@ -46,33 +46,29 @@ class Generator(nn.Module):
             nn.utils.spectral_norm(nn.Conv2d(1025, 256, (4, 1), stride=(4, 1))),
             nn.LeakyReLU(0.2)
         )
-        self.model_twist_1=nn.Sequential(
-                nn.ZeroPad2d((0, 0, 20, 0)),
-                nn.utils.spectral_norm(nn.Conv2d(256, 256, (21, 1))),
-                nn.LeakyReLU(),
-                nn.ZeroPad2d((0, 0, 20, 0)),
-                nn.utils.spectral_norm(nn.Conv2d(256, 256, (21, 1))),
-                nn.Sigmoid())
-        self.model_twist_2=nn.Sequential(
-                nn.ZeroPad2d((0, 0, 10, 0)),
-                nn.utils.spectral_norm(nn.Conv2d(256, 256, (11, 1))),
-                nn.LeakyReLU(),
-                nn.ZeroPad2d((0, 0, 10, 0)),
-                nn.utils.spectral_norm(nn.Conv2d(256, 256, (11, 1))),
-                nn.Sigmoid())
-        self.model_twist_3=nn.Sequential(
+        self.model_attention_1=nn.Sequential(
                 nn.ZeroPad2d((0, 0, 4, 0)),
-                nn.utils.spectral_norm(nn.Conv2d(256, 256, (5, 1))),
-                nn.LeakyReLU(),
-                nn.ZeroPad2d((0, 0, 4, 0)),
-                nn.utils.spectral_norm(nn.Conv2d(256, 256, (5, 1))),
+                nn.utils.spectral_norm(nn.Conv2d(256, 512, (5, 1))),
+                nn.ReLU(),
+                nn.utils.spectral_norm(nn.Conv2d(512, 256, 1)),
                 nn.Sigmoid())
-        self.model_twist_4=nn.Sequential(
-                nn.ZeroPad2d((0, 0, 2, 0)),
-                nn.utils.spectral_norm(nn.Conv2d(256, 256, (3, 1))),
-                nn.LeakyReLU(),
-                nn.ZeroPad2d((0, 0, 2, 0)),
-                nn.utils.spectral_norm(nn.Conv2d(256, 256, (3, 1))),
+        self.model_attention_2=nn.Sequential(
+                nn.ZeroPad2d((0, 0, 9, 0)),
+                nn.utils.spectral_norm(nn.Conv2d(256, 512, (10, 1))),
+                nn.ReLU(),
+                nn.utils.spectral_norm(nn.Conv2d(512, 256, 1)),
+                nn.Sigmoid())
+        self.model_attention_3=nn.Sequential(
+                nn.ZeroPad2d((0, 0, 14, 0)),
+                nn.utils.spectral_norm(nn.Conv2d(256, 512, (15, 1))),
+                nn.ReLU(),
+                nn.utils.spectral_norm(nn.Conv2d(512, 256, 1)),
+                nn.Sigmoid())
+        self.model_attention_4=nn.Sequential(
+                nn.ZeroPad2d((0, 0, 20, 0)),
+                nn.utils.spectral_norm(nn.Conv2d(256, 512, (21, 1))),
+                nn.ReLU(),
+                nn.utils.spectral_norm(nn.Conv2d(512, 256, 1)),
                 nn.Sigmoid())
         self.model_decode =nn.Sequential(
             nn.utils.spectral_norm(nn.ConvTranspose2d(256, 1025, (4, 1), stride=(4, 1))),
@@ -91,12 +87,12 @@ class Generator(nn.Module):
         """
         _y = self.model_encode(x)
         _y = _y.view(*self.shapes[0])
-        _y = (self.model_twist_1(_y)+1) * _y
+        _y = (self.model_attention_1(_y)+0.5) * _y
         _y = _y.view(*self.shapes[1])
-        _y = (self.model_twist_2(_y)+1) * _y
+        _y = (self.model_attention_2(_y)+0.5) * _y
         _y = _y.view(*self.shapes[2])
-        _y = (self.model_twist_3(_y)+1) * _y
+        _y = (self.model_attention_3(_y)+0.5) * _y
         _y = _y.view(*self.shapes[3])
-        _y = (self.model_twist_4(_y)+1) * _y
+        _y = (self.model_attention_4(_y)+0.5) * _y
         y = self.model_decode(_y)
         return y

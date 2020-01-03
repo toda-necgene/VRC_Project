@@ -11,9 +11,9 @@ import torch
 import numpy as np
 import pyaudio as pa
 
-from setting_loader import load_setting_from_json
+from setting import get_setting
 from core.model import Generator
-from core.world_and_wave import world2wave, wave2world_lofi
+from core.world_and_wave import world2wave, wave2world_lofi, wave2world_hifi
 
 # experimental
 noise_gate_rate = 0.0
@@ -31,10 +31,10 @@ def load(checkpoint_dir, m_1):
     """
     print(" [I] Reading checkpoint...")
     if os.path.exists(checkpoint_dir):
-        print(" [I] file found.")
+        print(" [O] file found.")
         m_1.load_state_dict(torch.load(checkpoint_dir+"/gen_ab.pth"))
         return True
-    print(" [I] dir not found:"+checkpoint_dir)
+    print(" [X] dir not found:"+checkpoint_dir)
     return False
 
 def process(queue_in, queue_out, args_model, noise_gate, noise_defact, noise_gate_rate):
@@ -71,18 +71,56 @@ def process(queue_in, queue_out, args_model, noise_gate, noise_defact, noise_gat
             _response = _response.astype(np.int16)
             queue_out.put(_response)
 if __name__ == '__main__':
-    args = load_setting_from_json("setting.json")
+    args = get_setting()
     fs = 44100
-    term_sec = 22050
+    term_sec = 44100
     q_in = Queue()
     q_out = Queue()
-    p_in = pa.PyAudio()
-    stream = p_in.open(format=pa.paInt16,
+    paudio = pa.PyAudio()
+    wave2world_process = wave2world_lofi if args["f0_estimation_plan"] is "dio" else wave2world_hifi
+    di = 0
+    do = 0
+    input_devices = []
+    input_device_indexis = []
+    output_devices = []
+    output_device_indexis = []
+
+    for n in range(paudio.get_device_count()):
+        d = paudio.get_device_info_by_index(n)
+        if d["maxInputChannels"]!=0:
+            ns = {"name":d["name"], "samplerate": d["defaultSampleRate"]}
+            input_devices.append(ns)
+            input_device_indexis.append(n)
+        elif d["maxOutputChannels"]!=0:
+            ns = {"name":d["name"], "samplerate": d["defaultSampleRate"]}
+            output_devices.append(ns)
+            output_device_indexis.append(n)
+    print("[I] Input device list")
+    print("---------------")
+    for i,n in enumerate(input_devices):
+        print("[{}]".format(i),n)
+    print("---------------")
+    print("[?] input device select(number)")
+    di = int(input())
+    ddi = input_device_indexis[di]
+    print("[I] Output device list")
+    print("---------------")
+    for i,n in enumerate(output_devices):
+        print("[{}]".format(i), n)
+    print("---------------")
+    print("[?] output device select(number)")
+    do = int(input())
+    ddo = output_device_indexis[do]
+    print("[I] input selected({})".format(paudio.get_device_info_by_index(ddi)["name"]))
+    print("[I] output selected({})".format(paudio.get_device_info_by_index(ddo)["name"]))
+    stream = paudio.open(format=pa.paInt16,
                        channels=1,
                        rate=fs,
                        frames_per_buffer=term_sec,
                        input=True,
-                       output=True)
+                       output=True,
+                       input_device_index=ddi,
+                       output_device_index=ddo)
     stream.start_stream()
     let = np.zeros([term_sec*3])
     for n in range(3):
@@ -107,10 +145,8 @@ if __name__ == '__main__':
         """
         stream.stop_stream()
         stream.close()
-        q_in.close()
         q_out.close()
         p.terminate()
-        p_in.terminate()
         print("Stream stops")
         freeze_support()
         exit(-1)
@@ -123,7 +159,7 @@ if __name__ == '__main__':
         _inputs = np.frombuffer(_inputs_source, dtype=np.int16) / 32767.0
         wave_holder = np.append(wave_holder, _inputs)[-args["input_size"]:]
         _inputs_wave = wave_holder* gain
-        _f0, _sp, _ap = wave2world_lofi(_inputs_wave)
+        _f0, _sp, _ap = wave2world_process(_inputs_wave)
         if np.max(_inputs_wave) >= 0.0:
             q_in.put([_f0, _sp, _ap])
         _output_wave = _output_wave_dammy
